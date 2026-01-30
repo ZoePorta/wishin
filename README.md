@@ -48,6 +48,12 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - **Automated AI Review:** Integration of CodeRabbit to enforce architectural constraints and identify logical edge cases in every Pull Request.
 - **Real-time Telemetry:** Full visibility into system health and user behavior via Sentry and PostHog.
 
+## Architectural Decision Records (ADR)
+
+- [ADR 001: BaaS Infrastructure Alignment](docs/adr/001-baas-infrastructure-alignment.md)
+- [ADR 002: Architectural Patterns and Decoupling](docs/adr/002-architectural-patterns-and-decoupling.md)
+- [ADR 003: Monorepo Organizational Strategy](docs/adr/003-monorepo-organizational-strategy.md)
+
 ## License
 
 Licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.

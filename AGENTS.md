@@ -37,3 +37,12 @@
 ## 6. Observability
 
 - Proactively suggest **Sentry** breadcrumbs and **PostHog** events for critical state changes (e.g., successful reservations or failed concurrency checks).
+
+## 7. ADR Management
+
+- **Numbering:** Always verify the last used ADR number in `docs/adr/` and assign the next sequential number (e.g., `004`).
+- **README Updates:** Every new ADR must be linked in the `README.md` file under the "Architectural Decision Records (ADR)" section.
+- **Superseding Decisions:**
+  - Before creating a new ADR, check if it contradicts or replaces an existing one.
+  - If it does, update the **Status** of the old ADR to "Superseded by ADR [New Number]".
+  - In the new ADR, mention "Supersedes ADR [Old Number]" in the **Context** or **Decision** section.
