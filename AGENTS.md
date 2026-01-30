@@ -30,7 +30,9 @@
 
 ## 5. Operational Standards
 
-- **Conventional Commits:** All suggested commits must follow the specification (e.g., `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`).
+- **Git Hooks Awareness:** Be aware that Husky is active. If a commit is rejected due to linting or test failures, analyze the output and fix the code immediately.
+- **Conventional Commits:** Adhere strictly to the format. Use `commitlint` standards.
+- **Local Validation:** Before suggesting a push, ensure that `npm run lint` and `npm test` would pass in a local environment.
 - **Documentation:** Suggest an **ADR (Architecture Decision Record)** update whenever a significant technical path is chosen or changed.
 - **Security:** Enforce "Security by Design" and "Security by Default" in every code snippet. Use strict TypeScript (`no-explicit-any`).
 

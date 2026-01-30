@@ -35,13 +35,17 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - **Test Coverage:** Mandatory minimum threshold of **80% coverage** for Domain and Application layers.
 - **Concurrency Management:** Engineered to handle race conditions between guest purchases and member reservations using atomic database operations.
 
-### 🏗️ Architecture & Static Analysis
+### 🏗️ Architecture
 
 - **Clean Architecture:** Strict separation of concerns using Domain-Driven Design (DDD).
 - **Decoupled Infrastructure:** Implementation of the **Repository and Adapter Patterns** to isolate the business logic from the Appwrite SDK.
 - **Strict Type Safety:** Comprehensive TypeScript enforcement (`no-explicit-any`) across the entire stack to catch errors at compile time.
-- **Static Analysis:** Integrated ESLint (with security plugins) and Prettier for automated code quality enforcement.
-- **Conventional Commits:** Mandatory adherence to the [Conventional Commits specification](https://www.conventionalcommits.org/) for transparent version history.
+
+### 🛠️ Development Workflow & Automation
+
+- **Pre-commit Hooks (Husky + lint-staged):** Automated execution of ESLint (including security plugins), Prettier, and Unit Tests on staged files to prevent regression.
+- **Commit Validation (Commitlint):** Strict enforcement of the [Conventional Commits specification](https://www.conventionalcommits.org/) at the Git level to ensure transparent version history.
+- **Pre-push Checks:** Final local validation of the full test suite before remote synchronization.
 
 ### 🤖 AI Governance & Observability
 
@@ -53,6 +57,7 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - [ADR 001: BaaS Infrastructure Alignment](docs/adr/001-baas-infrastructure-alignment.md)
 - [ADR 002: Architectural Patterns and Decoupling](docs/adr/002-architectural-patterns-and-decoupling.md)
 - [ADR 003: Monorepo Organizational Strategy](docs/adr/003-monorepo-organizational-strategy.md)
+- [ADR 004: Local Development Workflow and Quality Automation](docs/adr/004-local-development-workflow-and-quality-automation.md)
 
 ## License
 
