@@ -10,7 +10,13 @@ Wishin consists of a mobile app, potential shared types, and cloud functions. Ma
 
 ## Decision
 
-We will adopt a **Monorepo** structure.
+We will adopt a **Monorepo** structure, using **pnpm** as the package manager.
+
+## Rationale for pnpm
+
+- **Dependency Integrity:** pnpm uses a content-addressable store and strict node_modules structure, preventing phantom dependencies and ensuring consistent environments.
+- **Performance:** Efficient disk space usage and faster installation times compared to npm/yarn.
+- **Support:** Native support for workspaces via `pnpm-workspace.yaml`.
 
 ## Consequences
 

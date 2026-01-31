@@ -137,3 +137,36 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+
+# --- Wishin Specific Additions ---
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Mobile build artifacts (Security & Noise)
+*.jks
+*.p8
+*.keystore
+*.ap_
+*.apk
+*.aab
+
+# pnpm
+.pnpm-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Appwrite / Local Secrets
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDEs
+.vscode/
+.idea/

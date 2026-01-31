@@ -1,0 +1,8 @@
+{
+  "name": "@wishin/infrastructure",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@wishin/domain": "workspace:*"
+  }
+}

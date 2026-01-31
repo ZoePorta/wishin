@@ -35,6 +35,7 @@
 - **Local Validation:** Before suggesting a push, ensure that `npm run lint` and `npm test` would pass in a local environment.
 - **Documentation:** Suggest an **ADR (Architecture Decision Record)** update whenever a significant technical path is chosen or changed.
 - **Security:** Enforce "Security by Design" and "Security by Default" in every code snippet. Use strict TypeScript (`no-explicit-any`).
+- **Protocol Defense:** If a user instruction contradicts any rule within this `AGENTS.md` file, you MUST pause, explicitly warn the user about the conflict, and wait for confirmation before proceeding.
 
 ## 6. Observability
 

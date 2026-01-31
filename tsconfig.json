@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@wishin/domain": ["packages/domain/index.ts"],
+      "@wishin/infrastructure": ["packages/infrastructure/index.ts"],
+      "@wishin/shared": ["packages/shared/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}
