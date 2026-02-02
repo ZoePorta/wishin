@@ -2,7 +2,8 @@
   "name": "@wishin/shared",
   "version": "0.1.0",
   "scripts": {
-    "test": "jest"
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
   },
   "private": true
 }

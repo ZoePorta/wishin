@@ -18,7 +18,7 @@
 
 ## 3. Development Workflow (TDD)
 
-- **Strict TDD:** No production code without a preceding failing test (Jest).
+- **Strict TDD:** No production code without a preceding failing test (Vitest).
 - **Red-Green-Refactor:** 1. Define the test case for the requirement. 2. Implement the minimal logic to pass. 3. Refactor for architectural purity.
 - **Code Review:** Every proposal must be evaluated against the "Wishin Quality Gates" defined in the README.
 
@@ -49,3 +49,6 @@
   - Before creating a new ADR, check if it contradicts or replaces an existing one.
   - If it does, update the **Status** of the old ADR to "Superseded by ADR [New Number]".
   - In the new ADR, mention "Supersedes ADR [Old Number]" in the **Context** or **Decision** section.
+- **Amending Decisions:**
+  - If a new ADR partially modifies an existing one (without fully replacing it), update the **Status** of the old ADR to "Amended by ADR [New Number]".
+  - In the new ADR, add "Amends ADR [Old Number]" in the **Context** or **Decision** section.

@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "test": "jest"
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@wishin/domain": "workspace:*"

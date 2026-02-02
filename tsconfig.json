@@ -1,18 +1,8 @@
 {
-  "compilerOptions": {
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@wishin/domain": ["packages/domain/index.ts"],
-      "@wishin/infrastructure": ["packages/infrastructure/index.ts"],
-      "@wishin/shared": ["packages/shared/index.ts"]
-    }
-  },
-  "exclude": ["node_modules", "dist"]
+  "files": [],
+  "references": [
+    { "path": "./packages/domain/tsconfig.build.json" },
+    { "path": "./packages/infrastructure/tsconfig.build.json" },
+    { "path": "./packages/shared/tsconfig.build.json" }
+  ]
 }
