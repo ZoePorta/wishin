@@ -1,8 +1,16 @@
 {
   "files": [],
   "references": [
-    { "path": "./packages/domain/tsconfig.build.json" },
-    { "path": "./packages/infrastructure/tsconfig.build.json" },
-    { "path": "./packages/shared/tsconfig.build.json" }
-  ]
+    {
+      "path": "./packages/domain/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/infrastructure/tsconfig.build.json"
+    },
+    {
+      "path": "./packages/shared/tsconfig.build.json"
+    }
+  ],
+  "compilerOptions": {},
+  "extends": "expo/tsconfig.base"
 }
