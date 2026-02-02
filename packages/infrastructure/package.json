@@ -2,6 +2,9 @@
   "name": "@wishin/infrastructure",
   "version": "0.1.0",
   "private": true,
+  "scripts": {
+    "test": "jest"
+  },
   "dependencies": {
     "@wishin/domain": "workspace:*"
   }
