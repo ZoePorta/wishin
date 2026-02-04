@@ -266,6 +266,7 @@ describe("WishlistItem Entity", () => {
     it("should throw InvalidTransitionError if amountToReserved > amountToCancel", () => {
       const item = WishlistItem.create({
         ...validProps,
+        totalQuantity: 2,
         purchasedQuantity: 2,
       });
 

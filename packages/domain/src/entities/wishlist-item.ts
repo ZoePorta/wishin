@@ -91,17 +91,56 @@ export class WishlistItem {
   }
 
   public purchase(
-    _totalAmount: number,
-    _consumeFromReserved: number,
+    totalAmount: number,
+    consumeFromReserved: number,
   ): WishlistItem {
-    throw new Error("Not Implemented");
+    if (consumeFromReserved > this.reservedQuantity) {
+      throw new InvalidTransitionError(
+        `Cannot consume ${consumeFromReserved.toString()} from reserved. Only ${this.reservedQuantity.toString()} reserved.`,
+      );
+    }
+
+    if (consumeFromReserved > totalAmount) {
+      throw new InvalidTransitionError(
+        "Cannot consume more from reserved than total purchase amount.",
+      );
+    }
+
+    const neededFromAvailable = totalAmount - consumeFromReserved;
+    if (neededFromAvailable > this.availableQuantity && !this.isUnlimited) {
+      throw new InsufficientStockError(
+        `Insufficient stock. Needed ${neededFromAvailable.toString()} from available, but only had ${this.availableQuantity.toString()}`,
+      );
+    }
+
+    return new WishlistItem({
+      ...this.toProps(),
+      purchasedQuantity: this.purchasedQuantity + totalAmount,
+      reservedQuantity: this.reservedQuantity - consumeFromReserved,
+    });
   }
 
   public cancelPurchase(
-    _amountToCancel: number,
-    _amountToRestockAsReserved: number,
+    amountToCancel: number,
+    amountToRestockAsReserved: number,
   ): WishlistItem {
-    throw new Error("Not Implemented");
+    if (amountToCancel > this.purchasedQuantity) {
+      throw new InvalidTransitionError(
+        `Cannot cancel ${amountToCancel.toString()}. Only ${this.purchasedQuantity.toString()} purchased.`,
+      );
+    }
+
+    if (amountToRestockAsReserved > amountToCancel) {
+      throw new InvalidTransitionError(
+        `Cannot restock ${amountToRestockAsReserved.toString()} as reserved. Only cancelling ${amountToCancel.toString()}.`,
+      );
+    }
+
+    return new WishlistItem({
+      ...this.toProps(),
+      purchasedQuantity: this.purchasedQuantity - amountToCancel,
+      reservedQuantity: this.reservedQuantity + amountToRestockAsReserved,
+    });
   }
 
   private validate(): void {
