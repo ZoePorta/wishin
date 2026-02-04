@@ -65,6 +65,10 @@ export class WishlistItem {
   }
 
   public reserve(amount: number): WishlistItem {
+    if (amount <= 0) {
+      throw new InvalidAttributeError("Amount must be positive");
+    }
+
     if (!this.isUnlimited && amount > this.availableQuantity) {
       throw new InsufficientStockError(
         `Insufficient stock: Requested ${amount.toString()}, Available ${this.availableQuantity.toString()}`,
@@ -78,6 +82,10 @@ export class WishlistItem {
   }
 
   public cancelReservation(amount: number): WishlistItem {
+    if (amount <= 0) {
+      throw new InvalidAttributeError("Amount must be positive");
+    }
+
     if (amount > this.reservedQuantity) {
       throw new InvalidTransitionError(
         `Cannot cancel more reservations than reserved. Requested: ${amount.toString()}, Reserved: ${this.reservedQuantity.toString()}`,
@@ -94,6 +102,15 @@ export class WishlistItem {
     totalAmount: number,
     consumeFromReserved: number,
   ): WishlistItem {
+    if (totalAmount <= 0) {
+      throw new InvalidAttributeError("Total amount must be positive");
+    }
+    if (consumeFromReserved < 0) {
+      throw new InvalidAttributeError(
+        "Consume from reserved must be non-negative",
+      );
+    }
+
     if (consumeFromReserved > this.reservedQuantity) {
       throw new InvalidTransitionError(
         `Cannot consume ${consumeFromReserved.toString()} from reserved. Only ${this.reservedQuantity.toString()} reserved.`,
@@ -124,6 +141,15 @@ export class WishlistItem {
     amountToCancel: number,
     amountToRestockAsReserved: number,
   ): WishlistItem {
+    if (amountToCancel <= 0) {
+      throw new InvalidAttributeError("Amount to cancel must be positive");
+    }
+    if (amountToRestockAsReserved < 0) {
+      throw new InvalidAttributeError(
+        "Amount to restock as reserved must be non-negative",
+      );
+    }
+
     if (amountToCancel > this.purchasedQuantity) {
       throw new InvalidTransitionError(
         `Cannot cancel ${amountToCancel.toString()}. Only ${this.purchasedQuantity.toString()} purchased.`,

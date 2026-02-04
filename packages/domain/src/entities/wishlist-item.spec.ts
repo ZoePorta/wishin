@@ -135,6 +135,12 @@ describe("WishlistItem Entity", () => {
       });
       expect(() => item.reserve(2)).toThrow(InsufficientStockError);
     });
+
+    it("should throw InvalidAttributeError if amount is negative or zero", () => {
+      const item = WishlistItem.create({ ...validProps });
+      expect(() => item.reserve(0)).toThrow(InvalidAttributeError);
+      expect(() => item.reserve(-1)).toThrow(InvalidAttributeError);
+    });
   });
 
   describe("Behaviors: Cancel Reservation", () => {
@@ -151,6 +157,16 @@ describe("WishlistItem Entity", () => {
     it("should throw InvalidTransitionError if cancelling more than reserved", () => {
       const item = WishlistItem.create({ ...validProps, reservedQuantity: 1 });
       expect(() => item.cancelReservation(2)).toThrow(InvalidTransitionError); // Or generic Error depending on implementation, spec implies logic violation
+    });
+
+    it("should throw InvalidAttributeError if amount is negative or zero", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        reservedQuantity: 5,
+      });
+      expect(() => item.cancelReservation(0)).toThrow(InvalidAttributeError);
+      expect(() => item.cancelReservation(-1)).toThrow(InvalidAttributeError);
     });
   });
 
@@ -206,6 +222,17 @@ describe("WishlistItem Entity", () => {
     it("should throw InvalidTransitionError if consuming more reserved than actually reserved", () => {
       const item = WishlistItem.create({ ...validProps, reservedQuantity: 1 });
       expect(() => item.purchase(2, 2)).toThrow(InvalidTransitionError);
+    });
+
+    it("should throw InvalidAttributeError if totalAmount is negative or zero", () => {
+      const item = WishlistItem.create({ ...validProps });
+      expect(() => item.purchase(0, 0)).toThrow(InvalidAttributeError);
+      expect(() => item.purchase(-1, 0)).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if consumeFromReserved is negative", () => {
+      const item = WishlistItem.create({ ...validProps });
+      expect(() => item.purchase(5, -1)).toThrow(InvalidAttributeError);
     });
   });
 
@@ -271,6 +298,25 @@ describe("WishlistItem Entity", () => {
       });
 
       expect(() => item.cancelPurchase(1, 2)).toThrow(InvalidTransitionError);
+    });
+
+    it("should throw InvalidAttributeError if amountToCancel is negative or zero", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 5,
+      });
+      expect(() => item.cancelPurchase(0, 0)).toThrow(InvalidAttributeError);
+      expect(() => item.cancelPurchase(-1, 0)).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if amountToRestockAsReserved is negative", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 5,
+      });
+      expect(() => item.cancelPurchase(1, -1)).toThrow(InvalidAttributeError);
     });
   });
 

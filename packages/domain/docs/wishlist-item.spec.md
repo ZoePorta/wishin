@@ -38,18 +38,22 @@ The `WishlistItem` is the core entity of the Wishin domain. it represents a gift
 
 - **Effect:** Increases `reservedQuantity`.
 - **Pre-condition:** `isUnlimited` is true OR `amount <= Q_{available}`.
+- **Pre-condition:** `amount > 0`.
 - **Returns:** New instance with updated state.
 
 ### `cancelReservation(amount: number)`
 
 - **Effect:** Decreases `reservedQuantity`.
 - **Pre-condition:** `amount <= current reservedQuantity`.
+- **Pre-condition:** `amount > 0`.
 - **Returns:** New instance with updated state.
 
 ### `purchase(totalAmount: number, consumeFromReserved: number)`
 
 - **Effect:** Increases `purchasedQuantity` by `totalAmount`.
 - **Logic:**
+  - Validates `totalAmount > 0`.
+  - Validates `consumeFromReserved >= 0`.
   - Validates `consumeFromReserved <= totalAmount`.
   - Validates `consumeFromReserved <= current reservedQuantity`.
   - Validates `(totalAmount - consumeFromReserved) <= Q_{available}` (unless `isUnlimited`).
@@ -60,6 +64,8 @@ The `WishlistItem` is the core entity of the Wishin domain. it represents a gift
 
 - **Effect:** Decreases `purchasedQuantity` and optionally increases `reservedQuantity`.
 - **Pre-conditions:**
+  - `amountToCancel > 0`.
+  - `amountToReserved >= 0`.
   - `amountToCancel <= purchasedQuantity`.
   - `amountToReserved <= amountToCancel`.
 - **Logic:**
