@@ -13,7 +13,9 @@
   - **Domain:** Pure logic, entities, and repository interfaces. Zero dependencies on Appwrite SDK or UI frameworks.
   - **Application:** Use Cases coordinating domain logic.
   - **Infrastructure:** Adapters implementing Domain interfaces using Appwrite SDK.
-- **Pattern Enforcement:** Use the **Repository Pattern** for data access and the **Adapter Pattern** to wrap the Appwrite SDK.
+- **Pattern Enforcement:**
+  - Use the **Repository Pattern** for data access and the **Adapter Pattern** to wrap the Appwrite SDK.
+  - **Factory Pattern:** All Domain Entities and Value Objects MUST use a **private constructor** and expose a public static `create` method. (Exceptions: Errors, DTOs, Infrastructure).
 - **Atomic Operations:** Proactively identify and prevent race conditions in inventory management (Reserved/Purchased states).
 
 ## 3. Development Workflow (TDD)
