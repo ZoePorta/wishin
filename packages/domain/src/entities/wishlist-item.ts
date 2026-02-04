@@ -63,8 +63,17 @@ export class WishlistItem {
     );
   }
 
-  public reserve(_amount: number): WishlistItem {
-    throw new Error("Not Implemented");
+  public reserve(amount: number): WishlistItem {
+    if (!this.isUnlimited && amount > this.availableQuantity) {
+      throw new InsufficientStockError(
+        `Insufficient stock: Requested ${amount.toString()}, Available ${this.availableQuantity.toString()}`,
+      );
+    }
+
+    return new WishlistItem({
+      ...this.toProps(),
+      reservedQuantity: this.reservedQuantity + amount,
+    });
   }
 
   public cancelReservation(_amount: number): WishlistItem {
@@ -138,5 +147,22 @@ export class WishlistItem {
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
+  }
+
+  private toProps(): WishlistItemProps {
+    return {
+      id: this.id,
+      wishlistId: this.wishlistId,
+      name: this.name,
+      description: this.description,
+      price: this.price,
+      currency: this.currency,
+      url: this.url,
+      imageUrl: this.imageUrl,
+      isUnlimited: this.isUnlimited,
+      totalQuantity: this.totalQuantity,
+      reservedQuantity: this.reservedQuantity,
+      purchasedQuantity: this.purchasedQuantity,
+    };
   }
 }
