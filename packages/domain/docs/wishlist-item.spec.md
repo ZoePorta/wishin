@@ -56,6 +56,17 @@ The `WishlistItem` is the core entity of the Wishin domain. it represents a gift
   - Decreases `reservedQuantity` by `consumeFromReserved`.
 - **Returns:** New instance with updated state.
 
+### `cancelPurchase(amountToCancel: number, amountToReserved: number)`
+
+- **Effect:** Decreases `purchasedQuantity` and optionally increases `reservedQuantity`.
+- **Pre-conditions:**
+  - `amountToCancel <= purchasedQuantity`.
+  - `amountToReserved <= amountToCancel`.
+- **Logic:**
+  - `newPurchased = purchasedQuantity - amountToCancel`
+  - `newReserved = reservedQuantity + amountToReserved`
+- **Returns:** New instance with updated state.
+
 ## Domain Errors
 
 - `InvalidAttributeError`: Thrown on invalid name, price, or UUID format.

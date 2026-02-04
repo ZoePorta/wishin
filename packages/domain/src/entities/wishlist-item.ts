@@ -87,6 +87,13 @@ export class WishlistItem {
     throw new Error("Not Implemented");
   }
 
+  public cancelPurchase(
+    _amountToCancel: number,
+    _amountToRestockAsReserved: number,
+  ): WishlistItem {
+    throw new Error("Not Implemented");
+  }
+
   private validate(): void {
     // ID Validation (UUID v4)
     if (!this.isValidUUID(this.id)) {

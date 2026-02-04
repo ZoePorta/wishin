@@ -209,6 +209,70 @@ describe("WishlistItem Entity", () => {
     });
   });
 
+  describe("Behaviors: Cancel Purchase", () => {
+    it("should cancel purchase and return to available stock (amountToReserved = 0)", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 2,
+      });
+
+      const newItem = item.cancelPurchase(1, 0);
+
+      expect(newItem.purchasedQuantity).toBe(1);
+      expect(newItem.reservedQuantity).toBe(0);
+      expect(newItem.availableQuantity).toBe(4);
+    });
+
+    it("should cancel purchase and return to reserved stock", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 2,
+        reservedQuantity: 0,
+      });
+
+      const newItem = item.cancelPurchase(1, 1);
+
+      expect(newItem.purchasedQuantity).toBe(1);
+      expect(newItem.reservedQuantity).toBe(1);
+      expect(newItem.availableQuantity).toBe(3);
+    });
+
+    it("should cancel purchase with partial reservation", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 2,
+        reservedQuantity: 0,
+      });
+
+      const newItem = item.cancelPurchase(2, 1);
+
+      expect(newItem.purchasedQuantity).toBe(0);
+      expect(newItem.reservedQuantity).toBe(1);
+      expect(newItem.availableQuantity).toBe(4);
+    });
+
+    it("should throw InvalidTransitionError if amountToCancel > purchasedQuantity", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        purchasedQuantity: 1,
+      });
+
+      expect(() => item.cancelPurchase(2, 0)).toThrow(InvalidTransitionError);
+    });
+
+    it("should throw InvalidTransitionError if amountToReserved > amountToCancel", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        purchasedQuantity: 2,
+      });
+
+      expect(() => item.cancelPurchase(1, 2)).toThrow(InvalidTransitionError);
+    });
+  });
+
   describe("Domain Invariants", () => {
     it("should not allow creation with reserved + purchased > total (unless unlimited)", () => {
       expect(() =>
