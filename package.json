@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "pnpm -r run build --if-present",
     "test": "vitest run",
     "lint": "eslint .",
     "type-check": "pnpm -r run type-check --if-present",
