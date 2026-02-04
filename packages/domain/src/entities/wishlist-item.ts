@@ -1,6 +1,7 @@
 import {
   InsufficientStockError,
   InvalidAttributeError,
+  InvalidTransitionError,
 } from "../errors/domain-errors";
 
 export interface WishlistItemProps {
@@ -76,8 +77,17 @@ export class WishlistItem {
     });
   }
 
-  public cancelReservation(_amount: number): WishlistItem {
-    throw new Error("Not Implemented");
+  public cancelReservation(amount: number): WishlistItem {
+    if (amount > this.reservedQuantity) {
+      throw new InvalidTransitionError(
+        `Cannot cancel more reservations than reserved. Requested: ${amount.toString()}, Reserved: ${this.reservedQuantity.toString()}`,
+      );
+    }
+
+    return new WishlistItem({
+      ...this.toProps(),
+      reservedQuantity: this.reservedQuantity - amount,
+    });
   }
 
   public purchase(
