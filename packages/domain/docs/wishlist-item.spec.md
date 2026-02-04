@@ -67,6 +67,12 @@ The `WishlistItem` is the core entity of the Wishin domain. it represents a gift
   - `newReserved = reservedQuantity + amountToReserved`
 - **Returns:** New instance with updated state.
 
+### `equals(other: WishlistItem)`
+
+- **Effect:** Compares this entity with another `WishlistItem`.
+- **Logic:** Returns `true` if `this.id === other.id`, otherwise `false`.
+- **Returns:** `boolean`
+
 ## Domain Errors
 
 - `InvalidAttributeError`: Thrown on invalid name, price, or UUID format.

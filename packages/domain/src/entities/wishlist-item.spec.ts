@@ -286,4 +286,23 @@ describe("WishlistItem Entity", () => {
       ).toThrow(InsufficientStockError);
     });
   });
+  describe("Equality", () => {
+    it("should return true if ids are the same", () => {
+      const item1 = WishlistItem.create(validProps);
+      const item2 = WishlistItem.create({
+        ...validProps,
+        name: "Different Name",
+      }); // Same ID
+      expect(item1.equals(item2)).toBe(true);
+    });
+
+    it("should return false if ids are different", () => {
+      const item1 = WishlistItem.create(validProps);
+      const item2 = WishlistItem.create({
+        ...validProps,
+        id: "123e4567-e89b-12d3-a456-426614174999",
+      });
+      expect(item1.equals(item2)).toBe(false);
+    });
+  });
 });

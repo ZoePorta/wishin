@@ -143,6 +143,10 @@ export class WishlistItem {
     });
   }
 
+  public equals(other: WishlistItem): boolean {
+    return this.id === other.id;
+  }
+
   private validate(): void {
     // ID Validation (UUID v4)
     if (!this.isValidUUID(this.id)) {
