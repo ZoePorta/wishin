@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
+import { WishlistItem } from "./wishlist-item";
 import {
-  WishlistItem,
   InsufficientStockError,
   InvalidAttributeError,
   InvalidTransitionError,
-} from "./wishlist-item";
+} from "../errors/domain-errors";
 
 describe("WishlistItem Entity", () => {
   const validProps = {

@@ -1,23 +1,7 @@
-export class InvalidAttributeError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidAttributeError";
-  }
-}
-
-export class InsufficientStockError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InsufficientStockError";
-  }
-}
-
-export class InvalidTransitionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidTransitionError";
-  }
-}
+import {
+  InsufficientStockError,
+  InvalidAttributeError,
+} from "../errors/domain-errors";
 
 export interface WishlistItemProps {
   id: string;
@@ -48,7 +32,7 @@ export class WishlistItem {
   public readonly reservedQuantity: number;
   public readonly purchasedQuantity: number;
 
-  constructor(props: WishlistItemProps) {
+  private constructor(props: WishlistItemProps) {
     this.id = props.id;
     this.wishlistId = props.wishlistId;
     this.name = props.name;
@@ -61,15 +45,22 @@ export class WishlistItem {
     this.totalQuantity = props.totalQuantity;
     this.reservedQuantity = props.reservedQuantity;
     this.purchasedQuantity = props.purchasedQuantity;
+
+    this.validate();
   }
 
   public static create(props: WishlistItemProps): WishlistItem {
-    // Logic not implemented purposefully to fail tests
-    return new WishlistItem(props);
+    const sanitizedProps = {
+      ...props,
+      name: props.name.trim(),
+    };
+    return new WishlistItem(sanitizedProps);
   }
 
   public get availableQuantity(): number {
-    return -1; // Wrong implementation to fail tests
+    return (
+      this.totalQuantity - (this.reservedQuantity + this.purchasedQuantity)
+    );
   }
 
   public reserve(_amount: number): WishlistItem {
@@ -85,5 +76,67 @@ export class WishlistItem {
     _consumeFromReserved: number,
   ): WishlistItem {
     throw new Error("Not Implemented");
+  }
+
+  private validate(): void {
+    // ID Validation (UUID v4)
+    if (!this.isValidUUID(this.id)) {
+      throw new InvalidAttributeError("Invalid id: Must be a valid UUID v4");
+    }
+
+    if (!this.isValidUUID(this.wishlistId)) {
+      throw new InvalidAttributeError(
+        "Invalid wishlistId: Must be a valid UUID v4",
+      );
+    }
+
+    // Name Validation
+    if (this.name.length < 3 || this.name.length > 100) {
+      throw new InvalidAttributeError(
+        "Invalid name: Must be between 3 and 100 characters",
+      );
+    }
+
+    // Price & Currency Validation
+    if (this.price !== undefined) {
+      if (this.price < 0) {
+        throw new InvalidAttributeError(
+          "Invalid price: Must be greater than or equal to 0",
+        );
+      }
+      if (!this.currency) {
+        throw new InvalidAttributeError(
+          "Invalid currency: Required when price is set",
+        );
+      }
+    }
+
+    // Inventory Validation
+    if (!Number.isInteger(this.totalQuantity) || this.totalQuantity < 1) {
+      if (this.totalQuantity < 1) {
+        throw new InvalidAttributeError(
+          "Invalid totalQuantity: Must be at least 1",
+        );
+      }
+    }
+
+    if (this.reservedQuantity < 0 || this.purchasedQuantity < 0) {
+      throw new InvalidAttributeError("Quantities cannot be negative");
+    }
+
+    // Domain Invariant: Inventory Integrity
+    if (!this.isUnlimited) {
+      if (this.totalQuantity < this.reservedQuantity + this.purchasedQuantity) {
+        throw new InsufficientStockError(
+          "Invariant violation: Total quantity must be greater than or equal to reserved + purchased",
+        );
+      }
+    }
+  }
+
+  private isValidUUID(uuid: string): boolean {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
   }
 }
