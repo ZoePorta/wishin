@@ -94,9 +94,16 @@ export class WishlistItem {
 
   /**
    * Updates the mutable properties of the WishlistItem.
+   *
+   * **Side Effects**:
+   * - **Reservation Pruning**: If `totalQuantity` is reduced, `reservedQuantity` is automatically pruned
+   *   to fit within the new limit (minimizing over-commitment), prioritizing `purchasedQuantity`.
+   * - **Privacy Preservation**: Explicitly allows "over-commitment" (where `total < reserved + purchased`)
+   *   when the owner reduces the total quantity, to avoid leaking information about hidden purchases.
+   *
    * @param props - The properties to update.
    * @returns A new WishlistItem instance with updated properties.
-   * @throws {InvalidAttributeError} If validation fails.
+   * @throws {InvalidAttributeError} If validation fails or if attempting to update restricted fields (id, reserved, purchased).
    */
   public update(props: Partial<WishlistItemProps>): WishlistItem {
     if (props.id && props.id !== this.id) {
