@@ -29,6 +29,7 @@ export default tseslint.config(
       parserOptions: {
         project: [
           "./tsconfig.json",
+          "./tsconfig.eslint.json",
           "./packages/*/tsconfig.json",
           "./apps/*/tsconfig.json",
         ],
@@ -45,6 +46,14 @@ export default tseslint.config(
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "no-empty-function": "off",
       "@typescript-eslint/no-empty-function": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
     },
   },
   {

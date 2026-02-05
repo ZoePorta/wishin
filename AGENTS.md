@@ -13,12 +13,14 @@
   - **Domain:** Pure logic, entities, and repository interfaces. Zero dependencies on Appwrite SDK or UI frameworks.
   - **Application:** Use Cases coordinating domain logic.
   - **Infrastructure:** Adapters implementing Domain interfaces using Appwrite SDK.
-- **Pattern Enforcement:** Use the **Repository Pattern** for data access and the **Adapter Pattern** to wrap the Appwrite SDK.
+- **Pattern Enforcement:**
+  - Use the **Repository Pattern** for data access and the **Adapter Pattern** to wrap the Appwrite SDK.
+  - **Factory Pattern:** All Domain Entities and Value Objects MUST use a **private constructor** and expose a public static `create` method. They MUST implement a private `toProps()` method returning the properties object and use `...this.toProps()` inside methods that return new modified instances. (Exceptions: Errors, DTOs, Infrastructure).
 - **Atomic Operations:** Proactively identify and prevent race conditions in inventory management (Reserved/Purchased states).
 
 ## 3. Development Workflow (TDD)
 
-- **Strict TDD:** No production code without a preceding failing test (Jest).
+- **Strict TDD:** No production code without a preceding failing test (Vitest).
 - **Red-Green-Refactor:** 1. Define the test case for the requirement. 2. Implement the minimal logic to pass. 3. Refactor for architectural purity.
 - **Code Review:** Every proposal must be evaluated against the "Wishin Quality Gates" defined in the README.
 
@@ -49,3 +51,15 @@
   - Before creating a new ADR, check if it contradicts or replaces an existing one.
   - If it does, update the **Status** of the old ADR to "Superseded by ADR [New Number]".
   - In the new ADR, mention "Supersedes ADR [Old Number]" in the **Context** or **Decision** section.
+- **Amending Decisions:**
+  - If a new ADR partially modifies an existing one (without fully replacing it), update the **Status** of the old ADR to "Amended by ADR [New Number]".
+  - In the new ADR, add "Amends ADR [Old Number]" in the **Context** or **Decision** section.
+
+## 8. Coding Standards
+
+### Documentation Standard (JSDoc)
+
+- **Rule:** Every new public method, class, or interface MUST include a JSDoc block.
+- **Content:** It must describe the purpose, parameters (`@param`), return value (`@returns`), and any exceptions thrown (`@throws`).
+- **Context:** For Domain Entities, JSDoc must explicitly mention the business invariants or rules being validated (e.g., "Validates that $Q_{total} \ge Q_{reserved}$").
+- **Enforcement:** This is a non-negotiable requirement for every task.

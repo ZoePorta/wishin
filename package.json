@@ -3,27 +3,25 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "jest",
+    "build": "pnpm -r run --if-present build",
+    "test": "vitest run",
     "lint": "eslint .",
-    "type-check": "npm run type-check --workspaces --if-present",
+    "type-check": "pnpm -r run --if-present type-check",
     "prepare": "husky"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.0",
     "@commitlint/config-conventional": "^20.4.0",
     "@eslint/js": "^9.39.2",
-    "@types/jest": "^30.0.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.3.0",
     "husky": "^9.1.7",
-    "jest": "^30.2.0",
-    "lint-staged": "^16.2.7",
-    "prettier": "^3.0.0",
-    "ts-jest": "^29.4.6",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.0.0",
-    "typescript-eslint": "^8.54.0"
+    "typescript-eslint": "^8.54.0",
+    "vite-tsconfig-paths": "^6.0.5",
+    "vitest": "^4.0.18"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

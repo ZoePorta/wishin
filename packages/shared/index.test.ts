@@ -1,4 +1,4 @@
-import { add } from "@wishin/shared";
+import { add } from "./src";
 
 describe("Shared Package", () => {
   it("should add two numbers", () => {

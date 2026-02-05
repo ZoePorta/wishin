@@ -17,7 +17,7 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 | :----------------- | :------------------------------------------ |
 | **Frontend**       | Expo (React Native) + TypeScript            |
 | **Backend (BaaS)** | Appwrite Cloud                              |
-| **Testing Suite**  | Jest & React Native Testing Library         |
+| **Testing Suite**  | Vitest & React Native Testing Library       |
 | **E2E Testing**    | Maestro (Mobile) & Playwright (Web)         |
 | **Observability**  | Sentry (Errors) & PostHog (Analytics)       |
 | **AI Governance**  | CodeRabbit (Automated Architectural Review) |
@@ -58,6 +58,7 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - [ADR 002: Architectural Patterns and Decoupling](docs/adr/002-architectural-patterns-and-decoupling.md)
 - [ADR 003: Monorepo Organizational Strategy](docs/adr/003-monorepo-organizational-strategy.md)
 - [ADR 004: Local Development Workflow and Quality Automation](docs/adr/004-local-development-workflow-and-quality-automation.md)
+- [ADR 005: Adopt Vitest for Testing](docs/adr/005-adopt-vitest-for-testing.md)
 
 ## License
 

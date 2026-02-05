@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted (Amended by ADR 005)
 
 ## Context
 
@@ -17,5 +17,5 @@ We will implement **Clean Architecture** principles using **Domain-Driven Design
 
 ## Consequences
 
-- **Testability:** Domain logic can be tested in isolation using Jest and Mocks.
+- **Testability:** Domain logic can be tested in isolation using Vitest and Mocks.
 - **Complexity:** Higher initial boilerplate for simple CRUD operations. This is accepted as a trade-off for long-term maintainability.

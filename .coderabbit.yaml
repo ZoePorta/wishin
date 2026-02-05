@@ -1,17 +1,48 @@
-instructions: >
-  You are a Senior Software Architect reviewing the "Wishin" project. 
-  Enforce the following architectural constraints strictly:
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+early_access: true
 
-  1. **Layer Isolation:** The 'Domain' layer must have zero dependencies on external frameworks or the Appwrite SDK. 
-     Reject any PR where 'appwrite' is imported inside `src/domain`.
+reviews:
+  profile: "assertive"
+  # Key feature: auto-approves once conversations are resolved and pre-merge checks pass
+  request_changes_workflow: true
+  high_level_summary: true
+  review_status: true
 
-  2. **Dependency Direction:** Dependencies must point inwards. 
-     Infrastructure can depend on Domain, but Domain cannot depend on Infrastructure.
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
 
-  3. **Repository Pattern:** All data persistence must be accessed through interfaces defined in the Domain layer. 
-     UI components should only interact with Use Cases or Repositories, never directly with the BaaS SDK.
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/.expo/**"
 
-  4. **TDD Enforcement:** Every new feature or logic change must be accompanied by a corresponding test file (`.spec.ts` or `.test.ts`). 
-     If a logic change is detected without a test update, flag it as a blocker.
+  path_instructions:
+    # 1. Domain Architecture Rules
+    - path: "packages/domain/src/**/*"
+      instructions: |
+        You are a Senior Software Architect. Strict enforcement required:
+        - Layer Isolation: Zero dependencies on external frameworks or Appwrite SDK. No 'appwrite' imports here.
+        - Dependency Direction: Dependencies must point inwards.
+        - Repository Pattern: Persistence must be accessed through interfaces defined in this layer.
+        - TDD: Every logic change must have a corresponding .spec.ts file.
+        - Naming: Use ubiquitous language (e.g., 'Reservation' instead of 'Booking').
 
-  5. **Naming & DDD:** Ensure entities and value objects use ubiquitous language (e.g., use 'Reservation' instead of 'Booking' or 'Lock').
+    # 2. App Rules (React Native + Expo)
+    - path: "apps/**/*.{ts,tsx}"
+      instructions: |
+        Mobile Best Practices:
+        - Accessibility: Touch targets min 44x44.
+        - Performance: Use FlatList/SectionList for lists.
+        - Styles: Use StyleSheet.create instead of inline styles.
+        - Hooks: Validate memory leaks in useEffect.
+
+    # 3. General TypeScript Rules
+    - path: "**/*.{ts,tsx}"
+      instructions: |
+        - Avoid 'any', use explicit types.
+        - Prefer 'import type' for type imports.
+        - Documentation: Public methods/classes MUST have JSDoc describing purpose, params, and returns.
