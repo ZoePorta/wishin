@@ -65,6 +65,9 @@ export class WishlistItem {
   }
 
   public reserve(amount: number): WishlistItem {
+    if (!Number.isInteger(amount)) {
+      throw new InvalidAttributeError("Amount must be an integer");
+    }
     if (amount <= 0) {
       throw new InvalidAttributeError("Amount must be positive");
     }
@@ -82,6 +85,9 @@ export class WishlistItem {
   }
 
   public cancelReservation(amount: number): WishlistItem {
+    if (!Number.isInteger(amount)) {
+      throw new InvalidAttributeError("Amount must be an integer");
+    }
     if (amount <= 0) {
       throw new InvalidAttributeError("Amount must be positive");
     }
@@ -102,6 +108,14 @@ export class WishlistItem {
     totalAmount: number,
     consumeFromReserved: number,
   ): WishlistItem {
+    if (!Number.isInteger(totalAmount)) {
+      throw new InvalidAttributeError("Total amount must be an integer");
+    }
+    if (!Number.isInteger(consumeFromReserved)) {
+      throw new InvalidAttributeError(
+        "Consume from reserved must be an integer",
+      );
+    }
     if (totalAmount <= 0) {
       throw new InvalidAttributeError("Total amount must be positive");
     }
@@ -141,6 +155,14 @@ export class WishlistItem {
     amountToCancel: number,
     amountToRestockAsReserved: number,
   ): WishlistItem {
+    if (!Number.isInteger(amountToCancel)) {
+      throw new InvalidAttributeError("Amount to cancel must be an integer");
+    }
+    if (!Number.isInteger(amountToRestockAsReserved)) {
+      throw new InvalidAttributeError(
+        "Amount to restock as reserved must be an integer",
+      );
+    }
     if (amountToCancel <= 0) {
       throw new InvalidAttributeError("Amount to cancel must be positive");
     }
@@ -192,11 +214,26 @@ export class WishlistItem {
       );
     }
 
+    // Description Validation
+    if (this.description && this.description.length > 500) {
+      throw new InvalidAttributeError(
+        "Invalid description: Must be 500 characters or less",
+      );
+    }
+
+    // URL Validation
+    if (this.url && !this.isValidUrl(this.url)) {
+      throw new InvalidAttributeError("Invalid url: Must be a valid URL");
+    }
+    if (this.imageUrl && !this.isValidUrl(this.imageUrl)) {
+      throw new InvalidAttributeError("Invalid imageUrl: Must be a valid URL");
+    }
+
     // Price & Currency Validation
     if (this.price !== undefined) {
-      if (this.price < 0) {
+      if (!Number.isFinite(this.price) || this.price < 0) {
         throw new InvalidAttributeError(
-          "Invalid price: Must be greater than or equal to 0",
+          "Invalid price: Must be a finite number greater than or equal to 0",
         );
       }
       if (!this.currency) {
@@ -210,6 +247,15 @@ export class WishlistItem {
     if (!Number.isInteger(this.totalQuantity) || this.totalQuantity < 1) {
       throw new InvalidAttributeError(
         "Invalid totalQuantity: Must be an integer of at least 1",
+      );
+    }
+
+    if (
+      !Number.isInteger(this.reservedQuantity) ||
+      !Number.isInteger(this.purchasedQuantity)
+    ) {
+      throw new InvalidAttributeError(
+        "Invalid quantities: reserved and purchased must be integers",
       );
     }
 
@@ -231,6 +277,15 @@ export class WishlistItem {
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
+  }
+
+  private isValidUrl(url: string): boolean {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private toProps(): WishlistItemProps {

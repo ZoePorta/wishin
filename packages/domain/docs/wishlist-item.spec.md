@@ -2,7 +2,7 @@
 
 ## Description
 
-The `WishlistItem` is the core entity of the Wishin domain. it represents a gift item within a wishlist and manages its lifecycle through an atomic inventory system. This entity is **strictly immutable**.
+The `WishlistItem` is the core entity of the Wishin domain. It represents a gift item within a wishlist and manages its lifecycle through an atomic inventory system. This entity is **strictly immutable**.
 
 ## Attributes
 

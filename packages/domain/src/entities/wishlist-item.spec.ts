@@ -60,6 +60,46 @@ describe("WishlistItem Entity", () => {
         WishlistItem.create({ ...validProps, price: 100, currency: "" }),
       ).toThrow(InvalidAttributeError);
     });
+    it("should allow price with decimals", () => {
+      const item = WishlistItem.create({ ...validProps, price: 49.99 });
+      expect(item.price).toBe(49.99);
+    });
+
+    it("should throw InvalidAttributeError if price is not finite (Infinity)", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, price: Infinity }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if description exceeds 500 characters", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, description: "a".repeat(501) }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if url is invalid", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, url: "invalid-url" }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if imageUrl is invalid", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, imageUrl: "invalid-url" }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if reservedQuantity is not an integer", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, reservedQuantity: 1.5 }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if purchasedQuantity is not an integer", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, purchasedQuantity: 1.5 }),
+      ).toThrow(InvalidAttributeError);
+    });
   });
 
   describe("Calculated Fields", () => {
@@ -141,6 +181,11 @@ describe("WishlistItem Entity", () => {
       expect(() => item.reserve(0)).toThrow(InvalidAttributeError);
       expect(() => item.reserve(-1)).toThrow(InvalidAttributeError);
     });
+
+    it("should throw InvalidAttributeError if amount is not an integer", () => {
+      const item = WishlistItem.create({ ...validProps, totalQuantity: 10 });
+      expect(() => item.reserve(1.5)).toThrow(InvalidAttributeError);
+    });
   });
 
   describe("Behaviors: Cancel Reservation", () => {
@@ -167,6 +212,15 @@ describe("WishlistItem Entity", () => {
       });
       expect(() => item.cancelReservation(0)).toThrow(InvalidAttributeError);
       expect(() => item.cancelReservation(-1)).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if amount is not an integer", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        reservedQuantity: 5,
+      });
+      expect(() => item.cancelReservation(1.5)).toThrow(InvalidAttributeError);
     });
   });
 
@@ -246,6 +300,16 @@ describe("WishlistItem Entity", () => {
     it("should throw InvalidAttributeError if consumeFromReserved is negative", () => {
       const item = WishlistItem.create({ ...validProps });
       expect(() => item.purchase(5, -1)).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if totalAmount is not integer", () => {
+      const item = WishlistItem.create({ ...validProps });
+      expect(() => item.purchase(1.5, 0)).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if consumeFromReserved is not integer", () => {
+      const item = WishlistItem.create({ ...validProps });
+      expect(() => item.purchase(2, 0.5)).toThrow(InvalidAttributeError);
     });
   });
 
@@ -330,6 +394,24 @@ describe("WishlistItem Entity", () => {
         purchasedQuantity: 5,
       });
       expect(() => item.cancelPurchase(1, -1)).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if amountToCancel is not integer", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 5,
+      });
+      expect(() => item.cancelPurchase(1.5, 0)).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if amountToRestockAsReserved is not integer", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 5,
+      });
+      expect(() => item.cancelPurchase(1, 0.5)).toThrow(InvalidAttributeError);
     });
   });
 
