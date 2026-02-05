@@ -50,6 +50,13 @@ export class WishlistItem {
     this.validate();
   }
 
+  /**
+   * Factory method to create a new WishlistItem instance.
+   * Enforces trimming of the name property.
+   * @param props - The properties for the new item.
+   * @returns A new valid WishlistItem instance.
+   * @throws {InvalidAttributeError} If validation fails.
+   */
   public static create(props: WishlistItemProps): WishlistItem {
     const sanitizedProps = {
       ...props,
@@ -58,12 +65,24 @@ export class WishlistItem {
     return new WishlistItem(sanitizedProps);
   }
 
+  /**
+   * Calculates the remaining quantity available for reservation or purchase.
+   * Formula: totalQuantity - (reservedQuantity + purchasedQuantity)
+   * @returns The number of items still available.
+   */
   public get availableQuantity(): number {
     return (
       this.totalQuantity - (this.reservedQuantity + this.purchasedQuantity)
     );
   }
 
+  /**
+   * Reserves a specific quantity of the item.
+   * @param amount - The number of units to reserve (must be a positive integer).
+   * @returns A new WishlistItem instance with updated reserved quantity.
+   * @throws {InvalidAttributeError} If amount is invalid.
+   * @throws {InsufficientStockError} If not enough stock is available.
+   */
   public reserve(amount: number): WishlistItem {
     if (!Number.isInteger(amount)) {
       throw new InvalidAttributeError("Amount must be an integer");
@@ -84,6 +103,12 @@ export class WishlistItem {
     });
   }
 
+  /**
+   * Cancels a previously made reservation, releasing the stock back to available.
+   * @param amount - The number of units to release (must be a positive integer).
+   * @returns A new WishlistItem instance with updated reserved quantity.
+   * @throws {InvalidTransitionError} If trying to cancel more than what is currently reserved.
+   */
   public cancelReservation(amount: number): WishlistItem {
     if (!Number.isInteger(amount)) {
       throw new InvalidAttributeError("Amount must be an integer");
@@ -104,6 +129,15 @@ export class WishlistItem {
     });
   }
 
+  /**
+   * Purchases items, optionally consuming from the reserved stock.
+   * Validates that the total stock (including reservations) is respected.
+   * @param totalAmount - Total units to purchase (must be a positive integer).
+   * @param consumeFromReserved - Units to take from the reserved pool (must be a non-negative integer).
+   * @returns A new WishlistItem instance with updated quantities.
+   * @throws {InvalidTransitionError} If consuming more from reserved than available/requested.
+   * @throws {InsufficientStockError} If total stock is insufficient.
+   */
   public purchase(
     totalAmount: number,
     consumeFromReserved: number,
@@ -151,6 +185,14 @@ export class WishlistItem {
     });
   }
 
+  /**
+   * Cancels a purchase, optionally returning some items to the reserved state.
+   * ensures valid state transitions for purchased and reserved quantities.
+   * @param amountToCancel - Units to return (must be a positive integer).
+   * @param amountToRestockAsReserved - Units to move to reserved (must be a non-negative integer).
+   * @returns A new WishlistItem instance with updated quantities.
+   * @throws {InvalidTransitionError} If cancelling more than purchased or restocking invalid amounts.
+   */
   public cancelPurchase(
     amountToCancel: number,
     amountToRestockAsReserved: number,
@@ -191,6 +233,11 @@ export class WishlistItem {
     });
   }
 
+  /**
+   * Checks equality based on domain identity (ID).
+   * @param other - The other WishlistItem to compare.
+   * @returns True if IDs match, false otherwise.
+   */
   public equals(other: WishlistItem): boolean {
     return this.id === other.id;
   }

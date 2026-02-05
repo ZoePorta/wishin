@@ -54,3 +54,12 @@
 - **Amending Decisions:**
   - If a new ADR partially modifies an existing one (without fully replacing it), update the **Status** of the old ADR to "Amended by ADR [New Number]".
   - In the new ADR, add "Amends ADR [Old Number]" in the **Context** or **Decision** section.
+
+## 8. Coding Standards
+
+### Documentation Standard (JSDoc)
+
+- **Rule:** Every new public method, class, or interface MUST include a JSDoc block.
+- **Content:** It must describe the purpose, parameters (`@param`), return value (`@returns`), and any exceptions thrown (`@throws`).
+- **Context:** For Domain Entities, JSDoc must explicitly mention the business invariants or rules being validated (e.g., "Validates that $Q_{total} \ge Q_{reserved}$").
+- **Enforcement:** This is a non-negotiable requirement for every task.
