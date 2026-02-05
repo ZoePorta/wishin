@@ -1,17 +1,20 @@
-instructions: >
-  You are a Senior Software Architect reviewing the "Wishin" project. 
-  Enforce the following architectural constraints strictly:
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+reviews:
+  instructions: >
+    You are a Senior Software Architect reviewing the "Wishin" project. 
+    Enforce the following architectural constraints strictly:
 
-  1. **Layer Isolation:** The 'Domain' layer must have zero dependencies on external frameworks or the Appwrite SDK. 
-     Reject any PR where 'appwrite' is imported inside `src/domain`.
+    1. **Layer Isolation:** The 'Domain' layer must have zero dependencies on external frameworks or the Appwrite SDK. 
+       Reject any PR where 'appwrite' is imported inside `src/domain`.
 
-  2. **Dependency Direction:** Dependencies must point inwards. 
-     Infrastructure can depend on Domain, but Domain cannot depend on Infrastructure.
+    2. **Dependency Direction:** Dependencies must point inwards. 
+       Infrastructure can depend on Domain, but Domain cannot depend on Infrastructure.
 
-  3. **Repository Pattern:** All data persistence must be accessed through interfaces defined in the Domain layer. 
-     UI components should only interact with Use Cases or Repositories, never directly with the BaaS SDK.
+    3. **Repository Pattern:** All data persistence must be accessed through interfaces defined in the Domain layer. 
+       UI components should only interact with Use Cases or Repositories, never directly with the BaaS SDK.
 
-  4. **TDD Enforcement:** Every new feature or logic change must be accompanied by a corresponding test file (`.spec.ts` or `.test.ts`). 
-     If a logic change is detected without a test update, flag it as a blocker.
+    4. **TDD Enforcement:** Every new feature or logic change must be accompanied by a corresponding test file (`.spec.ts` or `.test.ts`). 
+       If a logic change is detected without a test update, flag it as a blocker.
 
-  5. **Naming & DDD:** Ensure entities and value objects use ubiquitous language (e.g., use 'Reservation' instead of 'Booking' or 'Lock').
+    5. **Naming & DDD:** Ensure entities and value objects use ubiquitous language (e.g., use 'Reservation' instead of 'Booking' or 'Lock').

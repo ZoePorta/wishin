@@ -1,5 +1,9 @@
 # ADR 005: Adopt Vitest for Testing
 
+## Status
+
+Accepted
+
 ## Context
 
 In a 2026 monorepo environment, ensuring seamless interoperability between ESM (ECMAScript Modules) and CommonJS is critical. Our current setup using Jest has encountered significant friction regarding module resolution, specifically requiring intricate configuration (e.g., intermediate `.cts` files) to handle TypeScript projects correctly. Additionally, as the codebase grows, test execution speed becomes a more pressing concern. We need a testing solution that offers native ESM support and faster performance to maintain a high-velocity local development workflow.

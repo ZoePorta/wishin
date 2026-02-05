@@ -52,11 +52,11 @@ The `WishlistItem` is the core entity of the Wishin domain. it represents a gift
 
 - **Effect:** Increases `purchasedQuantity` by `totalAmount`.
 - **Logic:**
-  - Validates `totalAmount > 0`.
-  - Validates `consumeFromReserved >= 0`.
-  - Validates `consumeFromReserved <= totalAmount`.
-  - Validates `consumeFromReserved <= current reservedQuantity`.
-  - Validates `(totalAmount - consumeFromReserved) <= Q_{available}` (unless `isUnlimited`).
+  - Ensure `totalAmount > 0`.
+  - Ensure `consumeFromReserved >= 0`.
+  - Ensure `consumeFromReserved <= totalAmount`.
+  - Ensure `consumeFromReserved <= current reservedQuantity`.
+  - Ensure `(totalAmount - consumeFromReserved) <= Q_{available}` (unless `isUnlimited`).
   - Decreases `reservedQuantity` by `consumeFromReserved`.
 - **Returns:** New instance with updated state.
 
