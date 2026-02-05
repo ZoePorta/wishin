@@ -208,11 +208,9 @@ export class WishlistItem {
 
     // Inventory Validation
     if (!Number.isInteger(this.totalQuantity) || this.totalQuantity < 1) {
-      if (this.totalQuantity < 1) {
-        throw new InvalidAttributeError(
-          "Invalid totalQuantity: Must be at least 1",
-        );
-      }
+      throw new InvalidAttributeError(
+        "Invalid totalQuantity: Must be an integer of at least 1",
+      );
     }
 
     if (this.reservedQuantity < 0 || this.purchasedQuantity < 0) {
@@ -231,7 +229,7 @@ export class WishlistItem {
 
   private isValidUUID(uuid: string): boolean {
     const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(uuid);
   }
 

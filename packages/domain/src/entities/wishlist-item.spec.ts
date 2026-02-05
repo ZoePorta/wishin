@@ -8,8 +8,8 @@ import {
 
 describe("WishlistItem Entity", () => {
   const validProps = {
-    id: "123e4567-e89b-12d3-a456-426614174000", // Valid UUID v4
-    wishlistId: "987e6543-e21b-12d3-a456-426614174000", // Valid UUID v4
+    id: "123e4567-e89b-42d3-a456-426614174000", // Valid UUID v4
+    wishlistId: "987e6543-e21b-42d3-8456-426614174000", // Valid UUID v4
     name: "PlayStation 5",
     description: "Next-gen console",
     price: 499.99,
@@ -214,6 +214,19 @@ describe("WishlistItem Entity", () => {
       expect(() => item.purchase(6, 2)).toThrow(InsufficientStockError);
     });
 
+    it("should throw InvalidAttributeError if totalQuantity is not an integer", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, totalQuantity: 1.5 }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if id is not a valid UUID v4 (e.g. v1)", () => {
+      const v1Uuid = "123e4567-e89b-12d3-a456-426614174000";
+      expect(() => WishlistItem.create({ ...validProps, id: v1Uuid })).toThrow(
+        InvalidAttributeError,
+      );
+    });
+
     it("should throw InsufficientStockError if not enough total stock", () => {
       const item = WishlistItem.create({ ...validProps, totalQuantity: 5 });
       expect(() => item.purchase(6, 0)).toThrow(InsufficientStockError);
@@ -346,7 +359,7 @@ describe("WishlistItem Entity", () => {
       const item1 = WishlistItem.create(validProps);
       const item2 = WishlistItem.create({
         ...validProps,
-        id: "123e4567-e89b-12d3-a456-426614174999",
+        id: "123e4567-e89b-42d3-a456-426614174999",
       });
       expect(item1.equals(item2)).toBe(false);
     });
