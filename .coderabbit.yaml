@@ -4,7 +4,7 @@ early_access: true
 
 reviews:
   profile: "assertive"
-  # Key feature: automatically approves when conversations are resolved
+  # Key feature: auto-approves once conversations are resolved and pre-merge checks pass
   request_changes_workflow: true
   high_level_summary: true
   review_status: true
