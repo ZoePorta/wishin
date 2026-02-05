@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { WishlistItem } from "./wishlist-item";
+import { WishlistItem, Priority } from "./wishlist-item";
 import {
   InsufficientStockError,
   InvalidAttributeError,
@@ -427,6 +427,253 @@ describe("WishlistItem Entity", () => {
       ).toThrow(InsufficientStockError);
     });
   });
+  describe("Priority", () => {
+    it("should default to MEDIUM priority if not specified", () => {
+      const item = WishlistItem.create(validProps);
+      expect(item.priority).toBe(Priority.MEDIUM);
+    });
+
+    it("should allow setting a specific priority", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        priority: Priority.URGENT,
+      });
+      expect(item.priority).toBe(Priority.URGENT);
+    });
+  });
+
+  describe("Update", () => {
+    it("should update mutable properties and return a new instance", () => {
+      const item = WishlistItem.create(validProps);
+      const updatedItem = item.update({
+        name: "Updated Name",
+        priority: Priority.HIGH,
+      });
+
+      expect(updatedItem).not.toBe(item);
+      expect(updatedItem).toBeInstanceOf(WishlistItem);
+      expect(updatedItem.name).toBe("Updated Name");
+      expect(updatedItem.priority).toBe(Priority.HIGH);
+      // Ensure other props remain
+      expect(updatedItem.id).toBe(item.id);
+    });
+
+    it("should throw InvalidAttributeError if updated name is invalid", () => {
+      const item = WishlistItem.create(validProps);
+      expect(() => item.update({ name: "ab" })).toThrow(InvalidAttributeError);
+    });
+
+    it("should enforce immutability on update", () => {
+      const item = WishlistItem.create(validProps);
+      item.update({ name: "New Name" });
+      expect(item.name).toBe(validProps.name);
+    });
+
+    it("should throw InvalidAttributeError if trying to update id", () => {
+      const item = WishlistItem.create(validProps);
+      expect(() => item.update({ id: "new-id" })).toThrow(
+        InvalidAttributeError,
+      );
+    });
+
+    it("should throw InvalidAttributeError if trying to update reservedQuantity directly", () => {
+      const item = WishlistItem.create(validProps);
+      expect(() => item.update({ reservedQuantity: 5 })).toThrow(
+        InvalidAttributeError,
+      );
+    });
+
+    it("should throw InvalidAttributeError if trying to update purchasedQuantity directly", () => {
+      const item = WishlistItem.create(validProps);
+      expect(() => item.update({ purchasedQuantity: 5 })).toThrow(
+        InvalidAttributeError,
+      );
+    });
+
+    it("should return true for equals() between original and updated item (Identity preserved)", () => {
+      const item = WishlistItem.create(validProps);
+      const updatedItem = item.update({ name: "New Name" });
+      expect(item.equals(updatedItem)).toBe(true);
+    });
+  });
+
+  describe("Inventory Privacy (Relaxed Invariants)", () => {
+    it("should prune reservations when total quantity is reduced (Total < Reserved + Purchased)", () => {
+      // Scenario: User had 5 wanted, 3 purchased, 2 reserved.
+      // User updates total to 3.
+      // Expect: Purchased stays 3. Reserved pruned to fit.
+      // MaxReserved = 3 - 3 = 0.
+
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 3,
+        reservedQuantity: 2,
+      });
+
+      const updatedItem = item.update({ totalQuantity: 3 });
+
+      expect(updatedItem.totalQuantity).toBe(3);
+      expect(updatedItem.purchasedQuantity).toBe(3);
+      expect(updatedItem.reservedQuantity).toBe(0); // Pruned from 2 to 0
+    });
+
+    it("should calculate available quantity as 0 when over-committed", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 3,
+        reservedQuantity: 2,
+      });
+
+      const updatedItem = item.update({ totalQuantity: 3 });
+      // Available = max(0, 3 - (0+3)) = 0. (Reserved is now 0)
+      expect(updatedItem.availableQuantity).toBe(0);
+    });
+
+    it("should prune reservations when totalQuantity is reduced below current commitment", () => {
+      // Start: Total=5, Purchased=1, Reserved=3. (Total > P+R).
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 1,
+        reservedQuantity: 3,
+      });
+
+      // Update Total to 2.
+      // MaxAllowedReserved = max(0, 2 - 1) = 1.
+      // New Reserved should be min(3, 1) = 1.
+      const updatedItem = item.update({ totalQuantity: 2 });
+
+      expect(updatedItem.totalQuantity).toBe(2);
+      expect(updatedItem.purchasedQuantity).toBe(1); // Unchanged
+      expect(updatedItem.reservedQuantity).toBe(1); // Pruned from 3 to 1
+      expect(updatedItem.availableQuantity).toBe(0);
+    });
+
+    it("should allow over-commitment if total drops below purchased even after pruning reserved", () => {
+      // Start: Total=5, Purchased=3, Reserved=2.
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 3,
+        reservedQuantity: 2,
+      });
+
+      // Update Total to 2. (Less than purchased 3).
+      // MaxAllowedReserved = max(0, 2 - 3) = 0.
+      // New Reserved should be min(2, 0) = 0.
+      const updatedItem = item.update({ totalQuantity: 2 });
+
+      expect(updatedItem.totalQuantity).toBe(2);
+      expect(updatedItem.purchasedQuantity).toBe(3); // Unchanged
+      expect(updatedItem.reservedQuantity).toBe(0); // Pruned to 0
+      // State: Total=2, P=3, R=0. Over-committed.
+      expect(updatedItem.availableQuantity).toBe(0);
+    });
+
+    it("should still throw InsufficientStockError when creating a new item with invalid inventory (strict mode)", () => {
+      expect(() =>
+        WishlistItem.create({
+          ...validProps,
+          totalQuantity: 2,
+          reservedQuantity: 3,
+          purchasedQuantity: 0,
+        }),
+      ).toThrow(InsufficientStockError);
+    });
+
+    it("should throw InsufficientStockError if trying to reserve on an over-committed item (Strict validation)", () => {
+      // 1. Create over-committed item via update
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 3,
+        reservedQuantity: 2,
+      }).update({ totalQuantity: 2 }); // T=2, P=3, R=0. (Pruned). Over-committed.
+
+      // 2. Try to reserve more.
+      expect(() => item.reserve(1)).toThrow(InsufficientStockError);
+    });
+
+    it("should throw InsufficientStockError if trying to purchase on an over-committed item (Strict validation)", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 3,
+        reservedQuantity: 2,
+      }).update({ totalQuantity: 2 }); // T=2, P=3, R=0.
+
+      // Try to purchase 1 (consuming 0 from reserved). Needed=1.
+      expect(() => item.purchase(1, 0)).toThrow(InsufficientStockError);
+    });
+
+    it("should allow cancelling reservation on pruned item (valid state)", () => {
+      // Create valid item: T=5, R=3.
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        reservedQuantity: 3,
+      });
+      // Update Total to 2. Pruning happens: MaxR = 2.
+      // New Reserved = 2.
+      const updatedItem = item.update({ totalQuantity: 2 });
+
+      // Cancel 1 reservation: T=2, R=2 -> R=1. Valid.
+      const newItem = updatedItem.cancelReservation(1);
+      expect(newItem.reservedQuantity).toBe(1);
+    });
+
+    it("should allow cancelling reservation on severely pruned item (pruned to valid)", () => {
+      // Total=1, Reserved=3.
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        reservedQuantity: 3,
+      });
+      // Update to 1. Pruning: MaxR = 1.
+      const updatedItem = item.update({ totalQuantity: 1 });
+      expect(updatedItem.reservedQuantity).toBe(1);
+
+      // Cancel 1 -> T=1, R=0. Valid.
+      const newItem = updatedItem.cancelReservation(1);
+      expect(newItem.reservedQuantity).toBe(0);
+    });
+
+    it("should throw InsufficientStockError if cancelPurchase tries to restock reserved when over-committed", () => {
+      // Total=1, Reserved=0, Purchased=3. (Total < P).
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 3,
+      }).update({ totalQuantity: 1 });
+
+      // Cancel 1 purchase, restock 1 as reserved.
+      // Step 1: Reduce P -> P=2. T=1. (Still over-committed, but allowed).
+      // Step 2: Reserve 1 on T=1, R=0, P=2.
+      // Available = max(0, 1 - (0+2)) = 0.
+      // Reserve 1 check: 1 > 0. Fails.
+
+      expect(() => item.cancelPurchase(1, 1)).toThrow(InsufficientStockError);
+    });
+
+    it("should ALLOW cancelPurchase if NOT resting to reserved, even if over-committed", () => {
+      // Total=1, Reserved=0, Purchased=3.
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 3,
+      }).update({ totalQuantity: 1 });
+
+      // Cancel 1 purchase, restock 0.
+      // Step 1: P=2. T=1. Allowed.
+      // Step 2: Reserve 0. (logic shouldn't run or is no-op).
+
+      const newItem = item.cancelPurchase(1, 0);
+      expect(newItem.purchasedQuantity).toBe(2);
+    });
+  });
+
   describe("Equality", () => {
     it("should return true if ids are the same", () => {
       const item1 = WishlistItem.create(validProps);
