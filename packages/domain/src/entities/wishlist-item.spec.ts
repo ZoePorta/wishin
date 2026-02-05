@@ -640,6 +640,24 @@ describe("WishlistItem Entity", () => {
       expect(newItem.reservedQuantity).toBe(0);
     });
 
+    describe("Reconstitute (bypass validation)", () => {
+      it("should recreate an over-committed item without error", () => {
+        // Total=3, Purchased=2, Reserved=2. P+R = 4 > T=3.
+        // Direct create() would fail.
+        // reconstitute() should pass.
+        const item = WishlistItem.reconstitute({
+          ...validProps,
+          totalQuantity: 3,
+          purchasedQuantity: 2,
+          reservedQuantity: 2,
+        });
+
+        expect(item).toBeInstanceOf(WishlistItem);
+        expect(item.totalQuantity).toBe(3);
+        expect(item.availableQuantity).toBe(0);
+      });
+    });
+
     it("should throw InsufficientStockError if cancelPurchase tries to restock reserved when over-committed", () => {
       // Total=1, Reserved=0, Purchased=3. (Total < P).
       const item = WishlistItem.create({

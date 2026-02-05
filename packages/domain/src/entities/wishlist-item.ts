@@ -64,6 +64,16 @@ export class WishlistItem {
   }
 
   /**
+   * Reconstitutes a WishlistItem from persistence (database), bypassing validation checks
+   * that might fail due to legacy data or allowed transient states (e.g. over-commitment).
+   * @param props - The properties to restore.
+   * @returns A WishlistItem instance.
+   */
+  public static reconstitute(props: WishlistItemProps): WishlistItem {
+    return new WishlistItem(props, { skipInventoryCheck: true });
+  }
+
+  /**
    * Factory method to create a new WishlistItem instance.
    * Enforces trimming of the name property.
    * @param props - The properties for the new item.
