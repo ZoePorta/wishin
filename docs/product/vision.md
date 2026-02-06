@@ -1,6 +1,6 @@
 # Product Vision: Wishin
 
-> **Vision Statement:** > Wishin is a gifting synchronization platform designed to eliminate the friction of registration and the disappointment of duplicate gifts. It bridges the gap between tech-savvy users and those who value simplicity, ensuring that every gift is a surprise and no one buys the same thing twice.
+> **Vision Statement:** Wishin is a gifting synchronization platform designed to eliminate the friction of registration and the disappointment of duplicate gifts. It bridges the gap between tech-savvy users and those who value simplicity, ensuring that every gift is a surprise and no one buys the same thing twice.
 
 ---
 
