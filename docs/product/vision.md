@@ -11,6 +11,15 @@ Traditional gifting lists often fail due to two main barriers:
 1. **Registration Friction:** Users (especially older or non-technical demographics) abandon the app when forced to create an account just to view or buy a gift.
 2. **Synchronization Failure:** Without a real-time, shared inventory, duplicate gifts occur, ruining the surprise and causing logistical headaches.
 
+### 1.1 The "Mother Factor" Scenario (Zero-Friction Design)
+
+The "Mother Factor" is the guiding design principle of Wishin. It recognizes that the most critical users (gift-buyers) often face the highest technological barriers.
+
+- **Actor:** Maria (Non-technical Guest user).
+- **The Situation:** Maria receives a link to her son's birthday list. She wants to buy a "Mechanical Keyboard" but is wary of apps that require sign-ups, passwords, or complex flows.
+- **The Flow:** 1. Maria clicks the link and immediately sees the list. 2. She clicks "Purchase" on the keyboard. 3. The system locks the item using a `sessionID` (Transaction Mode), ignoring the fact that her son might have entered an "invalid" short name like "KBD" years ago.
+- **The Result:** Maria completes her purchase in the real world with the peace of mind that no one else will buy the same item. She never saw a registration screen, and the "surprise factor" remains intact for her son.
+
 ---
 
 ## 2. Roadmap & Feature Tiers
@@ -56,11 +65,21 @@ The system maintains two views of the same data:
 - **Public View:** Shows real availability ($Q_{available}$).
 - **Owner View:** Shows intended quantities ($Q_{total}$). Changes here trigger automatic "pruning" of reservations to maintain a valid (though potentially over-committed) state without revealing spoilers.
 
-### The "Grace Period" Flow
+### The "Undo" Window (Accidental Click Protection)
 
-Anonymous actions are treated as **temporary locks**.
+Anonymous actions (Purchase/Reserve) include a brief **safety window** to handle accidental interactions without complicating the domain state.
 
-1. Guest clicks "Purchase".
-2. Item is marked as reserved/purchased via `sessionID`.
-3. An "Undo" button is available for X hours.
-4. After the window closes, the action is consolidated.
+1. **Immediate Finality:** When a Guest clicks "Purchase", the domain entity is updated immediately to reflect the new stock levels.
+2. **Short Grace Period:** The UI provides an "Undo" button for a short duration (e.g., 2 minutes).
+3. **Rollback:** If "Undo" is clicked, a cancellation command is sent to restore the previous state.
+4. **Rationale:** This short window minimizes the risk of inventory conflicts with Owner updates while providing the necessary UX safety net for non-technical users.
+
+---
+
+## 5. Out of Scope (Initial Phase)
+
+To maintain focus on the core value proposition, the following features are explicitly excluded from the MVP:
+
+- **Payment Processing:** Wishin tracks intent and status; it does not handle monetary transactions.
+- **Global User Search:** Lists are accessed via direct links (Slugs) or profiles, not a global directory.
+- **Real-time Social Feed:** No internal chat; communication happens through external channels.

@@ -10,8 +10,8 @@ We are building the `WishlistItem` entity as the core of the Wishin domain. To e
 
 Additionally, the application supports two distinct "undo" workflows that heavily influence the domain logic:
 
-1.  **Grace Period**: All users (anonymous or registered) have a brief window after "buying" an item to undo the action. During this time, the item is technically _reserved_, not _purchased_.
-2.  **Post-Purchase Cancellation**: Registered users can cancel a completed purchase from their history, returning the item to stock.
+1.  **Grace Period**: All users (anonymous or registered) have a brief window after "buying" an item to undo the action. This is modeled as an **Immediate Purchase** with a temporary "Undo" capability (rollback), ensuring the item is securely locked (sold) from the moment of interaction.
+2.  **Post-Purchase Cancellation**: Registered users can cancel a completed purchase from their history, returning the item to stock (functionally identical to the Grace Period undo).
 
 ## Decision
 
@@ -43,15 +43,13 @@ We will apply the following patterns to our Domain Entities:
 
 The domain exposes operations that support both explicit user intent and technical requirements like the "Grace Period":
 
-- **Reservation (`reserve`)**: Used in two contexts:
-  1.  **Explicit Reservation**: Registered users can explicitly reserve an item.
-  2.  **Grace Period (Technical)**: When any user "buys" an item, it is first _reserved_ during the grace period. This prevents race conditions (locking stock) and allows the user to "undo" the action before finalization.
-- **Cancellation of Reservation (`cancelReservation`)**: Cancels either an explicit reservation or a grace-period undo.
-- **Purchase (`purchase`)**: Finalizes the transaction, typically consuming the reserved stock after the grace period expires.
-- **Cancellation of Purchase (`cancelPurchase`)**: Used for "Post-Purchase Cancellation" (returns to stock).
+- **Reservation (`reserve`)**: Used regarding **Explicit Reservation** where registered users intend to buy the item later.
+- **Cancellation of Reservation (`cancelReservation`)**: Cancels an explicit reservation.
+- **Purchase (`purchase`)**: Used for the "Buy Now" flow. Updates the domain state immediately (**Immediate Finality**).
+- **Cancellation of Purchase (`cancelPurchase`)**: Handles both the "Undo" action during the grace period and acceptable post-purchase cancellations, reverting the purchase and restoring stock.
 
 ## Consequences
 
 - **Testability**: Purely domain-based logic is easy to unit test without mocking databases.
 - **Safety**: It is impossible to instantiate an invalid entity or transition to an illegal state (e.g., negative stock).
-- **Clarity**: The distinction between `cancelReservation` and `cancelPurchase` makes the intent of the "undo" action explicit in the code, mirroring the business rules.
+- **Clarity**: The distinction between `cancelReservation` and `cancelPurchase` makes the intent of the "undo" action explicit in the code, mirroring the business rules. The "Immediate Purchase" model simplifies the happy path by removing the need for background jobs to finalize reservations.
