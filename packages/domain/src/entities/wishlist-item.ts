@@ -121,7 +121,8 @@ export class WishlistItem {
   ): WishlistItem {
     const sanitizedProps = {
       ...props,
-      name: props.name.trim(),
+      // Defensively trim name only if it's a string, ensuring validate() catches non-strings later
+      name: typeof props.name === "string" ? props.name.trim() : props.name,
     };
     return new WishlistItem(sanitizedProps, mode);
   }
@@ -270,7 +271,7 @@ export class WishlistItem {
         ...this.toProps(),
         wishlistId: newWishlistId,
       },
-      ValidationMode.STRUCTURAL, // Or EVOLUTIVE, but STRUCTURAL is safer for moves as it doesn't re-validate business rules on legacy items if we just move them.
+      ValidationMode.STRUCTURAL, // Use STRUCTURAL to avoid re-validating legacy items on move
     );
   }
 
@@ -420,6 +421,11 @@ export class WishlistItem {
       throw new InvalidAttributeError(
         "Invalid wishlistId: Must be a valid UUID v4",
       );
+    }
+
+    // Name Structural Validation
+    if (typeof this.name !== "string") {
+      throw new InvalidAttributeError("Invalid name: Must be a string");
     }
 
     // Inventory Structural Validation

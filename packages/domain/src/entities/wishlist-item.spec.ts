@@ -802,5 +802,17 @@ describe("WishlistItem Entity", () => {
         InvalidAttributeError,
       );
     });
+
+    it("should throw InvalidAttributeError if name is not a string (defensive check)", () => {
+      const invalidNameProps = {
+        ...legacyProps,
+        name: 123,
+      };
+
+      expect(() =>
+        // @ts-expect-error - Testing runtime safety for invalid type
+        WishlistItem.reconstitute(invalidNameProps),
+      ).toThrow(InvalidAttributeError);
+    });
   });
 });
