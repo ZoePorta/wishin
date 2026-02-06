@@ -56,7 +56,7 @@ classDiagram
     User "1" -- "0..*" Wishlist : owns
     Wishlist "1" *-- "0..100" WishlistItem : contains
     User "0..1" -- "0..*" Transaction : performs
-    Transaction "1" -- "1" WishlistItem : targets
+    Transaction "*" -- "1" WishlistItem : targets
 ```
 
 ## 2. Validation Strategy: The Tiered Approach
