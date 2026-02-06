@@ -63,12 +63,12 @@ To solve the **"Mother Factor"** (allowing non-technical guests to interact with
 
 ### 2.1 Validation Matrix
 
-| Mode             | Context                   | Structural | Business Rules | Inventory Invariants |
-| :--------------- | :------------------------ | :--------: | :------------: | :------------------: |
-| **STRICT**       | `create()`                | ✅ Always  |  ✅ Mandatory  |     ✅ Enforced      |
-| **EVOLUTIVE**    | `update()`                | ✅ Always  |  ✅ Mandatory  | ❌ Relaxed (Privacy) |
-| **TRANSACTION**  | `reserve()`, `purchase()` | ✅ Always  |  ❌ Bypassed   |     ✅ Enforced      |
-| **RECONSTITUTE** | Persistence/DB            | ✅ Always  |  ❌ Bypassed   |     ❌ Bypassed      |
+| Mode            | Context                   | Structural | Business Rules | Inventory Invariants |
+| :-------------- | :------------------------ | :--------: | :------------: | :------------------: |
+| **STRICT**      | `create()`                | ✅ Always  |  ✅ Mandatory  |     ✅ Enforced      |
+| **EVOLUTIVE**   | `update()`                | ✅ Always  |  ✅ Mandatory  | ❌ Relaxed (Privacy) |
+| **TRANSACTION** | `reserve()`, `purchase()` | ✅ Always  |  ❌ Bypassed   |     ✅ Enforced      |
+| **STRUCTURAL**  | Persistence/DB            | ✅ Always  |  ❌ Bypassed   |     ❌ Bypassed      |
 
 ## 3. Validation Flow
 
@@ -91,7 +91,7 @@ stateDiagram-v2
         TRANSACTION --> Structural
         TRANSACTION --> Inventory
 
-        RECONSTITUTE --> Structural
+        STRUCTURAL --> Structural
     }
 
     Structural: UUIDs & Basic Types
