@@ -51,5 +51,5 @@ The domain exposes operations that support both explicit user intent and technic
 ## Consequences
 
 - **Testability**: Purely domain-based logic is easy to unit test without mocking databases.
-- **Safety**: It is impossible to instantiate an invalid entity or transition to an illegal state (e.g., negative stock).
+- **Safety**: Invalid states are prevented during `create`, `reserve`, and `purchase` (e.g., negative stock). Reconstitution and certain updates may bypass business/inventory validation to preserve legacy data access.
 - **Clarity**: The distinction between `cancelReservation` and `cancelPurchase` makes the intent of the "undo" action explicit in the code, mirroring the business rules. The "Immediate Purchase" model simplifies the happy path by removing the need for background jobs to finalize reservations.
