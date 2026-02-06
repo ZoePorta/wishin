@@ -42,6 +42,12 @@ export class WishlistItem {
   public readonly reservedQuantity: number;
   public readonly purchasedQuantity: number;
 
+  /**
+   * Private constructor to enforce factory usage.
+   * Validates state invariants upon instantiation.
+   * @param props - Raw properties for the entity.
+   * @param options.skipInventoryCheck - If true, bypasses strict inventory availability checks (used for reconstitution or privacy-preserving updates).
+   */
   private constructor(
     props: WishlistItemProps,
     options?: { skipInventoryCheck?: boolean },
@@ -71,7 +77,7 @@ export class WishlistItem {
    * @throws {InvalidAttributeError} If basic attribute validation fails (e.g. invalid name or price).
    */
   public static reconstitute(props: WishlistItemProps): WishlistItem {
-    return new WishlistItem(props, { skipInventoryCheck: true });
+    return WishlistItem._createWithOptions(props, { skipInventoryCheck: true });
   }
 
   /**
@@ -198,7 +204,7 @@ export class WishlistItem {
       );
     }
 
-    return new WishlistItem({
+    return WishlistItem._createWithOptions({
       ...this.toProps(),
       reservedQuantity: this.reservedQuantity + amount,
     });
@@ -227,7 +233,7 @@ export class WishlistItem {
     // Reducing reserved quantity reduces (or keeps same) the constraint sum.
     // Even if we are still over-committed after cancellation, this is an improvement (or stable) move.
     // So we allow it regardless of strict validation.
-    return new WishlistItem(
+    return WishlistItem._createWithOptions(
       {
         ...this.toProps(),
         reservedQuantity: this.reservedQuantity - amount,
@@ -286,7 +292,7 @@ export class WishlistItem {
       );
     }
 
-    return new WishlistItem({
+    return WishlistItem._createWithOptions({
       ...this.toProps(),
       purchasedQuantity: this.purchasedQuantity + totalAmount,
       reservedQuantity: this.reservedQuantity - consumeFromReserved,
@@ -336,7 +342,7 @@ export class WishlistItem {
 
     // Step 1: Reduce purchased quantity.
     // This always reduces commitment, so it's safe to skip inventory check (allow existing over-commit to persist/improve).
-    const intermediateItem = new WishlistItem(
+    const intermediateItem = WishlistItem._createWithOptions(
       {
         ...this.toProps(),
         purchasedQuantity: this.purchasedQuantity - amountToCancel,
