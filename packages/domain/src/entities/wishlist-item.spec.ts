@@ -810,6 +810,30 @@ describe("WishlistItem Entity", () => {
       expect(purchasedItem.name).toBe("PS");
     });
 
+    it("should allow cancelling reservation on a legacy item (STRUCTURAL mode)", () => {
+      const item = WishlistItem.reconstitute({
+        ...legacyProps,
+        reservedQuantity: 1,
+      });
+
+      const updatedItem = item.cancelReservation(1);
+
+      expect(updatedItem.reservedQuantity).toBe(0);
+      expect(updatedItem.name).toBe("PS"); // Legacy name preserved
+    });
+
+    it("should allow cancelling purchase on a legacy item (STRUCTURAL mode)", () => {
+      const item = WishlistItem.reconstitute({
+        ...legacyProps,
+        purchasedQuantity: 1,
+      });
+
+      const updatedItem = item.cancelPurchase(1);
+
+      expect(updatedItem.purchasedQuantity).toBe(0);
+      expect(updatedItem.name).toBe("PS"); // Legacy name preserved
+    });
+
     it("should FAIL to update a legacy item without fixing the name (Owner Discipline - EVOLUTIVE mode)", () => {
       const item = WishlistItem.reconstitute(legacyProps);
       // Trying to update price, but keeping invalid name

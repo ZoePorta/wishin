@@ -14,6 +14,9 @@ The entity supports four validation modes to ensure data integrity while allowin
 - **STRUCTURAL** (Hydration/Cancellation): Enforces only structural integrity. Bypasses business rules and inventory checks to:
   - Load legacy data from the database (trusting persistence).
   - Perform cancellations (trusting that reducing commitment is always safe).
+  - Move items between wishlists (trusting that location change doesn't affect validity).
+
+  **Used by:** `reconstitute()`, `cancelReservation()`, `cancelPurchase()`, `moveToWishlist()`.
 
 ### Structural Integrity (Always Enforced by All Modes)
 

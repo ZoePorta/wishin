@@ -26,6 +26,10 @@ enum ValidationMode {
   STRUCTURAL = "STRUCTURAL",
 }
 
+/**
+ * Properties for a WishlistItem.
+ * @interface WishlistItemProps
+ */
 export interface WishlistItemProps {
   id: string;
   wishlistId: string;
