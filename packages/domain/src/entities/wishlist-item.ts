@@ -68,6 +68,7 @@ export class WishlistItem {
    * that might fail due to legacy data or allowed transient states (e.g. over-commitment).
    * @param props - The properties to restore.
    * @returns A WishlistItem instance.
+   * @throws {InvalidAttributeError} If basic attribute validation fails (e.g. invalid name or price).
    */
   public static reconstitute(props: WishlistItemProps): WishlistItem {
     return new WishlistItem(props, { skipInventoryCheck: true });
@@ -79,7 +80,8 @@ export class WishlistItem {
    * @param props - The properties for the new item.
    * @param options - Configuration options.
    * @returns A new valid WishlistItem instance.
-   * @throws {InvalidAttributeError} If validation fails.
+   * @throws {InvalidAttributeError} If attribute validation fails.
+   * @throws {InsufficientStockError} If inventory invariants are violated (unless skipped).
    */
   public static create(
     props: WishlistItemProps,
