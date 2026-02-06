@@ -314,47 +314,17 @@ describe("WishlistItem Entity", () => {
   });
 
   describe("Behaviors: Cancel Purchase", () => {
-    it("should cancel purchase and return to available stock (amountToReserved = 0)", () => {
+    it("should cancel purchase and return to available stock", () => {
       const item = WishlistItem.create({
         ...validProps,
         totalQuantity: 5,
         purchasedQuantity: 2,
       });
 
-      const newItem = item.cancelPurchase(1, 0);
+      const newItem = item.cancelPurchase(1);
 
       expect(newItem.purchasedQuantity).toBe(1);
       expect(newItem.reservedQuantity).toBe(0);
-      expect(newItem.availableQuantity).toBe(4);
-    });
-
-    it("should cancel purchase and return to reserved stock", () => {
-      const item = WishlistItem.create({
-        ...validProps,
-        totalQuantity: 5,
-        purchasedQuantity: 2,
-        reservedQuantity: 0,
-      });
-
-      const newItem = item.cancelPurchase(1, 1);
-
-      expect(newItem.purchasedQuantity).toBe(1);
-      expect(newItem.reservedQuantity).toBe(1);
-      expect(newItem.availableQuantity).toBe(3);
-    });
-
-    it("should cancel purchase with partial reservation", () => {
-      const item = WishlistItem.create({
-        ...validProps,
-        totalQuantity: 5,
-        purchasedQuantity: 2,
-        reservedQuantity: 0,
-      });
-
-      const newItem = item.cancelPurchase(2, 1);
-
-      expect(newItem.purchasedQuantity).toBe(0);
-      expect(newItem.reservedQuantity).toBe(1);
       expect(newItem.availableQuantity).toBe(4);
     });
 
@@ -364,17 +334,7 @@ describe("WishlistItem Entity", () => {
         purchasedQuantity: 1,
       });
 
-      expect(() => item.cancelPurchase(2, 0)).toThrow(InvalidTransitionError);
-    });
-
-    it("should throw InvalidTransitionError if amountToReserved > amountToCancel", () => {
-      const item = WishlistItem.create({
-        ...validProps,
-        totalQuantity: 2,
-        purchasedQuantity: 2,
-      });
-
-      expect(() => item.cancelPurchase(1, 2)).toThrow(InvalidTransitionError);
+      expect(() => item.cancelPurchase(2)).toThrow(InvalidTransitionError);
     });
 
     it("should throw InvalidAttributeError if amountToCancel is negative or zero", () => {
@@ -383,17 +343,8 @@ describe("WishlistItem Entity", () => {
         totalQuantity: 5,
         purchasedQuantity: 5,
       });
-      expect(() => item.cancelPurchase(0, 0)).toThrow(InvalidAttributeError);
-      expect(() => item.cancelPurchase(-1, 0)).toThrow(InvalidAttributeError);
-    });
-
-    it("should throw InvalidAttributeError if amountToRestockAsReserved is negative", () => {
-      const item = WishlistItem.create({
-        ...validProps,
-        totalQuantity: 5,
-        purchasedQuantity: 5,
-      });
-      expect(() => item.cancelPurchase(1, -1)).toThrow(InvalidAttributeError);
+      expect(() => item.cancelPurchase(0)).toThrow(InvalidAttributeError);
+      expect(() => item.cancelPurchase(-1)).toThrow(InvalidAttributeError);
     });
 
     it("should throw InvalidAttributeError if amountToCancel is not integer", () => {
@@ -402,16 +353,7 @@ describe("WishlistItem Entity", () => {
         totalQuantity: 5,
         purchasedQuantity: 5,
       });
-      expect(() => item.cancelPurchase(1.5, 0)).toThrow(InvalidAttributeError);
-    });
-
-    it("should throw InvalidAttributeError if amountToRestockAsReserved is not integer", () => {
-      const item = WishlistItem.create({
-        ...validProps,
-        totalQuantity: 5,
-        purchasedQuantity: 5,
-      });
-      expect(() => item.cancelPurchase(1, 0.5)).toThrow(InvalidAttributeError);
+      expect(() => item.cancelPurchase(1.5)).toThrow(InvalidAttributeError);
     });
   });
 
@@ -717,24 +659,7 @@ describe("WishlistItem Entity", () => {
       });
     });
 
-    it("should throw InsufficientStockError if cancelPurchase tries to restock reserved when over-committed", () => {
-      // Total=1, Reserved=0, Purchased=3. (Total < P).
-      const item = WishlistItem.create({
-        ...validProps,
-        totalQuantity: 5,
-        purchasedQuantity: 3,
-      }).update({ totalQuantity: 1 });
-
-      // Cancel 1 purchase, restock 1 as reserved.
-      // Step 1: Reduce P -> P=2. T=1. (Still over-committed, but allowed).
-      // Step 2: Reserve 1 on T=1, R=0, P=2.
-      // Available = max(0, 1 - (0+2)) = 0.
-      // Reserve 1 check: 1 > 0. Fails.
-
-      expect(() => item.cancelPurchase(1, 1)).toThrow(InsufficientStockError);
-    });
-
-    it("should ALLOW cancelPurchase if NOT restocking to reserved, even if over-committed", () => {
+    it("should ALLOW cancelPurchase even if over-committed", () => {
       // Total=1, Reserved=0, Purchased=3.
       const item = WishlistItem.create({
         ...validProps,
@@ -742,11 +667,10 @@ describe("WishlistItem Entity", () => {
         purchasedQuantity: 3,
       }).update({ totalQuantity: 1 });
 
-      // Cancel 1 purchase, restock 0.
+      // Cancel 1 purchase.
       // Step 1: P=2. T=1. Allowed.
-      // Step 2: Reserve 0. (logic shouldn't run or is no-op).
 
-      const newItem = item.cancelPurchase(1, 0);
+      const newItem = item.cancelPurchase(1);
       expect(newItem.purchasedQuantity).toBe(2);
     });
   });
@@ -823,7 +747,7 @@ describe("WishlistItem Entity", () => {
       name: "PS", // Short name (invalid by strict rules)
     };
 
-    it("should allow reconstituting an item with legacy short name (RECONSTITUTE mode)", () => {
+    it("should allow reconstituting an item with legacy short name (STRUCTURAL mode)", () => {
       const item = WishlistItem.reconstitute(legacyProps);
       expect(item.name).toBe("PS");
       expect(item).toBeInstanceOf(WishlistItem);
@@ -856,7 +780,7 @@ describe("WishlistItem Entity", () => {
       expect(updatedItem.name).toBe("PlayStation 5");
     });
 
-    it("should FAIL structural validation even in RECONSTITUTE mode", () => {
+    it("should FAIL structural validation even in STRUCTURAL mode", () => {
       const invalidUuidProps = {
         ...legacyProps,
         id: "invalid-uuid",

@@ -23,7 +23,7 @@ enum ValidationMode {
   STRICT = "STRICT",
   EVOLUTIVE = "EVOLUTIVE",
   TRANSACTION = "TRANSACTION",
-  RECONSTITUTE = "RECONSTITUTE",
+  STRUCTURAL = "STRUCTURAL",
 }
 
 export interface WishlistItemProps {
@@ -97,10 +97,10 @@ export class WishlistItem {
    * that might fail due to legacy data or allowed transient states (e.g. over-commitment).
    * @param props - The properties to restore.
    * @returns A WishlistItem instance.
-   * @throws {InvalidAttributeError} If structural integrity validation fails (e.g. invalid UUIDs, integer types, priority range), as ValidationMode.RECONSTITUTE only enforces these and does not perform content validations like name length or price checks in reconstitute().
+   * @throws {InvalidAttributeError} If structural integrity validation fails (e.g. invalid UUIDs, integer types, priority range), as ValidationMode.STRUCTURAL only enforces these and does not perform content validations like name length or price checks in reconstitute().
    */
   public static reconstitute(props: WishlistItemProps): WishlistItem {
-    return WishlistItem._createWithMode(props, ValidationMode.RECONSTITUTE);
+    return WishlistItem._createWithMode(props, ValidationMode.STRUCTURAL);
   }
 
   /**
@@ -270,7 +270,7 @@ export class WishlistItem {
         ...this.toProps(),
         wishlistId: newWishlistId,
       },
-      ValidationMode.RECONSTITUTE, // Or EVOLUTIVE, but RECONSTITUTE is safer for moves as it doesn't re-validate business rules on legacy items if we just move them.
+      ValidationMode.STRUCTURAL, // Or EVOLUTIVE, but STRUCTURAL is safer for moves as it doesn't re-validate business rules on legacy items if we just move them.
     );
   }
 
@@ -302,7 +302,7 @@ export class WishlistItem {
         ...this.toProps(),
         reservedQuantity: this.reservedQuantity - amount,
       },
-      ValidationMode.RECONSTITUTE,
+      ValidationMode.STRUCTURAL,
     );
   }
 
@@ -367,32 +367,19 @@ export class WishlistItem {
   }
 
   /**
-   * Cancels a purchase, optionally returning some items to the reserved state.
-   * ensures valid state transitions for purchased and reserved quantities.
+   * Cancels a purchase, releasing the stock back to available.
+   * Note: This does NOT automatically return items to the reserved state. If the user wants to re-reserve,
+   * they must call `reserve()` explicitly after cancellation.
    * @param amountToCancel - Units to return (must be a positive integer).
-   * @param amountToRestockAsReserved - Units to move to reserved (must be a non-negative integer).
    * @returns A new WishlistItem instance with updated quantities.
-   * @throws {InvalidTransitionError} If cancelling more than purchased or restocking invalid amounts.
+   * @throws {InvalidTransitionError} If cancelling more than purchased.
    */
-  public cancelPurchase(
-    amountToCancel: number,
-    amountToRestockAsReserved: number,
-  ): WishlistItem {
+  public cancelPurchase(amountToCancel: number): WishlistItem {
     if (!Number.isInteger(amountToCancel)) {
       throw new InvalidAttributeError("Amount to cancel must be an integer");
     }
-    if (!Number.isInteger(amountToRestockAsReserved)) {
-      throw new InvalidAttributeError(
-        "Amount to restock as reserved must be an integer",
-      );
-    }
     if (amountToCancel <= 0) {
       throw new InvalidAttributeError("Amount to cancel must be positive");
-    }
-    if (amountToRestockAsReserved < 0) {
-      throw new InvalidAttributeError(
-        "Amount to restock as reserved must be non-negative",
-      );
     }
 
     if (amountToCancel > this.purchasedQuantity) {
@@ -401,29 +388,15 @@ export class WishlistItem {
       );
     }
 
-    if (amountToRestockAsReserved > amountToCancel) {
-      throw new InvalidTransitionError(
-        `Cannot restock ${amountToRestockAsReserved.toString()} as reserved. Only cancelling ${amountToCancel.toString()}.`,
-      );
-    }
-
-    // Step 1: Reduce purchased quantity.
+    // Reduces purchased quantity.
     // This always reduces commitment, so it's safe to skip inventory check (allow existing over-commit to persist/improve).
-    const intermediateItem = WishlistItem._createWithMode(
+    return WishlistItem._createWithMode(
       {
         ...this.toProps(),
         purchasedQuantity: this.purchasedQuantity - amountToCancel,
       },
-      ValidationMode.RECONSTITUTE,
+      ValidationMode.STRUCTURAL,
     );
-
-    // Step 2: Restock as reserved if needed.
-    // This uses the strict reserve method, which checks eligibility against current availability.
-    if (amountToRestockAsReserved > 0) {
-      return intermediateItem.reserve(amountToRestockAsReserved);
-    }
-
-    return intermediateItem;
   }
 
   /**

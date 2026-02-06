@@ -11,7 +11,9 @@ The entity supports four validation modes to ensure data integrity while allowin
 - **STRICT** (Create): Full validation. Enforces structural integrity, business rules (name length, etc.), and strict inventory invariants ($Q_{total} \ge Q_{reserved} + Q_{purchased}$).
 - **EVOLUTIVE** (Update): Enforces structural integrity and business rules. Relaxes inventory invariants to allow valid over-commitment (Privacy).
 - **TRANSACTION** (Reserve/Purchase): Enforces structural integrity and strict inventory invariants. Bypasses business rules (e.g., allows legacy short names) to prevent blocking guests.
-- **RECONSTITUTE** (Hydration/Cancel): Enforces only structural integrity. Bypasses business rules and inventory checks to load legacy data or allow lenient cancellations.
+- **STRUCTURAL** (Hydration/Cancellation): Enforces only structural integrity. Bypasses business rules and inventory checks to:
+  - Load legacy data from the database (trusting persistence).
+  - Perform cancellations (trusting that reducing commitment is always safe).
 
 ### Structural Integrity (Always Enforced by All Modes)
 
@@ -58,7 +60,7 @@ The entity supports four validation modes to ensure data integrity while allowin
 1. **Inventory Privacy:** The total quantity MAY be less than the sum of reserved and purchased units (e.g., if the owner reduces the desire count after items were bought). This preserves the surprise factor.
 2. **Immutability:** Any state change must result in a new instance of `WishlistItem`.
 3. **Strict Creation:** Creating a fresh item via `create()` adheres to **STRICT** mode.
-4. **Relaxed Restoration:** Restoring an item via `reconstitute()` uses **RECONSTITUTE** mode. `update` uses **EVOLUTIVE** mode. `reserve`/`purchase` use **TRANSACTION** mode.
+4. **Relaxed Restoration & Cancellation:** `reconstitute()`, `cancelReservation()` and `cancelPurchase()` use **STRUCTURAL** mode to bypass business logic and inventory checks when safe (hydration or reducing commitment).
 
 ## Operations (Behaviors)
 
@@ -98,7 +100,7 @@ The entity supports four validation modes to ensure data integrity while allowin
 - **Effect:** Decreases `reservedQuantity`.
 - **Pre-condition:** `amount <= current reservedQuantity`.
 - **Pre-condition:** `amount > 0`.
-- **Mode:** **Lenient**. Allows operation even if the item remains over-committed (as it improves the state).
+- **Mode:** **STRUCTURAL**. Allows operation even if the item remains over-committed (as it improves the state).
 - **Returns:** New instance with updated state.
 
 ### `purchase(totalAmount: number, consumeFromReserved: number)`
@@ -114,17 +116,15 @@ The entity supports four validation modes to ensure data integrity while allowin
 - **Enforces:** Strict stock validation.
 - **Returns:** New instance with updated state.
 
-### `cancelPurchase(amountToCancel: number, amountToReserved: number)`
+### `cancelPurchase(amountToCancel: number)`
 
-- **Effect:** Decreases `purchasedQuantity` and optionally increases `reservedQuantity`.
+- **Effect:** Decreases `purchasedQuantity`, releasing items back to available stock.
 - **Pre-conditions:**
   - `amountToCancel > 0`.
-  - `amountToReserved >= 0`.
   - `amountToCancel <= purchasedQuantity`.
-  - `amountToReserved <= amountToCancel`.
-- **Logic (2-Step):**
-  1.  **Reduce Purchase:** Decreases `purchasedQuantity`. (Lenient: always allowed).
-  2.  **Restock Reserve:** Increases `reservedQuantity` by `amountToReserved`. (Strict: fails if over-committed state prevents restocking).
+- **Logic:**
+  - Decreases `purchasedQuantity`. (Uses **STRUCTURAL** mode: always allowed).
+  - DOES NOT move items to reserved. If re-reservation is needed, use `reserve()` explicitly.
 - **Returns:** New instance with updated state.
 
 ### `equals(other: WishlistItem)`
