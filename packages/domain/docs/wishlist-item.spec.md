@@ -34,21 +34,21 @@ The entity supports four validation modes to ensure data integrity while allowin
 
 ## Attributes
 
-| Attribute           | Type               | Description            | Constraints                                    |
-| :------------------ | :----------------- | :--------------------- | :--------------------------------------------- |
-| `id`                | `string` (UUID v4) | Unique identifier      | Required                                       |
-| `wishlistId`        | `string` (UUID v4) | Parent wishlist ID     | Required                                       |
-| `name`              | `string`           | Item name              | 3-100 chars, trimmed                           |
-| `description`       | `string`           | Optional details       | Max 500 chars                                  |
-| `priority`          | `Priority`         | Item urgency           | Numeric: LOW(1), MEDIUM(2), HIGH(3), URGENT(4) |
-| `price`             | `number`           | Reference price        | Optional, must be $\ge 0$                      |
-| `currency`          | `string`           | ISO currency code      | Required if price is set                       |
-| `url`               | `string`           | Link to the product    | Optional, valid URL                            |
-| `imageUrl`          | `string`           | Link to product image  | Optional, valid URL                            |
-| `isUnlimited`       | `boolean`          | Bypass stock checks    | Default: `false`                               |
-| `totalQuantity`     | `number`           | Total units desired    | Integer, $\ge 1$                               |
-| `reservedQuantity`  | `number`           | Units currently locked | Integer, $\ge 0$                               |
-| `purchasedQuantity` | `number`           | Units already bought   | Integer, $\ge 0$                               |
+| Attribute           | Type               | Description            | Constraints                                                       |
+| :------------------ | :----------------- | :--------------------- | :---------------------------------------------------------------- |
+| `id`                | `string` (UUID v4) | Unique identifier      | Required                                                          |
+| `wishlistId`        | `string` (UUID v4) | Parent wishlist ID     | Required                                                          |
+| `name`              | `string`           | Item name              | 3-100 chars, trimmed                                              |
+| `description`       | `string`           | Optional details       | Max 500 chars                                                     |
+| `priority`          | `Priority`         | Item urgency           | Numeric: LOW(1), MEDIUM(2), HIGH(3), URGENT(4). Default: `MEDIUM` |
+| `price`             | `number`           | Reference price        | Optional, must be $\ge 0$                                         |
+| `currency`          | `string`           | ISO currency code      | Required if price is set                                          |
+| `url`               | `string`           | Link to the product    | Optional, valid URL                                               |
+| `imageUrl`          | `string`           | Link to product image  | Optional, valid URL                                               |
+| `isUnlimited`       | `boolean`          | Bypass stock checks    | Default: `false`                                                  |
+| `totalQuantity`     | `number`           | Total units desired    | Integer, $\ge 1$                                                  |
+| `reservedQuantity`  | `number`           | Units currently locked | Integer, $\ge 0$                                                  |
+| `purchasedQuantity` | `number`           | Units already bought   | Integer, $\ge 0$                                                  |
 
 ## Calculated Fields
 

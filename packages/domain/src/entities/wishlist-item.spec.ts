@@ -323,6 +323,16 @@ describe("WishlistItem Entity", () => {
       const item = WishlistItem.create({ ...validProps });
       expect(() => item.purchase(2, 0.5)).toThrow(InvalidAttributeError);
     });
+
+    it("should throw InvalidTransitionError if consumeFromReserved exceeds totalAmount", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 10,
+        reservedQuantity: 5,
+      });
+      // Trying to consume 3 from reserved when only purchasing 2 total
+      expect(() => item.purchase(2, 3)).toThrow(InvalidTransitionError);
+    });
   });
 
   describe("Behaviors: Cancel Purchase", () => {
@@ -395,7 +405,27 @@ describe("WishlistItem Entity", () => {
       expect(item.priority).toBe(Priority.URGENT);
     });
 
-    it("should throw InvalidAttributeError if priority is invalid", () => {
+    it("should allow setting specific priority (LOW boundary)", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        priority: Priority.LOW,
+      });
+      expect(item.priority).toBe(Priority.LOW);
+    });
+
+    it("should throw InvalidAttributeError if priority is invalid (0 - below range)", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, priority: 0 as Priority }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if priority is invalid (5 - above range)", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, priority: 5 as Priority }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if priority is invalid (999)", () => {
       expect(() =>
         WishlistItem.create({ ...validProps, priority: 999 as Priority }),
       ).toThrow(InvalidAttributeError);

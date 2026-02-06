@@ -167,14 +167,9 @@ export class WishlistItem {
     const currentProps = this.toProps();
 
     // Sanitize props to remove undefined values so they don't overwrite currentProps
-    const sanitizedUpdateProps: Partial<WishlistItemProps> = {};
-    for (const key in props) {
-      const k = key as keyof WishlistItemProps;
-      if (props[k] !== undefined) {
-        // @ts-expect-error - TS doesn't like assigning unknown types but it's safe here
-        sanitizedUpdateProps[k] = props[k];
-      }
-    }
+    const sanitizedUpdateProps = Object.fromEntries(
+      Object.entries(props).filter(([, value]) => typeof value !== "undefined"),
+    ) as Partial<WishlistItemProps>;
 
     // Reservation Pruning Logic:
     // Only applied if totalQuantity is strictly being REDUCED.
@@ -280,6 +275,7 @@ export class WishlistItem {
    * @param amount - The number of units to release (must be a positive integer).
    * @returns A new WishlistItem instance with updated reserved quantity.
    * @throws {InvalidTransitionError} If trying to cancel more than what is currently reserved.
+   * @throws {InvalidAttributeError} If amount is not a positive integer.
    */
   public cancelReservation(amount: number): WishlistItem {
     if (!Number.isInteger(amount)) {
@@ -315,6 +311,7 @@ export class WishlistItem {
    * @returns A new WishlistItem instance with updated quantities.
    * @throws {InvalidTransitionError} If consuming more from reserved than available/requested.
    * @throws {InsufficientStockError} If total stock is insufficient.
+   * @throws {InvalidAttributeError} If totalAmount or consumeFromReserved is not a positive integer.
    */
   public purchase(
     totalAmount: number,
@@ -374,6 +371,7 @@ export class WishlistItem {
    * @param amountToCancel - Units to return (must be a positive integer).
    * @returns A new WishlistItem instance with updated quantities.
    * @throws {InvalidTransitionError} If cancelling more than purchased.
+   * @throws {InvalidAttributeError} If amountToCancel is not a positive integer.
    */
   public cancelPurchase(amountToCancel: number): WishlistItem {
     if (!Number.isInteger(amountToCancel)) {
