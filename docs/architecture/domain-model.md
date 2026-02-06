@@ -40,6 +40,8 @@ classDiagram
         +number purchasedQuantity
     }
 
+    note for WishlistItem "Invariant: When isUnlimited is true, reservedQuantity and purchasedQuantity ARE tracked<br/>to measure engagement, but the constraint (total >= reserved + purchased) is ignored.<br/>This constitutes a 'soft' constraint for analytics purposes."
+
     class Transaction {
         +string id
         +string itemId
@@ -67,8 +69,10 @@ To solve the **"Mother Factor"** (allowing non-technical guests to interact with
 | :-------------- | :------------------------ | :--------: | :------------: | :------------------: |
 | **STRICT**      | `create()`                | ✅ Always  |  ✅ Mandatory  |     ✅ Enforced      |
 | **EVOLUTIVE**   | `update()`                | ✅ Always  |  ✅ Mandatory  | ❌ Relaxed (Privacy) |
-| **TRANSACTION** | `reserve()`, `purchase()` | ✅ Always  |  ❌ Bypassed   |     ✅ Enforced      |
+| **TRANSACTION** | `reserve()`, `purchase()` | ✅ Always  |  ❌ Bypassed   |    ✅ Enforced\*     |
 | **STRUCTURAL**  | Persistence/DB            | ✅ Always  |  ❌ Bypassed   |     ❌ Bypassed      |
+
+> (\*) **Note:** For `isUnlimited` items, Inventory Invariants are ignored during transactions (availability is infinite).
 
 ## 3. Validation Flow
 
@@ -96,7 +100,7 @@ stateDiagram-v2
 
     Structural: UUIDs & Basic Types
     Business: Name Length, URL Formats, Price range
-    Inventory: Total >= Reserved + Purchased
+    Inventory: Total >= Reserved + Purchased (Ignored if isUnlimited)
 
 
 ```
@@ -107,7 +111,13 @@ stateDiagram-v2
 
 The entity calculates availability in real-time to prevent over-subscription during transactions:
 
-$$Q_{available} = \max(0, Q_{total} - (Q_{reserved} + Q_{purchased}))$$
+$$
+Q_{available} =
+\begin{cases}
+\infty & \text{if } isUnlimited \\
+\max(0, Q_{total} - (Q_{reserved} + Q_{purchased})) & \text{otherwise}
+\end{cases}
+$$
 
 ### 4.2 Reservation Pruning
 
