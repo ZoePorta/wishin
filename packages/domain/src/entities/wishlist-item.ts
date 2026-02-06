@@ -86,7 +86,7 @@ export class WishlistItem {
    * that might fail due to legacy data or allowed transient states (e.g. over-commitment).
    * @param props - The properties to restore.
    * @returns A WishlistItem instance.
-   * @throws {InvalidAttributeError} If basic attribute validation fails (e.g. invalid name or price).
+   * @throws {InvalidAttributeError} If structural integrity validation fails (e.g. invalid UUIDs, integer types, priority range), as ValidationMode.RECONSTITUTE only enforces these and does not perform content validations like name length or price checks in reconstitute().
    */
   public static reconstitute(props: WishlistItemProps): WishlistItem {
     return WishlistItem._createWithMode(props, ValidationMode.RECONSTITUTE);
