@@ -57,7 +57,7 @@ The entity supports four validation modes to ensure data integrity while allowin
 
 ## Domain Invariants
 
-1. **Inventory Privacy:** The total quantity MAY be less than the sum of reserved and purchased units (e.g., if the owner reduces the desire count after items were bought). This preserves the surprise factor.
+1. **Inventory Privacy (EVOLUTIVE/STRUCTURAL):** The total quantity MAY be less than the sum of reserved and purchased units (e.g., if the owner reduces the desire count after items were bought). This preserves the surprise factor.
 2. **Immutability:** Any state change must result in a new instance of `WishlistItem`.
 3. **Strict Creation:** Creating a fresh item via `create()` adheres to **STRICT** mode.
 4. **Relaxed Restoration & Cancellation:** `reconstitute()`, `cancelReservation()` and `cancelPurchase()` use **STRUCTURAL** mode to bypass business logic and inventory checks when safe (hydration or reducing commitment).
