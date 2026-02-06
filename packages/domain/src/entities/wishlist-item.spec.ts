@@ -475,6 +475,13 @@ describe("WishlistItem Entity", () => {
       expect(item.name).toBe(validProps.name);
     });
 
+    it("should ignore undefined values in update props", () => {
+      const item = WishlistItem.create(validProps);
+
+      const updatedItem = item.update({ name: undefined });
+      expect(updatedItem.name).toBe(validProps.name);
+    });
+
     it("should throw InvalidAttributeError if trying to update id", () => {
       const item = WishlistItem.create(validProps);
       expect(() => item.update({ id: "new-id" })).toThrow(

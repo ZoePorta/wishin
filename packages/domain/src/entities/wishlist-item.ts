@@ -127,18 +127,28 @@ export class WishlistItem {
 
     const currentProps = this.toProps();
 
+    // Sanitize props to remove undefined values so they don't overwrite currentProps
+    const sanitizedUpdateProps: Partial<WishlistItemProps> = {};
+    for (const key in props) {
+      const k = key as keyof WishlistItemProps;
+      if (props[k] !== undefined) {
+        // @ts-expect-error - TS doesn't like assigning unknown types but it's safe here
+        sanitizedUpdateProps[k] = props[k];
+      }
+    }
+
     // Reservation Pruning Logic:
     // Only applied if totalQuantity is strictly being REDUCED.
     let newReservedQuantity = currentProps.reservedQuantity;
 
     if (
-      props.totalQuantity !== undefined &&
-      props.totalQuantity < currentProps.totalQuantity
+      sanitizedUpdateProps.totalQuantity !== undefined &&
+      sanitizedUpdateProps.totalQuantity < currentProps.totalQuantity
     ) {
       const currentPurchased = currentProps.purchasedQuantity;
       const maxAllowedReserved = Math.max(
         0,
-        props.totalQuantity - currentPurchased,
+        sanitizedUpdateProps.totalQuantity - currentPurchased,
       );
       newReservedQuantity = Math.min(newReservedQuantity, maxAllowedReserved);
     }
@@ -146,7 +156,7 @@ export class WishlistItem {
     return WishlistItem._createWithOptions(
       {
         ...currentProps,
-        ...props, // This applies other updates (name, price, etc.)
+        ...sanitizedUpdateProps, // This applies other updates (name, price, etc.)
         id: this.id, // Ensure ID preserves identity
         reservedQuantity: newReservedQuantity, // Apply potentially pruned value
         // purchasedQuantity remains untouched as we threw if it was in props
