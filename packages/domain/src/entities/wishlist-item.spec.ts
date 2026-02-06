@@ -100,6 +100,19 @@ describe("WishlistItem Entity", () => {
         WishlistItem.create({ ...validProps, purchasedQuantity: 1.5 }),
       ).toThrow(InvalidAttributeError);
     });
+
+    it("should throw InvalidAttributeError if totalQuantity is not an integer", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, totalQuantity: 1.5 }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if id is not a valid UUID v4 (e.g. v1)", () => {
+      const v1Uuid = "123e4567-e89b-12d3-a456-426614174000";
+      expect(() => WishlistItem.create({ ...validProps, id: v1Uuid })).toThrow(
+        InvalidAttributeError,
+      );
+    });
   });
 
   describe("Calculated Fields", () => {
@@ -258,6 +271,18 @@ describe("WishlistItem Entity", () => {
       expect(newItem.availableQuantity).toBe(5);
     });
 
+    it("should allow purchase without stock limits when isUnlimited is true", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        isUnlimited: true,
+        totalQuantity: 1,
+      });
+      // Purchase 100 items (far exceeding total 1)
+      const newItem = item.purchase(100, 0);
+      expect(newItem.purchasedQuantity).toBe(100);
+      expect(newItem.reservedQuantity).toBe(0);
+    });
+
     it("should throw InsufficientStockError if mixed purchase exceeds total available stock", () => {
       const item = WishlistItem.create({
         ...validProps,
@@ -266,19 +291,6 @@ describe("WishlistItem Entity", () => {
       });
       // Total 6, consume 2 from reserved (needs 4 from available, but only 3 available)
       expect(() => item.purchase(6, 2)).toThrow(InsufficientStockError);
-    });
-
-    it("should throw InvalidAttributeError if totalQuantity is not an integer", () => {
-      expect(() =>
-        WishlistItem.create({ ...validProps, totalQuantity: 1.5 }),
-      ).toThrow(InvalidAttributeError);
-    });
-
-    it("should throw InvalidAttributeError if id is not a valid UUID v4 (e.g. v1)", () => {
-      const v1Uuid = "123e4567-e89b-12d3-a456-426614174000";
-      expect(() => WishlistItem.create({ ...validProps, id: v1Uuid })).toThrow(
-        InvalidAttributeError,
-      );
     });
 
     it("should throw InsufficientStockError if not enough total stock", () => {
