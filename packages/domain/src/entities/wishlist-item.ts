@@ -126,23 +126,6 @@ export class WishlistItem {
     return new WishlistItem(sanitizedProps, mode);
   }
 
-  // Helper for internal methods to use _createWithOptions style but now _createWithMode
-  private static _createWithOptions(
-    props: WishlistItemProps,
-    options?: { skipInventoryCheck?: boolean },
-  ): WishlistItem {
-    // Map legacy options to new modes if necessary, or just use mode directly if refactoring call sites.
-    // Ideally replace all usages, but to minimize diff noise we can map:
-    // skipInventoryCheck=true -> RECONSTITUTE (or EVOLUTIVE? Context matters).
-    // Actually, update() uses skipInventoryCheck=true for "Privacy Preservation" (EVOLUTIVE).
-    // Operations like cancelReservation use it for "Lenient" (RECONSTITUTE/TRANSACTION logic).
-    // It's cleaner to remove _createWithOptions and replace call sites to use _createWithMode directly.
-    const mode = options?.skipInventoryCheck
-      ? ValidationMode.EVOLUTIVE
-      : ValidationMode.STRICT;
-    return WishlistItem._createWithMode(props, mode);
-  }
-
   /**
    * Updates the mutable properties of the WishlistItem.
    *
