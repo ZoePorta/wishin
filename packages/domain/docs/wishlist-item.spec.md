@@ -6,8 +6,6 @@ The `WishlistItem` is the core entity of the Wishin domain. It represents a gift
 
 ## Attributes
 
-## Attributes
-
 | Attribute           | Type               | Description            | Constraints                                    |
 | :------------------ | :----------------- | :--------------------- | :--------------------------------------------- |
 | `id`                | `string` (UUID v4) | Unique identifier      | Required                                       |
