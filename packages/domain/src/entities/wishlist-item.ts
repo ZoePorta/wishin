@@ -129,6 +129,15 @@ export class WishlistItem {
       throw new InvalidAttributeError("Cannot update entity ID");
     }
 
+    if (
+      props.wishlistId !== undefined &&
+      props.wishlistId !== this.wishlistId
+    ) {
+      throw new InvalidAttributeError(
+        "Cannot update wishlistId directly. Use moveToWishlist().",
+      );
+    }
+
     // Direct modification of reserved/purchased quantities is forbidden via update()
     if (
       props.reservedQuantity !== undefined ||
@@ -216,6 +225,35 @@ export class WishlistItem {
       ...this.toProps(),
       reservedQuantity: this.reservedQuantity + amount,
     });
+  }
+
+  /**
+   * Moves the item to a different wishlist.
+   * @param newWishlistId - The UUID of the new wishlist.
+   * @returns A new WishlistItem instance with the updated wishlistId.
+   * @throws {InvalidAttributeError} If newWishlistId is invalid or same as current.
+   */
+  public moveToWishlist(newWishlistId: string): WishlistItem {
+    if (!this.isValidUUID(newWishlistId)) {
+      throw new InvalidAttributeError(
+        "Invalid newWishlistId: Must be a valid UUID v4",
+      );
+    }
+
+    if (newWishlistId === this.wishlistId) {
+      throw new InvalidAttributeError(
+        "Cannot move to the same wishlist. Item is already in this wishlist.",
+      );
+    }
+
+    // Bypass inventory check to allow moving over-committed items
+    return WishlistItem._createWithOptions(
+      {
+        ...this.toProps(),
+        wishlistId: newWishlistId,
+      },
+      { skipInventoryCheck: true },
+    );
   }
 
   /**

@@ -489,6 +489,13 @@ describe("WishlistItem Entity", () => {
       );
     });
 
+    it("should throw InvalidAttributeError if trying to update wishlistId", () => {
+      const item = WishlistItem.create(validProps);
+      expect(() =>
+        item.update({ wishlistId: "111e4567-e89b-42d3-a456-426614174111" }),
+      ).toThrow(InvalidAttributeError);
+    });
+
     it("should throw InvalidAttributeError if trying to update reservedQuantity directly", () => {
       const item = WishlistItem.create(validProps);
       expect(() => item.update({ reservedQuantity: 5 })).toThrow(
@@ -741,6 +748,53 @@ describe("WishlistItem Entity", () => {
 
       const newItem = item.cancelPurchase(1, 0);
       expect(newItem.purchasedQuantity).toBe(2);
+    });
+  });
+
+  describe("Move To Wishlist", () => {
+    it("should move item to a new wishlist", () => {
+      const item = WishlistItem.create(validProps);
+      const newWishlistId = "111e4567-e89b-42d3-a456-426614174111"; // Valid UUID v4
+      const movedItem = item.moveToWishlist(newWishlistId);
+
+      expect(movedItem.wishlistId).toBe(newWishlistId);
+      expect(movedItem.id).toBe(item.id); // Identity preserved
+      expect(movedItem.name).toBe(item.name);
+    });
+
+    it("should throw InvalidAttributeError if new wishlistId is invalid", () => {
+      const item = WishlistItem.create(validProps);
+
+      expect(() => item.moveToWishlist("invalid-uuid")).toThrow(
+        InvalidAttributeError,
+      );
+    });
+
+    it("should throw InvalidAttributeError if moving to the same wishlist", () => {
+      const item = WishlistItem.create(validProps);
+      expect(() => item.moveToWishlist(validProps.wishlistId)).toThrow(
+        InvalidAttributeError,
+      );
+    });
+
+    it("should allow moving an over-committed item (inventory check skipped)", () => {
+      // Create over-committed item: T=2, P=3, R=0.
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        purchasedQuantity: 3,
+        reservedQuantity: 0,
+      }).update({ totalQuantity: 2 });
+
+      expect(item.availableQuantity).toBe(0);
+
+      // Move it
+      const newWishlistId = "111e4567-e89b-42d3-a456-426614174111";
+      const movedItem = item.moveToWishlist(newWishlistId);
+
+      expect(movedItem.wishlistId).toBe(newWishlistId);
+      expect(movedItem.totalQuantity).toBe(2);
+      expect(movedItem.purchasedQuantity).toBe(3);
     });
   });
 

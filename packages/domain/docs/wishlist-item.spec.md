@@ -45,7 +45,7 @@ The `WishlistItem` is the core entity of the Wishin domain. It represents a gift
 ### `update(props: Partial<WishlistItemProps>)`
 
 - **Effect:** Modifies editable properties (name, description, priority, price, totalQuantity, etc.).
-- **Restrictions:** Cannot modify `id`, `reservedQuantity`, or `purchasedQuantity` directly (throws `InvalidAttributeError`).
+- **Restrictions:** Cannot modify `id`, `wishlistId`, `reservedQuantity`, or `purchasedQuantity` directly (throws `InvalidAttributeError`).
 - **Logic:**
   - **Reservation Pruning:** If $Q_{total}$ is reduced, $Q_{reserved}$ is automatically pruned to $\min(Q_{reserved}, \max(0, Q_{newTotal} - Q_{purchased}))$.
   - Creates a new instance with merged properties.
@@ -59,6 +59,13 @@ The `WishlistItem` is the core entity of the Wishin domain. It represents a gift
 - **Pre-condition:** `amount > 0`.
 - **Enforces:** Strict stock validation.
 - **Returns:** New instance with updated state.
+
+### `moveToWishlist(newWishlistId: string)`
+
+- **Effect:** Moves the item to a different wishlist.
+- **Pre-condition:** `newWishlistId` must be a valid UUID v4.
+- **Pre-condition:** `newWishlistId` must be different from current `wishlistId`.
+- **Returns:** New instance with updated `wishlistId`.
 
 ### `cancelReservation(amount: number)`
 
