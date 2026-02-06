@@ -42,6 +42,17 @@ export interface WishlistItemProps {
   purchasedQuantity: number;
 }
 
+/**
+ * Core domain entity representing a gift item within a wishlist.
+ *
+ * Manages inventory lifecycle through an atomic, immutable state machine.
+ * All state-changing operations return new instances; identity is preserved via `id`.
+ *
+ * Key invariants:
+ * - Inventory: Q_total >= Q_reserved + Q_purchased (enforced in STRICT/TRANSACTION modes).
+ * - Priority: Must be a valid Priority enum value (LOW=1..URGENT=4).
+ * - Structural: `id` and `wishlistId` must be valid UUID v4.
+ */
 export class WishlistItem {
   public readonly id: string;
   public readonly wishlistId: string;
