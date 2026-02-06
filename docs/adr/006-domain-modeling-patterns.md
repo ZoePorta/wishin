@@ -48,7 +48,7 @@ The domain exposes operations that support both explicit user intent and technic
 
 - **Reservation (`reserve`)**: Used regarding **Explicit Reservation** where registered users intend to buy the item later.
 - **Cancellation of Reservation (`cancelReservation`)**: Cancels an explicit reservation.
-- **Purchase (`purchase`)**: Used for the "Buy Now" flow. Updates the domain state immediately (**Immediate Finality**).
+- **Purchase (`purchase`)**: Used for the "Buy Now" flow. Updates the domain state immediately (with cancellation allowed during grace period or per post-purchase rules).
 - **Cancellation of Purchase (`cancelPurchase`)**: Handles both the "Undo" action during the grace period and acceptable post-purchase cancellations, reverting the purchase and restoring stock.
 
 ## Consequences
