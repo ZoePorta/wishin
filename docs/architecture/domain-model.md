@@ -123,7 +123,7 @@ $$Q_{total} < Q_{reserved} + Q_{purchased}$$
 
 This prevents the owner from discovering "secret" purchases when they try to lower the item's total quantity, maintaining the surprise factor.
 
-### The "Grace Period" Flow (Client-Side Undo)
+### 4.4 The "Grace Period" Flow (Client-Side Undo)
 
 To minimize friction while maintaining data integrity, anonymous actions are handled as **immediate commitments with a volatile undo window**.
 
@@ -134,7 +134,7 @@ To minimize friction while maintaining data integrity, anonymous actions are han
 
 ---
 
-### 4.4 Cancellation vs. Undo
+### 4.5 Cancellation vs. Undo
 
 - **Undo:** Available to everyone. Deletes the transaction record. Only available immediately after the action.
 - **Cancellation:** Available only to **Registered Users** via their "Gifting History". It transitions the transaction to a `CANCELLED` status (Soft Delete) for audit purposes.
@@ -143,7 +143,8 @@ To minimize friction while maintaining data integrity, anonymous actions are han
 
 1.  **Identity Immutability:** An item's `id` cannot be changed after creation.
 2.  **Atomic State Transitions:** All changes result in a new immutable `WishlistItem` instance.
-3.  **Transaction Lifecycle:**
+3.  **Transaction Identity Invariant:** Exactly one of `userId` and `guestSessionId` MUST be set. This ensures a transaction is performed by either a registered user OR a guest, never both or neither. Enforced at creation validation.
+4.  **Transaction Lifecycle:**
     - **Undo:** A hard delete of the `Transaction` record, triggered only during the active UI session.
     - **Cancellation:** A status update (`status: CANCELLED`) allowed only for registered users, which triggers a stock restock in the target `WishlistItem`.
-4.  **Role Isolation:** Guests are restricted to `TRANSACTION` logic and immediate "Undo" (deletion).
+5.  **Role Isolation:** Guests are restricted to `TRANSACTION` logic and immediate "Undo" (deletion).
