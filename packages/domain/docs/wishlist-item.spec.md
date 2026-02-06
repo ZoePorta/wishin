@@ -6,7 +6,7 @@ The `WishlistItem` is the core entity of the Wishin domain. It represents a gift
 
 ## Validation Modes
 
-The entity supports two validation modes to ensure data integrity while allowing legacy data or partial updates:
+The entity supports four validation modes to ensure data integrity while allowing legacy data or partial updates:
 
 - **STRICT** (Create): Full validation. Enforces structural integrity, business rules (name length, etc.), and strict inventory invariants ($Q_{total} \ge Q_{reserved} + Q_{purchased}$).
 - **EVOLUTIVE** (Update): Enforces structural integrity and business rules. Relaxes inventory invariants to allow valid over-commitment (Privacy).
