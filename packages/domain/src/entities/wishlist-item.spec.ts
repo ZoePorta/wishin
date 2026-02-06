@@ -588,8 +588,22 @@ describe("WishlistItem Entity", () => {
       expect(updatedItem.totalQuantity).toBe(2);
       expect(updatedItem.purchasedQuantity).toBe(3); // Unchanged
       expect(updatedItem.reservedQuantity).toBe(0); // Pruned to 0
-      // State: Total=2, P=3, R=0. Over-committed.
       expect(updatedItem.availableQuantity).toBe(0);
+    });
+
+    it("should NOT prune reservations when totalQuantity is increased", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        reservedQuantity: 3,
+      });
+
+      const updatedItem = item.update({ totalQuantity: 10 });
+
+      expect(updatedItem.totalQuantity).toBe(10);
+      expect(updatedItem.reservedQuantity).toBe(3); // Unchanged
+      // Available = 10 - (3 + 0) = 7
+      expect(updatedItem.availableQuantity).toBe(7);
     });
 
     it("should still throw InsufficientStockError when creating a new item with invalid inventory (strict mode)", () => {
@@ -676,6 +690,24 @@ describe("WishlistItem Entity", () => {
         expect(item.totalQuantity).toBe(3);
         expect(item.availableQuantity).toBe(0);
       });
+
+      it("should allow cancelling reservation on reconstituted over-committed item", () => {
+        // Reconstitute: Total=3, Purchased=2, Reserved=2.
+        const item = WishlistItem.reconstitute({
+          ...validProps,
+          totalQuantity: 3,
+          purchasedQuantity: 2,
+          reservedQuantity: 2,
+        });
+
+        // Cancel 1 reservation
+        const updatedItem = item.cancelReservation(1);
+
+        expect(updatedItem.reservedQuantity).toBe(1);
+        expect(updatedItem.totalQuantity).toBe(3);
+        // Available = 3 - (1 + 2) = 0
+        expect(updatedItem.availableQuantity).toBe(0);
+      });
     });
 
     it("should throw InsufficientStockError if cancelPurchase tries to restock reserved when over-committed", () => {
@@ -695,7 +727,7 @@ describe("WishlistItem Entity", () => {
       expect(() => item.cancelPurchase(1, 1)).toThrow(InsufficientStockError);
     });
 
-    it("should ALLOW cancelPurchase if NOT resting to reserved, even if over-committed", () => {
+    it("should ALLOW cancelPurchase if NOT restocking to reserved, even if over-committed", () => {
       // Total=1, Reserved=0, Purchased=3.
       const item = WishlistItem.create({
         ...validProps,

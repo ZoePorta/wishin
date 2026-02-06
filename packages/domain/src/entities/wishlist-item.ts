@@ -4,10 +4,18 @@ import {
   InvalidTransitionError,
 } from "../errors/domain-errors";
 
+/**
+ * Priority levels for wishlist items.
+ * @enum {number}
+ */
 export enum Priority {
+  /** Low priority item (1) */
   LOW = 1,
+  /** Medium priority item (2) - Default */
   MEDIUM = 2,
+  /** High priority item (3) */
   HIGH = 3,
+  /** Urgent item (4) */
   URGENT = 4,
 }
 
@@ -117,7 +125,7 @@ export class WishlistItem {
    * @throws {InvalidAttributeError} If validation fails or if attempting to update restricted fields (id, reserved, purchased).
    */
   public update(props: Partial<WishlistItemProps>): WishlistItem {
-    if (props.id && props.id !== this.id) {
+    if (props.id !== undefined && props.id !== this.id) {
       throw new InvalidAttributeError("Cannot update entity ID");
     }
 
@@ -437,7 +445,11 @@ export class WishlistItem {
     }
 
     // Priority Validation
-    if (!Object.values(Priority).includes(this.priority)) {
+    if (
+      !Number.isInteger(this.priority) ||
+      this.priority < Priority.LOW ||
+      this.priority > Priority.URGENT
+    ) {
       throw new InvalidAttributeError(
         "Invalid priority: Must be a valid Priority value",
       );
