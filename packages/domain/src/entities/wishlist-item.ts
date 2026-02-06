@@ -78,12 +78,15 @@ export class WishlistItem {
    * Factory method to create a new WishlistItem instance.
    * Enforces trimming of the name property.
    * @param props - The properties for the new item.
-   * @param options - Configuration options.
    * @returns A new valid WishlistItem instance.
    * @throws {InvalidAttributeError} If attribute validation fails.
    * @throws {InsufficientStockError} If inventory invariants are violated (unless skipped).
    */
-  public static create(
+  public static create(props: WishlistItemProps): WishlistItem {
+    return WishlistItem._createWithOptions(props);
+  }
+
+  private static _createWithOptions(
     props: WishlistItemProps,
     options?: { skipInventoryCheck?: boolean },
   ): WishlistItem {
@@ -140,7 +143,7 @@ export class WishlistItem {
       newReservedQuantity = Math.min(newReservedQuantity, maxAllowedReserved);
     }
 
-    return WishlistItem.create(
+    return WishlistItem._createWithOptions(
       {
         ...currentProps,
         ...props, // This applies other updates (name, price, etc.)
