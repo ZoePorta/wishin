@@ -19,6 +19,13 @@ export enum Priority {
   URGENT = 4,
 }
 
+enum ValidationMode {
+  STRICT = "STRICT",
+  EVOLUTIVE = "EVOLUTIVE",
+  TRANSACTION = "TRANSACTION",
+  RECONSTITUTE = "RECONSTITUTE",
+}
+
 export interface WishlistItemProps {
   id: string;
   wishlistId: string;
@@ -54,12 +61,9 @@ export class WishlistItem {
    * Private constructor to enforce factory usage.
    * Validates state invariants upon instantiation.
    * @param props - Raw properties for the entity.
-   * @param options.skipInventoryCheck - If true, bypasses strict inventory availability checks (used for reconstitution or privacy-preserving updates).
+   * @param mode - The validation mode to use.
    */
-  private constructor(
-    props: WishlistItemProps,
-    options?: { skipInventoryCheck?: boolean },
-  ) {
+  private constructor(props: WishlistItemProps, mode: ValidationMode) {
     this.id = props.id;
     this.wishlistId = props.wishlistId;
     this.name = props.name;
@@ -74,7 +78,7 @@ export class WishlistItem {
     this.reservedQuantity = props.reservedQuantity;
     this.purchasedQuantity = props.purchasedQuantity;
 
-    this.validate(options?.skipInventoryCheck);
+    this.validate(mode);
   }
 
   /**
@@ -85,7 +89,7 @@ export class WishlistItem {
    * @throws {InvalidAttributeError} If basic attribute validation fails (e.g. invalid name or price).
    */
   public static reconstitute(props: WishlistItemProps): WishlistItem {
-    return WishlistItem._createWithOptions(props, { skipInventoryCheck: true });
+    return WishlistItem._createWithMode(props, ValidationMode.RECONSTITUTE);
   }
 
   /**
@@ -97,18 +101,35 @@ export class WishlistItem {
    * @throws {InsufficientStockError} If inventory invariants are violated (unless skipped).
    */
   public static create(props: WishlistItemProps): WishlistItem {
-    return WishlistItem._createWithOptions(props);
+    return WishlistItem._createWithMode(props, ValidationMode.STRICT);
   }
 
-  private static _createWithOptions(
+  private static _createWithMode(
     props: WishlistItemProps,
-    options?: { skipInventoryCheck?: boolean },
+    mode: ValidationMode,
   ): WishlistItem {
     const sanitizedProps = {
       ...props,
       name: props.name.trim(),
     };
-    return new WishlistItem(sanitizedProps, options);
+    return new WishlistItem(sanitizedProps, mode);
+  }
+
+  // Helper for internal methods to use _createWithOptions style but now _createWithMode
+  private static _createWithOptions(
+    props: WishlistItemProps,
+    options?: { skipInventoryCheck?: boolean },
+  ): WishlistItem {
+    // Map legacy options to new modes if necessary, or just use mode directly if refactoring call sites.
+    // Ideally replace all usages, but to minimize diff noise we can map:
+    // skipInventoryCheck=true -> RECONSTITUTE (or EVOLUTIVE? Context matters).
+    // Actually, update() uses skipInventoryCheck=true for "Privacy Preservation" (EVOLUTIVE).
+    // Operations like cancelReservation use it for "Lenient" (RECONSTITUTE/TRANSACTION logic).
+    // It's cleaner to remove _createWithOptions and replace call sites to use _createWithMode directly.
+    const mode = options?.skipInventoryCheck
+      ? ValidationMode.EVOLUTIVE
+      : ValidationMode.STRICT;
+    return WishlistItem._createWithMode(props, mode);
   }
 
   /**
@@ -176,7 +197,7 @@ export class WishlistItem {
       newReservedQuantity = Math.min(newReservedQuantity, maxAllowedReserved);
     }
 
-    return WishlistItem._createWithOptions(
+    return WishlistItem._createWithMode(
       {
         ...currentProps,
         ...sanitizedUpdateProps, // This applies other updates (name, price, etc.)
@@ -184,7 +205,7 @@ export class WishlistItem {
         reservedQuantity: newReservedQuantity, // Apply potentially pruned value
         // purchasedQuantity remains untouched as we threw if it was in props
       } as WishlistItemProps,
-      { skipInventoryCheck: true },
+      ValidationMode.EVOLUTIVE,
     );
   }
 
@@ -221,10 +242,13 @@ export class WishlistItem {
       );
     }
 
-    return WishlistItem._createWithOptions({
-      ...this.toProps(),
-      reservedQuantity: this.reservedQuantity + amount,
-    });
+    return WishlistItem._createWithMode(
+      {
+        ...this.toProps(),
+        reservedQuantity: this.reservedQuantity + amount,
+      },
+      ValidationMode.TRANSACTION,
+    );
   }
 
   /**
@@ -247,12 +271,12 @@ export class WishlistItem {
     }
 
     // Bypass inventory check to allow moving over-committed items
-    return WishlistItem._createWithOptions(
+    return WishlistItem._createWithMode(
       {
         ...this.toProps(),
         wishlistId: newWishlistId,
       },
-      { skipInventoryCheck: true },
+      ValidationMode.RECONSTITUTE, // Or EVOLUTIVE, but RECONSTITUTE is safer for moves as it doesn't re-validate business rules on legacy items if we just move them.
     );
   }
 
@@ -279,12 +303,12 @@ export class WishlistItem {
     // Reducing reserved quantity reduces (or keeps same) the constraint sum.
     // Even if we are still over-committed after cancellation, this is an improvement (or stable) move.
     // So we allow it regardless of strict validation.
-    return WishlistItem._createWithOptions(
+    return WishlistItem._createWithMode(
       {
         ...this.toProps(),
         reservedQuantity: this.reservedQuantity - amount,
       },
-      { skipInventoryCheck: true },
+      ValidationMode.RECONSTITUTE,
     );
   }
 
@@ -338,11 +362,14 @@ export class WishlistItem {
       );
     }
 
-    return WishlistItem._createWithOptions({
-      ...this.toProps(),
-      purchasedQuantity: this.purchasedQuantity + totalAmount,
-      reservedQuantity: this.reservedQuantity - consumeFromReserved,
-    });
+    return WishlistItem._createWithMode(
+      {
+        ...this.toProps(),
+        purchasedQuantity: this.purchasedQuantity + totalAmount,
+        reservedQuantity: this.reservedQuantity - consumeFromReserved,
+      },
+      ValidationMode.TRANSACTION,
+    );
   }
 
   /**
@@ -388,12 +415,12 @@ export class WishlistItem {
 
     // Step 1: Reduce purchased quantity.
     // This always reduces commitment, so it's safe to skip inventory check (allow existing over-commit to persist/improve).
-    const intermediateItem = WishlistItem._createWithOptions(
+    const intermediateItem = WishlistItem._createWithMode(
       {
         ...this.toProps(),
         purchasedQuantity: this.purchasedQuantity - amountToCancel,
       },
-      { skipInventoryCheck: true },
+      ValidationMode.RECONSTITUTE,
     );
 
     // Step 2: Restock as reserved if needed.
@@ -414,7 +441,9 @@ export class WishlistItem {
     return this.id === other.id;
   }
 
-  private validate(skipInventoryCheck = false): void {
+  private validate(mode: ValidationMode): void {
+    // --- STRUCTURAL INTEGRITY (Always Enforced: ALL Modes) ---
+
     // ID Validation (UUID v4)
     if (!this.isValidUUID(this.id)) {
       throw new InvalidAttributeError("Invalid id: Must be a valid UUID v4");
@@ -426,43 +455,7 @@ export class WishlistItem {
       );
     }
 
-    // Name Validation
-    if (this.name.length < 3 || this.name.length > 100) {
-      throw new InvalidAttributeError(
-        "Invalid name: Must be between 3 and 100 characters",
-      );
-    }
-
-    // Description Validation
-    if (this.description && this.description.length > 500) {
-      throw new InvalidAttributeError(
-        "Invalid description: Must be 500 characters or less",
-      );
-    }
-
-    // URL Validation
-    if (this.url && !this.isValidUrl(this.url)) {
-      throw new InvalidAttributeError("Invalid url: Must be a valid URL");
-    }
-    if (this.imageUrl && !this.isValidUrl(this.imageUrl)) {
-      throw new InvalidAttributeError("Invalid imageUrl: Must be a valid URL");
-    }
-
-    // Price & Currency Validation
-    if (this.price !== undefined) {
-      if (!Number.isFinite(this.price) || this.price < 0) {
-        throw new InvalidAttributeError(
-          "Invalid price: Must be a finite number greater than or equal to 0",
-        );
-      }
-      if (!this.currency) {
-        throw new InvalidAttributeError(
-          "Invalid currency: Required when price is set",
-        );
-      }
-    }
-
-    // Inventory Validation
+    // Inventory Structural Validation
     if (!Number.isInteger(this.totalQuantity) || this.totalQuantity < 1) {
       throw new InvalidAttributeError(
         "Invalid totalQuantity: Must be an integer of at least 1",
@@ -482,7 +475,7 @@ export class WishlistItem {
       throw new InvalidAttributeError("Quantities cannot be negative");
     }
 
-    // Priority Validation
+    // Priority Structural Validation
     if (
       !Number.isInteger(this.priority) ||
       this.priority < Priority.LOW ||
@@ -493,12 +486,58 @@ export class WishlistItem {
       );
     }
 
-    // Domain Invariant: Inventory Integrity
-    if (!this.isUnlimited && !skipInventoryCheck) {
-      if (this.totalQuantity < this.reservedQuantity + this.purchasedQuantity) {
-        throw new InsufficientStockError(
-          "Invariant violation: Total quantity must be greater than or equal to reserved + purchased",
+    // --- BUSINESS RULES (Enforced: STRICT, EVOLUTIVE) ---
+    if (mode === ValidationMode.STRICT || mode === ValidationMode.EVOLUTIVE) {
+      // Name Validation
+      if (this.name.length < 3 || this.name.length > 100) {
+        throw new InvalidAttributeError(
+          "Invalid name: Must be between 3 and 100 characters",
         );
+      }
+
+      // Description Validation
+      if (this.description && this.description.length > 500) {
+        throw new InvalidAttributeError(
+          "Invalid description: Must be 500 characters or less",
+        );
+      }
+
+      // URL Validation
+      if (this.url && !this.isValidUrl(this.url)) {
+        throw new InvalidAttributeError("Invalid url: Must be a valid URL");
+      }
+      if (this.imageUrl && !this.isValidUrl(this.imageUrl)) {
+        throw new InvalidAttributeError(
+          "Invalid imageUrl: Must be a valid URL",
+        );
+      }
+
+      // Price & Currency Validation
+      if (this.price !== undefined) {
+        if (!Number.isFinite(this.price) || this.price < 0) {
+          throw new InvalidAttributeError(
+            "Invalid price: Must be a finite number greater than or equal to 0",
+          );
+        }
+        if (!this.currency) {
+          throw new InvalidAttributeError(
+            "Invalid currency: Required when price is set",
+          );
+        }
+      }
+    }
+
+    // --- INVENTORY INVARIANTS (Enforced: STRICT, TRANSACTION) ---
+    if (mode === ValidationMode.STRICT || mode === ValidationMode.TRANSACTION) {
+      if (!this.isUnlimited) {
+        if (
+          this.totalQuantity <
+          this.reservedQuantity + this.purchasedQuantity
+        ) {
+          throw new InsufficientStockError(
+            "Invariant violation: Total quantity must be greater than or equal to reserved + purchased",
+          );
+        }
       }
     }
   }

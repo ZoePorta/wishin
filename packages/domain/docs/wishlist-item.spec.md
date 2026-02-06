@@ -4,6 +4,32 @@
 
 The `WishlistItem` is the core entity of the Wishin domain. It represents a gift item within a wishlist and manages its lifecycle through an atomic inventory system. This entity is **strictly immutable**.
 
+## Validation Modes
+
+The entity supports two validation modes to ensure data integrity while allowing legacy data or partial updates:
+
+- **STRICT** (Create): Full validation. Enforces structural integrity, business rules (name length, etc.), and strict inventory invariants ($Q_{total} \ge Q_{reserved} + Q_{purchased}$).
+- **EVOLUTIVE** (Update): Enforces structural integrity and business rules. Relaxes inventory invariants to allow valid over-commitment (Privacy).
+- **TRANSACTION** (Reserve/Purchase): Enforces structural integrity and strict inventory invariants. Bypasses business rules (e.g., allows legacy short names) to prevent blocking guests.
+- **RECONSTITUTE** (Hydration/Cancel): Enforces only structural integrity. Bypasses business rules and inventory checks to load legacy data or allow lenient cancellations.
+
+### Structural Integrity (Always Enforced by All Modes)
+
+- `id` and `wishlistId` must be valid UUIDs.
+- `priority` must be a valid Enum value (1-4).
+- `totalQuantity`, `reservedQuantity`, `purchasedQuantity` must be integers $\ge 0$ (total $\ge 1$).
+
+### Business Rules (Enforced by STRICT & EVOLUTIVE)
+
+- `name`: 3-100 chars.
+- `description`: max 500 chars.
+- `price`: $\ge 0$ if present.
+- `url`/`imageUrl`: valid URLs.
+
+### Inventory Invariants (Enforced by STRICT & TRANSACTION)
+
+- $Q_{total} \ge Q_{reserved} + Q_{purchased}$ (unless unlimited).
+
 ## Attributes
 
 | Attribute           | Type               | Description            | Constraints                                    |
@@ -31,8 +57,8 @@ The `WishlistItem` is the core entity of the Wishin domain. It represents a gift
 
 1. **Inventory Privacy:** The total quantity MAY be less than the sum of reserved and purchased units (e.g., if the owner reduces the desire count after items were bought). This preserves the surprise factor.
 2. **Immutability:** Any state change must result in a new instance of `WishlistItem`.
-3. **Strict Creation:** Creating a fresh item via `create()` adheres to strict inventory invariants ($Q_{total} \ge Q_{reserved} + Q_{purchased}$).
-4. **Relaxed Restoration:** Restoring an item via `reconstitute()` (or updating) bypasses strict inventory checks to allow valid over-committed states.
+3. **Strict Creation:** Creating a fresh item via `create()` adheres to **STRICT** mode.
+4. **Relaxed Restoration:** Restoring an item via `reconstitute()` uses **RECONSTITUTE** mode. `update` uses **EVOLUTIVE** mode. `reserve`/`purchase` use **TRANSACTION** mode.
 
 ## Operations (Behaviors)
 

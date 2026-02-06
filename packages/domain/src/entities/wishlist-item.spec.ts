@@ -817,4 +817,47 @@ describe("WishlistItem Entity", () => {
       expect(item1.equals(item2)).toBe(false);
     });
   });
+  describe("Contextual Validation (Role-Based)", () => {
+    const legacyProps = {
+      ...validProps,
+      name: "PS", // Short name (invalid by strict rules)
+    };
+
+    it("should allow reconstituting an item with legacy short name (RECONSTITUTE mode)", () => {
+      const item = WishlistItem.reconstitute(legacyProps);
+      expect(item.name).toBe("PS");
+      expect(item).toBeInstanceOf(WishlistItem);
+    });
+
+    it("should allow reserving on a legacy item (Mother Factor - TRANSACTION mode)", () => {
+      const item = WishlistItem.reconstitute(legacyProps);
+      // Reserve should succeed despite invalid name
+      const reservedItem = item.reserve(1);
+      expect(reservedItem.reservedQuantity).toBe(1);
+      expect(reservedItem.name).toBe("PS");
+    });
+
+    it("should FAIL to update a legacy item without fixing the name (Owner Discipline - EVOLUTIVE mode)", () => {
+      const item = WishlistItem.reconstitute(legacyProps);
+      // Trying to update price, but keeping invalid name
+      expect(() => item.update({ price: 200 })).toThrow(InvalidAttributeError);
+    });
+
+    it("should ALLOW updating a legacy item IF the name is fixed", () => {
+      const item = WishlistItem.reconstitute(legacyProps);
+      const updatedItem = item.update({ name: "PlayStation 5" });
+      expect(updatedItem.name).toBe("PlayStation 5");
+    });
+
+    it("should FAIL structural validation even in RECONSTITUTE mode", () => {
+      const invalidUuidProps = {
+        ...legacyProps,
+        id: "invalid-uuid",
+      };
+
+      expect(() => WishlistItem.reconstitute(invalidUuidProps)).toThrow(
+        InvalidAttributeError,
+      );
+    });
+  });
 });
