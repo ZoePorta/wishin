@@ -26,7 +26,7 @@ The "Mother Factor" is the guiding design principle of Wishin. It recognizes tha
 
 | Category         | **MVP (Phase 1)**                             | **Full Version (Phase 2)**                                   | **Moonshot Initiatives**                                                      |
 | :--------------- | :-------------------------------------------- | :----------------------------------------------------------- | :---------------------------------------------------------------------------- |
-| **Wishlists**    | 1 list per user. Single owner. Max 100 items. | Multiple lists. Collaborative editing (e.g., Wedding lists). | Conditional/Linked gifts (e.g., Set of brushes locked until Easel is bought). |
+| **Wishlists**    | 1 list per user. Single owner. Max 100 items. | Multiple lists. Collaborative editing (e.g., Wedding lists). | Conditional/Linked gifts (e.g., set of brushes locked until Easel is bought). |
 | **Access**       | Unique URL (Slug-based).                      | Public profile + URL.                                        | Private lists (Invite-only/Explicit permission).                              |
 | **Users**        | Anonymous Guest support for Purchase/Reserve. | Public profiles.                                             | Friend system (Contact lists integration).                                    |
 | **Inventory**    | Order by Priority. Basic Stock Management.    | Custom sorting (Price, Amount). Hide out-of-stock toggle.    | "Add to my list" (Clone items between users).                                 |
