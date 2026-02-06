@@ -63,11 +63,11 @@ The "Mother Factor" is the guiding design principle of Wishin. It recognizes tha
 The system maintains two views of the same data:
 
 - **Public View:** Shows real availability ($Q_{available}$).
-- **Owner View:** Shows intended quantities ($Q_{total}$). Changes here trigger automatic "pruning" of reservations to maintain a valid (though potentially over-committed) state without revealing spoilers.
+- **Owner View:** Shows intended quantities ($Q_{total}$). Changes here trigger automatic "pruning" of reservations. To maintain the surprise, the system explicitly supports an over-committed state, ensuring that reducing the total quantity does not expose hidden purchases.
 
 ### The "Undo" Window (Accidental Click Protection)
 
-Anonymous actions (Purchase/Reserve) include a brief **safety window** to handle accidental interactions without complicating the domain state.
+Anonymous actions (Purchase) include a brief **safety window** to handle accidental interactions without complicating the domain state.
 
 1. **Immediate Finality:** When a Guest clicks "Purchase", the domain entity is updated immediately to reflect the new stock levels.
 2. **Short Grace Period:** The UI provides an "Undo" button for a short duration (e.g., 2 minutes).

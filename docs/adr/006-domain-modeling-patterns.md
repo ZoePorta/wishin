@@ -37,7 +37,10 @@ We will apply the following patterns to our Domain Entities:
 ### 4. Encapsulated Inventory Logic
 
 - Stock management logic resides **inside the entity**, not in services.
-- This protects invariants (e.g., `reserved + purchased <= total`) at the lowest level.
+- **Strict Invariants**: Generally, `reserved + purchased <= total`.
+- **Privacy Exception (Relaxed Invariant)**: To preserve user privacy, if an owner reduces `totalQuantity` below the committed amount (`reserved + purchased`), the system **allows** this "over-committed" state rather than leaking information about secret purchases.
+- **Reservation Pruning**: When `totalQuantity` is reduced, the system automatically prunes `reservedQuantity` (prioritizing `purchasedQuantity` which is immutable) to minimize over-commitment.
+- **Reconstitution**: We use a `reconstitute()` static method to bypass validation when restoring objects from persistence, handling potential valid over-committed states.
 
 ### 5. Reservation and Purchase Workflows
 
