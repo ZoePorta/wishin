@@ -837,6 +837,13 @@ describe("WishlistItem Entity", () => {
       expect(reservedItem.name).toBe("PS");
     });
 
+    it("should allow purchasing a legacy item (TRANSACTION mode)", () => {
+      const item = WishlistItem.reconstitute(legacyProps);
+      const purchasedItem = item.purchase(1, 0);
+      expect(purchasedItem.purchasedQuantity).toBe(1);
+      expect(purchasedItem.name).toBe("PS");
+    });
+
     it("should FAIL to update a legacy item without fixing the name (Owner Discipline - EVOLUTIVE mode)", () => {
       const item = WishlistItem.reconstitute(legacyProps);
       // Trying to update price, but keeping invalid name
