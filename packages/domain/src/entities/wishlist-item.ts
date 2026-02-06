@@ -415,6 +415,13 @@ export class WishlistItem {
       throw new InvalidAttributeError("Quantities cannot be negative");
     }
 
+    // Priority Validation
+    if (!Object.values(Priority).includes(this.priority)) {
+      throw new InvalidAttributeError(
+        "Invalid priority: Must be a valid Priority value",
+      );
+    }
+
     // Domain Invariant: Inventory Integrity
     if (!this.isUnlimited && !skipInventoryCheck) {
       if (this.totalQuantity < this.reservedQuantity + this.purchasedQuantity) {

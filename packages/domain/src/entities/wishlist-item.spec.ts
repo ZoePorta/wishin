@@ -440,6 +440,12 @@ describe("WishlistItem Entity", () => {
       });
       expect(item.priority).toBe(Priority.URGENT);
     });
+
+    it("should throw InvalidAttributeError if priority is invalid", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, priority: 999 as Priority }),
+      ).toThrow(InvalidAttributeError);
+    });
   });
 
   describe("Update", () => {
@@ -486,6 +492,13 @@ describe("WishlistItem Entity", () => {
     it("should throw InvalidAttributeError if trying to update purchasedQuantity directly", () => {
       const item = WishlistItem.create(validProps);
       expect(() => item.update({ purchasedQuantity: 5 })).toThrow(
+        InvalidAttributeError,
+      );
+    });
+
+    it("should throw InvalidAttributeError if updating with invalid priority", () => {
+      const item = WishlistItem.create(validProps);
+      expect(() => item.update({ priority: 999 as Priority })).toThrow(
         InvalidAttributeError,
       );
     });
