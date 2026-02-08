@@ -3,6 +3,7 @@
 ## Status
 
 Accepted
+Amends [ADR 006](006-domain-modeling-patterns.md) (Validation Strategy)
 
 ## Context
 
@@ -44,13 +45,16 @@ We adopt a **Granular Validation Strategy** using four distinct modes in our Dom
   - **Relaxes**: Business Rules.
 - **Goal**: Solves "Legacy Data Lock-out". Guests can reserve an item with a legacy short name ("PS") without being blocked by business rule validation, as long as there is stock available.
 
-### 4. RECONSTITUTE Mode (Database Loading)
+### 4. STRUCTURAL Mode (Persistence & Transfers)
 
-- **Usage**: Hydration methods (`WishlistItem.reconstitute()`) and restoration (`cancelReservation()`, `cancelPurchase()`, `moveToWishlist()`).
+- **Usage**:
+  - Hydration methods (`WishlistItem.reconstitute()`).
+  - Restoration Logic (`cancelReservation()`, `cancelPurchase()`).
+  - Move Logic (`moveToWishlist()`).
 - **Scope**:
   - **Enforces**: **ONLY** Structural Integrity (Types, UUIDs, Non-negative integers).
   - **Relaxes**: Business Rules + Inventory Invariants.
-- **Goal**: Trust the database. Ensure the application can always load existing data, even if it violates current rules or inventory invariants (e.g., legacy over-commitment), preventing data loss or crashes.
+- **Goal**: Trust the database. Ensure the application can always load existing data or move items between lists, even if they violate current rules or invariants.
 
 ## Consequences
 

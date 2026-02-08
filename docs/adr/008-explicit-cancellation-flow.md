@@ -3,6 +3,7 @@
 ## Status
 
 Accepted
+Amends [ADR 006](006-domain-modeling-patterns.md) (Cancellation Flow)
 
 ## Context
 
