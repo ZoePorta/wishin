@@ -70,8 +70,8 @@ The system maintains two views of the same data:
 Anonymous actions (Purchase) include a brief **safety window** to handle accidental interactions without complicating the domain state.
 
 1. **Immediate Finality:** When a Guest clicks "Purchase", the domain entity is updated immediately to reflect the new stock levels.
-2. **Short Grace Period:** The UI provides an "Undo" button for a short duration (e.g., 2 minutes).
-3. **Rollback:** If "Undo" is clicked, a cancellation command is sent to restore the previous state.
+2. **Short Grace Period:** The UI provides an "Undo" button (Snackbar/Toast) for **30 seconds**. This popup includes a "Dismiss" (X) button to confirm the action immediately.
+3. **Rollback:** If "Undo" is clicked, the transaction is **hard-deleted**. If the window expires or is dismissed, the transaction is finalized. Guests lose the ability to undo once this volatile window closes.
 4. **Rationale:** This short window minimizes the risk of inventory conflicts with Owner updates while providing the necessary UX safety net for non-technical users.
 
 ---
