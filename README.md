@@ -60,6 +60,9 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - [ADR 004: Local Development Workflow and Quality Automation](docs/adr/004-local-development-workflow-and-quality-automation.md)
 - [ADR 005: Adopt Vitest for Testing](docs/adr/005-adopt-vitest-for-testing.md)
 - [ADR 006: Domain Modeling Patterns](docs/adr/006-domain-modeling-patterns.md)
+- [ADR 007: Validation Modes & Legacy Data Strategy](docs/adr/007-validation-modes.md)
+- [ADR 008: Explicit Cancellation Flow](docs/adr/008-explicit-cancellation-flow.md)
+- [ADR 009: Client-Side Undo Window](docs/adr/009-client-side-undo-window.md)
 
 ## License
 
