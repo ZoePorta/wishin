@@ -6,7 +6,7 @@ The `Wishlist` is the central aggregate root of the domain. It groups `WishlistI
 
 ## Validation Modes
 
-The entity supports three validation modes to ensure consistent behavior with the rest of the domain:
+The entity supports two validation modes to ensure consistent behavior with the rest of the domain:
 
 - **STRICT** (Create & Update): Full validation. Enforces all structural and business rules (e.g., max items, valid visibility/participation).
 - **STRUCTURAL** (Hydration): Enforces only structural integrity. Bypasses business rules to allow loading legacy data (e.g., lists exceeding the new 100-item limit).
@@ -84,6 +84,6 @@ The entity supports three validation modes to ensure consistent behavior with th
 
 ## Domain Errors
 
-- `InvalidAttributeError`: Thrown on invalid title length, privacy/participation level or UUIDs.
+- `InvalidAttributeError`: Thrown on invalid title length, visibility/participation level or UUIDs.
 - `LimitExceededError`: Thrown when trying to add items beyond the 100-item limit.
 - `InvalidOperationError`: Thrown if trying to add an item belonging to another wishlist.

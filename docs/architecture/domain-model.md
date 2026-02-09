@@ -98,7 +98,7 @@ stateDiagram-v2
         STRUCTURAL --> Structural
     }
 
-    Structural: Id & Basic Types
+    Structural: UUIDs & Basic Types
     Business: Name Length, URL Formats, Price range
     Inventory: Total >= Reserved + Purchased (Ignored if isUnlimited)
 
