@@ -18,7 +18,8 @@ classDiagram
         +string id
         +string ownerId
         +string title
-        +Privacy privacy
+        +WishlistVisibility visibility
+        +WishlistParticipation participation
         +string? description
         +List~WishlistItem~ items
     }

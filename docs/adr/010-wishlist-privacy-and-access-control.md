@@ -34,19 +34,34 @@ We will adopt a security-first approach to wishlist access and visibility.
 - **Public Profiles** are delayed to the **Moonshot Initiatives** phase.
 - In the future, profiles will only be visible to **confirmed contacts** (mutual connection), not the general public by default.
 
-### 3. Wishlist Access Model
+### 3. Wishlist Access & Participation Model
 
-- **Access Methods:** Users can access wishlists via the direct UUID URL or through the user's profile (when available/authorized).
-- **Private Lists (Final Phase):**
-  - Creators can invite specific friends to private lists.
-  - Invited friends will see these lists on the creator's profile (hidden to others).
-  - Uninvited users accessing the URL will receive a 404 (Not Found) error to mask the existence of the resource (Privacy by Design).
-  - Invitations can be revoked.
-- **Scope Definition (Phase 2):**
-  - List creators will be able to define the **Scope** of who can buy/reserve items:
-    - **Public:** Anyone with the link (including anonymous guests).
-    - **Registered:** Only logged-in users.
-    - **Contacts:** Only confirmed friends (when implemented).
+We distinguish between **Visibility** (who can see) and **Participation** (who can act/buy).
+
+#### A. Visibility (View Access)
+
+- **Levels:**
+  - **Link (Public via UUID):** Accessible by anyone with the UUID logic.
+  - **Private (Invite Only):** Accessible only to the owner and explicitly invited users.
+- **Default:** Link (for MVP). Public Profiles will respect this setting (hiding Private lists).
+
+#### B. Participation (Action Access)
+
+- Controls who can perform `reserve` or `purchase` actions on a visible list.
+- **Levels:**
+  - **Anyone:** Anonymous guests and registered users (Default for simple sharing).
+  - **Registered:** Must be logged in to act.
+  - **Contacts:** Must be a confirmed contact of the owner.
+  - _(Private lists imply "Invitees Only" implicitly)_.
+
+#### Summary
+
+| Visibility  | Participation Mode | Behavior                                                 |
+| :---------- | :----------------- | :------------------------------------------------------- |
+| **Link**    | **Anyone**         | Public URL, Guests can buy (Mother Factor).              |
+| **Link**    | **Registered**     | Public URL, but must login to buy.                       |
+| **Link**    | **Contacts**       | Public URL, but only friends can buy.                    |
+| **Private** | _(Implied)_        | URL returns 404 for non-invitees. Only invitees can buy. |
 
 ### 4. Domain Preparedness
 
