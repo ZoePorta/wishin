@@ -58,7 +58,7 @@ The entity supports two validation modes to ensure consistent behavior with the 
 
 - **Effect:** Modifies editable properties (title, description, visibility, participation).
 - **Restrictions:** Cannot modify `id`, `ownerId`, `items` (items are managed via specific item methods, though aggregate might coordinate).
-- **Logic:** Creates a new instance with merged properties.
+- **Logic:** Creates a new instance with merged properties and applies STRICT validation.
 - **Returns:** New instance with updated state.
 
 ### `addItem(item: WishlistItem)`

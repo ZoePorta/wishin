@@ -21,3 +21,19 @@ export class InvalidTransitionError extends Error {
     Object.setPrototypeOf(this, InvalidTransitionError.prototype);
   }
 }
+
+export class LimitExceededError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "LimitExceededError";
+    Object.setPrototypeOf(this, LimitExceededError.prototype);
+  }
+}
+
+export class InvalidOperationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidOperationError";
+    Object.setPrototypeOf(this, InvalidOperationError.prototype);
+  }
+}
