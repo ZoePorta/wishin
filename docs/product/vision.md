@@ -27,8 +27,8 @@ The "Mother Factor" is the guiding design principle of Wishin. It recognizes tha
 | Category         | **MVP (Phase 1)**                             | **Full Version (Phase 2)**                                   | **Moonshot Initiatives**                                                      |
 | :--------------- | :-------------------------------------------- | :----------------------------------------------------------- | :---------------------------------------------------------------------------- |
 | **Wishlists**    | 1 list per user. Single owner. Max 100 items. | Multiple lists. Collaborative editing (e.g., Wedding lists). | Conditional/Linked gifts (e.g., set of brushes locked until Easel is bought). |
-| **Access**       | Unique URL (Slug-based).                      | Public profile + URL.                                        | Private lists (Invite-only/Explicit permission).                              |
-| **Users**        | Anonymous Guest support for Purchase/Reserve. | Public profiles.                                             | Friend system (Contact lists integration).                                    |
+| **Access**       | Unique URL (UUID-based).                      | Scope Control (Public/Registered/Contacts).                  | Public Profiles & Private Lists (Invite-only).                                |
+| **Users**        | Anonymous Guest support for Purchase/Reserve. | Registered User Profiles (Private view).                     | Public Profiles & Friend system.                                              |
 | **Inventory**    | Order by Priority. Basic Stock Management.    | Custom sorting (Price, Amount). Hide out-of-stock toggle.    | "Add to my list" (Clone items between users).                                 |
 | **Reservations** | Unlimited duration.                           | Fixed expiration time.                                       | Admin-configurable expiration.                                                |
 | **Gamification** | -                                             | -                                                            | Badges (Top Gifter, Big Spender, Creator).                                    |
@@ -81,5 +81,5 @@ Anonymous actions (Purchase) include a brief **safety window** to handle acciden
 To maintain focus on the core value proposition, the following features are explicitly excluded from the MVP:
 
 - **Payment Processing:** Wishin tracks intent and status; it does not handle monetary transactions.
-- **Global User Search:** Lists are accessed via direct links (Slugs) or profiles, not a global directory.
+- **Global User Search:** Lists are accessed via direct links (UUIDs) or profiles (when available), not a global directory.
 - **Real-time Social Feed:** No internal chat; communication happens through external channels.

@@ -17,7 +17,6 @@ classDiagram
     class Wishlist {
         +string id
         +string ownerId
-        +string slug
         +string title
         +Privacy privacy
         +string? description
@@ -98,7 +97,7 @@ stateDiagram-v2
         STRUCTURAL --> Structural
     }
 
-    Structural: UUIDs & Basic Types
+    Structural: Id & Basic Types
     Business: Name Length, URL Formats, Price range
     Inventory: Total >= Reserved + Purchased (Ignored if isUnlimited)
 
