@@ -17,9 +17,9 @@ classDiagram
     class Wishlist {
         +string id
         +string ownerId
-        +string slug
         +string title
-        +Privacy privacy
+        +WishlistVisibility visibility
+        +WishlistParticipation participation
         +string? description
         +List~WishlistItem~ items
     }
