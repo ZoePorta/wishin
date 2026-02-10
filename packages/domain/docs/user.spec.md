@@ -19,7 +19,7 @@ The entity supports two validation modes to ensure consistent behavior with the 
 ### Business Rules (Enforced by STRICT)
 
 - `email`: Must be a valid email format.
-- `username`: 3-30 characters, alphanumeric or common safe characters (.-\_).
+- `username`: 3-30 chars, alphanumeric + `.-_`.
 - `bio`: Max 500 characters.
 - `imageUrl`: Must be a valid URL if present.
 
