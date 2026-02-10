@@ -222,16 +222,18 @@ export class User {
 
       // Image URL validity
       if (this.imageUrl) {
+        let url: URL;
         try {
-          const url = new URL(this.imageUrl);
-          if (url.protocol !== "http:" && url.protocol !== "https:") {
-            throw new InvalidAttributeError(
-              "Invalid imageUrl: Must use http or https protocol",
-            );
-          }
+          url = new URL(this.imageUrl);
         } catch {
           throw new InvalidAttributeError(
             "Invalid imageUrl: Must be a valid URL",
+          );
+        }
+
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+          throw new InvalidAttributeError(
+            "Invalid imageUrl: Must use http or https protocol",
           );
         }
       }

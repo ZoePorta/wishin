@@ -84,16 +84,16 @@ describe("User Entity", () => {
     it("should throw InvalidAttributeError if imageUrl is invalid", () => {
       expect(() =>
         User.create({ ...validProps, imageUrl: "invalid-url" }),
-      ).toThrow(InvalidAttributeError);
+      ).toThrow("Invalid imageUrl: Must be a valid URL");
     });
 
     it("should throw InvalidAttributeError if imageUrl protocol is not http or https", () => {
       expect(() =>
         User.create({ ...validProps, imageUrl: "ftp://example.com/image.jpg" }),
-      ).toThrow(InvalidAttributeError);
+      ).toThrow("Invalid imageUrl: Must use http or https protocol");
       expect(() =>
         User.create({ ...validProps, imageUrl: "javascript:alert(1)" }),
-      ).toThrow(InvalidAttributeError);
+      ).toThrow("Invalid imageUrl: Must use http or https protocol");
     });
 
     it("should accept valid http/https imageUrl", () => {
