@@ -99,6 +99,12 @@ export class Wishlist {
     return Wishlist._createWithMode(
       {
         ...props,
+        title:
+          typeof props.title === "string" ? props.title.trim() : props.title,
+        description:
+          typeof props.description === "string"
+            ? props.description.trim()
+            : props.description,
         items: props.items ?? [],
         createdAt: props.createdAt ?? now,
         updatedAt: props.updatedAt ?? now,
@@ -122,7 +128,15 @@ export class Wishlist {
     props: WishlistProps,
     mode: ValidationMode,
   ): Wishlist {
-    return new Wishlist(props, mode);
+    const sanitizedProps = {
+      ...props,
+      title: typeof props.title === "string" ? props.title.trim() : props.title,
+      description:
+        typeof props.description === "string"
+          ? props.description.trim()
+          : props.description,
+    };
+    return new Wishlist(sanitizedProps, mode);
   }
 
   /**

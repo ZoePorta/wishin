@@ -278,5 +278,53 @@ describe("Wishlist Aggregate", () => {
 
       expect(hugeWishlist.items).toHaveLength(101);
     });
+
+    it("should trim properties during reconstitution", () => {
+      const untrimmedProps = {
+        ...validProps,
+        title: "  untouched  ",
+        description: "  untouched  ",
+        items: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const wishlist = Wishlist.reconstitute(untrimmedProps);
+
+      expect(wishlist.title).toBe("untouched");
+      expect(wishlist.description).toBe("untouched");
+    });
+  });
+
+  describe("Trimming Logic", () => {
+    it("should trim title and description on create", () => {
+      const wishlist = Wishlist.create({
+        ...validProps,
+        title: "  Spaced Title  ",
+        description: "  Spaced Description  ",
+      });
+
+      expect(wishlist.title).toBe("Spaced Title");
+      expect(wishlist.description).toBe("Spaced Description");
+    });
+
+    it("should trim title on update", () => {
+      const wishlist = Wishlist.create(validProps);
+      const updated = wishlist.update({ title: "  Updated Title  " });
+      expect(updated.title).toBe("Updated Title");
+    });
+
+    it("should trim description on update", () => {
+      const wishlist = Wishlist.create(validProps);
+      const updated = wishlist.update({
+        description: "  Updated Description  ",
+      });
+      expect(updated.description).toBe("Updated Description");
+    });
+
+    it("should validate length AFTER trimming on create", () => {
+      expect(() => {
+        Wishlist.create({ ...validProps, title: "   ab   " }); // Trims to "ab" (length 2)
+      }).toThrow(InvalidAttributeError);
+    });
   });
 });
