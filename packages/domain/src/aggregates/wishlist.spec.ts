@@ -4,7 +4,7 @@ import {
   WishlistVisibility,
   WishlistParticipation,
 } from "./wishlist";
-import { WishlistItem } from "../entities/wishlist-item";
+import type { WishlistItem } from "../entities/wishlist-item";
 import {
   InvalidAttributeError,
   LimitExceededError,
