@@ -8,11 +8,22 @@ import { ValidationMode } from "../common/validation-mode";
 
 import { isValidUUID } from "../common/validation-utils";
 
+/**
+ * Controls who can view the wishlist.
+ * - LINK: Anyone with the UUID link can view.
+ * - PRIVATE: Only the owner can view.
+ */
 export enum WishlistVisibility {
   LINK = "LINK",
   PRIVATE = "PRIVATE",
 }
 
+/**
+ * Controls who can perform actions (reserve/purchase) on wishlist items.
+ * - ANYONE: Any viewer can participate.
+ * - REGISTERED: Only registered users can participate.
+ * - CONTACTS: Only contacts of the owner can participate.
+ */
 export enum WishlistParticipation {
   ANYONE = "ANYONE",
   REGISTERED = "REGISTERED",
