@@ -22,6 +22,12 @@ export class InvalidTransitionError extends Error {
   }
 }
 
+/**
+ * Error thrown when a defined limit is exceeded (e.g., maximum number of items).
+ *
+ * @param message - The error message.
+ * @returns An instance of LimitExceededError.
+ */
 export class LimitExceededError extends Error {
   constructor(message: string) {
     super(message);
@@ -30,6 +36,12 @@ export class LimitExceededError extends Error {
   }
 }
 
+/**
+ * Error thrown when an operation is invalid in the current state or context.
+ *
+ * @param message - The error message.
+ * @returns An instance of InvalidOperationError.
+ */
 export class InvalidOperationError extends Error {
   constructor(message: string) {
     super(message);

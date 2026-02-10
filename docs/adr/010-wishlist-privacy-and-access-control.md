@@ -83,5 +83,5 @@ We distinguish between **Visibility** (who can see) and **Participation** (who c
 ### Compliance
 
 - API endpoints for retrieving wishlists must accept UUIDs.
-- `Wishlist` entity must support a `scope` (or similar) attribute for future access control usage.
-- `Wishlist` entity logic must handle validation of access based on current user context (auth/guest).
+- `Wishlist` entity must explicitly support `visibility` and `participation` attributes.
+- `Wishlist` entity logic must validate access based on the current user context (auth/guest) using `visibility` and `participation` rules.

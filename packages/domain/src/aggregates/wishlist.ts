@@ -19,6 +19,21 @@ export enum WishlistParticipation {
   CONTACTS = "CONTACTS",
 }
 
+/**
+ * Interface representing the properties of a Wishlist.
+ *
+ * @property id - Unique identifier (UUID v4) for the wishlist.
+ * @property ownerId - UUID of the user who owns the wishlist.
+ * @property title - Human-readable title of the wishlist.
+ * @property description - Optional detailed description of the wishlist.
+ * @property visibility - Visibility setting (e.g., LINK, PRIVATE).
+ * @property participation - Participation setting (e.g., ANYONE, REGISTERED).
+ * @property items - Collection of WishlistItems included in the list.
+ * @property createdAt - Timestamp when the wishlist was created.
+ * @property updatedAt - Timestamp when the wishlist was last updated.
+ *
+ * This interface is a data structure and does not throw exceptions or return values.
+ */
 export interface WishlistProps {
   id: string;
   ownerId: string;
@@ -117,13 +132,6 @@ export class Wishlist {
     return new Wishlist(props, mode);
   }
 
-  /**
-   * Updates editable properties of the Wishlist.
-   * Enforces strict business validation on new values.
-   * @param props - Partial properties to update.
-   * @returns A new Wishlist instance with updated values.
-   * @throws {InvalidAttributeError} If validation of new values fails.
-   */
   /**
    * Updates editable properties of the Wishlist.
    * Enforces strict business validation on new values.

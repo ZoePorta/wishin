@@ -71,10 +71,11 @@ The entity supports two validation modes to ensure consistent behavior with the 
 
 ### `removeItem(itemId: string)`
 
-- **Effect:** Removes an item from the list.
+- **Effect:** Removes an item from the list and refreshes the timestamp.
 - **Logic:**
-  - Checks if item exists.
-- **Returns:** New `Wishlist` instance without the item.
+  - Filters out item by matching ID (idempotent; no error if not found).
+  - Updates `updatedAt` to the current timestamp even if no item was removed.
+- **Returns:** New `Wishlist` instance.
 
 ### `equals(other: Wishlist)`
 
