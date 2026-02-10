@@ -8,6 +8,9 @@ Accepted
 
 ## Context
 
+> [!IMPORTANT]
+> Amends ADR 010
+
 The `Wishlist` aggregate currently defaults `visibility` to `LINK` and `participation` to `ANYONE` when created. As highlighted by security analysis (Coderabbit), defaulting to `LINK/ANYONE` violates the principle of "Secure by Default". If a UUID leaks, a newly created wishlist could become publicly viewable and actionable without the user's explicit intent.
 
 ## Decision
