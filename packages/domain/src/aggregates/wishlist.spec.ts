@@ -22,6 +22,28 @@ describe("Wishlist Aggregate", () => {
     participation: WishlistParticipation.ANYONE,
   };
 
+  describe("Equality", () => {
+    it("should return true if IDs match", () => {
+      const w1 = Wishlist.create(validProps);
+      const w2 = Wishlist.reconstitute({
+        ...validProps,
+        items: [],
+        createdAt: w1.createdAt,
+        updatedAt: w1.updatedAt,
+      });
+      expect(w1.equals(w2)).toBe(true);
+    });
+
+    it("should return false if IDs different", () => {
+      const w1 = Wishlist.create(validProps);
+      const w2 = Wishlist.create({
+        ...validProps,
+        id: "8c4a1e94-0f1d-4e8a-9a2b-1b0d7b3dcb6e", // distinct v4
+      });
+      expect(w1.equals(w2)).toBe(false);
+    });
+  });
+
   describe("Creation (Strict Validation)", () => {
     it("should create a valid wishlist", () => {
       const wishlist = Wishlist.create(validProps);
@@ -115,6 +137,14 @@ describe("Wishlist Aggregate", () => {
       expect(updatedWishlist.updatedAt.getTime()).toBeGreaterThanOrEqual(
         wishlist.updatedAt.getTime(),
       );
+
+      // Verify visibility and participation update
+      const privacyUpdate = wishlist.update({
+        visibility: WishlistVisibility.PRIVATE,
+        participation: WishlistParticipation.CONTACTS,
+      });
+      expect(privacyUpdate.visibility).toBe(WishlistVisibility.PRIVATE);
+      expect(privacyUpdate.participation).toBe(WishlistParticipation.CONTACTS);
 
       // Identity persistence
       expect(updatedWishlist.id).toBe(wishlist.id);
@@ -216,6 +246,13 @@ describe("Wishlist Aggregate", () => {
       expect(emptyAgain.items).toHaveLength(0);
     });
 
+    it("should do nothing when removing non-existent item", () => {
+      const wishlist = Wishlist.create(validProps);
+      const sameWishlist = wishlist.removeItem("non-existent-item-id");
+      expect(sameWishlist.items).toHaveLength(0);
+      expect(sameWishlist.items).toEqual(wishlist.items); // Deep equality check
+    });
+
     it("should enforce 100 items limit", () => {
       // Reconstitute with 100 items to simulate a full list
       // We bypass adding 100 items one by one for performance in test setup
@@ -292,6 +329,21 @@ describe("Wishlist Aggregate", () => {
 
       expect(wishlist.title).toBe("untouched");
       expect(wishlist.description).toBe("untouched");
+    });
+
+    it("should reconstitute with invalid title (bypass validation)", () => {
+      const shortTitleProps = {
+        ...validProps,
+        title: "Hi", // Too short for STRICT, but acceptable for STRUCTURAL
+        items: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const wishlist = Wishlist.reconstitute(shortTitleProps);
+      expect(wishlist.title).toBe("Hi");
+      expect(wishlist.createdAt).toEqual(shortTitleProps.createdAt);
+      expect(wishlist.updatedAt).toEqual(shortTitleProps.updatedAt);
     });
   });
 
