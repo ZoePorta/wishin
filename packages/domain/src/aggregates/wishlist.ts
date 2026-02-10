@@ -233,6 +233,15 @@ export class Wishlist {
         "Invalid ownerId: Must be a valid UUID v4",
       );
     }
+    if (typeof this.title !== "string") {
+      throw new InvalidAttributeError("Invalid title: Must be a string");
+    }
+    if (
+      this.description !== undefined &&
+      typeof this.description !== "string"
+    ) {
+      throw new InvalidAttributeError("Invalid description: Must be a string");
+    }
     if (!Object.values(WishlistVisibility).includes(this.visibility)) {
       throw new InvalidAttributeError("Invalid visibility");
     }
@@ -240,8 +249,23 @@ export class Wishlist {
       throw new InvalidAttributeError("Invalid participation");
     }
 
+    // Item Ownership Validation (Always)
+    for (const item of this.items) {
+      if (item.wishlistId !== this.id) {
+        throw new InvalidAttributeError(
+          `Item ${item.id} belongs to a different wishlist (${item.wishlistId})`,
+        );
+      }
+    }
+
     // Business Validation (Strict)
     if (mode === ValidationMode.STRICT) {
+      if (this.items.length > 100) {
+        throw new LimitExceededError(
+          "Cannot add more than 100 items to wishlist",
+        );
+      }
+
       if (this.title.length < 3) {
         throw new InvalidAttributeError(
           "Invalid title: Must be at least 3 characters",

@@ -143,9 +143,57 @@ describe("Wishlist Aggregate", () => {
         wishlist.update({ title: "Lo" });
       }).toThrow(InvalidAttributeError);
     });
+
+    it("should throw InvalidAttributeError if title is not a string", () => {
+      const wishlist = Wishlist.create(validProps);
+      expect(() => {
+        // @ts-expect-error - Testing runtime type check
+        wishlist.update({ title: 123 });
+      }).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if description is not a string", () => {
+      const wishlist = Wishlist.create(validProps);
+      expect(() => {
+        // @ts-expect-error - Testing runtime type check
+        wishlist.update({ description: 123 });
+      }).toThrow(InvalidAttributeError);
+    });
   });
 
   describe("Item Management", () => {
+    it("should throw LimitExceededError if creating with > 100 items in STRICT mode", () => {
+      const items = Array.from(
+        { length: 101 },
+        (_, i) =>
+          ({
+            id: `item-${i.toString()}`,
+            wishlistId: validProps.id,
+          }) as unknown as WishlistItem,
+      );
+
+      expect(() => {
+        Wishlist.create({
+          ...validProps,
+          items: items,
+        });
+      }).toThrow(LimitExceededError);
+    });
+
+    it("should throw InvalidAttributeError if creating with items belonging to another wishlist", () => {
+      const foreignItem = {
+        id: "item-foreign",
+        wishlistId: "other-wishlist-id",
+      } as unknown as WishlistItem;
+
+      expect(() => {
+        Wishlist.create({
+          ...validProps,
+          items: [foreignItem],
+        });
+      }).toThrow(InvalidAttributeError);
+    });
+
     it("should add an item to the wishlist", () => {
       const wishlist = Wishlist.create(validProps);
       // Mock item or create a real one if easy.

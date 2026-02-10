@@ -2,6 +2,7 @@
  * Validates if a string is a valid UUID v4.
  * @param uuid - The string to validate.
  * @returns True if valid UUID v4, false otherwise.
+ * @throws {never} This function does not throw.
  */
 export function isValidUUID(uuid: string): boolean {
   const uuidRegex =
