@@ -5,6 +5,11 @@ import {
   WishlistParticipation,
 } from "./wishlist";
 import { WishlistItem } from "../entities/wishlist-item";
+import {
+  InvalidAttributeError,
+  LimitExceededError,
+  InvalidOperationError,
+} from "../errors/domain-errors";
 
 describe("Wishlist Aggregate", () => {
   // Valid UUID v4s
@@ -49,19 +54,19 @@ describe("Wishlist Aggregate", () => {
     it("should throw InvalidAttributeError if title is too short", () => {
       expect(() => {
         Wishlist.create({ ...validProps, title: "Lo" });
-      }).toThrow("InvalidAttributeError");
+      }).toThrow(InvalidAttributeError);
     });
 
     it("should throw InvalidAttributeError if title is too long", () => {
       expect(() => {
         Wishlist.create({ ...validProps, title: "a".repeat(101) });
-      }).toThrow("InvalidAttributeError");
+      }).toThrow(InvalidAttributeError);
     });
 
     it("should throw InvalidAttributeError if id is not a valid UUID v4", () => {
       expect(() => {
         Wishlist.create({ ...validProps, id: "invalid-uuid" });
-      }).toThrow("InvalidAttributeError");
+      }).toThrow(InvalidAttributeError);
 
       expect(() => {
         // v1 UUID (not v4)
@@ -69,19 +74,19 @@ describe("Wishlist Aggregate", () => {
           ...validProps,
           id: "123e4567-e89b-12d3-a456-426614174000",
         });
-      }).toThrow("InvalidAttributeError");
+      }).toThrow(InvalidAttributeError);
     });
 
     it("should throw InvalidAttributeError if ownerId is not a valid UUID v4", () => {
       expect(() => {
         Wishlist.create({ ...validProps, ownerId: "not-a-uuid" });
-      }).toThrow("InvalidAttributeError");
+      }).toThrow(InvalidAttributeError);
     });
 
     it("should throw InvalidAttributeError if description is too long", () => {
       expect(() => {
         Wishlist.create({ ...validProps, description: "a".repeat(501) });
-      }).toThrow("InvalidAttributeError");
+      }).toThrow(InvalidAttributeError);
     });
 
     it("should throw InvalidAttributeError if visibility is invalid", () => {
@@ -90,7 +95,7 @@ describe("Wishlist Aggregate", () => {
           ...validProps,
           visibility: "INVALID_VISIBILITY" as WishlistVisibility,
         });
-      }).toThrow("InvalidAttributeError");
+      }).toThrow(InvalidAttributeError);
     });
 
     it("should throw InvalidAttributeError if participation is invalid", () => {
@@ -99,7 +104,7 @@ describe("Wishlist Aggregate", () => {
           ...validProps,
           participation: "INVALID_PARTICIPATION" as WishlistParticipation,
         });
-      }).toThrow("InvalidAttributeError");
+      }).toThrow(InvalidAttributeError);
     });
   });
 
@@ -136,7 +141,7 @@ describe("Wishlist Aggregate", () => {
       const wishlist = Wishlist.create(validProps);
       expect(() => {
         wishlist.update({ title: "Lo" });
-      }).toThrow("InvalidAttributeError");
+      }).toThrow(InvalidAttributeError);
     });
   });
 
@@ -194,7 +199,7 @@ describe("Wishlist Aggregate", () => {
 
       expect(() => {
         fullWishlist.addItem(overflowItem);
-      }).toThrow("LimitExceededError");
+      }).toThrow(LimitExceededError);
     });
 
     it("should throw InvalidOperationError if adding item with different wishlistId", () => {
@@ -206,7 +211,7 @@ describe("Wishlist Aggregate", () => {
 
       expect(() => {
         wishlist.addItem(otherItem);
-      }).toThrow("InvalidOperationError");
+      }).toThrow(InvalidOperationError);
     });
   });
 
