@@ -6,6 +6,8 @@ import {
 } from "../errors/domain-errors";
 import { ValidationMode } from "../common/validation-mode";
 
+import { isValidUUID } from "../common/validation-utils";
+
 export enum WishlistVisibility {
   LINK = "LINK",
   PRIVATE = "PRIVATE",
@@ -215,10 +217,10 @@ export class Wishlist {
 
   private validate(mode: ValidationMode): void {
     // Structural Validation (Always)
-    if (!this.isValidUUID(this.id)) {
+    if (!isValidUUID(this.id)) {
       throw new InvalidAttributeError("Invalid id: Must be a valid UUID v4");
     }
-    if (!this.isValidUUID(this.ownerId)) {
+    if (!isValidUUID(this.ownerId)) {
       throw new InvalidAttributeError(
         "Invalid ownerId: Must be a valid UUID v4",
       );
@@ -248,12 +250,6 @@ export class Wishlist {
         );
       }
     }
-  }
-
-  private isValidUUID(uuid: string): boolean {
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(uuid);
   }
 
   private toProps(): WishlistProps {

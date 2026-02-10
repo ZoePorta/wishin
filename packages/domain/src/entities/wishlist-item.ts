@@ -21,6 +21,8 @@ export enum Priority {
 
 import { ValidationMode as SharedValidationMode } from "../common/validation-mode";
 
+import { isValidUUID } from "../common/validation-utils";
+
 /**
  * Extended ValidationMode for WishlistItem including EVOLUTIVE and TRANSACTION.
  */
@@ -259,7 +261,7 @@ export class WishlistItem {
    * @throws {InvalidAttributeError} If newWishlistId is invalid or same as current.
    */
   public moveToWishlist(newWishlistId: string): WishlistItem {
-    if (!this.isValidUUID(newWishlistId)) {
+    if (!isValidUUID(newWishlistId)) {
       throw new InvalidAttributeError(
         "Invalid newWishlistId: Must be a valid UUID v4",
       );
@@ -422,11 +424,11 @@ export class WishlistItem {
     // --- STRUCTURAL INTEGRITY (Always Enforced: ALL Modes) ---
 
     // ID Validation (UUID v4)
-    if (!this.isValidUUID(this.id)) {
+    if (!isValidUUID(this.id)) {
       throw new InvalidAttributeError("Invalid id: Must be a valid UUID v4");
     }
 
-    if (!this.isValidUUID(this.wishlistId)) {
+    if (!isValidUUID(this.wishlistId)) {
       throw new InvalidAttributeError(
         "Invalid wishlistId: Must be a valid UUID v4",
       );
@@ -522,12 +524,6 @@ export class WishlistItem {
         }
       }
     }
-  }
-
-  private isValidUUID(uuid: string): boolean {
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(uuid);
   }
 
   private isValidUrl(url: string): boolean {
