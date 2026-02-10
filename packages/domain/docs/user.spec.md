@@ -27,7 +27,7 @@ The entity supports two validation modes to ensure consistent behavior with the 
 
 | Attribute  | Type               | Description           | Structural (Hydration) | Business (Strict)                |
 | :--------- | :----------------- | :-------------------- | :--------------------- | :------------------------------- |
-| `id`       | `string` (UUID v4) | Unique identifier     | Required, UUID v4      | Immutable                        |
+| `id`       | `string` (UUID v4) | Unique identifier     | Required, UUID v4      | —                                |
 | `email`    | `string`           | Unique email address  | Required, non-empty    | Valid email format               |
 | `username` | `string`           | Display name (handle) | Required, non-empty    | 3-30 chars, alphanumeric + `.-_` |
 | `imageUrl` | `string`           | Profile picture URL   | Optional               | Valid URL                        |
