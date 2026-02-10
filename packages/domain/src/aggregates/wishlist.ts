@@ -89,15 +89,10 @@ export class Wishlist {
    * @throws {InvalidAttributeError} If validation fails (structural or business rules).
    */
   public static create(
-    props: Omit<
-      WishlistProps,
-      "items" | "createdAt" | "updatedAt" | "visibility" | "participation"
-    > & {
+    props: Omit<WishlistProps, "items" | "createdAt" | "updatedAt"> & {
       items?: WishlistItem[];
       createdAt?: Date;
       updatedAt?: Date;
-      visibility?: WishlistVisibility;
-      participation?: WishlistParticipation;
     },
   ): Wishlist {
     const now = new Date();
@@ -107,8 +102,6 @@ export class Wishlist {
         items: props.items ?? [],
         createdAt: props.createdAt ?? now,
         updatedAt: props.updatedAt ?? now,
-        visibility: props.visibility ?? WishlistVisibility.LINK,
-        participation: props.participation ?? WishlistParticipation.ANYONE,
       },
       ValidationMode.STRICT,
     );

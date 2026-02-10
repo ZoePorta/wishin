@@ -23,19 +23,14 @@ describe("Wishlist Aggregate", () => {
   };
 
   describe("Creation (Strict Validation)", () => {
-    it("should create a valid wishlist with default values", () => {
-      // Omit optional fields to test defaults
-      const wishlist = Wishlist.create({
-        id: validProps.id,
-        ownerId: validProps.ownerId,
-        title: validProps.title,
-      });
+    it("should create a valid wishlist", () => {
+      const wishlist = Wishlist.create(validProps);
 
       expect(wishlist).toBeInstanceOf(Wishlist);
       expect(wishlist.id).toBe(validProps.id);
       expect(wishlist.items).toHaveLength(0);
-      expect(wishlist.visibility).toBe(WishlistVisibility.LINK); // Default
-      expect(wishlist.participation).toBe(WishlistParticipation.ANYONE); // Default
+      expect(wishlist.visibility).toBe(WishlistVisibility.LINK);
+      expect(wishlist.participation).toBe(WishlistParticipation.ANYONE);
       expect(wishlist.createdAt).toBeInstanceOf(Date);
       expect(wishlist.updatedAt).toBeInstanceOf(Date);
     });
