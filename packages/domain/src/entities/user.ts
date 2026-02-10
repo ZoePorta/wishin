@@ -146,14 +146,13 @@ export class User {
       throw new InvalidAttributeError("Cannot update email");
     }
 
-    const currentProps = this.toProps();
     const sanitizedUpdateProps = Object.fromEntries(
       Object.entries(props).filter(([, value]) => typeof value !== "undefined"),
     ) as Partial<UserProps>;
 
     return User._createWithMode(
       {
-        ...currentProps,
+        ...this.toProps(),
         ...sanitizedUpdateProps,
       },
       ValidationMode.STRICT, // Updates always enforce strict rules
@@ -184,6 +183,13 @@ export class User {
       throw new InvalidAttributeError(
         "Invalid username: Must be a non-empty string",
       );
+    }
+    // Structural type checks for optional fields
+    if (this.bio !== undefined && typeof this.bio !== "string") {
+      throw new InvalidAttributeError("Invalid bio: Must be a string");
+    }
+    if (this.imageUrl !== undefined && typeof this.imageUrl !== "string") {
+      throw new InvalidAttributeError("Invalid imageUrl: Must be a string");
     }
 
     // --- BUSINESS RULES (STRICT) ---
@@ -217,7 +223,12 @@ export class User {
       // Image URL validity
       if (this.imageUrl) {
         try {
-          new URL(this.imageUrl);
+          const url = new URL(this.imageUrl);
+          if (url.protocol !== "http:" && url.protocol !== "https:") {
+            throw new InvalidAttributeError(
+              "Invalid imageUrl: Must use http or https protocol",
+            );
+          }
         } catch {
           throw new InvalidAttributeError(
             "Invalid imageUrl: Must be a valid URL",

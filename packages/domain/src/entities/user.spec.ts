@@ -62,6 +62,12 @@ describe("User Entity", () => {
       ).toThrow(InvalidAttributeError);
     });
 
+    it("should throw InvalidAttributeError if bio is not a string", () => {
+      expect(() =>
+        User.create({ ...validProps, bio: 123 as unknown as string }),
+      ).toThrow(InvalidAttributeError);
+    });
+
     it("should throw InvalidAttributeError if bio is too long (>500 chars)", () => {
       const longBio = "a".repeat(501);
       expect(() => User.create({ ...validProps, bio: longBio })).toThrow(
@@ -69,10 +75,41 @@ describe("User Entity", () => {
       );
     });
 
+    it("should throw InvalidAttributeError if imageUrl is not a string", () => {
+      expect(() =>
+        User.create({ ...validProps, imageUrl: 123 as unknown as string }),
+      ).toThrow(InvalidAttributeError);
+    });
+
     it("should throw InvalidAttributeError if imageUrl is invalid", () => {
       expect(() =>
         User.create({ ...validProps, imageUrl: "invalid-url" }),
       ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw InvalidAttributeError if imageUrl protocol is not http or https", () => {
+      expect(() =>
+        User.create({ ...validProps, imageUrl: "ftp://example.com/image.jpg" }),
+      ).toThrow(InvalidAttributeError);
+      expect(() =>
+        User.create({ ...validProps, imageUrl: "javascript:alert(1)" }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should accept valid http/https imageUrl", () => {
+      const userHttp = User.create({
+        ...validProps,
+        imageUrl: "http://example.com/image.jpg",
+      });
+      expect(userHttp).toBeInstanceOf(User);
+      expect(userHttp.imageUrl).toBe("http://example.com/image.jpg");
+
+      const userHttps = User.create({
+        ...validProps,
+        imageUrl: "https://example.com/image.jpg",
+      });
+      expect(userHttps).toBeInstanceOf(User);
+      expect(userHttps.imageUrl).toBe("https://example.com/image.jpg");
     });
   });
 
