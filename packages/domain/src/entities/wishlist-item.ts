@@ -19,12 +19,19 @@ export enum Priority {
   URGENT = 4,
 }
 
-enum ValidationMode {
-  STRICT = "STRICT",
-  EVOLUTIVE = "EVOLUTIVE",
-  TRANSACTION = "TRANSACTION",
-  STRUCTURAL = "STRUCTURAL",
-}
+import { ValidationMode as SharedValidationMode } from "../common/validation-mode";
+
+/**
+ * Extended ValidationMode for WishlistItem including EVOLUTIVE and TRANSACTION.
+ */
+export const ValidationMode = {
+  ...SharedValidationMode,
+  EVOLUTIVE: "EVOLUTIVE",
+  TRANSACTION: "TRANSACTION",
+} as const;
+
+export type ValidationMode =
+  (typeof ValidationMode)[keyof typeof ValidationMode];
 
 /**
  * Properties for a WishlistItem.

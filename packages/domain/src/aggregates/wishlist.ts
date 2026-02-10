@@ -4,6 +4,7 @@ import {
   LimitExceededError,
   InvalidOperationError,
 } from "../errors/domain-errors";
+import { ValidationMode } from "../common/validation-mode";
 
 export enum WishlistVisibility {
   LINK = "LINK",
@@ -28,9 +29,48 @@ export interface WishlistProps {
   updatedAt: Date;
 }
 
+/**
+ * Aggregate Root representing a collection of items (Wishlist).
+ *
+ * Identity is preserved via UUID v4.
+ *
+ * Key Invariants:
+ * - Max 100 items per wishlist.
+ * - Items must belong to this wishlist (wishlistId match).
+ * - Title/Description length constraints.
+ */
 export class Wishlist {
-  private constructor(private readonly props: WishlistProps) {}
+  public readonly id: string;
+  public readonly ownerId: string;
+  public readonly title: string;
+  public readonly description?: string;
+  public readonly visibility: WishlistVisibility;
+  public readonly participation: WishlistParticipation;
+  public readonly items: WishlistItem[];
+  public readonly createdAt: Date;
+  public readonly updatedAt: Date;
 
+  private constructor(props: WishlistProps, mode: ValidationMode) {
+    this.id = props.id;
+    this.ownerId = props.ownerId;
+    this.title = props.title;
+    this.description = props.description;
+    this.visibility = props.visibility;
+    this.participation = props.participation;
+    this.items = props.items;
+    this.createdAt = props.createdAt;
+    this.updatedAt = props.updatedAt;
+
+    this.validate(mode);
+  }
+
+  /**
+   * Factory method to create a new Wishlist.
+   * Enforces strict business validation.
+   * @param props - Initial properties for the wishlist.
+   * @returns A new valid Wishlist instance.
+   * @throws {InvalidAttributeError} If validation fails (structural or business rules).
+   */
   public static create(
     props: Omit<
       WishlistProps,
@@ -44,24 +84,51 @@ export class Wishlist {
     },
   ): Wishlist {
     const now = new Date();
-    const wishlist = new Wishlist({
-      ...props,
-      items: props.items ?? [],
-      createdAt: props.createdAt ?? now,
-      updatedAt: props.updatedAt ?? now,
-      visibility: props.visibility ?? WishlistVisibility.LINK,
-      participation: props.participation ?? WishlistParticipation.ANYONE,
-    });
-    wishlist.validate(true); // Strict validation
-    return wishlist;
+    return Wishlist._createWithMode(
+      {
+        ...props,
+        items: props.items ?? [],
+        createdAt: props.createdAt ?? now,
+        updatedAt: props.updatedAt ?? now,
+        visibility: props.visibility ?? WishlistVisibility.LINK,
+        participation: props.participation ?? WishlistParticipation.ANYONE,
+      },
+      ValidationMode.STRICT,
+    );
   }
 
+  /**
+   * Reconstitutes a Wishlist from persistence.
+   * Bypasses business validation to allow loading legacy data.
+   * @param props - The properties to restore.
+   * @returns A Wishlist instance.
+   * @throws {InvalidAttributeError} If structural integrity fails.
+   */
   public static reconstitute(props: WishlistProps): Wishlist {
-    const wishlist = new Wishlist(props);
-    wishlist.validate(false); // Structural validation only
-    return wishlist;
+    return Wishlist._createWithMode(props, ValidationMode.STRUCTURAL);
   }
 
+  private static _createWithMode(
+    props: WishlistProps,
+    mode: ValidationMode,
+  ): Wishlist {
+    return new Wishlist(props, mode);
+  }
+
+  /**
+   * Updates editable properties of the Wishlist.
+   * Enforces strict business validation on new values.
+   * @param props - Partial properties to update.
+   * @returns A new Wishlist instance with updated values.
+   * @throws {InvalidAttributeError} If validation of new values fails.
+   */
+  /**
+   * Updates editable properties of the Wishlist.
+   * Enforces strict business validation on new values.
+   * @param props - Partial properties to update.
+   * @returns A new Wishlist instance with updated values.
+   * @throws {InvalidAttributeError} If validation of new values fails.
+   */
   public update(
     props: Partial<
       Pick<
@@ -80,123 +147,106 @@ export class Wishlist {
     if (props.participation !== undefined)
       allowedProps.participation = props.participation;
 
-    const updated = new Wishlist({
-      ...this.props,
-      ...allowedProps,
-      updatedAt: new Date(),
-    });
-    updated.validate(true); // Strict validation for updates
+    const updated = Wishlist._createWithMode(
+      {
+        ...this.toProps(),
+        ...allowedProps,
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRICT,
+    );
     return updated;
   }
 
+  /**
+   * Adds an item to the wishlist.
+   * @param item - The item to add.
+   * @returns A new Wishlist instance containing the item.
+   * @throws {LimitExceededError} If the 100-item limit is reached.
+   * @throws {InvalidOperationError} If the item belongs to a different wishlist.
+   */
   public addItem(item: WishlistItem): Wishlist {
-    if (this.props.items.length >= 100) {
+    if (this.items.length >= 100) {
       throw new LimitExceededError(
         "Cannot add more than 100 items to wishlist",
       );
     }
 
-    if (item.wishlistId !== this.props.id) {
+    if (item.wishlistId !== this.id) {
       throw new InvalidOperationError(
         "Item belongs to a different wishlist (" + item.wishlistId + ")",
       );
     }
 
-    return new Wishlist({
-      ...this.props,
-      items: [...this.props.items, item],
-      updatedAt: new Date(),
-    });
+    return Wishlist._createWithMode(
+      {
+        ...this.toProps(),
+        items: [...this.items, item],
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRUCTURAL,
+    );
   }
 
+  /**
+   * Removes an item from the wishlist by ID.
+   * @param itemId - The ID of the item to remove.
+   * @returns A new Wishlist instance without the item.
+   */
   public removeItem(itemId: string): Wishlist {
-    return new Wishlist({
-      ...this.props,
-      items: this.props.items.filter((item) => item.id !== itemId),
-      updatedAt: new Date(),
-    });
+    return Wishlist._createWithMode(
+      {
+        ...this.toProps(),
+        items: this.items.filter((item) => item.id !== itemId),
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRUCTURAL,
+    );
   }
 
+  /**
+   * Checks equality based on domain identity (ID).
+   * @param other - The other Wishlist to compare.
+   * @returns True if IDs match, false otherwise.
+   */
   public equals(other: Wishlist): boolean {
-    return this.props.id === other.props.id;
+    return this.id === other.id;
   }
 
-  public get id(): string {
-    return this.props.id;
-  }
-
-  public get ownerId(): string {
-    return this.props.ownerId;
-  }
-
-  public get title(): string {
-    return this.props.title;
-  }
-
-  public get description(): string | undefined {
-    return this.props.description;
-  }
-
-  public get visibility(): WishlistVisibility {
-    return this.props.visibility;
-  }
-
-  public get participation(): WishlistParticipation {
-    return this.props.participation;
-  }
-
-  public get items(): WishlistItem[] {
-    return [...this.props.items];
-  }
-
-  public get createdAt(): Date {
-    return this.props.createdAt;
-  }
-
-  public get updatedAt(): Date {
-    return this.props.updatedAt;
-  }
-
-  private validate(strict: boolean): void {
+  private validate(mode: ValidationMode): void {
     // Structural Validation (Always)
-    if (!this.isValidUUID(this.props.id)) {
+    if (!this.isValidUUID(this.id)) {
       throw new InvalidAttributeError("Invalid id: Must be a valid UUID v4");
     }
-    if (!this.isValidUUID(this.props.ownerId)) {
+    if (!this.isValidUUID(this.ownerId)) {
       throw new InvalidAttributeError(
         "Invalid ownerId: Must be a valid UUID v4",
       );
     }
-    if (!Object.values(WishlistVisibility).includes(this.props.visibility)) {
+    if (!Object.values(WishlistVisibility).includes(this.visibility)) {
       throw new InvalidAttributeError("Invalid visibility");
     }
-    if (
-      !Object.values(WishlistParticipation).includes(this.props.participation)
-    ) {
+    if (!Object.values(WishlistParticipation).includes(this.participation)) {
       throw new InvalidAttributeError("Invalid participation");
     }
 
     // Business Validation (Strict)
-    if (strict) {
-      if (this.props.title.length < 3) {
+    if (mode === ValidationMode.STRICT) {
+      if (this.title.length < 3) {
         throw new InvalidAttributeError(
           "Invalid title: Must be at least 3 characters",
         );
       }
-      if (this.props.title.length > 100) {
+      if (this.title.length > 100) {
         throw new InvalidAttributeError(
           "Invalid title: Must be at most 100 characters",
         );
       }
-      if (this.props.description && this.props.description.length > 500) {
+      if (this.description && this.description.length > 500) {
         throw new InvalidAttributeError(
           "Invalid description: Must be at most 500 characters",
         );
       }
-      // Note: Item limit is enforced in addItem, not here,
-      // allowing reconstitution to bypass it effectively as per spec.
-      // If create() passed > 100 items, we might want to check it here or in create.
-      // But creating a new wishlist usually starts empty or with few items.
     }
   }
 
@@ -207,6 +257,16 @@ export class Wishlist {
   }
 
   private toProps(): WishlistProps {
-    return { ...this.props };
+    return {
+      id: this.id,
+      ownerId: this.ownerId,
+      title: this.title,
+      description: this.description,
+      visibility: this.visibility,
+      participation: this.participation,
+      items: this.items,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+    };
   }
 }
