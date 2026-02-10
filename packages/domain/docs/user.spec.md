@@ -14,8 +14,7 @@ The entity supports two validation modes to ensure consistent behavior with the 
 ### Structural Integrity (Always Enforced by All Modes)
 
 - `id` must be a valid UUID v4.
-- `email` must be a non-empty string.
-- `username` must be a non-empty string.
+- `email` and `username` must be non-empty strings.
 
 ### Business Rules (Enforced by STRICT)
 
@@ -26,13 +25,13 @@ The entity supports two validation modes to ensure consistent behavior with the 
 
 ## Attributes
 
-| Attribute  | Type               | Description           | Constraints                  |
-| :--------- | :----------------- | :-------------------- | :--------------------------- |
-| `id`       | `string` (UUID v4) | Unique identifier     | Required                     |
-| `email`    | `string`           | Unique email address  | Required, valid email format |
-| `username` | `string`           | Display name (handle) | Required, 3-30 chars         |
-| `imageUrl` | `string`           | Profile picture URL   | Optional, valid URL          |
-| `bio`      | `string`           | User biography        | Optional, max 500 chars      |
+| Attribute  | Type               | Description           | Structural (Hydration) | Business (Strict)                |
+| :--------- | :----------------- | :-------------------- | :--------------------- | :------------------------------- |
+| `id`       | `string` (UUID v4) | Unique identifier     | Required, UUID v4      | Immutable                        |
+| `email`    | `string`           | Unique email address  | Required, non-empty    | Valid email format               |
+| `username` | `string`           | Display name (handle) | Required, non-empty    | 3-30 chars, alphanumeric + `.-_` |
+| `imageUrl` | `string`           | Profile picture URL   | Optional               | Valid URL                        |
+| `bio`      | `string`           | User biography        | Optional               | Max 500 chars                    |
 
 ## Domain Invariants
 
@@ -41,10 +40,16 @@ The entity supports two validation modes to ensure consistent behavior with the 
 
 ## Operations (Behaviors)
 
+### `create(props: UserProps)`
+
+- **Effect:** Initializes a new User domain entity.
+- **Validation:** Enforces **STRICT** validation (Business Rules + Structural).
+- **Returns:** The created `User` or a validation error.
+
 ### `update(props: Partial<UserProps>)`
 
-- **Effect:** Modifies editable properties (`username`, `imageUrl`, `bio`, `email`).
-- **Restrictions:** Cannot modify `id`.
+- **Effect:** Modifies editable properties (`username`, `imageUrl`, `bio`).
+- **Restrictions:** Cannot modify `id` or `email`.
 - **Validation:** Enforces **STRICT** validation (Business Rules + Structural).
 - **Returns:** New `User` instance with updated state.
 
