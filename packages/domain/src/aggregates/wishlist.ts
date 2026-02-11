@@ -322,6 +322,7 @@ export class Wishlist {
    * @param props - The properties to update.
    * @returns A new Wishlist instance with the updated item.
    * @throws {InvalidOperationError} If item not found.
+   * @throws {InvalidAttributeError} If the update fails validation.
    */
   public updateItem(
     itemId: string,
