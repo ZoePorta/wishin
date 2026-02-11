@@ -6,7 +6,7 @@ import {
 } from "./wishlist";
 import {
   WishlistItem,
-  WishlistItemProps,
+  type WishlistItemProps,
   Priority,
 } from "../entities/wishlist-item";
 import {
