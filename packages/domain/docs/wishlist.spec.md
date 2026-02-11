@@ -48,6 +48,12 @@ The entity supports two validation modes to ensure consistent behavior with the 
 
 ## Operations (Behaviors)
 
+### `toProps()`
+
+- **Effect:** Extracts the current state of the entity.
+- **Logic:** Returns a shallow copy of `this.props`.
+- **Returns:** `WishlistProps`.
+
 ### `reconstitute(props: WishlistProps)`
 
 - **Effect:** Creates an instance from persistence, bypassing business rules (e.g., item cap).

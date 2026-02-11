@@ -25,10 +25,9 @@ We will apply the following patterns to our Domain Entities:
 
 ### 2. Strict Immutability
 
-- All properties are `readonly`.
-- State-changing methods (e.g., `reserve`, `purchase`) **must return a new instance** of the class rather than modifying `this`.
-- **Internal `toProps` helper**: We use a private `toProps()` method to extract the current state. This simplifies strict immutability by allowing cleaner "copy-with-change" logic (e.g., `new Entity({ ...this.toProps(), ...changes })`) and ensures no property is accidentally missed during cloning.
-- This ensures predictable state flow and simplifies change tracking in the UI.
+- **Private State, Public Access**: State is stored in a `private readonly props` object. Public access is provided via getters.
+- **State-Changing Methods**: Methods like `reserve` or `purchase` **must return a new instance** of the class, created via the factory method or internal constructor, passing the modified props.
+- **Public `toProps` Helper**: We use a public `toProps()` method to return a shallow copy of the current state (`{ ...this.props }`). This creates a clean DTO for usage outside the entity (e.g., in repositories or tests) and simplifies cloning logic (`new Entity({ ...this.toProps(), ...changes })`).
 
 ### 3. Entity Equality by Identity
 

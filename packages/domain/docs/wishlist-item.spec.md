@@ -67,6 +67,12 @@ The entity supports four validation modes to ensure data integrity while allowin
 
 ## Operations (Behaviors)
 
+### `toProps()`
+
+- **Effect:** Extracts the current state of the entity.
+- **Logic:** Returns a shallow copy of `this.props`.
+- **Returns:** `WishlistItemProps`.
+
 ### `reconstitute(props: WishlistItemProps)`
 
 - **Effect:** Creates an instance from persistence, bypassing strict inventory invariants.
