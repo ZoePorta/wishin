@@ -67,19 +67,47 @@ export interface WishlistItemProps {
  * - Structural: `id` and `wishlistId` must be valid UUID v4.
  */
 export class WishlistItem {
-  public readonly id: string;
-  public readonly wishlistId: string;
-  public readonly name: string;
-  public readonly description?: string;
-  public readonly priority: Priority;
-  public readonly price?: number;
-  public readonly currency?: string;
-  public readonly url?: string;
-  public readonly imageUrl?: string;
-  public readonly isUnlimited: boolean;
-  public readonly totalQuantity: number;
-  public readonly reservedQuantity: number;
-  public readonly purchasedQuantity: number;
+  public get id(): string {
+    return this.props.id;
+  }
+  public get wishlistId(): string {
+    return this.props.wishlistId;
+  }
+  public get name(): string {
+    return this.props.name;
+  }
+  public get description(): string | undefined {
+    return this.props.description;
+  }
+  public get priority(): Priority {
+    return this.props.priority ?? Priority.MEDIUM;
+  }
+  public get price(): number | undefined {
+    return this.props.price;
+  }
+  public get currency(): string | undefined {
+    return this.props.currency;
+  }
+  public get url(): string | undefined {
+    return this.props.url;
+  }
+  public get imageUrl(): string | undefined {
+    return this.props.imageUrl;
+  }
+  public get isUnlimited(): boolean {
+    return this.props.isUnlimited ?? false;
+  }
+  public get totalQuantity(): number {
+    return this.props.totalQuantity;
+  }
+  public get reservedQuantity(): number {
+    return this.props.reservedQuantity;
+  }
+  public get purchasedQuantity(): number {
+    return this.props.purchasedQuantity;
+  }
+
+  private readonly props: WishlistItemProps;
 
   /**
    * Private constructor to enforce factory usage.
@@ -88,19 +116,15 @@ export class WishlistItem {
    * @param mode - The validation mode to use.
    */
   private constructor(props: WishlistItemProps, mode: ValidationMode) {
-    this.id = props.id;
-    this.wishlistId = props.wishlistId;
-    this.name = props.name;
-    this.description = props.description;
-    this.priority = props.priority ?? Priority.MEDIUM;
-    this.price = props.price;
-    this.currency = props.currency;
-    this.url = props.url;
-    this.imageUrl = props.imageUrl;
-    this.isUnlimited = props.isUnlimited ?? false;
-    this.totalQuantity = props.totalQuantity;
-    this.reservedQuantity = props.reservedQuantity;
-    this.purchasedQuantity = props.purchasedQuantity;
+    const priority = props.priority ?? Priority.MEDIUM;
+    const isUnlimited = props.isUnlimited ?? false;
+
+    const fullProps: WishlistItemProps = {
+      ...props,
+      priority,
+      isUnlimited,
+    };
+    this.props = fullProps;
 
     this.validate(mode);
   }
@@ -533,21 +557,7 @@ export class WishlistItem {
     }
   }
 
-  private toProps(): WishlistItemProps {
-    return {
-      id: this.id,
-      wishlistId: this.wishlistId,
-      name: this.name,
-      description: this.description,
-      priority: this.priority,
-      price: this.price,
-      currency: this.currency,
-      url: this.url,
-      imageUrl: this.imageUrl,
-      isUnlimited: this.isUnlimited,
-      totalQuantity: this.totalQuantity,
-      reservedQuantity: this.reservedQuantity,
-      purchasedQuantity: this.purchasedQuantity,
-    };
+  public toProps(): WishlistItemProps {
+    return { ...this.props };
   }
 }

@@ -132,30 +132,14 @@ export class Wishlist {
    * @throws {InvalidAttributeError} If structural integrity fails.
    */
   public static reconstitute(props: WishlistProps): Wishlist {
-    // Re-reconstitute items to ensure they are in the correct state (STRUCTURAL)
-    // This assumes props.items are already WishlistItem instances (or satisfy the shape).
-    const reconstitutedItems = props.items.map((item) =>
-      WishlistItem.reconstitute({
-        id: item.id,
-        wishlistId: item.wishlistId,
-        name: item.name,
-        description: item.description,
-        priority: item.priority,
-        price: item.price,
-        currency: item.currency,
-        url: item.url,
-        imageUrl: item.imageUrl,
-        isUnlimited: item.isUnlimited,
-        totalQuantity: item.totalQuantity,
-        reservedQuantity: item.reservedQuantity,
-        purchasedQuantity: item.purchasedQuantity,
-      }),
-    );
-
     return Wishlist._createWithMode(
       {
         ...props,
-        items: reconstitutedItems,
+        items: props.items.map((item) =>
+          WishlistItem.reconstitute(
+            item instanceof WishlistItem ? item.toProps() : item,
+          ),
+        ),
       },
       ValidationMode.STRUCTURAL,
     );
