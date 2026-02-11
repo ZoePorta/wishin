@@ -4,7 +4,11 @@ import {
   WishlistVisibility,
   WishlistParticipation,
 } from "./wishlist";
-import type { WishlistItem } from "../entities/wishlist-item";
+import {
+  WishlistItem,
+  type WishlistItemProps,
+  Priority,
+} from "../entities/wishlist-item";
 import {
   InvalidAttributeError,
   LimitExceededError,
@@ -26,10 +30,8 @@ describe("Wishlist Aggregate", () => {
     it("should return true if IDs match", () => {
       const w1 = Wishlist.create(validProps);
       const w2 = Wishlist.reconstitute({
-        ...validProps,
+        ...w1.toProps(),
         items: [],
-        createdAt: w1.createdAt,
-        updatedAt: w1.updatedAt,
       });
       expect(w1.equals(w2)).toBe(true);
     });
@@ -48,13 +50,16 @@ describe("Wishlist Aggregate", () => {
     it("should create a valid wishlist", () => {
       const wishlist = Wishlist.create(validProps);
 
+      const props = wishlist.toProps();
       expect(wishlist).toBeInstanceOf(Wishlist);
-      expect(wishlist.id).toBe(validProps.id);
-      expect(wishlist.items).toHaveLength(0);
-      expect(wishlist.visibility).toBe(WishlistVisibility.LINK);
-      expect(wishlist.participation).toBe(WishlistParticipation.ANYONE);
-      expect(wishlist.createdAt).toBeInstanceOf(Date);
-      expect(wishlist.updatedAt).toBeInstanceOf(Date);
+      expect(props).toEqual(
+        expect.objectContaining({
+          ...validProps,
+          items: [],
+          createdAt: expect.any(Date) as unknown as Date,
+          updatedAt: expect.any(Date) as unknown as Date,
+        }),
+      );
     });
 
     it("should create a wishlist with explicit visibility and participation", () => {
@@ -133,7 +138,13 @@ describe("Wishlist Aggregate", () => {
       const updatedWishlist = wishlist.update({ title: newTitle });
 
       expect(updatedWishlist).not.toBe(wishlist); // Immutability
-      expect(updatedWishlist.title).toBe(newTitle);
+      expect(updatedWishlist.toProps()).toEqual(
+        expect.objectContaining({
+          ...validProps,
+          title: newTitle,
+          updatedAt: expect.any(Date) as unknown as Date,
+        }),
+      );
       expect(updatedWishlist.updatedAt.getTime()).toBeGreaterThanOrEqual(
         wishlist.updatedAt.getTime(),
       );
@@ -162,6 +173,180 @@ describe("Wishlist Aggregate", () => {
       expect(updated.id).toBe(wishlist.id);
     });
 
+    it("should update item title via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Old Name",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+      const updatedWishlist = validWishlist.updateItem(item.id, {
+        name: "New Name",
+      });
+      expect(updatedWishlist.items[0].name).toBe("New Name");
+    });
+
+    it("should update item description via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        description: "Old Desc",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.updateItem(item.id, {
+        description: "New Desc",
+      });
+      expect(updatedWishlist.items[0].description).toBe("New Desc");
+    });
+
+    it("should update item url via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        url: "https://old.com",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.updateItem(item.id, {
+        url: "https://new.com",
+      });
+      expect(updatedWishlist.items[0].url).toBe("https://new.com");
+    });
+
+    it("should update item image url via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        imageUrl: "https://old-img.com",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.updateItem(item.id, {
+        imageUrl: "https://new-img.com",
+      });
+      expect(updatedWishlist.items[0].imageUrl).toBe("https://new-img.com");
+    });
+
+    it("should update item priority via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        priority: Priority.LOW,
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.updateItem(item.id, {
+        priority: Priority.URGENT,
+      });
+      expect(updatedWishlist.items[0].priority).toBe(Priority.URGENT);
+    });
+
+    it("should reserve item via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        totalQuantity: 5,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.reserveItem(item.id, 2);
+      expect(updatedWishlist.items[0].reservedQuantity).toBe(2);
+    });
+
+    it("should purchase item via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        totalQuantity: 5,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.purchaseItem(item.id, 2, 0);
+      expect(updatedWishlist.items[0].purchasedQuantity).toBe(2);
+    });
+
+    it("should cancel reservation via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        totalQuantity: 5,
+        reservedQuantity: 2,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.cancelItemReservation(item.id, 1);
+      expect(updatedWishlist.items[0].reservedQuantity).toBe(1);
+    });
+
+    it("should cancel purchase via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        totalQuantity: 5,
+        reservedQuantity: 0,
+        purchasedQuantity: 2,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.cancelItemPurchase(item.id, 1);
+      expect(updatedWishlist.items[0].purchasedQuantity).toBe(1);
+    });
+
+    it("should throw InvalidOperationError if duplicate item added", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        totalQuantity: 5,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      expect(() => {
+        validWishlist.addItem(item);
+      }).toThrow(InvalidOperationError); // "Item already exists"
+    });
+
     it("should validate properties during update", () => {
       const wishlist = Wishlist.create(validProps);
       expect(() => {
@@ -188,13 +373,15 @@ describe("Wishlist Aggregate", () => {
 
   describe("Item Management", () => {
     it("should throw LimitExceededError if creating with > 100 items in STRICT mode", () => {
-      const items = Array.from(
-        { length: 101 },
-        (_, i) =>
-          ({
-            id: `item-${i.toString()}`,
-            wishlistId: validProps.id,
-          }) as unknown as WishlistItem,
+      const items = Array.from({ length: 101 }, (_, i) =>
+        WishlistItem.create({
+          id: `123e4567-e89b-42d3-a456-426614174${i.toString().padStart(3, "0")}`,
+          wishlistId: validProps.id,
+          name: `Item ${i.toString()}`,
+          totalQuantity: 1,
+          reservedQuantity: 0,
+          purchasedQuantity: 0,
+        }),
       );
 
       expect(() => {
@@ -206,10 +393,14 @@ describe("Wishlist Aggregate", () => {
     });
 
     it("should throw InvalidAttributeError if creating with items belonging to another wishlist", () => {
-      const foreignItem = {
-        id: "item-foreign",
-        wishlistId: "other-wishlist-id",
-      } as unknown as WishlistItem;
+      const foreignItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: "111e4567-e89b-42d3-a456-426614174111",
+        name: "Foreign Item",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
 
       expect(() => {
         Wishlist.create({
@@ -221,49 +412,60 @@ describe("Wishlist Aggregate", () => {
 
     it("should add an item to the wishlist", () => {
       const wishlist = Wishlist.create(validProps);
-      // Mock item or create a real one if easy.
-      // Since WishlistItem exists, let's try to simulate one if possible, or cast/mock for now.
-      const mockItem = {
-        id: "item-1",
+      const mockItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
         wishlistId: validProps.id,
-      } as unknown as WishlistItem;
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
 
       const withItem = wishlist.addItem(mockItem);
 
       expect(withItem.items).toHaveLength(1);
-      expect(withItem.items[0]).toBe(mockItem);
+      expect(withItem.items[0].equals(mockItem)).toBe(true);
     });
 
     it("should remove an item from the wishlist", () => {
       const wishlist = Wishlist.create(validProps);
-      const mockItem = {
-        id: "item-1",
+      const mockItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
         wishlistId: validProps.id,
-      } as unknown as WishlistItem;
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
       const withItem = wishlist.addItem(mockItem);
 
-      const emptyAgain = withItem.removeItem("item-1");
-      expect(emptyAgain.items).toHaveLength(0);
+      const result = withItem.removeItem(mockItem.id);
+      expect(result.wishlist.items).toHaveLength(0);
+      expect(result.removedItem).toEqual(mockItem);
     });
 
-    it("should do nothing when removing non-existent item", () => {
+    it("should return null removedItem when removing non-existent item", () => {
       const wishlist = Wishlist.create(validProps);
-      const sameWishlist = wishlist.removeItem("non-existent-item-id");
-      expect(sameWishlist.items).toHaveLength(0);
-      expect(sameWishlist.items).toEqual(wishlist.items); // Deep equality check
+      const result = wishlist.removeItem("non-existent-item-id");
+      expect(result.wishlist.items).toHaveLength(0);
+      expect(result.wishlist.items).toEqual(wishlist.items);
+      expect(result.removedItem).toBeNull();
     });
 
     it("should enforce 100 items limit", () => {
-      // Reconstitute with 100 items to simulate a full list
-      // We bypass adding 100 items one by one for performance in test setup
       const items = Array.from(
         { length: 100 },
-        (_, i) =>
-          ({
-            id: `item-${i.toString()}`,
-            wishlistId: validProps.id,
-          }) as unknown as WishlistItem,
-      );
+        (_, i) => ({
+          id: `123e4567-e89b-42d3-a456-426614174${i.toString().padStart(3, "0")}`,
+          wishlistId: validProps.id,
+          name: `Item ${i.toString()}`,
+          priority: Priority.MEDIUM,
+          isUnlimited: false,
+          totalQuantity: 1,
+          reservedQuantity: 0,
+          purchasedQuantity: 0,
+        }), // Props, not WishlistItem instance
+      ) as WishlistItemProps[]; // No longer unsafe cast
 
       const fullWishlist = Wishlist.reconstitute({
         ...validProps,
@@ -272,39 +474,54 @@ describe("Wishlist Aggregate", () => {
         updatedAt: new Date(),
       });
 
-      const overflowItem = {
-        id: "item-101",
+      const overflowItem = WishlistItem.create({
+        id: "999e4567-e89b-42d3-a456-426614174999",
         wishlistId: validProps.id,
-      } as unknown as WishlistItem;
+        name: "Overflow",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
 
       expect(() => {
         fullWishlist.addItem(overflowItem);
       }).toThrow(LimitExceededError);
     });
 
-    it("should throw InvalidOperationError if adding item with different wishlistId", () => {
+    it("should update item's wishlistId when adding (claim ownership)", () => {
       const wishlist = Wishlist.create(validProps);
-      const otherItem = {
-        id: "item-1",
-        wishlistId: "other-wishlist-id",
-      } as unknown as WishlistItem;
+      const otherItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: "111e4567-e89b-42d3-a456-426614174111", // Different ID
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
 
-      expect(() => {
-        wishlist.addItem(otherItem);
-      }).toThrow(InvalidOperationError);
+      const updatedWishlist = wishlist.addItem(otherItem);
+      const addedItem = updatedWishlist.items.find(
+        (i) => i.id === otherItem.id,
+      );
+
+      expect(addedItem).toBeDefined();
+      expect(addedItem!.wishlistId).toBe(wishlist.id);
+      expect(addedItem!.wishlistId).not.toBe(otherItem.wishlistId);
     });
   });
 
   describe("Reconstitution", () => {
     it("should reconstitute without business validation (bypass item limit)", () => {
-      const items = Array.from(
-        { length: 101 },
-        (_, i) =>
-          ({
-            id: `item-${i.toString()}`,
-            wishlistId: validProps.id,
-          }) as unknown as WishlistItem,
-      );
+      const items = Array.from({ length: 101 }, (_, i) => ({
+        id: `123e4567-e89b-42d3-a456-426614174${i.toString().padStart(3, "0")}`,
+        wishlistId: validProps.id,
+        name: `Item ${i.toString()}`,
+        priority: Priority.MEDIUM,
+        isUnlimited: false,
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      })) as WishlistItemProps[];
 
       const hugeWishlist = Wishlist.reconstitute({
         ...validProps,
@@ -377,6 +594,149 @@ describe("Wishlist Aggregate", () => {
       expect(() => {
         Wishlist.create({ ...validProps, title: "   ab   " }); // Trims to "ab" (length 2)
       }).toThrow(InvalidAttributeError);
+    });
+  });
+
+  describe("Defensive Copies", () => {
+    it("should return a copy of items array", () => {
+      const wishlist = Wishlist.create(validProps);
+      const items = wishlist.items;
+      expect(items).not.toBe(wishlist.items); // Different references
+
+      const mockItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+
+      items.push(mockItem);
+      expect(wishlist.items).toHaveLength(0); // Aggregate state unaffected
+    });
+
+    it("should return a copy of createdAt date", () => {
+      const wishlist = Wishlist.create(validProps);
+      const createdAt = wishlist.createdAt;
+      expect(createdAt).not.toBe(wishlist.createdAt); // Different references
+
+      const originalTime = createdAt.getTime();
+      createdAt.setFullYear(2000);
+
+      expect(wishlist.createdAt.getTime()).toBe(originalTime); // Aggregate state unaffected
+    });
+
+    it("should return a copy of updatedAt date", () => {
+      const wishlist = Wishlist.create(validProps);
+      const updatedAt = wishlist.updatedAt;
+      expect(updatedAt).not.toBe(wishlist.updatedAt); // Different references
+
+      const originalTime = updatedAt.getTime();
+      updatedAt.setFullYear(2000);
+
+      expect(wishlist.updatedAt.getTime()).toBe(originalTime); // Aggregate state unaffected
+    });
+
+    it("should return copies in toProps", () => {
+      const wishlist = Wishlist.create(validProps);
+      const props = wishlist.toProps();
+
+      expect(props.createdAt).not.toBe(wishlist.createdAt);
+      expect(props.updatedAt).not.toBe(wishlist.updatedAt);
+      expect(props.items).not.toBe(wishlist.items);
+
+      props.createdAt.setFullYear(2000);
+      expect(wishlist.createdAt.getFullYear()).not.toBe(2000);
+
+      const mockItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      props.items.push(mockItem.toProps());
+      expect(wishlist.items).toHaveLength(0);
+    });
+  });
+
+  describe("Input Mutation Safety", () => {
+    it("should prevent mutation of items array passed to create", () => {
+      const items: WishlistItem[] = [];
+      const wishlist = Wishlist.create({
+        ...validProps,
+        items: items,
+      });
+
+      const mockItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+
+      // Mutate the array passed to create
+      items.push(mockItem);
+
+      expect(wishlist.items).toHaveLength(0);
+    });
+
+    it("should prevent mutation of Date passed to create", () => {
+      const createdAt = new Date("2023-01-01");
+      const wishlist = Wishlist.create({
+        ...validProps,
+        createdAt: createdAt,
+      });
+
+      // Mutate the date passed to create
+      createdAt.setFullYear(2025);
+
+      expect(wishlist.createdAt.getFullYear()).toBe(2023);
+    });
+
+    it("should prevent mutation of items array passed to reconstitute", () => {
+      const itemProps = {
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Item 1",
+        priority: Priority.MEDIUM,
+        isUnlimited: false,
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      } as WishlistItemProps;
+
+      const itemsProp = [itemProps];
+      const wishlist = Wishlist.reconstitute({
+        ...validProps,
+        items: itemsProp,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // Mutate the array passed to reconstitute
+      itemsProp.pop();
+
+      expect(wishlist.items).toHaveLength(1);
+    });
+
+    it("should prevent mutation of Date passed to reconstitute", () => {
+      const createdAt = new Date("2023-01-01");
+      const wishlist = Wishlist.reconstitute({
+        ...validProps,
+        items: [],
+        createdAt: createdAt,
+        updatedAt: new Date(),
+      });
+
+      // Mutate the date passed to reconstitute
+      createdAt.setFullYear(2025);
+
+      expect(wishlist.createdAt.getFullYear()).toBe(2023);
     });
   });
 });

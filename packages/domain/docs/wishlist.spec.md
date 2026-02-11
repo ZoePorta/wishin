@@ -48,6 +48,12 @@ The entity supports two validation modes to ensure consistent behavior with the 
 
 ## Operations (Behaviors)
 
+### `toProps()`
+
+- **Effect:** Extracts the current state of the entity.
+- **Logic:** Returns a shallow copy of `this.props`.
+- **Returns:** `WishlistProps`.
+
 ### `reconstitute(props: WishlistProps)`
 
 - **Effect:** Creates an instance from persistence, bypassing business rules (e.g., item cap).
@@ -65,16 +71,47 @@ The entity supports two validation modes to ensure consistent behavior with the 
 
 - **Effect:** Adds a new item to the list.
 - **Logic:**
-  - Validates `item.wishlistId` matches `this.id`.
+  - **Claims Ownership:** Updates `item.wishlistId` to `this.id`.
   - Enforces Max 100 items limit (STRICT).
-- **Returns:** New `Wishlist` instance containing the new item.
+- **Returns:** New `Wishlist` instance containing the new item. Enforces no duplicates via `equals()`.
 
 ### `removeItem(itemId: string)`
 
-- **Effect:** Removes an item from the list and refreshes the timestamp.
+- **Effect:** Removes an item from the list.
 - **Logic:**
-  - Filters out item by matching ID (idempotent; no error if not found).
-  - Updates `updatedAt` to the current timestamp even if no item was removed.
+  - Finds item by ID.
+  - Updates `updatedAt`.
+- **Returns:** `{ wishlist: Wishlist, removedItem: WishlistItem | null }`.
+  - **Note:** The `removedItem` is returned to allow the Repository or Domain Service to handle it (e.g., move it to another list or delete it permanently).
+
+### `updateItem(itemId: string, props: Partial<WishlistItemProps>)`
+
+- **Effect:** Updates a specific item.
+- **Logic:** Calls `item.update(props)`.
+- **Returns:** New `Wishlist` instance.
+
+### `reserveItem(itemId: string, amount: number)`
+
+- **Effect:** Reserves quantity of an item.
+- **Logic:** Calls `item.reserve(amount)`.
+- **Returns:** New `Wishlist` instance.
+
+### `purchaseItem(itemId: string, totalAmount: number, consumeFromReserved: number)`
+
+- **Effect:** Purchases quantity of an item.
+- **Logic:** Calls `item.purchase(totalAmount, consumeFromReserved)`.
+- **Returns:** New `Wishlist` instance.
+
+### `cancelItemReservation(itemId: string, amount: number)`
+
+- **Effect:** Cancels reservation of an item.
+- **Logic:** Calls `item.cancelReservation(amount)`.
+- **Returns:** New `Wishlist` instance.
+
+### `cancelItemPurchase(itemId: string, amount: number)`
+
+- **Effect:** Cancels purchase of an item.
+- **Logic:** Calls `item.cancelPurchase(amount)`.
 - **Returns:** New `Wishlist` instance.
 
 ### `equals(other: Wishlist)`
@@ -87,4 +124,4 @@ The entity supports two validation modes to ensure consistent behavior with the 
 
 - `InvalidAttributeError`: Thrown on invalid title length, visibility/participation level or UUIDs.
 - `LimitExceededError`: Thrown when trying to add items beyond the 100-item limit.
-- `InvalidOperationError`: Thrown if trying to add an item belonging to another wishlist.
+- `InvalidOperationError`: Thrown if trying to add a duplicate item.

@@ -44,16 +44,28 @@ export interface WishlistItemProps {
   wishlistId: string;
   name: string;
   description?: string;
-  priority?: Priority;
+  priority: Priority;
   price?: number;
   currency?: string;
   url?: string;
   imageUrl?: string;
-  isUnlimited?: boolean;
+  isUnlimited: boolean;
   totalQuantity: number;
   reservedQuantity: number;
   purchasedQuantity: number;
 }
+
+/**
+ * Properties for creating a WishlistItem.
+ * Allows optional priority and isUnlimited, which default to MEDIUM and false respectively.
+ */
+export type WishlistItemCreateProps = Omit<
+  WishlistItemProps,
+  "priority" | "isUnlimited"
+> & {
+  priority?: Priority;
+  isUnlimited?: boolean;
+};
 
 /**
  * Core domain entity representing a gift item within a wishlist.
@@ -67,19 +79,99 @@ export interface WishlistItemProps {
  * - Structural: `id` and `wishlistId` must be valid UUID v4.
  */
 export class WishlistItem {
-  public readonly id: string;
-  public readonly wishlistId: string;
-  public readonly name: string;
-  public readonly description?: string;
-  public readonly priority: Priority;
-  public readonly price?: number;
-  public readonly currency?: string;
-  public readonly url?: string;
-  public readonly imageUrl?: string;
-  public readonly isUnlimited: boolean;
-  public readonly totalQuantity: number;
-  public readonly reservedQuantity: number;
-  public readonly purchasedQuantity: number;
+  /**
+   * Unique identifier (UUID v4) for this wishlist item.
+   * @returns string
+   */
+  public get id(): string {
+    return this.props.id;
+  }
+  /**
+   * The UUID of the wishlist this item belongs to.
+   * @returns string
+   */
+  public get wishlistId(): string {
+    return this.props.wishlistId;
+  }
+  /**
+   * The name of the item.
+   * @returns string
+   */
+  public get name(): string {
+    return this.props.name;
+  }
+  /**
+   * Optional description of the item.
+   * @returns string | undefined
+   */
+  public get description(): string | undefined {
+    return this.props.description;
+  }
+  /**
+   * The priority of the item.
+   * @returns Priority
+   */
+  public get priority(): Priority {
+    return this.props.priority;
+  }
+  /**
+   * Optional price of the item.
+   * @returns number | undefined
+   */
+  public get price(): number | undefined {
+    return this.props.price;
+  }
+  /**
+   * currency code for the price (e.g., "USD").
+   * @returns string | undefined
+   */
+  public get currency(): string | undefined {
+    return this.props.currency;
+  }
+  /**
+   * Optional URL for the item (e.g., product link).
+   * @returns string | undefined
+   */
+  public get url(): string | undefined {
+    return this.props.url;
+  }
+  /**
+   * Optional URL for an image of the item.
+   * @returns string | undefined
+   */
+  public get imageUrl(): string | undefined {
+    return this.props.imageUrl;
+  }
+  /**
+   * Indicates if the item has an unlimited quantity.
+   * @returns boolean
+   */
+  public get isUnlimited(): boolean {
+    return this.props.isUnlimited;
+  }
+  /**
+   * The total quantity of the item desired.
+   * @returns number
+   */
+  public get totalQuantity(): number {
+    return this.props.totalQuantity;
+  }
+  /**
+   * The quantity of the item currently reserved.
+   * @returns number
+   */
+  public get reservedQuantity(): number {
+    return this.props.reservedQuantity;
+  }
+  /**
+   * The quantity of the item already purchased.
+   * @returns number
+   */
+  public get purchasedQuantity(): number {
+    return this.props.purchasedQuantity;
+  }
+
+  private readonly props: WishlistItemProps;
 
   /**
    * Private constructor to enforce factory usage.
@@ -88,20 +180,7 @@ export class WishlistItem {
    * @param mode - The validation mode to use.
    */
   private constructor(props: WishlistItemProps, mode: ValidationMode) {
-    this.id = props.id;
-    this.wishlistId = props.wishlistId;
-    this.name = props.name;
-    this.description = props.description;
-    this.priority = props.priority ?? Priority.MEDIUM;
-    this.price = props.price;
-    this.currency = props.currency;
-    this.url = props.url;
-    this.imageUrl = props.imageUrl;
-    this.isUnlimited = props.isUnlimited ?? false;
-    this.totalQuantity = props.totalQuantity;
-    this.reservedQuantity = props.reservedQuantity;
-    this.purchasedQuantity = props.purchasedQuantity;
-
+    this.props = props;
     this.validate(mode);
   }
 
@@ -124,18 +203,23 @@ export class WishlistItem {
    * @throws {InvalidAttributeError} If attribute validation fails.
    * @throws {InsufficientStockError} If inventory invariants are violated (unless skipped).
    */
-  public static create(props: WishlistItemProps): WishlistItem {
+  public static create(props: WishlistItemCreateProps): WishlistItem {
     return WishlistItem._createWithMode(props, ValidationMode.STRICT);
   }
 
   private static _createWithMode(
-    props: WishlistItemProps,
+    props: WishlistItemCreateProps,
     mode: ValidationMode,
   ): WishlistItem {
-    const sanitizedProps = {
+    const priority = props.priority ?? Priority.MEDIUM;
+    const isUnlimited = props.isUnlimited ?? false;
+
+    const sanitizedProps: WishlistItemProps = {
       ...props,
       // Defensively trim name only if it's a string, ensuring validate() catches non-strings later
       name: typeof props.name === "string" ? props.name.trim() : props.name,
+      priority,
+      isUnlimited,
     };
     return new WishlistItem(sanitizedProps, mode);
   }
@@ -163,7 +247,7 @@ export class WishlistItem {
       props.wishlistId !== this.wishlistId
     ) {
       throw new InvalidAttributeError(
-        "Cannot update wishlistId directly. Use moveToWishlist().",
+        "Cannot update wishlistId directly. Use updateWishlistId().",
       );
     }
 
@@ -255,12 +339,12 @@ export class WishlistItem {
   }
 
   /**
-   * Moves the item to a different wishlist.
+   * Updates the item's wishlistId.
    * @param newWishlistId - The UUID of the new wishlist.
    * @returns A new WishlistItem instance with the updated wishlistId.
-   * @throws {InvalidAttributeError} If newWishlistId is invalid or same as current.
+   * @throws {InvalidAttributeError} If newWishlistId is invalid.
    */
-  public moveToWishlist(newWishlistId: string): WishlistItem {
+  public updateWishlistId(newWishlistId: string): WishlistItem {
     if (!isValidUUID(newWishlistId)) {
       throw new InvalidAttributeError(
         "Invalid newWishlistId: Must be a valid UUID v4",
@@ -268,9 +352,7 @@ export class WishlistItem {
     }
 
     if (newWishlistId === this.wishlistId) {
-      throw new InvalidAttributeError(
-        "Cannot move to the same wishlist. Item is already in this wishlist.",
-      );
+      return this;
     }
 
     // Bypass inventory check to allow moving over-committed items
@@ -535,21 +617,12 @@ export class WishlistItem {
     }
   }
 
-  private toProps(): WishlistItemProps {
-    return {
-      id: this.id,
-      wishlistId: this.wishlistId,
-      name: this.name,
-      description: this.description,
-      priority: this.priority,
-      price: this.price,
-      currency: this.currency,
-      url: this.url,
-      imageUrl: this.imageUrl,
-      isUnlimited: this.isUnlimited,
-      totalQuantity: this.totalQuantity,
-      reservedQuantity: this.reservedQuantity,
-      purchasedQuantity: this.purchasedQuantity,
-    };
+  /**
+   * Returns a shallow copy of the entity's internal state as a DTO.
+   * Useful for persistence, testing, or creating modified copies.
+   * @returns A shallow copy of WishlistItemProps.
+   */
+  public toProps(): WishlistItemProps {
+    return { ...this.props };
   }
 }

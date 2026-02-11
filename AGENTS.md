@@ -15,7 +15,12 @@
   - **Infrastructure:** Adapters implementing Domain interfaces using Appwrite SDK.
 - **Pattern Enforcement:**
   - Use the **Repository Pattern** for data access and the **Adapter Pattern** to wrap the Appwrite SDK.
-  - **Factory Pattern:** All Domain Entities and Value Objects MUST use a **private constructor** and expose a public static `create` method. They MUST implement a private `toProps()` method returning the properties object and use `...this.toProps()` inside methods that return new modified instances. (Exceptions: Errors, DTOs, Infrastructure).
+  - **Factory Pattern:** All Domain Entities and Value Objects MUST:
+    - Use a **private constructor** and expose a public static `create` method.
+    - Store state in a **private readonly props** object (e.g., `private readonly props: UserProps`).
+    - Expose properties via **public getters** that return values from `this.props`.
+    - Implement a **public `toProps()`** method returning a shallow copy of the properties object (`return { ...this.props }`).
+    - Use `...this.toProps()` inside methods that return new modified instances. (Exceptions: Errors, DTOs, Infrastructure).
 - **Atomic Operations:** Proactively identify and prevent race conditions in inventory management (Reserved/Purchased states).
 
 ## 3. Development Workflow (TDD)

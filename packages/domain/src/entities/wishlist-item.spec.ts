@@ -26,9 +26,10 @@ describe("WishlistItem Entity", () => {
     it("should be created with valid properties", () => {
       const item = WishlistItem.create(validProps);
       expect(item).toBeInstanceOf(WishlistItem);
-      expect(item.id).toBe(validProps.id);
-      expect(item.wishlistId).toBe(validProps.wishlistId);
-      expect(item.name).toBe(validProps.name);
+      expect(item.toProps()).toEqual({
+        ...validProps,
+        priority: Priority.MEDIUM,
+      });
     });
 
     it("should throw InvalidAttributeError if wishlistId is missing or invalid", () => {
@@ -442,10 +443,11 @@ describe("WishlistItem Entity", () => {
 
       expect(updatedItem).not.toBe(item);
       expect(updatedItem).toBeInstanceOf(WishlistItem);
-      expect(updatedItem.name).toBe("Updated Name");
-      expect(updatedItem.priority).toBe(Priority.HIGH);
-      // Ensure other props remain
-      expect(updatedItem.id).toBe(item.id);
+      expect(updatedItem.toProps()).toEqual({
+        ...validProps,
+        priority: Priority.HIGH,
+        name: "Updated Name",
+      });
     });
 
     it("should throw InvalidAttributeError if updated name is invalid", () => {
@@ -675,6 +677,7 @@ describe("WishlistItem Entity", () => {
           totalQuantity: 3,
           purchasedQuantity: 2,
           reservedQuantity: 2,
+          priority: Priority.MEDIUM,
         });
 
         expect(item).toBeInstanceOf(WishlistItem);
@@ -689,6 +692,7 @@ describe("WishlistItem Entity", () => {
           totalQuantity: 3,
           purchasedQuantity: 2,
           reservedQuantity: 2,
+          priority: Priority.MEDIUM,
         });
 
         // Cancel 1 reservation
@@ -717,11 +721,11 @@ describe("WishlistItem Entity", () => {
     });
   });
 
-  describe("Move To Wishlist", () => {
-    it("should move item to a new wishlist", () => {
+  describe("updateWishlistId", () => {
+    it("should return new instance with updated wishlistId", () => {
       const item = WishlistItem.create(validProps);
       const newWishlistId = "111e4567-e89b-42d3-a456-426614174111"; // Valid UUID v4
-      const movedItem = item.moveToWishlist(newWishlistId);
+      const movedItem = item.updateWishlistId(newWishlistId);
 
       expect(movedItem.wishlistId).toBe(newWishlistId);
       expect(movedItem.id).toBe(item.id); // Identity preserved
@@ -731,16 +735,15 @@ describe("WishlistItem Entity", () => {
     it("should throw InvalidAttributeError if new wishlistId is invalid", () => {
       const item = WishlistItem.create(validProps);
 
-      expect(() => item.moveToWishlist("invalid-uuid")).toThrow(
+      expect(() => item.updateWishlistId("invalid-uuid")).toThrow(
         InvalidAttributeError,
       );
     });
 
-    it("should throw InvalidAttributeError if moving to the same wishlist", () => {
+    it("should return same instance if wishlistId is unchanged", () => {
       const item = WishlistItem.create(validProps);
-      expect(() => item.moveToWishlist(validProps.wishlistId)).toThrow(
-        InvalidAttributeError,
-      );
+      const sameItem = item.updateWishlistId(validProps.wishlistId);
+      expect(sameItem).toBe(item);
     });
 
     it("should allow moving an over-committed item (inventory check skipped)", () => {
@@ -756,7 +759,7 @@ describe("WishlistItem Entity", () => {
 
       // Move it
       const newWishlistId = "111e4567-e89b-42d3-a456-426614174111";
-      const movedItem = item.moveToWishlist(newWishlistId);
+      const movedItem = item.updateWishlistId(newWishlistId);
 
       expect(movedItem.wishlistId).toBe(newWishlistId);
       expect(movedItem.totalQuantity).toBe(2);
@@ -787,6 +790,7 @@ describe("WishlistItem Entity", () => {
     const legacyProps = {
       ...validProps,
       name: "PS", // Short name (invalid by strict rules)
+      priority: Priority.MEDIUM,
     };
 
     it("should allow reconstituting an item with legacy short name (STRUCTURAL mode)", () => {

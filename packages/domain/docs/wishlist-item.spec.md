@@ -16,7 +16,7 @@ The entity supports four validation modes to ensure data integrity while allowin
   - Perform cancellations (trusting that reducing commitment is always safe).
   - Move items between wishlists (trusting that location change doesn't affect validity).
 
-  **Used by:** `reconstitute()`, `cancelReservation()`, `cancelPurchase()`, `moveToWishlist()`.
+  **Used by:** `reconstitute()`, `cancelReservation()`, `cancelPurchase()`, `updateWishlistId()`.
 
 ### Structural Integrity (Always Enforced by All Modes)
 
@@ -67,6 +67,12 @@ The entity supports four validation modes to ensure data integrity while allowin
 
 ## Operations (Behaviors)
 
+### `toProps()`
+
+- **Effect:** Extracts the current state of the entity.
+- **Logic:** Returns a shallow copy of `this.props`.
+- **Returns:** `WishlistItemProps`.
+
 ### `reconstitute(props: WishlistItemProps)`
 
 - **Effect:** Creates an instance from persistence, bypassing strict inventory invariants.
@@ -91,11 +97,11 @@ The entity supports four validation modes to ensure data integrity while allowin
 - **Enforces:** Strict stock validation.
 - **Returns:** New instance with updated state.
 
-### `moveToWishlist(newWishlistId: string)`
+### `updateWishlistId(newWishlistId: string)`
 
-- **Effect:** Moves the item to a different wishlist.
+- **Effect:** Updates the item's `wishlistId`.
 - **Pre-condition:** `newWishlistId` must be a valid UUID v4.
-- **Pre-condition:** `newWishlistId` must be different from current `wishlistId`.
+- **Logic:** If `newWishlistId` equals current `wishlistId`, returns `this` (no-op). Otherwise returns new instance.
 - **Returns:** New instance with updated `wishlistId`.
 
 ### `cancelReservation(amount: number)`
