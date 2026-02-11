@@ -664,4 +664,82 @@ describe("Wishlist Aggregate", () => {
       expect(wishlist.items).toHaveLength(0);
     });
   });
+
+  describe("Input Mutation Safety", () => {
+    it("should prevent mutation of items array passed to create", () => {
+      const items: WishlistItem[] = [];
+      const wishlist = Wishlist.create({
+        ...validProps,
+        items: items,
+      });
+
+      const mockItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+
+      // Mutate the array passed to create
+      items.push(mockItem);
+
+      expect(wishlist.items).toHaveLength(0);
+    });
+
+    it("should prevent mutation of Date passed to create", () => {
+      const createdAt = new Date("2023-01-01");
+      const wishlist = Wishlist.create({
+        ...validProps,
+        createdAt: createdAt,
+      });
+
+      // Mutate the date passed to create
+      createdAt.setFullYear(2025);
+
+      expect(wishlist.createdAt.getFullYear()).toBe(2023);
+    });
+
+    it("should prevent mutation of items array passed to reconstitute", () => {
+      const itemProps = {
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Item 1",
+        priority: Priority.MEDIUM,
+        isUnlimited: false,
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      } as WishlistItemProps;
+
+      const itemsProp = [itemProps];
+      const wishlist = Wishlist.reconstitute({
+        ...validProps,
+        items: itemsProp,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      // Mutate the array passed to reconstitute
+      itemsProp.pop();
+
+      expect(wishlist.items).toHaveLength(1);
+    });
+
+    it("should prevent mutation of Date passed to reconstitute", () => {
+      const createdAt = new Date("2023-01-01");
+      const wishlist = Wishlist.reconstitute({
+        ...validProps,
+        items: [],
+        createdAt: createdAt,
+        updatedAt: new Date(),
+      });
+
+      // Mutate the date passed to reconstitute
+      createdAt.setFullYear(2025);
+
+      expect(wishlist.createdAt.getFullYear()).toBe(2023);
+    });
+  });
 });

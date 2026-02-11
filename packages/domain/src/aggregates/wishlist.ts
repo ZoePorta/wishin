@@ -176,9 +176,9 @@ export class Wishlist {
           typeof props.description === "string"
             ? props.description.trim()
             : props.description,
-        items: props.items ?? [],
-        createdAt: props.createdAt ?? now,
-        updatedAt: props.updatedAt ?? now,
+        items: props.items ? [...props.items] : [],
+        createdAt: props.createdAt ? new Date(props.createdAt) : now,
+        updatedAt: props.updatedAt ? new Date(props.updatedAt) : now,
       },
       ValidationMode.STRICT,
     );
@@ -196,6 +196,8 @@ export class Wishlist {
       {
         ...props,
         items: props.items.map((item) => WishlistItem.reconstitute(item)),
+        createdAt: new Date(props.createdAt),
+        updatedAt: new Date(props.updatedAt),
       },
       ValidationMode.STRUCTURAL,
     );
