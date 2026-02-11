@@ -26,9 +26,10 @@ describe("WishlistItem Entity", () => {
     it("should be created with valid properties", () => {
       const item = WishlistItem.create(validProps);
       expect(item).toBeInstanceOf(WishlistItem);
-      expect(item.id).toBe(validProps.id);
-      expect(item.wishlistId).toBe(validProps.wishlistId);
-      expect(item.name).toBe(validProps.name);
+      expect(item.toProps()).toEqual({
+        ...validProps,
+        priority: Priority.MEDIUM,
+      });
     });
 
     it("should throw InvalidAttributeError if wishlistId is missing or invalid", () => {
@@ -442,10 +443,11 @@ describe("WishlistItem Entity", () => {
 
       expect(updatedItem).not.toBe(item);
       expect(updatedItem).toBeInstanceOf(WishlistItem);
-      expect(updatedItem.name).toBe("Updated Name");
-      expect(updatedItem.priority).toBe(Priority.HIGH);
-      // Ensure other props remain
-      expect(updatedItem.id).toBe(item.id);
+      expect(updatedItem.toProps()).toEqual({
+        ...validProps,
+        priority: Priority.HIGH,
+        name: "Updated Name",
+      });
     });
 
     it("should throw InvalidAttributeError if updated name is invalid", () => {

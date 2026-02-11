@@ -26,10 +26,8 @@ describe("Wishlist Aggregate", () => {
     it("should return true if IDs match", () => {
       const w1 = Wishlist.create(validProps);
       const w2 = Wishlist.reconstitute({
-        ...validProps,
+        ...w1.toProps(),
         items: [],
-        createdAt: w1.createdAt,
-        updatedAt: w1.updatedAt,
       });
       expect(w1.equals(w2)).toBe(true);
     });
@@ -48,13 +46,16 @@ describe("Wishlist Aggregate", () => {
     it("should create a valid wishlist", () => {
       const wishlist = Wishlist.create(validProps);
 
+      const props = wishlist.toProps();
       expect(wishlist).toBeInstanceOf(Wishlist);
-      expect(wishlist.id).toBe(validProps.id);
-      expect(wishlist.items).toHaveLength(0);
-      expect(wishlist.visibility).toBe(WishlistVisibility.LINK);
-      expect(wishlist.participation).toBe(WishlistParticipation.ANYONE);
-      expect(wishlist.createdAt).toBeInstanceOf(Date);
-      expect(wishlist.updatedAt).toBeInstanceOf(Date);
+      expect(props).toEqual(
+        expect.objectContaining({
+          ...validProps,
+          items: [],
+          createdAt: expect.any(Date) as unknown as Date,
+          updatedAt: expect.any(Date) as unknown as Date,
+        }),
+      );
     });
 
     it("should create a wishlist with explicit visibility and participation", () => {
@@ -133,7 +134,13 @@ describe("Wishlist Aggregate", () => {
       const updatedWishlist = wishlist.update({ title: newTitle });
 
       expect(updatedWishlist).not.toBe(wishlist); // Immutability
-      expect(updatedWishlist.title).toBe(newTitle);
+      expect(updatedWishlist.toProps()).toEqual(
+        expect.objectContaining({
+          ...validProps,
+          title: newTitle,
+          updatedAt: expect.any(Date) as unknown as Date,
+        }),
+      );
       expect(updatedWishlist.updatedAt.getTime()).toBeGreaterThanOrEqual(
         wishlist.updatedAt.getTime(),
       );
