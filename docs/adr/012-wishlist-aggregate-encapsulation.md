@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Currently, `WishlistItem` encapsulates its own logic, but strict DDD principles suggest the Aggregate Root (`Wishlist`) should mediate all access to its components. Furthermore, moving items between wishlists involves two distinct aggregates and should be orchestrated by a Repository or Domain Service, rather than the item simply changing its parent ID in memory.
+Currently, `WishlistItem` encapsulates its own logic, but strict DDD principles suggest the Aggregate Root (`Wishlist`) should mediate all access to its components. This amends [ADR 006](006-domain-modeling-patterns.md) by enforcing strict encapsulation. Furthermore, moving items between wishlists involves two distinct aggregates and should be orchestrated by a Repository or Domain Service, rather than the item simply changing its parent ID in memory.
 
 ## Decision
 

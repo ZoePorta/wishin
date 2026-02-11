@@ -3,7 +3,7 @@
 ## Status
 
 Accepted
-Amended by [ADR 007](007-validation-modes.md) and [ADR 008](008-explicit-cancellation-flow.md)
+Amended by [ADR 007](007-validation-modes.md), [ADR 008](008-explicit-cancellation-flow.md), and [ADR 012](012-wishlist-aggregate-encapsulation.md)
 
 ## Context
 
