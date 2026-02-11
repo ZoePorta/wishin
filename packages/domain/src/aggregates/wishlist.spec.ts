@@ -459,6 +459,8 @@ describe("Wishlist Aggregate", () => {
           id: `123e4567-e89b-42d3-a456-426614174${i.toString().padStart(3, "0")}`,
           wishlistId: validProps.id,
           name: `Item ${i.toString()}`,
+          priority: Priority.MEDIUM,
+          isUnlimited: false,
           totalQuantity: 1,
           reservedQuantity: 0,
           purchasedQuantity: 0,
@@ -514,6 +516,8 @@ describe("Wishlist Aggregate", () => {
         id: `123e4567-e89b-42d3-a456-426614174${i.toString().padStart(3, "0")}`,
         wishlistId: validProps.id,
         name: `Item ${i.toString()}`,
+        priority: Priority.MEDIUM,
+        isUnlimited: false,
         totalQuantity: 1,
         reservedQuantity: 0,
         purchasedQuantity: 0,
@@ -590,6 +594,74 @@ describe("Wishlist Aggregate", () => {
       expect(() => {
         Wishlist.create({ ...validProps, title: "   ab   " }); // Trims to "ab" (length 2)
       }).toThrow(InvalidAttributeError);
+    });
+  });
+
+  describe("Defensive Copies", () => {
+    it("should return a copy of items array", () => {
+      const wishlist = Wishlist.create(validProps);
+      const items = wishlist.items;
+      expect(items).not.toBe(wishlist.items); // Different references
+
+      const mockItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+
+      items.push(mockItem);
+      expect(wishlist.items).toHaveLength(0); // Aggregate state unaffected
+    });
+
+    it("should return a copy of createdAt date", () => {
+      const wishlist = Wishlist.create(validProps);
+      const createdAt = wishlist.createdAt;
+      expect(createdAt).not.toBe(wishlist.createdAt); // Different references
+
+      const originalTime = createdAt.getTime();
+      createdAt.setFullYear(2000);
+
+      expect(wishlist.createdAt.getTime()).toBe(originalTime); // Aggregate state unaffected
+    });
+
+    it("should return a copy of updatedAt date", () => {
+      const wishlist = Wishlist.create(validProps);
+      const updatedAt = wishlist.updatedAt;
+      expect(updatedAt).not.toBe(wishlist.updatedAt); // Different references
+
+      const originalTime = updatedAt.getTime();
+      updatedAt.setFullYear(2000);
+
+      expect(wishlist.updatedAt.getTime()).toBe(originalTime); // Aggregate state unaffected
+    });
+
+    it("should return copies in toProps", () => {
+      const wishlist = Wishlist.create(validProps);
+      const props = wishlist.toProps();
+
+      const items = wishlist.items;
+
+      expect(props.createdAt).not.toBe(items);
+      expect(props.createdAt).not.toBe(wishlist.createdAt);
+      expect(props.updatedAt).not.toBe(wishlist.updatedAt);
+      expect(props.items).not.toBe(wishlist.items);
+
+      props.createdAt.setFullYear(2000);
+      expect(wishlist.createdAt.getFullYear()).not.toBe(2000);
+
+      const mockItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      props.items.push(mockItem.toProps());
+      expect(wishlist.items).toHaveLength(0);
     });
   });
 });

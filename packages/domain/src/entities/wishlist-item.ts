@@ -44,16 +44,28 @@ export interface WishlistItemProps {
   wishlistId: string;
   name: string;
   description?: string;
-  priority?: Priority;
+  priority: Priority;
   price?: number;
   currency?: string;
   url?: string;
   imageUrl?: string;
-  isUnlimited?: boolean;
+  isUnlimited: boolean;
   totalQuantity: number;
   reservedQuantity: number;
   purchasedQuantity: number;
 }
+
+/**
+ * Properties for creating a WishlistItem.
+ * Allows optional priority and isUnlimited, which default to MEDIUM and false respectively.
+ */
+export type WishlistItemCreateProps = Omit<
+  WishlistItemProps,
+  "priority" | "isUnlimited"
+> & {
+  priority?: Priority;
+  isUnlimited?: boolean;
+};
 
 /**
  * Core domain entity representing a gift item within a wishlist.
@@ -100,7 +112,7 @@ export class WishlistItem {
    * @returns Priority
    */
   public get priority(): Priority {
-    return this.props.priority ?? Priority.MEDIUM;
+    return this.props.priority;
   }
   /**
    * Optional price of the item.
@@ -135,7 +147,7 @@ export class WishlistItem {
    * @returns boolean
    */
   public get isUnlimited(): boolean {
-    return this.props.isUnlimited ?? false;
+    return this.props.isUnlimited;
   }
   /**
    * The total quantity of the item desired.
@@ -168,16 +180,7 @@ export class WishlistItem {
    * @param mode - The validation mode to use.
    */
   private constructor(props: WishlistItemProps, mode: ValidationMode) {
-    const priority = props.priority ?? Priority.MEDIUM;
-    const isUnlimited = props.isUnlimited ?? false;
-
-    const fullProps: WishlistItemProps = {
-      ...props,
-      priority,
-      isUnlimited,
-    };
-    this.props = fullProps;
-
+    this.props = props;
     this.validate(mode);
   }
 
@@ -200,18 +203,23 @@ export class WishlistItem {
    * @throws {InvalidAttributeError} If attribute validation fails.
    * @throws {InsufficientStockError} If inventory invariants are violated (unless skipped).
    */
-  public static create(props: WishlistItemProps): WishlistItem {
+  public static create(props: WishlistItemCreateProps): WishlistItem {
     return WishlistItem._createWithMode(props, ValidationMode.STRICT);
   }
 
   private static _createWithMode(
-    props: WishlistItemProps,
+    props: WishlistItemCreateProps,
     mode: ValidationMode,
   ): WishlistItem {
-    const sanitizedProps = {
+    const priority = props.priority ?? Priority.MEDIUM;
+    const isUnlimited = props.isUnlimited ?? false;
+
+    const sanitizedProps: WishlistItemProps = {
       ...props,
       // Defensively trim name only if it's a string, ensuring validate() catches non-strings later
       name: typeof props.name === "string" ? props.name.trim() : props.name,
+      priority,
+      isUnlimited,
     };
     return new WishlistItem(sanitizedProps, mode);
   }

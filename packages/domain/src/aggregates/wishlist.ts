@@ -1,4 +1,5 @@
-import { WishlistItem, WishlistItemProps } from "../entities/wishlist-item";
+import { WishlistItem } from "../entities/wishlist-item";
+import type { WishlistItemProps } from "../entities/wishlist-item";
 import {
   InvalidAttributeError,
   LimitExceededError,
@@ -127,21 +128,21 @@ export class Wishlist {
    * @returns WishlistItem[]
    */
   public get items(): WishlistItem[] {
-    return this.state.items;
+    return [...this.state.items];
   }
   /**
    * Timestamp when the wishlist was created.
    * @returns Date
    */
   public get createdAt(): Date {
-    return this.state.createdAt;
+    return new Date(this.state.createdAt.getTime());
   }
   /**
    * Timestamp when the wishlist was last updated.
    * @returns Date
    */
   public get updatedAt(): Date {
-    return this.state.updatedAt;
+    return new Date(this.state.updatedAt.getTime());
   }
 
   private readonly state: WishlistInternalState;
@@ -322,7 +323,7 @@ export class Wishlist {
    */
   public updateItem(
     itemId: string,
-    props: Partial<import("../entities/wishlist-item").WishlistItemProps>,
+    props: Partial<WishlistItemProps>,
   ): Wishlist {
     const index = this.items.findIndex((item) => item.id === itemId);
     if (index === -1) {
@@ -553,6 +554,8 @@ export class Wishlist {
     return {
       ...this.state,
       items: this.state.items.map((item) => item.toProps()),
+      createdAt: new Date(this.state.createdAt.getTime()),
+      updatedAt: new Date(this.state.updatedAt.getTime()),
     };
   }
 }
