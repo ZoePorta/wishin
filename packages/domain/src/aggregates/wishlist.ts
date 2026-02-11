@@ -68,27 +68,38 @@ export interface WishlistProps {
  * - Title/Description length constraints.
  */
 export class Wishlist {
-  public readonly id: string;
-  public readonly ownerId: string;
-  public readonly title: string;
-  public readonly description?: string;
-  public readonly visibility: WishlistVisibility;
-  public readonly participation: WishlistParticipation;
-  public readonly items: WishlistItem[];
-  public readonly createdAt: Date;
-  public readonly updatedAt: Date;
+  public get id(): string {
+    return this.props.id;
+  }
+  public get ownerId(): string {
+    return this.props.ownerId;
+  }
+  public get title(): string {
+    return this.props.title;
+  }
+  public get description(): string | undefined {
+    return this.props.description;
+  }
+  public get visibility(): WishlistVisibility {
+    return this.props.visibility;
+  }
+  public get participation(): WishlistParticipation {
+    return this.props.participation;
+  }
+  public get items(): WishlistItem[] {
+    return this.props.items;
+  }
+  public get createdAt(): Date {
+    return this.props.createdAt;
+  }
+  public get updatedAt(): Date {
+    return this.props.updatedAt;
+  }
+
+  private readonly props: WishlistProps;
 
   private constructor(props: WishlistProps, mode: ValidationMode) {
-    this.id = props.id;
-    this.ownerId = props.ownerId;
-    this.title = props.title;
-    this.description = props.description;
-    this.visibility = props.visibility;
-    this.participation = props.participation;
-    this.items = props.items;
-    this.createdAt = props.createdAt;
-    this.updatedAt = props.updatedAt;
-
+    this.props = props;
     this.validate(mode);
   }
 
@@ -477,17 +488,7 @@ export class Wishlist {
     }
   }
 
-  private toProps(): WishlistProps {
-    return {
-      id: this.id,
-      ownerId: this.ownerId,
-      title: this.title,
-      description: this.description,
-      visibility: this.visibility,
-      participation: this.participation,
-      items: this.items,
-      createdAt: this.createdAt,
-      updatedAt: this.updatedAt,
-    };
+  public toProps(): WishlistProps {
+    return { ...this.props };
   }
 }
