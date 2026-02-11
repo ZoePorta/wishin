@@ -53,22 +53,42 @@ export interface UserProps {
  * @throws {InvalidAttributeError} If validation fails based on the provided mode.
  */
 export class User {
+  /**
+   * Unique identifier (UUID v4) for the user.
+   * @returns {string} The user's ID.
+   */
   public get id(): string {
     return this.props.id;
   }
 
+  /**
+   * The user's email address.
+   * @returns {string} The user's email.
+   */
   public get email(): string {
     return this.props.email;
   }
 
+  /**
+   * The user's display handle.
+   * @returns {string} The user's username.
+   */
   public get username(): string {
     return this.props.username;
   }
 
+  /**
+   * Optional URL to the user's profile picture.
+   * @returns {string | undefined} The image URL if present.
+   */
   public get imageUrl(): string | undefined {
     return this.props.imageUrl;
   }
 
+  /**
+   * Optional biography text.
+   * @returns {string | undefined} The bio text if present.
+   */
   public get bio(): string | undefined {
     return this.props.bio;
   }
