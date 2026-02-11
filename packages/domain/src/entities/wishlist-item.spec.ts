@@ -677,6 +677,7 @@ describe("WishlistItem Entity", () => {
           totalQuantity: 3,
           purchasedQuantity: 2,
           reservedQuantity: 2,
+          priority: Priority.MEDIUM,
         });
 
         expect(item).toBeInstanceOf(WishlistItem);
@@ -691,6 +692,7 @@ describe("WishlistItem Entity", () => {
           totalQuantity: 3,
           purchasedQuantity: 2,
           reservedQuantity: 2,
+          priority: Priority.MEDIUM,
         });
 
         // Cancel 1 reservation
@@ -788,6 +790,7 @@ describe("WishlistItem Entity", () => {
     const legacyProps = {
       ...validProps,
       name: "PS", // Short name (invalid by strict rules)
+      priority: Priority.MEDIUM,
     };
 
     it("should allow reconstituting an item with legacy short name (STRUCTURAL mode)", () => {
