@@ -67,42 +67,94 @@ export interface WishlistItemProps {
  * - Structural: `id` and `wishlistId` must be valid UUID v4.
  */
 export class WishlistItem {
+  /**
+   * Unique identifier (UUID v4) for this wishlist item.
+   * @returns string
+   */
   public get id(): string {
     return this.props.id;
   }
+  /**
+   * The UUID of the wishlist this item belongs to.
+   * @returns string
+   */
   public get wishlistId(): string {
     return this.props.wishlistId;
   }
+  /**
+   * The name of the item.
+   * @returns string
+   */
   public get name(): string {
     return this.props.name;
   }
+  /**
+   * Optional description of the item.
+   * @returns string | undefined
+   */
   public get description(): string | undefined {
     return this.props.description;
   }
+  /**
+   * The priority of the item.
+   * @returns Priority
+   */
   public get priority(): Priority {
     return this.props.priority ?? Priority.MEDIUM;
   }
+  /**
+   * Optional price of the item.
+   * @returns number | undefined
+   */
   public get price(): number | undefined {
     return this.props.price;
   }
+  /**
+   * currency code for the price (e.g., "USD").
+   * @returns string | undefined
+   */
   public get currency(): string | undefined {
     return this.props.currency;
   }
+  /**
+   * Optional URL for the item (e.g., product link).
+   * @returns string | undefined
+   */
   public get url(): string | undefined {
     return this.props.url;
   }
+  /**
+   * Optional URL for an image of the item.
+   * @returns string | undefined
+   */
   public get imageUrl(): string | undefined {
     return this.props.imageUrl;
   }
+  /**
+   * Indicates if the item has an unlimited quantity.
+   * @returns boolean
+   */
   public get isUnlimited(): boolean {
     return this.props.isUnlimited ?? false;
   }
+  /**
+   * The total quantity of the item desired.
+   * @returns number
+   */
   public get totalQuantity(): number {
     return this.props.totalQuantity;
   }
+  /**
+   * The quantity of the item currently reserved.
+   * @returns number
+   */
   public get reservedQuantity(): number {
     return this.props.reservedQuantity;
   }
+  /**
+   * The quantity of the item already purchased.
+   * @returns number
+   */
   public get purchasedQuantity(): number {
     return this.props.purchasedQuantity;
   }
@@ -557,6 +609,11 @@ export class WishlistItem {
     }
   }
 
+  /**
+   * Returns a shallow copy of the entity's internal state as a DTO.
+   * Useful for persistence, testing, or creating modified copies.
+   * @returns A shallow copy of WishlistItemProps.
+   */
   public toProps(): WishlistItemProps {
     return { ...this.props };
   }

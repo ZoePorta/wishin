@@ -65,6 +65,7 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - [ADR 009: Client-Side Undo Window](docs/adr/009-client-side-undo-window.md)
 - [ADR 010: Wishlist Privacy and Access Control](docs/adr/010-wishlist-privacy-and-access-control.md)
 - [ADR 011: Explicit Visibility and Participation](docs/adr/011-explicit-visibility-participation.md)
+- [ADR 012: Wishlist Aggregate Encapsulation](docs/adr/012-wishlist-aggregate-encapsulation.md)
 
 ## License
 

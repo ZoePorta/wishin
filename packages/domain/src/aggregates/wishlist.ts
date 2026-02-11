@@ -68,30 +68,66 @@ export interface WishlistProps {
  * - Title/Description length constraints.
  */
 export class Wishlist {
+  /**
+   * Unique identifier (UUID v4) for the wishlist.
+   * @returns string
+   */
   public get id(): string {
     return this.props.id;
   }
+  /**
+   * UUID of the user who owns the wishlist.
+   * @returns string
+   */
   public get ownerId(): string {
     return this.props.ownerId;
   }
+  /**
+   * Human-readable title of the wishlist.
+   * @returns string
+   */
   public get title(): string {
     return this.props.title;
   }
+  /**
+   * Optional detailed description of the wishlist.
+   * @returns string | undefined
+   */
   public get description(): string | undefined {
     return this.props.description;
   }
+  /**
+   * Controls who can view the wishlist.
+   * @returns WishlistVisibility
+   */
   public get visibility(): WishlistVisibility {
     return this.props.visibility;
   }
+  /**
+   * Controls who can perform actions on wishlist items.
+   * @returns WishlistParticipation
+   */
   public get participation(): WishlistParticipation {
     return this.props.participation;
   }
+  /**
+   * Collection of WishlistItems included in the list.
+   * @returns WishlistItem[]
+   */
   public get items(): WishlistItem[] {
     return this.props.items;
   }
+  /**
+   * Timestamp when the wishlist was created.
+   * @returns Date
+   */
   public get createdAt(): Date {
     return this.props.createdAt;
   }
+  /**
+   * Timestamp when the wishlist was last updated.
+   * @returns Date
+   */
   public get updatedAt(): Date {
     return this.props.updatedAt;
   }
@@ -306,6 +342,9 @@ export class Wishlist {
    * @param itemId - The ID of the item.
    * @param amount - Amount to reserve.
    * @returns A new Wishlist instance.
+   * @throws {InvalidOperationError} If the item is not found in the wishlist.
+   * @throws {InvalidAttributeError} If amount is not a positive integer.
+   * @throws {InsufficientStockError} If there is insufficient stock available.
    */
   public reserveItem(itemId: string, amount: number): Wishlist {
     const index = this.items.findIndex((item) => item.id === itemId);
@@ -335,6 +374,10 @@ export class Wishlist {
    * @param totalAmount - Total amount to purchase.
    * @param consumeFromReserved - Amount to consume from reserved stock.
    * @returns A new Wishlist instance.
+   * @throws {InvalidOperationError} If the item is not found in the wishlist.
+   * @throws {InvalidAttributeError} If amounts are not valid integers or are negative.
+   * @throws {InvalidTransitionError} If attempting to consume more from reserved than available or requested.
+   * @throws {InsufficientStockError} If there is insufficient total stock available.
    */
   public purchaseItem(
     itemId: string,
@@ -367,6 +410,9 @@ export class Wishlist {
    * @param itemId - The ID of the item.
    * @param amount - Amount to cancel.
    * @returns A new Wishlist instance.
+   * @throws {InvalidOperationError} If the item is not found in the wishlist.
+   * @throws {InvalidAttributeError} If amount is not a positive integer.
+   * @throws {InvalidTransitionError} If attempting to cancel more than is currently reserved.
    */
   public cancelItemReservation(itemId: string, amount: number): Wishlist {
     const index = this.items.findIndex((item) => item.id === itemId);
@@ -395,6 +441,9 @@ export class Wishlist {
    * @param itemId - The ID of the item.
    * @param amount - Amount to cancel.
    * @returns A new Wishlist instance.
+   * @throws {InvalidOperationError} If the item is not found in the wishlist.
+   * @throws {InvalidAttributeError} If amount is not a positive integer.
+   * @throws {InvalidTransitionError} If attempting to cancel more than is currently purchased.
    */
   public cancelItemPurchase(itemId: string, amount: number): Wishlist {
     const index = this.items.findIndex((item) => item.id === itemId);
@@ -488,6 +537,10 @@ export class Wishlist {
     }
   }
 
+  /**
+   * Returns a copy of the internal properties ensuring immutability.
+   * @returns WishlistProps
+   */
   public toProps(): WishlistProps {
     return { ...this.props };
   }
