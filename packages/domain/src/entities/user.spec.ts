@@ -20,6 +20,18 @@ describe("User Entity", () => {
       expect(user.username).toBe(validProps.username);
     });
 
+    it("should trim email, username, and bio during creation", () => {
+      const user = User.create({
+        ...validProps,
+        email: "  test@example.com  ",
+        username: "  testuser  ",
+        bio: "  Hello world  ",
+      });
+      expect(user.email).toBe("test@example.com");
+      expect(user.username).toBe("testuser");
+      expect(user.bio).toBe("Hello world");
+    });
+
     it("should throw InvalidAttributeError if id is not a valid UUID v4", () => {
       expect(() => User.create({ ...validProps, id: "invalid-uuid" })).toThrow(
         InvalidAttributeError,

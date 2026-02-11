@@ -39,7 +39,7 @@ export interface UserProps {
  * **Business Invariants:**
  * - **id**: Must be a valid UUID v4.
  * - **email**: Must be a non-empty string in a valid email format.
- * - **username**: Must be a non-empty string, length 3-30 characters, strictly alphanumeric or `.-_`.
+ * - **username**: Must be a non-empty string, length 3-30 characters, alphanumeric with `.-_` separators (no leading/trailing separators, no consecutive separators).
  * - **bio**: Optional. If present, must not exceed 500 characters.
  * - **imageUrl**: Optional. If present, must be a valid URL string.
  *
@@ -97,7 +97,7 @@ export class User {
    * **Invariants:**
    * - `id`: Must be a valid UUID v4.
    * - `email`: Must be a non-empty string in a valid email format.
-   * - `username`: Must be 3-30 characters, alphanumeric + `.-_`.
+   * - `username`: Must be 3-30 characters, alphanumeric + `.-_` (no consecutive/trailing/leading separators).
    * - `bio`: Must not exceed 500 characters (if present).
    * - `imageUrl`: Must be a valid URL (if present).
    *
@@ -162,10 +162,13 @@ export class User {
   /**
    * Compares this entity with another `User` based on domain identity.
    *
-   * @param other - The other `User` entity to compare.
+   * @param other - The value to compare against.
    * @returns `true` if `id`s match, `false` otherwise.
    */
-  public equals(other: User): boolean {
+  public equals(other: unknown): boolean {
+    if (!other || !(other instanceof User)) {
+      return false;
+    }
     return this.id === other.id;
   }
 
@@ -224,10 +227,10 @@ export class User {
           "Invalid username length: Must be 3-30 characters",
         );
       }
-      const usernameRegex = /^[a-zA-Z0-9._-]+$/;
+      const usernameRegex = /^[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*$/;
       if (!usernameRegex.test(this.username)) {
         throw new InvalidAttributeError(
-          "Invalid username format: Alphanumeric and .-_ only",
+          "Invalid username format: Alphanumeric boundary and only .-_ between alphanumerics",
         );
       }
 
