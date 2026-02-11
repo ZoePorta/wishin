@@ -34,7 +34,7 @@ These methods will:
 - **`addItem(item)`**: Will use `item.equals(other)` to prevent duplicates. **Claims Ownership**: Updates `item.wishlistId` to `this.id`.
 - **`removeItem(itemId)`**: Will find the item using `equals` (or ID match if simplified, but goal is object equality check context).
   - **Crucial**: It must return the removed item instance to allow the caller (Repo) to handle it (e.g., move it to another list).
-  - Return type: `{ wishlist: Wishlist, removedItem: WishlistItem }`.
+  - Return type: `{ wishlist: Wishlist, removedItem: WishlistItem | null }`.
 
 ### 3. Reconstitution
 
