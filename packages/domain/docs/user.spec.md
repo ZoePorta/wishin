@@ -65,6 +65,11 @@ The entity supports two validation modes to ensure consistent behavior with the 
 - **Logic:** Returns `true` if `this.id === other.id`, otherwise `false`.
 - **Returns:** `boolean`
 
+### `toProps()`
+
+- **Effect:** Returns a shallow copy of the internal state.
+- **Returns:** `UserProps` object.
+
 ## Domain Errors
 
 - `InvalidAttributeError`: Thrown when validation rules (format, length) are violated.
