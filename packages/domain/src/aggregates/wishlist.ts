@@ -1,4 +1,4 @@
-import { WishlistItem } from "../entities/wishlist-item";
+import { WishlistItem, WishlistItemProps } from "../entities/wishlist-item";
 import {
   InvalidAttributeError,
   LimitExceededError,
@@ -52,6 +52,18 @@ export interface WishlistProps {
   description?: string;
   visibility: WishlistVisibility;
   participation: WishlistParticipation;
+  items: WishlistItemProps[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface WishlistInternalState {
+  id: string;
+  ownerId: string;
+  title: string;
+  description?: string;
+  visibility: WishlistVisibility;
+  participation: WishlistParticipation;
   items: WishlistItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -73,69 +85,69 @@ export class Wishlist {
    * @returns string
    */
   public get id(): string {
-    return this.props.id;
+    return this.state.id;
   }
   /**
    * UUID of the user who owns the wishlist.
    * @returns string
    */
   public get ownerId(): string {
-    return this.props.ownerId;
+    return this.state.ownerId;
   }
   /**
    * Human-readable title of the wishlist.
    * @returns string
    */
   public get title(): string {
-    return this.props.title;
+    return this.state.title;
   }
   /**
    * Optional detailed description of the wishlist.
    * @returns string | undefined
    */
   public get description(): string | undefined {
-    return this.props.description;
+    return this.state.description;
   }
   /**
    * Controls who can view the wishlist.
    * @returns WishlistVisibility
    */
   public get visibility(): WishlistVisibility {
-    return this.props.visibility;
+    return this.state.visibility;
   }
   /**
    * Controls who can perform actions on wishlist items.
    * @returns WishlistParticipation
    */
   public get participation(): WishlistParticipation {
-    return this.props.participation;
+    return this.state.participation;
   }
   /**
    * Collection of WishlistItems included in the list.
    * @returns WishlistItem[]
    */
   public get items(): WishlistItem[] {
-    return this.props.items;
+    return this.state.items;
   }
   /**
    * Timestamp when the wishlist was created.
    * @returns Date
    */
   public get createdAt(): Date {
-    return this.props.createdAt;
+    return this.state.createdAt;
   }
   /**
    * Timestamp when the wishlist was last updated.
    * @returns Date
    */
   public get updatedAt(): Date {
-    return this.props.updatedAt;
+    return this.state.updatedAt;
   }
 
-  private readonly props: WishlistProps;
+  private readonly state: WishlistInternalState;
 
-  private constructor(props: WishlistProps, mode: ValidationMode) {
-    this.props = props;
+  private constructor(state: WishlistInternalState, mode: ValidationMode) {
+    this.state = state;
     this.validate(mode);
   }
 
@@ -182,29 +194,25 @@ export class Wishlist {
     return Wishlist._createWithMode(
       {
         ...props,
-        items: props.items.map((item) =>
-          WishlistItem.reconstitute(
-            item instanceof WishlistItem ? item.toProps() : item,
-          ),
-        ),
+        items: props.items.map((item) => WishlistItem.reconstitute(item)),
       },
       ValidationMode.STRUCTURAL,
     );
   }
 
   private static _createWithMode(
-    props: WishlistProps,
+    state: WishlistInternalState,
     mode: ValidationMode,
   ): Wishlist {
-    const sanitizedProps = {
-      ...props,
-      title: typeof props.title === "string" ? props.title.trim() : props.title,
+    const sanitizedState = {
+      ...state,
+      title: typeof state.title === "string" ? state.title.trim() : state.title,
       description:
-        typeof props.description === "string"
-          ? props.description.trim()
-          : props.description,
+        typeof state.description === "string"
+          ? state.description.trim()
+          : state.description,
     };
-    return new Wishlist(sanitizedProps, mode);
+    return new Wishlist(sanitizedState, mode);
   }
 
   /**
@@ -223,7 +231,7 @@ export class Wishlist {
     >,
   ): Wishlist {
     // Only allow specific properties to be updated
-    const allowedProps: Partial<WishlistProps> = {};
+    const allowedProps: Partial<WishlistInternalState> = {};
     if (props.title !== undefined) allowedProps.title = props.title;
     if (props.description !== undefined)
       allowedProps.description = props.description;
@@ -234,7 +242,7 @@ export class Wishlist {
 
     const updated = Wishlist._createWithMode(
       {
-        ...this.toProps(),
+        ...this.state,
         ...allowedProps,
         updatedAt: new Date(),
       },
@@ -268,7 +276,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.toProps(),
+        ...this.state,
         items: [...this.items, ownedItem],
         updatedAt: new Date(),
       },
@@ -295,7 +303,7 @@ export class Wishlist {
     return {
       wishlist: Wishlist._createWithMode(
         {
-          ...this.toProps(),
+          ...this.state,
           items: this.items.filter((item) => !item.equals(itemToRemove)), // Use equals
           updatedAt: new Date(),
         },
@@ -329,7 +337,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.toProps(),
+        ...this.state,
         items: newItems,
         updatedAt: new Date(),
       },
@@ -360,7 +368,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.toProps(),
+        ...this.state,
         items: newItems,
         updatedAt: new Date(),
       },
@@ -397,7 +405,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.toProps(),
+        ...this.state,
         items: newItems,
         updatedAt: new Date(),
       },
@@ -428,7 +436,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.toProps(),
+        ...this.state,
         items: newItems,
         updatedAt: new Date(),
       },
@@ -459,7 +467,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.toProps(),
+        ...this.state,
         items: newItems,
         updatedAt: new Date(),
       },
@@ -542,6 +550,9 @@ export class Wishlist {
    * @returns WishlistProps
    */
   public toProps(): WishlistProps {
-    return { ...this.props };
+    return {
+      ...this.state,
+      items: this.state.items.map((item) => item.toProps()),
+    };
   }
 }

@@ -4,7 +4,11 @@ import {
   WishlistVisibility,
   WishlistParticipation,
 } from "./wishlist";
-import { WishlistItem, Priority } from "../entities/wishlist-item";
+import {
+  WishlistItem,
+  WishlistItemProps,
+  Priority,
+} from "../entities/wishlist-item";
 import {
   InvalidAttributeError,
   LimitExceededError,
@@ -459,7 +463,7 @@ describe("Wishlist Aggregate", () => {
           reservedQuantity: 0,
           purchasedQuantity: 0,
         }), // Props, not WishlistItem instance
-      ) as unknown as WishlistItem[]; // Casting to satisfy interface expecting WishlistItem[] but logic handles props
+      ) as WishlistItemProps[]; // No longer unsafe cast
 
       const fullWishlist = Wishlist.reconstitute({
         ...validProps,
@@ -513,7 +517,7 @@ describe("Wishlist Aggregate", () => {
         totalQuantity: 1,
         reservedQuantity: 0,
         purchasedQuantity: 0,
-      })) as unknown as WishlistItem[];
+      })) as WishlistItemProps[];
 
       const hugeWishlist = Wishlist.reconstitute({
         ...validProps,
