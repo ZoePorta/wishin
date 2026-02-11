@@ -642,9 +642,6 @@ describe("Wishlist Aggregate", () => {
       const wishlist = Wishlist.create(validProps);
       const props = wishlist.toProps();
 
-      const items = wishlist.items;
-
-      expect(props.createdAt).not.toBe(items);
       expect(props.createdAt).not.toBe(wishlist.createdAt);
       expect(props.updatedAt).not.toBe(wishlist.updatedAt);
       expect(props.items).not.toBe(wishlist.items);
