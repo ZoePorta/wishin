@@ -53,19 +53,50 @@ export interface UserProps {
  * @throws {InvalidAttributeError} If validation fails based on the provided mode.
  */
 export class User {
-  public readonly id: string;
-  public readonly email: string;
-  public readonly username: string;
-  public readonly imageUrl?: string;
-  public readonly bio?: string;
+  /**
+   * Unique identifier (UUID v4) for the user.
+   * @returns {string} The user's ID.
+   */
+  public get id(): string {
+    return this.props.id;
+  }
+
+  /**
+   * The user's email address.
+   * @returns {string} The user's email.
+   */
+  public get email(): string {
+    return this.props.email;
+  }
+
+  /**
+   * The user's display handle.
+   * @returns {string} The user's username.
+   */
+  public get username(): string {
+    return this.props.username;
+  }
+
+  /**
+   * Optional URL to the user's profile picture.
+   * @returns {string | undefined} The image URL if present.
+   */
+  public get imageUrl(): string | undefined {
+    return this.props.imageUrl;
+  }
+
+  /**
+   * Optional biography text.
+   * @returns {string | undefined} The bio text if present.
+   */
+  public get bio(): string | undefined {
+    return this.props.bio;
+  }
+
+  private readonly props: UserProps;
 
   private constructor(props: UserProps, mode: ValidationMode) {
-    this.id = props.id;
-    this.email = props.email;
-    this.username = props.username;
-    this.imageUrl = props.imageUrl;
-    this.bio = props.bio;
-
+    this.props = props;
     this.validate(mode);
   }
 
@@ -243,13 +274,13 @@ export class User {
     }
   }
 
-  private toProps(): UserProps {
+  /**
+   * Returns a shallow copy of the internal properties ensuring immutability.
+   * @returns {UserProps}
+   */
+  public toProps(): UserProps {
     return {
-      id: this.id,
-      email: this.email,
-      username: this.username,
-      imageUrl: this.imageUrl,
-      bio: this.bio,
+      ...this.props,
     };
   }
 }

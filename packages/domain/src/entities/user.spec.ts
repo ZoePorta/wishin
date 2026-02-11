@@ -15,9 +15,7 @@ describe("User Entity", () => {
     it("should create a valid user", () => {
       const user = User.create(validProps);
       expect(user).toBeInstanceOf(User);
-      expect(user.id).toBe(validProps.id);
-      expect(user.email).toBe(validProps.email);
-      expect(user.username).toBe(validProps.username);
+      expect(user.toProps()).toEqual(validProps);
     });
 
     it("should trim email, username, and bio during creation", () => {
@@ -27,9 +25,12 @@ describe("User Entity", () => {
         username: "  testuser  ",
         bio: "  Hello world  ",
       });
-      expect(user.email).toBe("test@example.com");
-      expect(user.username).toBe("testuser");
-      expect(user.bio).toBe("Hello world");
+      expect(user.toProps()).toEqual({
+        ...validProps,
+        email: "test@example.com",
+        username: "testuser",
+        bio: "Hello world",
+      });
     });
 
     it("should throw InvalidAttributeError if id is not a valid UUID v4", () => {
@@ -136,13 +137,12 @@ describe("User Entity", () => {
 
       expect(updatedUser).toBeInstanceOf(User);
       expect(updatedUser).not.toBe(user); // Immutability
-      expect(updatedUser.username).toBe("newusername");
-      expect(updatedUser.bio).toBe("New bio");
-      expect(updatedUser.imageUrl).toBe("https://example.com/new.jpg");
-
-      // Preserved attributes
-      expect(updatedUser.id).toBe(user.id);
-      expect(updatedUser.email).toBe(user.email);
+      expect(updatedUser.toProps()).toEqual({
+        ...validProps,
+        username: "newusername",
+        bio: "New bio",
+        imageUrl: "https://example.com/new.jpg",
+      });
     });
 
     it("should not allow updating id via update method", () => {
