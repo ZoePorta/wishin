@@ -53,19 +53,30 @@ export interface UserProps {
  * @throws {InvalidAttributeError} If validation fails based on the provided mode.
  */
 export class User {
-  public readonly id: string;
-  public readonly email: string;
-  public readonly username: string;
-  public readonly imageUrl?: string;
-  public readonly bio?: string;
+  public get id(): string {
+    return this.props.id;
+  }
+
+  public get email(): string {
+    return this.props.email;
+  }
+
+  public get username(): string {
+    return this.props.username;
+  }
+
+  public get imageUrl(): string | undefined {
+    return this.props.imageUrl;
+  }
+
+  public get bio(): string | undefined {
+    return this.props.bio;
+  }
+
+  private readonly props: UserProps;
 
   private constructor(props: UserProps, mode: ValidationMode) {
-    this.id = props.id;
-    this.email = props.email;
-    this.username = props.username;
-    this.imageUrl = props.imageUrl;
-    this.bio = props.bio;
-
+    this.props = props;
     this.validate(mode);
   }
 
@@ -243,13 +254,13 @@ export class User {
     }
   }
 
-  private toProps(): UserProps {
+  /**
+   * Returns a shallow copy of the internal properties ensuring immutability.
+   * @returns {UserProps}
+   */
+  public toProps(): UserProps {
     return {
-      id: this.id,
-      email: this.email,
-      username: this.username,
-      imageUrl: this.imageUrl,
-      bio: this.bio,
+      ...this.props,
     };
   }
 }
