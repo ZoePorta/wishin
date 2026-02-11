@@ -1,4 +1,4 @@
-import type { WishlistItem } from "../entities/wishlist-item";
+import { WishlistItem } from "../entities/wishlist-item";
 import {
   InvalidAttributeError,
   LimitExceededError,
@@ -132,7 +132,33 @@ export class Wishlist {
    * @throws {InvalidAttributeError} If structural integrity fails.
    */
   public static reconstitute(props: WishlistProps): Wishlist {
-    return Wishlist._createWithMode(props, ValidationMode.STRUCTURAL);
+    // Re-reconstitute items to ensure they are in the correct state (STRUCTURAL)
+    // This assumes props.items are already WishlistItem instances (or satisfy the shape).
+    const reconstitutedItems = props.items.map((item) =>
+      WishlistItem.reconstitute({
+        id: item.id,
+        wishlistId: item.wishlistId,
+        name: item.name,
+        description: item.description,
+        priority: item.priority,
+        price: item.price,
+        currency: item.currency,
+        url: item.url,
+        imageUrl: item.imageUrl,
+        isUnlimited: item.isUnlimited,
+        totalQuantity: item.totalQuantity,
+        reservedQuantity: item.reservedQuantity,
+        purchasedQuantity: item.purchasedQuantity,
+      }),
+    );
+
+    return Wishlist._createWithMode(
+      {
+        ...props,
+        items: reconstitutedItems,
+      },
+      ValidationMode.STRUCTURAL,
+    );
   }
 
   private static _createWithMode(
@@ -188,10 +214,11 @@ export class Wishlist {
 
   /**
    * Adds an item to the wishlist.
+   * Uses item.equals() to prevent duplicates.
    * @param item - The item to add.
    * @returns A new Wishlist instance containing the item.
    * @throws {LimitExceededError} If the 100-item limit is reached.
-   * @throws {InvalidOperationError} If the item belongs to a different wishlist.
+   * @throws {InvalidOperationError} If the item already exists.
    */
   public addItem(item: WishlistItem): Wishlist {
     if (this.items.length >= 100) {
@@ -200,16 +227,18 @@ export class Wishlist {
       );
     }
 
-    if (item.wishlistId !== this.id) {
-      throw new InvalidOperationError(
-        "Item belongs to a different wishlist (" + item.wishlistId + ")",
-      );
+    // Enforce ownership: Item belongs to this wishlist now.
+    const ownedItem = item.updateWishlistId(this.id);
+
+    // Check for duplicates using equals
+    if (this.items.some((existing) => existing.equals(ownedItem))) {
+      throw new InvalidOperationError("Item already exists in the wishlist");
     }
 
     return Wishlist._createWithMode(
       {
         ...this.toProps(),
-        items: [...this.items, item],
+        items: [...this.items, ownedItem],
         updatedAt: new Date(),
       },
       ValidationMode.STRUCTURAL,
@@ -218,14 +247,176 @@ export class Wishlist {
 
   /**
    * Removes an item from the wishlist by ID.
+   * Uses item.equals() logic (via identity check mostly) to find the object.
    * @param itemId - The ID of the item to remove.
-   * @returns A new Wishlist instance without the item.
+   * @returns A tuple containing the new Wishlist instance and the removed item (or null if not found).
    */
-  public removeItem(itemId: string): Wishlist {
+  public removeItem(itemId: string): {
+    wishlist: Wishlist;
+    removedItem: WishlistItem | null;
+  } {
+    const itemToRemove = this.items.find((item) => item.id === itemId);
+
+    if (!itemToRemove) {
+      return { wishlist: this, removedItem: null };
+    }
+
+    return {
+      wishlist: Wishlist._createWithMode(
+        {
+          ...this.toProps(),
+          items: this.items.filter((item) => !item.equals(itemToRemove)), // Use equals
+          updatedAt: new Date(),
+        },
+        ValidationMode.STRUCTURAL,
+      ),
+      removedItem: itemToRemove,
+    };
+  }
+
+  /**
+   * Updates a specific item in the wishlist.
+   * @param itemId - The ID of the item to update.
+   * @param props - The properties to update.
+   * @returns A new Wishlist instance with the updated item.
+   * @throws {InvalidOperationError} If item not found.
+   */
+  public updateItem(
+    itemId: string,
+    props: Partial<import("../entities/wishlist-item").WishlistItemProps>,
+  ): Wishlist {
+    const index = this.items.findIndex((item) => item.id === itemId);
+    if (index === -1) {
+      throw new InvalidOperationError("Item not found");
+    }
+
+    const currentItem = this.items[index];
+    const updatedItem = currentItem.update(props);
+
+    const newItems = [...this.items];
+    newItems[index] = updatedItem;
+
     return Wishlist._createWithMode(
       {
         ...this.toProps(),
-        items: this.items.filter((item) => item.id !== itemId),
+        items: newItems,
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRUCTURAL,
+    );
+  }
+
+  /**
+   * Reserves quantity of an item.
+   * @param itemId - The ID of the item.
+   * @param amount - Amount to reserve.
+   * @returns A new Wishlist instance.
+   */
+  public reserveItem(itemId: string, amount: number): Wishlist {
+    const index = this.items.findIndex((item) => item.id === itemId);
+    if (index === -1) {
+      throw new InvalidOperationError("Item not found");
+    }
+
+    const currentItem = this.items[index];
+    const updatedItem = currentItem.reserve(amount);
+
+    const newItems = [...this.items];
+    newItems[index] = updatedItem;
+
+    return Wishlist._createWithMode(
+      {
+        ...this.toProps(),
+        items: newItems,
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRUCTURAL,
+    );
+  }
+
+  /**
+   * Purchases quantity of an item.
+   * @param itemId - The ID of the item.
+   * @param totalAmount - Total amount to purchase.
+   * @param consumeFromReserved - Amount to consume from reserved stock.
+   * @returns A new Wishlist instance.
+   */
+  public purchaseItem(
+    itemId: string,
+    totalAmount: number,
+    consumeFromReserved: number,
+  ): Wishlist {
+    const index = this.items.findIndex((item) => item.id === itemId);
+    if (index === -1) {
+      throw new InvalidOperationError("Item not found");
+    }
+
+    const currentItem = this.items[index];
+    const updatedItem = currentItem.purchase(totalAmount, consumeFromReserved);
+
+    const newItems = [...this.items];
+    newItems[index] = updatedItem;
+
+    return Wishlist._createWithMode(
+      {
+        ...this.toProps(),
+        items: newItems,
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRUCTURAL,
+    );
+  }
+
+  /**
+   * Cancels reservation of an item.
+   * @param itemId - The ID of the item.
+   * @param amount - Amount to cancel.
+   * @returns A new Wishlist instance.
+   */
+  public cancelItemReservation(itemId: string, amount: number): Wishlist {
+    const index = this.items.findIndex((item) => item.id === itemId);
+    if (index === -1) {
+      throw new InvalidOperationError("Item not found");
+    }
+
+    const currentItem = this.items[index];
+    const updatedItem = currentItem.cancelReservation(amount);
+
+    const newItems = [...this.items];
+    newItems[index] = updatedItem;
+
+    return Wishlist._createWithMode(
+      {
+        ...this.toProps(),
+        items: newItems,
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRUCTURAL,
+    );
+  }
+
+  /**
+   * Cancels purchase of an item.
+   * @param itemId - The ID of the item.
+   * @param amount - Amount to cancel.
+   * @returns A new Wishlist instance.
+   */
+  public cancelItemPurchase(itemId: string, amount: number): Wishlist {
+    const index = this.items.findIndex((item) => item.id === itemId);
+    if (index === -1) {
+      throw new InvalidOperationError("Item not found");
+    }
+
+    const currentItem = this.items[index];
+    const updatedItem = currentItem.cancelPurchase(amount);
+
+    const newItems = [...this.items];
+    newItems[index] = updatedItem;
+
+    return Wishlist._createWithMode(
+      {
+        ...this.toProps(),
+        items: newItems,
         updatedAt: new Date(),
       },
       ValidationMode.STRUCTURAL,

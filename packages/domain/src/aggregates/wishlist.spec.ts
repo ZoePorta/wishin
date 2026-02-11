@@ -4,7 +4,7 @@ import {
   WishlistVisibility,
   WishlistParticipation,
 } from "./wishlist";
-import type { WishlistItem } from "../entities/wishlist-item";
+import { WishlistItem, Priority } from "../entities/wishlist-item";
 import {
   InvalidAttributeError,
   LimitExceededError,
@@ -162,6 +162,180 @@ describe("Wishlist Aggregate", () => {
       expect(updated.id).toBe(wishlist.id);
     });
 
+    it("should update item title via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Old Name",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+      const updatedWishlist = validWishlist.updateItem(item.id, {
+        name: "New Name",
+      });
+      expect(updatedWishlist.items[0].name).toBe("New Name");
+    });
+
+    it("should update item description via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        description: "Old Desc",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.updateItem(item.id, {
+        description: "New Desc",
+      });
+      expect(updatedWishlist.items[0].description).toBe("New Desc");
+    });
+
+    it("should update item url via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        url: "https://old.com",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.updateItem(item.id, {
+        url: "https://new.com",
+      });
+      expect(updatedWishlist.items[0].url).toBe("https://new.com");
+    });
+
+    it("should update item image url via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        imageUrl: "https://old-img.com",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.updateItem(item.id, {
+        imageUrl: "https://new-img.com",
+      });
+      expect(updatedWishlist.items[0].imageUrl).toBe("https://new-img.com");
+    });
+
+    it("should update item priority via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        priority: Priority.LOW,
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.updateItem(item.id, {
+        priority: Priority.URGENT,
+      });
+      expect(updatedWishlist.items[0].priority).toBe(Priority.URGENT);
+    });
+
+    it("should reserve item via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        totalQuantity: 5,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.reserveItem(item.id, 2);
+      expect(updatedWishlist.items[0].reservedQuantity).toBe(2);
+    });
+
+    it("should purchase item via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        totalQuantity: 5,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.purchaseItem(item.id, 2, 0);
+      expect(updatedWishlist.items[0].purchasedQuantity).toBe(2);
+    });
+
+    it("should cancel reservation via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        totalQuantity: 5,
+        reservedQuantity: 2,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.cancelItemReservation(item.id, 1);
+      expect(updatedWishlist.items[0].reservedQuantity).toBe(1);
+    });
+
+    it("should cancel purchase via aggregate", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        totalQuantity: 5,
+        reservedQuantity: 0,
+        purchasedQuantity: 2,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      const updatedWishlist = validWishlist.cancelItemPurchase(item.id, 1);
+      expect(updatedWishlist.items[0].purchasedQuantity).toBe(1);
+    });
+
+    it("should throw InvalidOperationError if duplicate item added", () => {
+      const wishlist = Wishlist.create(validProps);
+      const item = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: validProps.id,
+        name: "Base",
+        totalQuantity: 5,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
+      const validWishlist = wishlist.addItem(item);
+
+      expect(() => {
+        validWishlist.addItem(item);
+      }).toThrow(InvalidOperationError); // "Item already exists"
+    });
+
     it("should validate properties during update", () => {
       const wishlist = Wishlist.create(validProps);
       expect(() => {
@@ -188,13 +362,15 @@ describe("Wishlist Aggregate", () => {
 
   describe("Item Management", () => {
     it("should throw LimitExceededError if creating with > 100 items in STRICT mode", () => {
-      const items = Array.from(
-        { length: 101 },
-        (_, i) =>
-          ({
-            id: `item-${i.toString()}`,
-            wishlistId: validProps.id,
-          }) as unknown as WishlistItem,
+      const items = Array.from({ length: 101 }, (_, i) =>
+        WishlistItem.create({
+          id: `123e4567-e89b-42d3-a456-426614174${i.toString().padStart(3, "0")}`,
+          wishlistId: validProps.id,
+          name: `Item ${i.toString()}`,
+          totalQuantity: 1,
+          reservedQuantity: 0,
+          purchasedQuantity: 0,
+        }),
       );
 
       expect(() => {
@@ -206,10 +382,14 @@ describe("Wishlist Aggregate", () => {
     });
 
     it("should throw InvalidAttributeError if creating with items belonging to another wishlist", () => {
-      const foreignItem = {
-        id: "item-foreign",
-        wishlistId: "other-wishlist-id",
-      } as unknown as WishlistItem;
+      const foreignItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: "111e4567-e89b-42d3-a456-426614174111",
+        name: "Foreign Item",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
 
       expect(() => {
         Wishlist.create({
@@ -221,49 +401,58 @@ describe("Wishlist Aggregate", () => {
 
     it("should add an item to the wishlist", () => {
       const wishlist = Wishlist.create(validProps);
-      // Mock item or create a real one if easy.
-      // Since WishlistItem exists, let's try to simulate one if possible, or cast/mock for now.
-      const mockItem = {
-        id: "item-1",
+      const mockItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
         wishlistId: validProps.id,
-      } as unknown as WishlistItem;
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
 
       const withItem = wishlist.addItem(mockItem);
 
       expect(withItem.items).toHaveLength(1);
-      expect(withItem.items[0]).toBe(mockItem);
+      expect(withItem.items[0].equals(mockItem)).toBe(true);
     });
 
     it("should remove an item from the wishlist", () => {
       const wishlist = Wishlist.create(validProps);
-      const mockItem = {
-        id: "item-1",
+      const mockItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
         wishlistId: validProps.id,
-      } as unknown as WishlistItem;
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
       const withItem = wishlist.addItem(mockItem);
 
-      const emptyAgain = withItem.removeItem("item-1");
-      expect(emptyAgain.items).toHaveLength(0);
+      const result = withItem.removeItem(mockItem.id);
+      expect(result.wishlist.items).toHaveLength(0);
+      expect(result.removedItem).toEqual(mockItem);
     });
 
-    it("should do nothing when removing non-existent item", () => {
+    it("should return null removedItem when removing non-existent item", () => {
       const wishlist = Wishlist.create(validProps);
-      const sameWishlist = wishlist.removeItem("non-existent-item-id");
-      expect(sameWishlist.items).toHaveLength(0);
-      expect(sameWishlist.items).toEqual(wishlist.items); // Deep equality check
+      const result = wishlist.removeItem("non-existent-item-id");
+      expect(result.wishlist.items).toHaveLength(0);
+      expect(result.wishlist.items).toEqual(wishlist.items);
+      expect(result.removedItem).toBeNull();
     });
 
     it("should enforce 100 items limit", () => {
-      // Reconstitute with 100 items to simulate a full list
-      // We bypass adding 100 items one by one for performance in test setup
       const items = Array.from(
         { length: 100 },
-        (_, i) =>
-          ({
-            id: `item-${i.toString()}`,
-            wishlistId: validProps.id,
-          }) as unknown as WishlistItem,
-      );
+        (_, i) => ({
+          id: `123e4567-e89b-42d3-a456-426614174${i.toString().padStart(3, "0")}`,
+          wishlistId: validProps.id,
+          name: `Item ${i.toString()}`,
+          totalQuantity: 1,
+          reservedQuantity: 0,
+          purchasedQuantity: 0,
+        }), // Props, not WishlistItem instance
+      ) as unknown as WishlistItem[]; // Casting to satisfy interface expecting WishlistItem[] but logic handles props
 
       const fullWishlist = Wishlist.reconstitute({
         ...validProps,
@@ -272,39 +461,52 @@ describe("Wishlist Aggregate", () => {
         updatedAt: new Date(),
       });
 
-      const overflowItem = {
-        id: "item-101",
+      const overflowItem = WishlistItem.create({
+        id: "999e4567-e89b-42d3-a456-426614174999",
         wishlistId: validProps.id,
-      } as unknown as WishlistItem;
+        name: "Overflow",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
 
       expect(() => {
         fullWishlist.addItem(overflowItem);
       }).toThrow(LimitExceededError);
     });
 
-    it("should throw InvalidOperationError if adding item with different wishlistId", () => {
+    it("should update item's wishlistId when adding (claim ownership)", () => {
       const wishlist = Wishlist.create(validProps);
-      const otherItem = {
-        id: "item-1",
-        wishlistId: "other-wishlist-id",
-      } as unknown as WishlistItem;
+      const otherItem = WishlistItem.create({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        wishlistId: "111e4567-e89b-42d3-a456-426614174111", // Different ID
+        name: "Item 1",
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      });
 
-      expect(() => {
-        wishlist.addItem(otherItem);
-      }).toThrow(InvalidOperationError);
+      const updatedWishlist = wishlist.addItem(otherItem);
+      const addedItem = updatedWishlist.items.find(
+        (i) => i.id === otherItem.id,
+      );
+
+      expect(addedItem).toBeDefined();
+      expect(addedItem!.wishlistId).toBe(wishlist.id);
+      expect(addedItem!.wishlistId).not.toBe(otherItem.wishlistId);
     });
   });
 
   describe("Reconstitution", () => {
     it("should reconstitute without business validation (bypass item limit)", () => {
-      const items = Array.from(
-        { length: 101 },
-        (_, i) =>
-          ({
-            id: `item-${i.toString()}`,
-            wishlistId: validProps.id,
-          }) as unknown as WishlistItem,
-      );
+      const items = Array.from({ length: 101 }, (_, i) => ({
+        id: `123e4567-e89b-42d3-a456-426614174${i.toString().padStart(3, "0")}`,
+        wishlistId: validProps.id,
+        name: `Item ${i.toString()}`,
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+      })) as unknown as WishlistItem[];
 
       const hugeWishlist = Wishlist.reconstitute({
         ...validProps,

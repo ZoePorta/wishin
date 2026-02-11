@@ -717,11 +717,11 @@ describe("WishlistItem Entity", () => {
     });
   });
 
-  describe("Move To Wishlist", () => {
-    it("should move item to a new wishlist", () => {
+  describe("updateWishlistId", () => {
+    it("should return new instance with updated wishlistId", () => {
       const item = WishlistItem.create(validProps);
       const newWishlistId = "111e4567-e89b-42d3-a456-426614174111"; // Valid UUID v4
-      const movedItem = item.moveToWishlist(newWishlistId);
+      const movedItem = item.updateWishlistId(newWishlistId);
 
       expect(movedItem.wishlistId).toBe(newWishlistId);
       expect(movedItem.id).toBe(item.id); // Identity preserved
@@ -731,16 +731,15 @@ describe("WishlistItem Entity", () => {
     it("should throw InvalidAttributeError if new wishlistId is invalid", () => {
       const item = WishlistItem.create(validProps);
 
-      expect(() => item.moveToWishlist("invalid-uuid")).toThrow(
+      expect(() => item.updateWishlistId("invalid-uuid")).toThrow(
         InvalidAttributeError,
       );
     });
 
-    it("should throw InvalidAttributeError if moving to the same wishlist", () => {
+    it("should return same instance if wishlistId is unchanged", () => {
       const item = WishlistItem.create(validProps);
-      expect(() => item.moveToWishlist(validProps.wishlistId)).toThrow(
-        InvalidAttributeError,
-      );
+      const sameItem = item.updateWishlistId(validProps.wishlistId);
+      expect(sameItem).toBe(item);
     });
 
     it("should allow moving an over-committed item (inventory check skipped)", () => {
@@ -756,7 +755,7 @@ describe("WishlistItem Entity", () => {
 
       // Move it
       const newWishlistId = "111e4567-e89b-42d3-a456-426614174111";
-      const movedItem = item.moveToWishlist(newWishlistId);
+      const movedItem = item.updateWishlistId(newWishlistId);
 
       expect(movedItem.wishlistId).toBe(newWishlistId);
       expect(movedItem.totalQuantity).toBe(2);

@@ -163,7 +163,7 @@ export class WishlistItem {
       props.wishlistId !== this.wishlistId
     ) {
       throw new InvalidAttributeError(
-        "Cannot update wishlistId directly. Use moveToWishlist().",
+        "Cannot update wishlistId directly. Use updateWishlistId().",
       );
     }
 
@@ -255,12 +255,12 @@ export class WishlistItem {
   }
 
   /**
-   * Moves the item to a different wishlist.
+   * Updates the item's wishlistId.
    * @param newWishlistId - The UUID of the new wishlist.
    * @returns A new WishlistItem instance with the updated wishlistId.
-   * @throws {InvalidAttributeError} If newWishlistId is invalid or same as current.
+   * @throws {InvalidAttributeError} If newWishlistId is invalid.
    */
-  public moveToWishlist(newWishlistId: string): WishlistItem {
+  public updateWishlistId(newWishlistId: string): WishlistItem {
     if (!isValidUUID(newWishlistId)) {
       throw new InvalidAttributeError(
         "Invalid newWishlistId: Must be a valid UUID v4",
@@ -268,9 +268,7 @@ export class WishlistItem {
     }
 
     if (newWishlistId === this.wishlistId) {
-      throw new InvalidAttributeError(
-        "Cannot move to the same wishlist. Item is already in this wishlist.",
-      );
+      return this;
     }
 
     // Bypass inventory check to allow moving over-committed items
