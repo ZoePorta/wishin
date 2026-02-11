@@ -192,6 +192,24 @@ export class User {
       throw new InvalidAttributeError("Invalid imageUrl: Must be a string");
     }
 
+    // Image URL validity (Always Enforced for security/consistency)
+    if (this.imageUrl) {
+      let url: URL;
+      try {
+        url = new URL(this.imageUrl);
+      } catch {
+        throw new InvalidAttributeError(
+          "Invalid imageUrl: Must be a valid URL",
+        );
+      }
+
+      if (url.protocol !== "http:" && url.protocol !== "https:") {
+        throw new InvalidAttributeError(
+          "Invalid imageUrl: Must use http or https protocol",
+        );
+      }
+    }
+
     // --- BUSINESS RULES (STRICT) ---
     if (mode === ValidationMode.STRICT) {
       // Email format
@@ -218,24 +236,6 @@ export class User {
         throw new InvalidAttributeError(
           "Invalid bio: Must be at most 500 characters",
         );
-      }
-
-      // Image URL validity
-      if (this.imageUrl) {
-        let url: URL;
-        try {
-          url = new URL(this.imageUrl);
-        } catch {
-          throw new InvalidAttributeError(
-            "Invalid imageUrl: Must be a valid URL",
-          );
-        }
-
-        if (url.protocol !== "http:" && url.protocol !== "https:") {
-          throw new InvalidAttributeError(
-            "Invalid imageUrl: Must use http or https protocol",
-          );
-        }
       }
     }
   }

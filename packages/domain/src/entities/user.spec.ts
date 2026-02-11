@@ -176,6 +176,21 @@ describe("User Entity", () => {
         InvalidAttributeError,
       );
     });
+
+    it("should throw InvalidAttributeError if imageUrl is invalid during reconstitution", () => {
+      expect(() =>
+        User.reconstitute({ ...validProps, imageUrl: "invalid-url" }),
+      ).toThrow("Invalid imageUrl: Must be a valid URL");
+    });
+
+    it("should throw InvalidAttributeError if imageUrl protocol is not http/https during reconstitution", () => {
+      expect(() =>
+        User.reconstitute({
+          ...validProps,
+          imageUrl: "ftp://example.com/image.jpg",
+        }),
+      ).toThrow("Invalid imageUrl: Must use http or https protocol");
+    });
   });
 
   describe("Equality", () => {
