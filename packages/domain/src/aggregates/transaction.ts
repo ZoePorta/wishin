@@ -160,13 +160,13 @@ export class Transaction {
   /**
    * Reconstitutes a Transaction from persistence.
    *
-   * **Validation Mode:** STRUCTURAL
+   * **Validation Mode:** STRICT
    *
    * @param {TransactionProps} props
    * @returns {Transaction}
    */
   public static reconstitute(props: TransactionProps): Transaction {
-    return new Transaction(props, ValidationMode.STRUCTURAL);
+    return new Transaction(props, ValidationMode.STRICT);
   }
 
   /**
@@ -219,11 +219,17 @@ export class Transaction {
    * Marks the transaction as CANCELLED.
    *
    * @returns {Transaction} New instance with updated status.
-   * @throws {InvalidTransitionError} If already cancelled.
+   * @throws {InvalidTransitionError} If already cancelled or if guest transaction.
    */
   public cancel(): Transaction {
     if (this.status === TransactionStatus.CANCELLED) {
       throw new InvalidTransitionError("Transaction is already cancelled");
+    }
+
+    if (!this.userId) {
+      throw new InvalidTransitionError(
+        "Only registered users can cancel transactions",
+      );
     }
 
     return new Transaction(

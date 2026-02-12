@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { Transaction, TransactionStatus } from "./transaction";
+import {
+  Transaction,
+  TransactionStatus,
+  type TransactionCreateReservationProps,
+} from "./transaction";
 import {
   InvalidAttributeError,
   InvalidTransitionError,
@@ -34,8 +38,10 @@ describe("Transaction Aggregate", () => {
 
     it("should throw if userId is missing", () => {
       expect(() =>
-        // @ts-expect-error - testing invalid input
-        Transaction.createReservation({ ...validProps, userId: undefined }),
+        Transaction.createReservation({
+          ...validProps,
+          userId: undefined,
+        } as unknown as TransactionCreateReservationProps),
       ).toThrow(InvalidAttributeError);
     });
 
@@ -170,7 +176,7 @@ describe("Transaction Aggregate", () => {
       expect(cancelled.status).toBe(TransactionStatus.CANCELLED);
     });
 
-    it("should allow cancelling a purchase", () => {
+    it("should allow cancelling a purchase for a registered user", () => {
       const purchase = Transaction.reconstitute({
         id: VALID_TRANSACTION_ID,
         itemId: VALID_ITEM_ID,
@@ -183,6 +189,20 @@ describe("Transaction Aggregate", () => {
 
       const cancelled = purchase.cancel();
       expect(cancelled.status).toBe(TransactionStatus.CANCELLED);
+    });
+
+    it("should throw if cancelling a guest purchase", () => {
+      const purchase = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: VALID_ITEM_ID,
+        guestSessionId: VALID_GUEST_ID,
+        status: TransactionStatus.PURCHASED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(() => purchase.cancel()).toThrow(InvalidTransitionError);
     });
 
     it("should throw if cancelling an already cancelled transaction", () => {
