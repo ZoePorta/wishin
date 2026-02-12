@@ -2,18 +2,11 @@
 // import { InvalidAttributeError, InvalidTransitionError } from "../errors/domain-errors";
 
 /**
- * Type of transaction.
- */
-export enum TransactionType {
-  RESERVATION = "RESERVATION",
-  PURCHASE = "PURCHASE",
-}
-
-/**
  * Status of transaction.
  */
 export enum TransactionStatus {
-  ACTIVE = "ACTIVE",
+  RESERVED = "RESERVED",
+  PURCHASED = "PURCHASED",
   CANCELLED = "CANCELLED",
 }
 
@@ -22,21 +15,23 @@ export interface TransactionProps {
   itemId: string;
   userId?: string;
   guestSessionId?: string;
-  type: TransactionType;
   status: TransactionStatus;
   quantity: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface TransactionCreateProps {
+export interface TransactionCreateReservationProps {
+  itemId: string;
+  userId: string;
+  quantity: number;
+}
+
+export interface TransactionCreatePurchaseProps {
   itemId: string;
   userId?: string;
   guestSessionId?: string;
-  type: TransactionType;
   quantity: number;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 
 export class Transaction {
@@ -50,9 +45,6 @@ export class Transaction {
     throw new Error("Method not implemented.");
   }
   public get guestSessionId(): string | undefined {
-    throw new Error("Method not implemented.");
-  }
-  public get type(): TransactionType {
     throw new Error("Method not implemented.");
   }
   public get status(): TransactionStatus {
@@ -70,7 +62,15 @@ export class Transaction {
 
   private constructor() {}
 
-  public static create(_props: TransactionCreateProps): Transaction {
+  public static createReservation(
+    _props: TransactionCreateReservationProps,
+  ): Transaction {
+    throw new Error("Method not implemented.");
+  }
+
+  public static createPurchase(
+    _props: TransactionCreatePurchaseProps,
+  ): Transaction {
     throw new Error("Method not implemented.");
   }
 
@@ -79,6 +79,10 @@ export class Transaction {
   }
 
   public cancel(): Transaction {
+    throw new Error("Method not implemented.");
+  }
+
+  public confirmPurchase(): Transaction {
     throw new Error("Method not implemented.");
   }
 
