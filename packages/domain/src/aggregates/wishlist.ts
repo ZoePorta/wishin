@@ -225,7 +225,7 @@ export class Wishlist {
 
     const updated = Wishlist._createWithMode(
       {
-        ...this.props,
+        ...this.toProps(),
         ...allowedProps,
         updatedAt: new Date(),
       },
@@ -259,7 +259,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.props,
+        ...this.toProps(),
         items: [...this.items, ownedItem],
         updatedAt: new Date(),
       },
@@ -286,7 +286,7 @@ export class Wishlist {
     return {
       wishlist: Wishlist._createWithMode(
         {
-          ...this.props,
+          ...this.toProps(),
           items: this.items.filter((item) => !item.equals(itemToRemove)), // Use equals
           updatedAt: new Date(),
         },
@@ -321,7 +321,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.props,
+        ...this.toProps(),
         items: newItems,
         updatedAt: new Date(),
       },
@@ -352,7 +352,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.props,
+        ...this.toProps(),
         items: newItems,
         updatedAt: new Date(),
       },
@@ -389,7 +389,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.props,
+        ...this.toProps(),
         items: newItems,
         updatedAt: new Date(),
       },
@@ -420,7 +420,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.props,
+        ...this.toProps(),
         items: newItems,
         updatedAt: new Date(),
       },
@@ -451,7 +451,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.props,
+        ...this.toProps(),
         items: newItems,
         updatedAt: new Date(),
       },
@@ -533,10 +533,10 @@ export class Wishlist {
    * Returns a copy of the internal properties ensuring immutability.
    * @returns WishlistProps
    */
-  public toProps(): WishlistSnapshot {
+  public toProps(): WishlistProps {
     return {
       ...this.props,
-      items: this.props.items.map((item) => item.toProps()),
+      items: [...this.props.items],
       createdAt: new Date(this.props.createdAt.getTime()),
       updatedAt: new Date(this.props.updatedAt.getTime()),
     };

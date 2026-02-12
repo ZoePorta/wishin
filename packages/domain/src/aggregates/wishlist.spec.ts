@@ -654,7 +654,7 @@ describe("Wishlist Aggregate", () => {
         reservedQuantity: 0,
         purchasedQuantity: 0,
       });
-      props.items.push(mockItem.toProps());
+      props.items.push(mockItem);
       expect(wishlist.items).toHaveLength(0);
     });
   });
