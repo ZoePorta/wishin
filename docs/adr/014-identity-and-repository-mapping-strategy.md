@@ -1,0 +1,26 @@
+# ADR 014: Identity and Repository Mapping Strategy
+
+**Status:** Accepted  
+**Date:** 2026-02-12
+
+## Context
+
+The project follows Domain-Driven Design (DDD) and Clean Architecture principles. Entities like `User`, `Wishlist`, and `Transaction` require a unique identifier (UUID v4) to ensure identity consistency across layers. We are using **Appwrite** as the Backend as a Service (BaaS). Appwrite's SDK typically defaults to `ID.unique()` to generate alphanumeric strings, which creates a coupling between our Domain identity and the infrastructure provider's internal logic.
+
+## Decision
+
+1.  **Identity Generation:** The **Application Layer** (Use Cases) is responsible for generating the entity `id` using a UUID v4 generator before instantiating any Domain Entity. The Domain layer remains provider-agnostic.
+2.  **Appwrite Integration:** When persisting a new document, the Domain-generated UUID will be passed as the `documentId` parameter in the Appwrite `createDocument` method. This ensures the Database ID matches the Domain ID exactly.
+3.  **Data Mapping Pattern:** We will implement a **Data Mapper** in the Infrastructure layer.
+    - **toDomain:** Converts Appwrite documents into Domain Entities, stripping infrastructure metadata (prefixed with `$`) and using `Entity.reconstitute()` to bypass strict business rules for existing data.
+    - **toPersistence:** Converts Domain Entities into plain objects (POJs) compatible with Appwrite's attribute schema.
+
+## Consequences
+
+- **Pros:**
+  - **Purity:** Domain Entities are independent of Appwrite's SDK and can be tested in isolation.
+  - **Consistency:** Predictable IDs make unit testing and debugging easier.
+  - **Portability:** If the BaaS provider changes, only the Mapper and Repository implementation need updates; the Domain core remains untouched.
+- **Cons:**
+  - **Manual Mapping:** Requires writing and maintaining Mapper classes for each Aggregate.
+  - **Schema Sync:** Changes in the Domain props require manual updates in the Appwrite collection attributes to prevent persistence errors.

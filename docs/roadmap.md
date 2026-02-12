@@ -2,7 +2,7 @@
 
 ## Phase 1: Foundation & Shared Kernel
 
-- [ ] ADR 014: Identity & Repository Mapping Strategy (UUIDs vs Appwrite IDs).
+- [x] ADR 014: Identity & Repository Mapping Strategy (UUIDs vs Appwrite IDs).
 - [x] Consolidate Value Objects: Move Priority, Visibility, Participation, etc., to `value-objects/`.
 - [ ] Infrastructure Setup: Initialize Appwrite SDK base client.
 
