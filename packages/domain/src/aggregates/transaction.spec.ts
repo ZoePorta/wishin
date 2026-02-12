@@ -33,8 +33,8 @@ describe("Transaction Aggregate", () => {
     });
 
     it("should throw if userId is missing", () => {
-      // @ts-expect-error - testing invalid input
       expect(() =>
+        // @ts-expect-error - testing invalid input
         Transaction.createReservation({ ...validProps, userId: undefined }),
       ).toThrow(InvalidAttributeError);
     });
