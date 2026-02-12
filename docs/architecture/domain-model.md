@@ -47,12 +47,13 @@ classDiagram
         +string itemId
         +string userId?
         +string guestSessionId?
-        +TransactionType type
         +TransactionStatus status
         +number quantity
         +Date createdAt
         +Date updatedAt
     }
+
+    note for Transaction "States: RESERVED, PURCHASED, CANCELLED"
 
     User "1" -- "0..*" Wishlist : owns
     Wishlist "1" *-- "0..100" WishlistItem : contains
@@ -66,12 +67,12 @@ To solve the **"Mother Factor"** (allowing non-technical guests to interact with
 
 ### 2.1 Validation Matrix
 
-| Mode            | Context                   | Structural | Business Rules | Inventory Invariants |
-| :-------------- | :------------------------ | :--------: | :------------: | :------------------: |
-| **STRICT**      | `create()`                | ✅ Always  |  ✅ Mandatory  |     ✅ Enforced      |
-| **EVOLUTIVE**   | `update()`                | ✅ Always  |  ✅ Mandatory  | ❌ Relaxed (Privacy) |
-| **TRANSACTION** | `reserve()`, `purchase()` | ✅ Always  |  ❌ Bypassed   |    ✅ Enforced\*     |
-| **STRUCTURAL**  | Persistence/DB            | ✅ Always  |  ❌ Bypassed   |     ❌ Bypassed      |
+| Mode            | Context                                                        | Structural | Business Rules | Inventory Invariants |
+| :-------------- | :------------------------------------------------------------- | :--------: | :------------: | :------------------: |
+| **STRICT**      | `create()`                                                     | ✅ Always  |  ✅ Mandatory  |     ✅ Enforced      |
+| **EVOLUTIVE**   | `update()`                                                     | ✅ Always  |  ✅ Mandatory  | ❌ Relaxed (Privacy) |
+| **TRANSACTION** | `createReservation()`, `createPurchase()`, `confirmPurchase()` | ✅ Always  |  ❌ Bypassed   |    ✅ Enforced\*     |
+| **STRUCTURAL**  | Persistence/DB                                                 | ✅ Always  |  ❌ Bypassed   |     ❌ Bypassed      |
 
 > (\*) **Note:** For `isUnlimited` items, Inventory Invariants are ignored during transactions (availability is infinite).
 
@@ -138,7 +139,7 @@ This prevents the owner from discovering "secret" purchases when they try to low
 
 To minimize friction while maintaining data integrity, anonymous actions are handled as **immediate commitments with a volatile undo window**.
 
-1. **Immediate Action:** When a Guest clicks "Purchase", the `Transaction` is created and stock is updated.
+1. **Immediate Action:** When a Guest clicks "Purchase", the `Transaction` is created in the appropriate state (`PURCHASED`) and stock is updated.
 2. **Volatile Window:** A UI popup with a countdown appears.
 3. **Undo (Deletion):** If the Guest clicks "Undo" before the countdown ends or before navigating away, the `Transaction` is **hard-deleted** from the system, effectively restoring stock.
 4. **Finality:** Once the user leaves the page or the window closes, the transaction is considered permanent for that session.
@@ -147,15 +148,17 @@ To minimize friction while maintaining data integrity, anonymous actions are han
 
 ### 4.5 Cancellation vs. Undo
 
-- **Undo:** Available to everyone. Deletes the transaction record. Only available immediately after the action.
+- **Undo:** Available to everyone on Purchase. Deletes the transaction record. Only available immediately after the action.
 - **Cancellation:** Available only to **Registered Users** via their "Gifting History". It transitions the transaction to a `CANCELLED` status (Soft Delete) for audit purposes.
 
 ## 5. Domain Invariants & Lifecycle
 
 1.  **Identity Immutability:** An item's `id` cannot be changed after creation.
-2.  **Atomic State Transitions:** All changes result in a new immutable `WishlistItem` instance.
+2.  **Atomic State Transitions:** All changes to domain aggregates (e.g., `WishlistItem`, `Transaction`) result in a new immutable instance.
 3.  **Transaction Identity Invariant:** Exactly one of `userId` and `guestSessionId` MUST be set. This ensures a transaction is performed by either a registered user OR a guest, never both or neither. Enforced at creation validation.
 4.  **Transaction Lifecycle:**
     - **Undo:** A hard delete of the `Transaction` record, triggered only during the active UI session.
     - **Cancellation:** A status update (`status: CANCELLED`) allowed only for registered users, which triggers a stock restock in the target `WishlistItem`.
-5.  **Role Isolation:** Guests are restricted to `TRANSACTION` logic and immediate "Undo" (deletion).
+    - **Confirmation:** A status update from `RESERVED` to `PURCHASED`.
+    - **Invariants by State:** `RESERVED` status REQUIRES a `userId`. `guestSessionId` is only allowed for `PURCHASED` status.
+5.  **Role Isolation:** Guests are restricted to `PURCHASED` transactions and immediate "Undo" (deletion).
