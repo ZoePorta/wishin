@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   Transaction,
-  TransactionStatus,
   type TransactionCreateReservationProps,
 } from "./transaction";
+import { TransactionStatus } from "../value-objects/transaction-status";
 import {
   InvalidAttributeError,
   InvalidTransitionError,
