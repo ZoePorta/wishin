@@ -68,6 +68,8 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - [ADR 012: Wishlist Aggregate Encapsulation](docs/adr/012-wishlist-aggregate-encapsulation.md)
 - [ADR 013: Unified Transaction State Model](docs/adr/013-unified-transaction-state-model.md)
 
+## [Project Roadmap](docs/roadmap.md)
+
 ## License
 
 Licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
