@@ -12,7 +12,11 @@ import { isValidUUID } from "../common/validation-utils";
 import { Visibility, Participation } from "../value-objects";
 
 /**
- * Interface representing the properties of a Wishlist.
+ * Interface representing a plain data snapshot of a Wishlist.
+ *
+ * This structure is used exclusively for reanimating the entity from persistence
+ * (e.g., database, API) via the `reconstitute()` method. It contains only
+ * primitive-friendly types or DTO-like structures.
  *
  * @property id - Unique identifier (UUID v4) for the wishlist.
  * @property ownerId - UUID of the user who owns the wishlist.
@@ -20,11 +24,9 @@ import { Visibility, Participation } from "../value-objects";
  * @property description - Optional detailed description of the wishlist.
  * @property visibility - Visibility setting (e.g., LINK, PRIVATE).
  * @property participation - Participation setting (e.g., ANYONE, REGISTERED).
- * @property items - Collection of WishlistItems included in the list.
+ * @property items - Collection of WishlistItem Snapshots included in the list.
  * @property createdAt - Timestamp when the wishlist was created.
  * @property updatedAt - Timestamp when the wishlist was last updated.
- *
- * This interface is a data structure and does not throw exceptions or return values.
  */
 export interface WishlistSnapshot {
   id: string;
@@ -38,6 +40,12 @@ export interface WishlistSnapshot {
   updatedAt: Date;
 }
 
+/**
+ * Internal interface representing the rich properties of a Wishlist.
+ *
+ * This structure is used for internal state management within the aggregate.
+ * It contains rich domain entities (like `WishlistItem`) instead of plain snapshots.
+ */
 interface WishlistProps {
   id: string;
   ownerId: string;
