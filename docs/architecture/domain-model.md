@@ -51,6 +51,7 @@ classDiagram
         +TransactionStatus status
         +number quantity
         +Date createdAt
+        +Date updatedAt
     }
 
     User "1" -- "0..*" Wishlist : owns

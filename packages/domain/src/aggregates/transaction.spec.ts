@@ -13,6 +13,7 @@ describe("Transaction Aggregate", () => {
     type: TransactionType.PURCHASE,
     quantity: 1,
     createdAt: new Date("2023-01-01T00:00:00Z"),
+    updatedAt: new Date("2023-01-01T00:00:00Z"),
   };
 
   const validGuestProps = {
@@ -21,6 +22,7 @@ describe("Transaction Aggregate", () => {
     type: TransactionType.RESERVATION,
     quantity: 2,
     createdAt: new Date("2023-01-01T00:00:00Z"),
+    updatedAt: new Date("2023-01-01T00:00:00Z"),
   };
 
   describe("Factory: create", () => {
@@ -154,10 +156,11 @@ describe("Transaction Aggregate", () => {
       expect(transaction.createdAt).toEqual(props.createdAt);
     });
 
-    it("should bypass business validation", () => {
+    it("should reconstitute a valid transaction", () => {
       const props = {
         id: "9f8c05c0-e89b-42d3-a456-426614179999",
         ...validProps,
+        status: TransactionStatus.ACTIVE,
       };
       const transaction = Transaction.reconstitute(props);
       expect(transaction).toBeDefined();

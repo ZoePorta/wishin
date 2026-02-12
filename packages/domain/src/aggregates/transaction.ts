@@ -26,6 +26,7 @@ export interface TransactionProps {
   status: TransactionStatus;
   quantity: number;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface TransactionCreateProps {
@@ -35,6 +36,7 @@ export interface TransactionCreateProps {
   type: TransactionType;
   quantity: number;
   createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export class Transaction {
@@ -60,6 +62,9 @@ export class Transaction {
     throw new Error("Method not implemented.");
   }
   public get createdAt(): Date {
+    throw new Error("Method not implemented.");
+  }
+  public get updatedAt(): Date {
     throw new Error("Method not implemented.");
   }
 
