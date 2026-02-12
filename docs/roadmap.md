@@ -1,29 +1,110 @@
-# Project Roadmap (MVP Phase 1)
+# Project Roadmap (Vertical Slices - Linear Flow)
 
-Based on the current implementation of core aggregates, the following steps are prioritized to complete the MVP:
+## Phase 1: Foundation & Shared Kernel
 
-## 1. Domain Layer Completion
+- [ ] ADR 014: Identity & Repository Mapping Strategy (UUIDs vs Appwrite IDs).
+- [x] Consolidate Value Objects: Move Priority, Visibility, Participation, etc., to `value-objects/`.
+- [ ] Infrastructure Setup: Initialize Appwrite SDK base client.
 
-- [ ] **Consolidate Value Objects**: Move `Priority`, `Visibility`, `Participation`, and `TransactionStatus` to `packages/domain/src/value-objects/`.
-- [ ] **Repository Interfaces**: Define `UserRepository`, `WishlistRepository`, and `TransactionRepository` in `packages/domain/src/repositories/`.
-- [ ] **Domain Services**: Implement `WishlistService` for cross-aggregate logic (e.g., item cloning between lists).
+---
 
-## 2. Application Layer (Use Cases)
+## Phase 2: Guest Experience (Read-Only)
 
-- [ ] **Identity & Session**: Implement `InitializeGuestSession` and `RegisterUser`/`LoginUser` use cases.
-- [ ] **Wishlist Management**: Implement `CreateWishlist` (enforcing ADR 011), `GetWishlistByUUID`, and `AddWishlistItem`.
-- [ ] **Frictionless Transactions**: Implement `ReserveItem` and `PurchaseItem` coordinating `Wishlist` and `Transaction` aggregates.
-- [ ] **Audit & History**: Implement `GetGiftingHistory` for registered users.
+### 2.1 Domain Refinement
 
-## 3. Infrastructure Layer
+- [ ] Define `WishlistRepository` interface with `findById(id: string): Promise<Wishlist | null>`.
 
-- [ ] **Appwrite Adapter**: Setup base Appwrite SDK client and authentication adapter.
-- [ ] **Persistence Adapters**: Implement Domain Repositories using Appwrite Databases.
-- [ ] **Realtime Synchronization**: Implement an adapter for Appwrite Realtime to push stock updates to all clients.
+### 2.2 Application Layer (TDD)
 
-## 4. Application UI (Expo)
+- [ ] **DTOs Definition:** Create `GetWishlistInput` and `WishlistOutput` (DTOs).
+- [ ] **TDD - GetWishlistByUUID:**
+  - [ ] Phase RED: Unit test using a Mock Repository (should return wishlist DTO).
+  - [ ] Phase GREEN: Logic to call `repo.findById` and map to DTO.
 
-- [ ] **Core Architecture**: Setup routing (Expo Router), state management (Zustand/TanStack Query), and theme system.
-- [ ] **Public Wishlist View**: Implement the "Mother Factor" entry point (Link-based guest access).
-- [ ] **Owner Dashboard**: Implement private wishlist management and item creation.
-- [ ] **Gifter Dashboard**: Implement "My Reservations" and "Gifting History" for registered members.
+### 2.3 Infrastructure Layer (Appwrite)
+
+- [ ] **Appwrite Mapping:** Implement `WishlistMapper` (to/from Appwrite documents).
+- [ ] **Integration Tests:** Test `AppwriteWishlistRepository.findById()` against real Appwrite collection.
+
+### 2.4 UI & Presentation
+
+- [ ] Basic Expo Router setup & Wishlist view (Read-only view for guests).
+
+---
+
+## Phase 3: Owner Experience (Creation & Control)
+
+### 3.1 Domain Refinement
+
+- [ ] Extend `WishlistRepository` interface with `save(wishlist: Wishlist): Promise<void>` and `delete(id: string): Promise<void>`.
+
+### 3.2 Application Layer (TDD)
+
+- [ ] **DTOs Definition:** Create `CreateWishlistInput`, `AddWishlistItemInput`, `UpdateWishlistItemInput`, `RemoveWishlistItemInput`.
+- [ ] **TDD - CreateWishlist:**
+  - [ ] Phase RED: Test explicit visibility/participation requirements (ADR 011).
+  - [ ] Phase GREEN: Logic to instantiate `Wishlist` and call `repo.save()`.
+- [ ] **TDD - AddWishlistItem:**
+  - [ ] Phase RED: Test retrieval -> add -> save cycle.
+  - [ ] Phase GREEN: Implementation of coordination logic.
+- [ ] **TDD - Update/Remove Item:**
+  - [ ] Phase RED: Test editing item metadata and removing items.
+  - [ ] Phase GREEN: Logic to update aggregate state and persist.
+
+### 3.3 Infrastructure Layer (Appwrite)
+
+- [ ] **Schema Definition:** Create collections/attributes in Appwrite matching `UserProps` and `WishlistProps`.
+- [ ] **Integration Tests:**
+  - [ ] Test `AppwriteWishlistRepository.save()` (Insert and Update scenarios).
+  - [ ] Test `AppwriteWishlistRepository.getById()` ensures full reconstitution (including items).
+
+### 3.4 UI & Presentation
+
+- [ ] Owner Dashboard: Form for wishlist creation and item management.
+
+---
+
+## Phase 4: Gifting & Synchronization (Transactions)
+
+### 4.1 Domain Refinement
+
+- [ ] Define `TransactionRepository` interface with `save`, `findById`, and `findByItemId`.
+- [ ] Refine `WishlistItem` invariants for atomic stock updates.
+
+### 4.2 Application Layer (TDD)
+
+- [ ] **DTOs Definition:** `ReserveItemInput`, `PurchaseItemInput`, `ConfirmPurchaseInput`, `CancelTransactionInput`.
+- [ ] **TDD - Gifting Cycles:**
+  - [ ] **ReserveItem:** RED (Registered only) -> GREEN (Coordination).
+  - [ ] **DirectPurchase:** RED (Guest/User) -> GREEN (Immediate stock update).
+  - [ ] **Undo (Immediate):** RED (Hard delete within window) -> GREEN (Implementation).
+  - [ ] **Confirm/Cancel:** RED (State transitions) -> GREEN (Persistence).
+
+### 4.3 Infrastructure Layer (Appwrite)
+
+- [ ] **Schema Definition:** Create `Transactions` collection.
+- [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI).
+- [ ] **Integration Tests:** Test transaction persistence and stock consistency.
+
+### 4.4 UI & Presentation
+
+- [ ] Guest interaction: Reservation/Purchase buttons with immediate "Undo" snackbar.
+
+---
+
+## Phase 5: Identity & Evolution
+
+### 5.1 Application Layer
+
+- [ ] **TDD - Auth:** `RegisterUser` and `LoginUser` use cases.
+- [ ] **TDD - History:** `GetGiftingHistory` (Filtering transactions by UserID).
+
+### 5.2 Infrastructure Layer
+
+- [ ] **Appwrite Auth:** Implement `AuthService` adapter.
+- [ ] **Identity Mapping:** ADR 014 implementation details.
+
+### 5.3 UI & Presentation
+
+- [ ] User Profile & "My Gifting" Dashboard.
+- [ ] Final Polish: Theme system and micro-animations.
