@@ -7,6 +7,7 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@wishin/domain": "workspace:*"
+    "@wishin/domain": "workspace:*",
+    "appwrite": "^22.0.0"
   }
 }
