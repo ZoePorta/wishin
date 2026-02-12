@@ -2,7 +2,7 @@
 
 Based on the current implementation of core aggregates, the following steps are prioritized to complete the MVP:
 
-### 1. Domain Layer Completion
+## 1. Domain Layer Completion
 
 - [ ] **Consolidate Value Objects**: Move `Priority`, `Visibility`, `Participation`, and `TransactionStatus` to `packages/domain/src/value-objects/`.
 - [ ] **Repository Interfaces**: Define `UserRepository`, `WishlistRepository`, and `TransactionRepository` in `packages/domain/src/repositories/`.
