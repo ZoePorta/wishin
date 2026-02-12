@@ -66,6 +66,9 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - [ADR 010: Wishlist Privacy and Access Control](docs/adr/010-wishlist-privacy-and-access-control.md)
 - [ADR 011: Explicit Visibility and Participation](docs/adr/011-explicit-visibility-participation.md)
 - [ADR 012: Wishlist Aggregate Encapsulation](docs/adr/012-wishlist-aggregate-encapsulation.md)
+- [ADR 013: Unified Transaction State Model](docs/adr/013-unified-transaction-state-model.md)
+
+## [Project Roadmap](docs/roadmap.md)
 
 ## License
 
