@@ -56,7 +56,7 @@
 - [ ] **Schema Definition:** Create collections/attributes in Appwrite matching `UserProps` and `WishlistProps`.
 - [ ] **Integration Tests:**
   - [ ] Test `AppwriteWishlistRepository.save()` (Insert and Update scenarios).
-  - [ ] Test `AppwriteWishlistRepository.getById()` ensures full reconstitution (including items).
+  - [ ] Test `AppwriteWishlistRepository.findById()` ensures full reconstitution (including items).
 
 ### 3.4 UI & Presentation
 
