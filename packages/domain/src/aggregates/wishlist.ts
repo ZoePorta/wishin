@@ -9,30 +9,14 @@ import { ValidationMode } from "../common/validation-mode";
 
 import { isValidUUID } from "../common/validation-utils";
 
-/**
- * Controls who can view the wishlist.
- * - LINK: Anyone with the UUID link can view.
- * - PRIVATE: Only the owner can view.
- */
-export enum WishlistVisibility {
-  LINK = "LINK",
-  PRIVATE = "PRIVATE",
-}
+import { Visibility, Participation } from "../value-objects";
 
 /**
- * Controls who can perform actions (reserve/purchase) on wishlist items.
- * - ANYONE: Any viewer can participate.
- * - REGISTERED: Only registered users can participate.
- * - CONTACTS: Only contacts of the owner can participate.
- */
-export enum WishlistParticipation {
-  ANYONE = "ANYONE",
-  REGISTERED = "REGISTERED",
-  CONTACTS = "CONTACTS",
-}
-
-/**
- * Interface representing the properties of a Wishlist.
+ * Interface representing a plain data snapshot of a Wishlist.
+ *
+ * This structure is used exclusively for reanimating the entity from persistence
+ * (e.g., database, API) via the `reconstitute()` method. It contains only
+ * primitive-friendly types or DTO-like structures.
  *
  * @property id - Unique identifier (UUID v4) for the wishlist.
  * @property ownerId - UUID of the user who owns the wishlist.
@@ -40,31 +24,35 @@ export enum WishlistParticipation {
  * @property description - Optional detailed description of the wishlist.
  * @property visibility - Visibility setting (e.g., LINK, PRIVATE).
  * @property participation - Participation setting (e.g., ANYONE, REGISTERED).
- * @property items - Collection of WishlistItems included in the list.
+ * @property items - Collection of WishlistItem Snapshots included in the list.
  * @property createdAt - Timestamp when the wishlist was created.
  * @property updatedAt - Timestamp when the wishlist was last updated.
- *
- * This interface is a data structure and does not throw exceptions or return values.
  */
-export interface WishlistProps {
+export interface WishlistSnapshot {
   id: string;
   ownerId: string;
   title: string;
   description?: string;
-  visibility: WishlistVisibility;
-  participation: WishlistParticipation;
+  visibility: Visibility;
+  participation: Participation;
   items: WishlistItemProps[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface WishlistInternalState {
+/**
+ * Internal interface representing the rich properties of a Wishlist.
+ *
+ * This structure is used for internal state management within the aggregate.
+ * It contains rich domain entities (like `WishlistItem`) instead of plain snapshots.
+ */
+interface WishlistProps {
   id: string;
   ownerId: string;
   title: string;
   description?: string;
-  visibility: WishlistVisibility;
-  participation: WishlistParticipation;
+  visibility: Visibility;
+  participation: Participation;
   items: WishlistItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -86,69 +74,69 @@ export class Wishlist {
    * @returns string
    */
   public get id(): string {
-    return this.state.id;
+    return this.props.id;
   }
   /**
    * UUID of the user who owns the wishlist.
    * @returns string
    */
   public get ownerId(): string {
-    return this.state.ownerId;
+    return this.props.ownerId;
   }
   /**
    * Human-readable title of the wishlist.
    * @returns string
    */
   public get title(): string {
-    return this.state.title;
+    return this.props.title;
   }
   /**
    * Optional detailed description of the wishlist.
    * @returns string | undefined
    */
   public get description(): string | undefined {
-    return this.state.description;
+    return this.props.description;
   }
   /**
    * Controls who can view the wishlist.
-   * @returns WishlistVisibility
+   * @returns Visibility
    */
-  public get visibility(): WishlistVisibility {
-    return this.state.visibility;
+  public get visibility(): Visibility {
+    return this.props.visibility;
   }
   /**
    * Controls who can perform actions on wishlist items.
-   * @returns WishlistParticipation
+   * @returns Participation
    */
-  public get participation(): WishlistParticipation {
-    return this.state.participation;
+  public get participation(): Participation {
+    return this.props.participation;
   }
   /**
    * Collection of WishlistItems included in the list.
    * @returns WishlistItem[]
    */
   public get items(): WishlistItem[] {
-    return [...this.state.items];
+    return [...this.props.items];
   }
   /**
    * Timestamp when the wishlist was created.
    * @returns Date
    */
   public get createdAt(): Date {
-    return new Date(this.state.createdAt.getTime());
+    return new Date(this.props.createdAt.getTime());
   }
   /**
    * Timestamp when the wishlist was last updated.
    * @returns Date
    */
   public get updatedAt(): Date {
-    return new Date(this.state.updatedAt.getTime());
+    return new Date(this.props.updatedAt.getTime());
   }
 
-  private readonly state: WishlistInternalState;
+  private readonly props: WishlistProps;
 
-  private constructor(state: WishlistInternalState, mode: ValidationMode) {
-    this.state = state;
+  private constructor(props: WishlistProps, mode: ValidationMode) {
+    this.props = props;
     this.validate(mode);
   }
 
@@ -160,7 +148,7 @@ export class Wishlist {
    * @throws {InvalidAttributeError} If validation fails (structural or business rules).
    */
   public static create(
-    props: Omit<WishlistProps, "items" | "createdAt" | "updatedAt"> & {
+    props: Omit<WishlistSnapshot, "items" | "createdAt" | "updatedAt"> & {
       items?: WishlistItem[];
       createdAt?: Date;
       updatedAt?: Date;
@@ -191,7 +179,7 @@ export class Wishlist {
    * @returns A Wishlist instance.
    * @throws {InvalidAttributeError} If structural integrity fails.
    */
-  public static reconstitute(props: WishlistProps): Wishlist {
+  public static reconstitute(props: WishlistSnapshot): Wishlist {
     return Wishlist._createWithMode(
       {
         ...props,
@@ -204,18 +192,18 @@ export class Wishlist {
   }
 
   private static _createWithMode(
-    state: WishlistInternalState,
+    props: WishlistProps,
     mode: ValidationMode,
   ): Wishlist {
-    const sanitizedState = {
-      ...state,
-      title: typeof state.title === "string" ? state.title.trim() : state.title,
+    const sanitizedProps = {
+      ...props,
+      title: typeof props.title === "string" ? props.title.trim() : props.title,
       description:
-        typeof state.description === "string"
-          ? state.description.trim()
-          : state.description,
+        typeof props.description === "string"
+          ? props.description.trim()
+          : props.description,
     };
-    return new Wishlist(sanitizedState, mode);
+    return new Wishlist(sanitizedProps, mode);
   }
 
   /**
@@ -228,13 +216,13 @@ export class Wishlist {
   public update(
     props: Partial<
       Pick<
-        WishlistProps,
+        WishlistSnapshot,
         "title" | "description" | "visibility" | "participation"
       >
     >,
   ): Wishlist {
     // Only allow specific properties to be updated
-    const allowedProps: Partial<WishlistInternalState> = {};
+    const allowedProps: Partial<WishlistProps> = {};
     if (props.title !== undefined) allowedProps.title = props.title;
     if (props.description !== undefined)
       allowedProps.description = props.description;
@@ -245,7 +233,7 @@ export class Wishlist {
 
     const updated = Wishlist._createWithMode(
       {
-        ...this.state,
+        ...this.toProps(),
         ...allowedProps,
         updatedAt: new Date(),
       },
@@ -279,7 +267,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.state,
+        ...this.toProps(),
         items: [...this.items, ownedItem],
         updatedAt: new Date(),
       },
@@ -306,7 +294,7 @@ export class Wishlist {
     return {
       wishlist: Wishlist._createWithMode(
         {
-          ...this.state,
+          ...this.toProps(),
           items: this.items.filter((item) => !item.equals(itemToRemove)), // Use equals
           updatedAt: new Date(),
         },
@@ -341,7 +329,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.state,
+        ...this.toProps(),
         items: newItems,
         updatedAt: new Date(),
       },
@@ -372,7 +360,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.state,
+        ...this.toProps(),
         items: newItems,
         updatedAt: new Date(),
       },
@@ -409,7 +397,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.state,
+        ...this.toProps(),
         items: newItems,
         updatedAt: new Date(),
       },
@@ -440,7 +428,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.state,
+        ...this.toProps(),
         items: newItems,
         updatedAt: new Date(),
       },
@@ -471,7 +459,7 @@ export class Wishlist {
 
     return Wishlist._createWithMode(
       {
-        ...this.state,
+        ...this.toProps(),
         items: newItems,
         updatedAt: new Date(),
       },
@@ -507,10 +495,10 @@ export class Wishlist {
     ) {
       throw new InvalidAttributeError("Invalid description: Must be a string");
     }
-    if (!Object.values(WishlistVisibility).includes(this.visibility)) {
+    if (!Object.values(Visibility).includes(this.visibility)) {
       throw new InvalidAttributeError("Invalid visibility");
     }
-    if (!Object.values(WishlistParticipation).includes(this.participation)) {
+    if (!Object.values(Participation).includes(this.participation)) {
       throw new InvalidAttributeError("Invalid participation");
     }
 
@@ -555,10 +543,10 @@ export class Wishlist {
    */
   public toProps(): WishlistProps {
     return {
-      ...this.state,
-      items: this.state.items.map((item) => item.toProps()),
-      createdAt: new Date(this.state.createdAt.getTime()),
-      updatedAt: new Date(this.state.updatedAt.getTime()),
+      ...this.props,
+      items: [...this.props.items],
+      createdAt: new Date(this.props.createdAt.getTime()),
+      updatedAt: new Date(this.props.updatedAt.getTime()),
     };
   }
 }

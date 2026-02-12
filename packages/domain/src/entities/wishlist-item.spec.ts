@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { WishlistItem, Priority } from "./wishlist-item";
+import { WishlistItem } from "./wishlist-item";
+import { Priority } from "../value-objects/priority";
 import {
   InsufficientStockError,
   InvalidAttributeError,
