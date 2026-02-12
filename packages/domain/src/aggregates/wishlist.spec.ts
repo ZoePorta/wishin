@@ -1,14 +1,11 @@
 import { describe, it, expect } from "vitest";
-import {
-  Wishlist,
-  WishlistVisibility,
-  WishlistParticipation,
-} from "./wishlist";
+import { Wishlist } from "./wishlist";
+import { Visibility, Participation } from "../value-objects";
 import {
   WishlistItem,
   type WishlistItemProps,
-  Priority,
 } from "../entities/wishlist-item";
+import { Priority } from "../value-objects";
 import {
   InvalidAttributeError,
   LimitExceededError,
@@ -22,8 +19,8 @@ describe("Wishlist Aggregate", () => {
     ownerId: "123e4567-e89b-42d3-a456-426614174001", // v4
     title: "My Birthday List",
     description: "Things I want for my birthday",
-    visibility: WishlistVisibility.LINK,
-    participation: WishlistParticipation.ANYONE,
+    visibility: Visibility.LINK,
+    participation: Participation.ANYONE,
   };
 
   describe("Equality", () => {
@@ -65,12 +62,12 @@ describe("Wishlist Aggregate", () => {
     it("should create a wishlist with explicit visibility and participation", () => {
       const wishlist = Wishlist.create({
         ...validProps,
-        visibility: WishlistVisibility.PRIVATE,
-        participation: WishlistParticipation.CONTACTS,
+        visibility: Visibility.PRIVATE,
+        participation: Participation.CONTACTS,
       });
 
-      expect(wishlist.visibility).toBe(WishlistVisibility.PRIVATE);
-      expect(wishlist.participation).toBe(WishlistParticipation.CONTACTS);
+      expect(wishlist.visibility).toBe(Visibility.PRIVATE);
+      expect(wishlist.participation).toBe(Participation.CONTACTS);
     });
 
     it("should throw InvalidAttributeError if title is too short", () => {
@@ -115,7 +112,7 @@ describe("Wishlist Aggregate", () => {
       expect(() => {
         Wishlist.create({
           ...validProps,
-          visibility: "INVALID_VISIBILITY" as WishlistVisibility,
+          visibility: "INVALID_VISIBILITY" as Visibility,
         });
       }).toThrow(InvalidAttributeError);
     });
@@ -124,7 +121,7 @@ describe("Wishlist Aggregate", () => {
       expect(() => {
         Wishlist.create({
           ...validProps,
-          participation: "INVALID_PARTICIPATION" as WishlistParticipation,
+          participation: "INVALID_PARTICIPATION" as Participation,
         });
       }).toThrow(InvalidAttributeError);
     });
@@ -151,11 +148,11 @@ describe("Wishlist Aggregate", () => {
 
       // Verify visibility and participation update
       const privacyUpdate = wishlist.update({
-        visibility: WishlistVisibility.PRIVATE,
-        participation: WishlistParticipation.CONTACTS,
+        visibility: Visibility.PRIVATE,
+        participation: Participation.CONTACTS,
       });
-      expect(privacyUpdate.visibility).toBe(WishlistVisibility.PRIVATE);
-      expect(privacyUpdate.participation).toBe(WishlistParticipation.CONTACTS);
+      expect(privacyUpdate.visibility).toBe(Visibility.PRIVATE);
+      expect(privacyUpdate.participation).toBe(Participation.CONTACTS);
 
       // Identity persistence
       expect(updatedWishlist.id).toBe(wishlist.id);

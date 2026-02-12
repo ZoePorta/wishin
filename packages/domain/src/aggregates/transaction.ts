@@ -15,14 +15,7 @@ export const ValidationMode = {
 export type ValidationMode =
   (typeof ValidationMode)[keyof typeof ValidationMode];
 
-/**
- * Status of transaction.
- */
-export enum TransactionStatus {
-  RESERVED = "RESERVED",
-  PURCHASED = "PURCHASED",
-  CANCELLED = "CANCELLED",
-}
+import { TransactionStatus } from "../value-objects/transaction-status";
 
 /**
  * Public interface defining the shape of Transaction data.

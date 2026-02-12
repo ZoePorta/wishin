@@ -9,27 +9,7 @@ import { ValidationMode } from "../common/validation-mode";
 
 import { isValidUUID } from "../common/validation-utils";
 
-/**
- * Controls who can view the wishlist.
- * - LINK: Anyone with the UUID link can view.
- * - PRIVATE: Only the owner can view.
- */
-export enum WishlistVisibility {
-  LINK = "LINK",
-  PRIVATE = "PRIVATE",
-}
-
-/**
- * Controls who can perform actions (reserve/purchase) on wishlist items.
- * - ANYONE: Any viewer can participate.
- * - REGISTERED: Only registered users can participate.
- * - CONTACTS: Only contacts of the owner can participate.
- */
-export enum WishlistParticipation {
-  ANYONE = "ANYONE",
-  REGISTERED = "REGISTERED",
-  CONTACTS = "CONTACTS",
-}
+import { Visibility, Participation } from "../value-objects";
 
 /**
  * Interface representing the properties of a Wishlist.
@@ -51,8 +31,8 @@ export interface WishlistProps {
   ownerId: string;
   title: string;
   description?: string;
-  visibility: WishlistVisibility;
-  participation: WishlistParticipation;
+  visibility: Visibility;
+  participation: Participation;
   items: WishlistItemProps[];
   createdAt: Date;
   updatedAt: Date;
@@ -63,8 +43,8 @@ interface WishlistInternalState {
   ownerId: string;
   title: string;
   description?: string;
-  visibility: WishlistVisibility;
-  participation: WishlistParticipation;
+  visibility: Visibility;
+  participation: Participation;
   items: WishlistItem[];
   createdAt: Date;
   updatedAt: Date;
@@ -111,16 +91,16 @@ export class Wishlist {
   }
   /**
    * Controls who can view the wishlist.
-   * @returns WishlistVisibility
+   * @returns Visibility
    */
-  public get visibility(): WishlistVisibility {
+  public get visibility(): Visibility {
     return this.state.visibility;
   }
   /**
    * Controls who can perform actions on wishlist items.
-   * @returns WishlistParticipation
+   * @returns Participation
    */
-  public get participation(): WishlistParticipation {
+  public get participation(): Participation {
     return this.state.participation;
   }
   /**
@@ -507,10 +487,10 @@ export class Wishlist {
     ) {
       throw new InvalidAttributeError("Invalid description: Must be a string");
     }
-    if (!Object.values(WishlistVisibility).includes(this.visibility)) {
+    if (!Object.values(Visibility).includes(this.visibility)) {
       throw new InvalidAttributeError("Invalid visibility");
     }
-    if (!Object.values(WishlistParticipation).includes(this.participation)) {
+    if (!Object.values(Participation).includes(this.participation)) {
       throw new InvalidAttributeError("Invalid participation");
     }
 
