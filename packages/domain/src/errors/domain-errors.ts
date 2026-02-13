@@ -1,3 +1,9 @@
+/**
+ * Error thrown when a provided attribute or value is invalid.
+ *
+ * @param {string} message - The error message.
+ * @returns {InvalidAttributeError} An instance of InvalidAttributeError.
+ */
 export class InvalidAttributeError extends Error {
   constructor(message: string) {
     super(message);
@@ -6,6 +12,12 @@ export class InvalidAttributeError extends Error {
   }
 }
 
+/**
+ * Error thrown when there is not enough stock to complete an operation.
+ *
+ * @param {string} message - The error message.
+ * @returns {InsufficientStockError} An instance of InsufficientStockError.
+ */
 export class InsufficientStockError extends Error {
   constructor(message: string) {
     super(message);
@@ -14,6 +26,12 @@ export class InsufficientStockError extends Error {
   }
 }
 
+/**
+ * Error thrown when an invalid state transition is attempted.
+ *
+ * @param {string} message - The error message.
+ * @returns {InvalidTransitionError} An instance of InvalidTransitionError.
+ */
 export class InvalidTransitionError extends Error {
   constructor(message: string) {
     super(message);
@@ -25,8 +43,8 @@ export class InvalidTransitionError extends Error {
 /**
  * Error thrown when a defined limit is exceeded (e.g., maximum number of items).
  *
- * @param message - The error message.
- * @returns An instance of LimitExceededError.
+ * @param {string} message - The error message.
+ * @returns {LimitExceededError} An instance of LimitExceededError.
  */
 export class LimitExceededError extends Error {
   constructor(message: string) {
@@ -39,13 +57,26 @@ export class LimitExceededError extends Error {
 /**
  * Error thrown when an operation is invalid in the current state or context.
  *
- * @param message - The error message.
- * @returns An instance of InvalidOperationError.
+ * @param {string} message - The error message.
+ * @returns {InvalidOperationError} An instance of InvalidOperationError.
  */
 export class InvalidOperationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "InvalidOperationError";
     Object.setPrototypeOf(this, InvalidOperationError.prototype);
+  }
+}
+/**
+ * Error thrown when a requested resource is not found.
+ *
+ * @param {string} message - The error message describing the missing resource.
+ * @returns {NotFoundError} An instance of NotFoundError.
+ */
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotFoundError";
+    Object.setPrototypeOf(this, NotFoundError.prototype);
   }
 }
