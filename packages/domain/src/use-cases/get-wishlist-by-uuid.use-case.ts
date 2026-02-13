@@ -1,6 +1,7 @@
 import { WishlistRepository } from "../repositories/wishlist.repository";
 import { GetWishlistInput, WishlistOutput } from "./dtos/get-wishlist.dto";
 import { NotFoundError } from "../errors/domain-errors";
+import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
 
 /**
  * Use case to fetch a wishlist by its unique identifier.
@@ -21,35 +22,6 @@ export class GetWishlistByUUIDUseCase {
       throw new NotFoundError("Wishlist not found");
     }
 
-    const props = wishlist.toProps();
-
-    return {
-      id: props.id,
-      title: props.title,
-      description: props.description,
-      ownerId: props.ownerId,
-      visibility: props.visibility,
-      participation: props.participation,
-      createdAt: props.createdAt.toISOString(),
-      updatedAt: props.updatedAt.toISOString(),
-      items: props.items.map((item) => {
-        const itemProps = item.toProps();
-        return {
-          id: itemProps.id,
-          name: itemProps.name,
-          description: itemProps.description,
-          url: itemProps.url,
-          price: itemProps.price,
-          currency: itemProps.currency,
-          priority: itemProps.priority.toString(),
-          imageUrl: itemProps.imageUrl,
-          totalQuantity: itemProps.totalQuantity,
-          reservedQuantity: itemProps.reservedQuantity,
-          purchasedQuantity: itemProps.purchasedQuantity,
-          availableQuantity: item.availableQuantity,
-          isUnlimited: itemProps.isUnlimited,
-        };
-      }),
-    };
+    return WishlistOutputMapper.toDTO(wishlist);
   }
 }
