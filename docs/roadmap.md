@@ -8,11 +8,11 @@
 
 ---
 
-## Phase 2: Guest Experience (Read-Only)
+## Phase 2: Visualization
 
 ### 2.1 Domain Refinement
 
-- [ ] Define `WishlistRepository` interface with `findById(id: string): Promise<Wishlist | null>`.
+- [x] Define `WishlistRepository` interface with `findById(id: string): Promise<Wishlist | null>`.
 
 ### 2.2 Application Layer (TDD)
 
