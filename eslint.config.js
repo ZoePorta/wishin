@@ -32,6 +32,7 @@ export default tseslint.config(
           "./tsconfig.eslint.json",
           "./packages/*/tsconfig.json",
           "./apps/*/tsconfig.json",
+          "./scripts/tsconfig.json",
         ],
         tsconfigRootDir: import.meta.dirname,
       },
@@ -66,5 +67,11 @@ export default tseslint.config(
   {
     files: ["eslint.config.js"],
     ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    files: ["scripts/**/*.ts"],
+    rules: {
+      "no-console": "off",
+    },
   },
 );
