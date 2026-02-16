@@ -35,38 +35,59 @@ const client = new Client()
 
 const tablesDb = new TablesDB(client);
 
+/**
+ * Base properties for all attribute types.
+ */
 interface BaseAttribute {
   key: string;
   required: boolean;
   array?: boolean;
 }
 
+/**
+ * Properties for string attributes.
+ */
 interface StringAttribute extends BaseAttribute {
   type: "string";
   size: number;
   default?: string;
 }
 
+/**
+ * Properties for integer attributes.
+ */
 interface IntegerAttribute extends BaseAttribute {
   type: "integer";
   default?: number;
 }
 
+/**
+ * Properties for boolean attributes.
+ */
 interface BooleanAttribute extends BaseAttribute {
   type: "boolean";
   default?: boolean;
 }
 
+/**
+ * Properties for double (float) attributes.
+ */
 interface DoubleAttribute extends BaseAttribute {
   type: "double";
   default?: number;
 }
 
+/**
+ * Properties for datetime attributes.
+ */
 interface DatetimeAttribute extends BaseAttribute {
   type: "datetime";
   default?: string;
 }
 
+/**
+ * Union type of all supported attribute definitions.
+ */
 type Attribute =
   | StringAttribute
   | IntegerAttribute
@@ -74,18 +95,31 @@ type Attribute =
   | DoubleAttribute
   | DatetimeAttribute;
 
+/**
+ * Represents the schema definition for an Appwrite collection (table).
+ */
 interface CollectionSchema {
   id: string;
   name: string;
   attributes: Attribute[];
 }
 
+/**
+ * Type guard to check if an error is an AppwriteException.
+ *
+ * @param err - The error to check.
+ * @returns True if the error matches the Appwrite exception structure.
+ */
 function isAppwriteError(
   err: unknown,
 ): err is { code: number; message: string } {
   return typeof err === "object" && err !== null && "code" in err;
 }
 
+/**
+ * The infrastructure schema definition for the Wishin project.
+ * Defines collections and their attributes for Users, Wishlists, Items, and Transactions.
+ */
 const schema: CollectionSchema[] = [
   {
     id: "users",
@@ -148,6 +182,12 @@ const schema: CollectionSchema[] = [
   },
 ];
 
+/**
+ * Performs cleanup of environment-specific collections.
+ * Deletes all collections matching the configured prefix if CLEANUP is enabled.
+ *
+ * @throws {Error} If cleanup fails for reasons other than 404.
+ */
 async function cleanup() {
   if (!isCleanupEnabled) return;
   if (!prefix) {
@@ -179,6 +219,13 @@ async function cleanup() {
   }
 }
 
+/**
+ * Main provisioning function.
+ * Ensures the database exists, creates collections, and sets up all required attributes.
+ * This function is idempotent and can be run multiple times safely.
+ *
+ * @throws {Error} If provisioning fails.
+ */
 async function provision() {
   try {
     // 0. Cleanup
