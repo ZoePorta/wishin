@@ -1,4 +1,4 @@
-import { Client, TablesDB } from "node-appwrite";
+import { Client, TablesDB, Query, type Models } from "node-appwrite";
 import "dotenv/config";
 
 const {
@@ -199,16 +199,36 @@ async function cleanup() {
 
   console.log(`Cleaning up collections with prefix "${prefix}_"...`);
   try {
-    const collections = await tablesDb.listTables({ databaseId });
-    for (const coll of collections.tables) {
-      if (coll.$id.startsWith(`${prefix}_`)) {
-        console.log(`Deleting collection "${coll.name}" (${coll.$id})...`);
-        await tablesDb.deleteTable({
-          databaseId,
-          tableId: coll.$id,
-        });
+    let cursor: string | undefined = undefined;
+    do {
+      const result: Models.TableList = await tablesDb.listTables({
+        databaseId,
+        queries: [
+          Query.limit(100),
+          ...(cursor ? [Query.cursorAfter(cursor)] : []),
+        ],
+      });
+
+      for (const table of result.tables) {
+        if (table.$id.startsWith(`${prefix}_`)) {
+          console.log(`Deleting collection "${table.name}" (${table.$id})...`);
+          await tablesDb.deleteTable({
+            databaseId,
+            tableId: table.$id,
+          });
+        }
       }
-    }
+
+      cursor =
+        result.tables.length > 0
+          ? result.tables[result.tables.length - 1].$id
+          : undefined;
+
+      // If we got fewer results than the limit, we've reached the end
+      if (result.tables.length < 100) {
+        cursor = undefined;
+      }
+    } while (cursor);
   } catch (error: unknown) {
     if (isAppwriteError(error) && error.code === 404) {
       console.log(`Database "${databaseId}" not found. Skipping cleanup.`);
