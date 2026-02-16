@@ -52,6 +52,25 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - **Automated AI Review:** Integration of CodeRabbit to enforce architectural constraints and identify logical edge cases in every Pull Request.
 - **Real-time Telemetry:** Full visibility into system health and user behavior via Sentry and PostHog.
 
+## Infrastructure & Database Setup
+
+The project uses Appwrite as a BaaS. To manage namespacing and idempotency across development environments, use the following provisioning tools.
+
+### Environment Variables
+
+Ensure your `.env` file (copied from `.env.example`) contains:
+
+- `APPWRITE_API_SECRET`: Required for server-side management.
+- `EXPO_PUBLIC_DB_PREFIX`: Prefix for collections (e.g., `dev`, `test`).
+
+### Database Scripts
+
+| Command                    | Description                                                                         |
+| :------------------------- | :---------------------------------------------------------------------------------- |
+| `npm run db:provision`     | Idempotent creation of DB, collections, and attributes using the `.env` prefix.     |
+| `npm run db:reset`         | **Destructive**: Deletes all collections matching current prefix and re-provisions. |
+| `npm run test:integration` | Automates `test` prefix provisioning, cleanup, and runs the test suite.             |
+
 ## Architectural Decision Records (ADR)
 
 - [ADR 001: BaaS Infrastructure Alignment](docs/adr/001-baas-infrastructure-alignment.md)
