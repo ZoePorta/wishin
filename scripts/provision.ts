@@ -1,4 +1,4 @@
-import { Client, Databases } from "node-appwrite";
+import { Client, TablesDB } from "node-appwrite";
 import "dotenv/config";
 
 const {
@@ -33,21 +33,57 @@ const client = new Client()
   .setProject(projectId)
   .setKey(apiKey);
 
-const databases = new Databases(client);
+const tablesDb = new TablesDB(client);
 
-interface Attribute {
+interface BaseAttribute {
   key: string;
-  type: "string" | "integer" | "boolean" | "double" | "datetime";
   required: boolean;
-  size?: number;
-  default?: string | number | boolean;
   array?: boolean;
 }
+
+interface StringAttribute extends BaseAttribute {
+  type: "string";
+  size: number;
+  default?: string;
+}
+
+interface IntegerAttribute extends BaseAttribute {
+  type: "integer";
+  default?: number;
+}
+
+interface BooleanAttribute extends BaseAttribute {
+  type: "boolean";
+  default?: boolean;
+}
+
+interface DoubleAttribute extends BaseAttribute {
+  type: "double";
+  default?: number;
+}
+
+interface DatetimeAttribute extends BaseAttribute {
+  type: "datetime";
+  default?: string;
+}
+
+type Attribute =
+  | StringAttribute
+  | IntegerAttribute
+  | BooleanAttribute
+  | DoubleAttribute
+  | DatetimeAttribute;
 
 interface CollectionSchema {
   id: string;
   name: string;
   attributes: Attribute[];
+}
+
+function isAppwriteError(
+  err: unknown,
+): err is { code: number; message: string } {
+  return typeof err === "object" && err !== null && "code" in err;
 }
 
 const schema: CollectionSchema[] = [
@@ -123,16 +159,21 @@ async function cleanup() {
 
   console.log(`Cleaning up collections with prefix "${prefix}_"...`);
   try {
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    const collections = await databases.listCollections(databaseId);
-    for (const coll of collections.collections) {
+    const collections = await tablesDb.listTables({ databaseId });
+    for (const coll of collections.tables) {
       if (coll.$id.startsWith(`${prefix}_`)) {
         console.log(`Deleting collection "${coll.name}" (${coll.$id})...`);
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
-        await databases.deleteCollection(databaseId, coll.$id);
+        await tablesDb.deleteTable({
+          databaseId,
+          tableId: coll.$id,
+        });
       }
     }
   } catch (error: unknown) {
+    if (isAppwriteError(error) && error.code === 404) {
+      console.log(`Database "${databaseId}" not found. Skipping cleanup.`);
+      return;
+    }
     console.error("Cleanup failed:", error);
     process.exit(1);
   }
@@ -145,13 +186,11 @@ async function provision() {
 
     // 1. Database
     try {
-      // eslint-disable-next-line @typescript-eslint/no-deprecated
-      await databases.get(databaseId);
+      await tablesDb.get({ databaseId });
       console.log(`Database "${databaseId}" already exists.`);
     } catch (error: unknown) {
-      if ((error as { code: number }).code === 404) {
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
-        await databases.create(databaseId, databaseId);
+      if (isAppwriteError(error) && error.code === 404) {
+        await tablesDb.create({ databaseId, name: databaseId });
         console.log(`Database "${databaseId}" created.`);
       } else {
         throw error;
@@ -163,19 +202,20 @@ async function provision() {
       const collectionId = prefix ? `${prefix}_${coll.id}` : coll.id;
       let collection;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
-        collection = await databases.getCollection(databaseId, collectionId);
+        collection = await tablesDb.getTable({
+          databaseId,
+          tableId: collectionId,
+        });
         console.log(
           `Collection "${coll.name}" (${collectionId}) already exists.`,
         );
       } catch (error: unknown) {
-        if ((error as { code: number }).code === 404) {
-          // eslint-disable-next-line @typescript-eslint/no-deprecated
-          collection = await databases.createCollection(
+        if (isAppwriteError(error) && error.code === 404) {
+          collection = await tablesDb.createTable({
             databaseId,
-            collectionId,
-            coll.name,
-          );
+            tableId: collectionId,
+            name: coll.name,
+          });
           console.log(`Collection "${coll.name}" (${collectionId}) created.`);
         } else {
           throw error;
@@ -183,9 +223,9 @@ async function provision() {
       }
 
       // Check Attributes
-      const existingAttributes = (
-        collection.attributes as { key: string }[]
-      ).map((a) => a.key);
+      const existingAttributes = (collection.columns as { key: string }[]).map(
+        (a) => a.key,
+      );
       for (const attr of coll.attributes) {
         if (existingAttributes.includes(attr.key)) {
           // console.log(`Attribute "${attr.key}" in "${collectionId}" already exists.`);
@@ -195,59 +235,50 @@ async function provision() {
         console.log(`Creating attribute "${attr.key}" in "${collectionId}"...`);
         switch (attr.type) {
           case "string":
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
-            await databases.createStringAttribute(
+            await tablesDb.createVarcharColumn({
               databaseId,
-              collectionId,
-              attr.key,
-              attr.size ?? 255,
-              attr.required,
-              attr.default as string | undefined,
-            );
+              tableId: collectionId,
+              key: attr.key,
+              size: attr.size,
+              required: attr.required,
+              xdefault: attr.default,
+            });
             break;
           case "integer":
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
-            await databases.createIntegerAttribute(
+            await tablesDb.createIntegerColumn({
               databaseId,
-              collectionId,
-              attr.key,
-              attr.required,
-              undefined,
-              undefined,
-              attr.default as number | undefined,
-            );
+              tableId: collectionId,
+              key: attr.key,
+              required: attr.required,
+              xdefault: attr.default,
+            });
             break;
           case "boolean":
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
-            await databases.createBooleanAttribute(
+            await tablesDb.createBooleanColumn({
               databaseId,
-              collectionId,
-              attr.key,
-              attr.required,
-              attr.default as boolean | undefined,
-            );
+              tableId: collectionId,
+              key: attr.key,
+              required: attr.required,
+              xdefault: attr.default,
+            });
             break;
           case "double":
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
-            await databases.createFloatAttribute(
+            await tablesDb.createFloatColumn({
               databaseId,
-              collectionId,
-              attr.key,
-              attr.required,
-              undefined,
-              undefined,
-              attr.default as number | undefined,
-            );
+              tableId: collectionId,
+              key: attr.key,
+              required: attr.required,
+              xdefault: attr.default,
+            });
             break;
           case "datetime":
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
-            await databases.createDatetimeAttribute(
+            await tablesDb.createDatetimeColumn({
               databaseId,
-              collectionId,
-              attr.key,
-              attr.required,
-              attr.default as string | undefined,
-            );
+              tableId: collectionId,
+              key: attr.key,
+              required: attr.required,
+              xdefault: attr.default,
+            });
             break;
         }
       }
