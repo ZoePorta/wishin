@@ -8,7 +8,9 @@
     "lint": "eslint .",
     "type-check": "pnpm -r run --if-present type-check",
     "prepare": "husky",
-    "db:provision": "tsx scripts/provision.ts"
+    "db:provision": "tsx scripts/provision.ts",
+    "db:provision:test": "EXPO_PUBLIC_DB_PREFIX=test CLEANUP=true tsx scripts/provision.ts",
+    "db:reset": "CLEANUP=true tsx scripts/provision.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.0",
