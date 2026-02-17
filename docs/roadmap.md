@@ -23,7 +23,7 @@
 
 ### 2.3 Infrastructure Layer (Appwrite)
 
-- [ ] **Appwrite Mapping:** Implement `WishlistMapper` (to/from Appwrite documents).
+- [x] **Appwrite Mapping:** Implement `WishlistMapper` (to/from Appwrite documents).
 - [ ] **Integration Tests:** Test `AppwriteWishlistRepository.findById()` against real Appwrite collection.
 
 ### 2.4 UI & Presentation
