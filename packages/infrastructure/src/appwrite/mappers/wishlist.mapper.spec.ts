@@ -89,5 +89,11 @@ describe("WishlistMapper", () => {
     expect(domain.items.length).toBe(1);
     expect(domain.items[0].id).toBe(itemProps.id);
     expect(domain.title).toBe(wishlistProps.title);
+    expect(domain.ownerId).toBe(wishlistProps.ownerId);
+    expect(domain.description).toBe(wishlistProps.description);
+    expect(domain.visibility).toBe(wishlistProps.visibility);
+    expect(domain.participation).toBe(wishlistProps.participation);
+    expect(domain.createdAt.getTime()).toBe(wishlistProps.createdAt.getTime());
+    expect(domain.updatedAt.getTime()).toBe(wishlistProps.updatedAt.getTime());
   });
 });
