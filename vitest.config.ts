@@ -1,9 +1,4 @@
-import { defineConfig } from "vitest/config";
-import tsconfigPaths from "vite-tsconfig-paths";
+import { mergeConfig } from "vitest/config";
+import baseConfig from "./vitest.config.base";
 
-export default defineConfig({
-  plugins: [tsconfigPaths()],
-  test: {
-    globals: true,
-  },
-});
+export default mergeConfig(baseConfig, {});
