@@ -282,6 +282,9 @@ async function provision() {
             databaseId,
             tableId: collectionId,
             name: coll.name,
+            permissions: ['read("any")'],
+            enabled: true,
+            rowSecurity: true,
           });
           console.log(`Collection "${coll.name}" (${collectionId}) created.`);
         } else {
@@ -348,6 +351,9 @@ async function provision() {
             });
             break;
         }
+
+        // Wait for attribute to be ready
+        await waitForAttribute(tablesDb, databaseId, collectionId, attr.key);
       }
     }
 
@@ -359,3 +365,40 @@ async function provision() {
 }
 
 void provision();
+
+async function waitForAttribute(
+  tablesDb: TablesDB,
+  databaseId: string,
+  collectionId: string,
+  key: string,
+) {
+  console.log(`Waiting for attribute "${key}" to be ready...`);
+  let isReady = false;
+  let attempts = 0;
+  // Wait up to 10 seconds (20 attempts * 500ms)
+  while (!isReady && attempts < 20) {
+    try {
+      const table = await tablesDb.getTable({
+        databaseId,
+        tableId: collectionId,
+      });
+      const column = (table.columns as { key: string; status: string }[]).find(
+        (c) => c.key === key,
+      );
+      if (column?.status === "available") {
+        isReady = true;
+      }
+    } catch (_e) {
+      // ignore errors during poll
+    }
+
+    if (!isReady) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      attempts++;
+    }
+  }
+
+  if (!isReady) {
+    throw new Error(`Attribute "${key}" failed to become available.`);
+  }
+}
