@@ -25,6 +25,7 @@ jobs:
   # Job 2: Integration Tests (Slow, requires Appwrite)
   integration_tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # Only run integration if build succeeds to save resources [cite: 2026-01-26]
     needs: unit_tests
     env:

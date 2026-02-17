@@ -1,4 +1,10 @@
-import { Client, TablesDB, Query, type Models } from "appwrite";
+import {
+  Client,
+  TablesDB,
+  Query,
+  AppwriteException,
+  type Models,
+} from "appwrite";
 import { type WishlistRepository, Wishlist } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
@@ -58,13 +64,8 @@ export class AppwriteWishlistRepository implements WishlistRepository {
         toDocument<Models.Document>(wishlistDoc),
         items,
       );
-    } catch (error: unknown) {
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        (error as Record<string, unknown>).code === 404
-      ) {
+    } catch (error) {
+      if (error instanceof AppwriteException && error.code === 404) {
         return null;
       }
       throw error;
