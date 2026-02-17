@@ -24,11 +24,11 @@
 ### 2.3 Infrastructure Layer (Appwrite)
 
 - [x] **Appwrite Mapping:** Implement `WishlistMapper` (to/from Appwrite documents).
-- [ ] **Integration Tests:** Test `AppwriteWishlistRepository.findById()` against real Appwrite collection.
+- [x] **Integration Tests:** Test `AppwriteWishlistRepository.findById()` against real Appwrite collection.
 
 ### 2.4 UI & Presentation
 
-- [ ] Basic Expo Router setup & Wishlist view (Read-only view for guests).
+- [x] Basic Expo Router setup & Wishlist view (Read-only view for guests).
 
 ---
 
