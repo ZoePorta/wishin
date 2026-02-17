@@ -17,13 +17,13 @@
 ### 2.2 Application Layer (TDD)
 
 - [x] **DTOs Definition:** Create `GetWishlistInput` and `WishlistOutput` (DTOs).
-- [ ] **TDD - GetWishlistByUUID:**
+- [x] **TDD - GetWishlistByUUID:**
   - [x] Phase RED: Unit test using a Mock Repository (should return wishlist DTO).
   - [x] Phase GREEN: Logic to call `repo.findById` and map to DTO.
 
 ### 2.3 Infrastructure Layer (Appwrite)
 
-- [ ] **Appwrite Mapping:** Implement `WishlistMapper` (to/from Appwrite documents).
+- [x] **Appwrite Mapping:** Implement `WishlistMapper` (to/from Appwrite documents).
 - [ ] **Integration Tests:** Test `AppwriteWishlistRepository.findById()` against real Appwrite collection.
 
 ### 2.4 UI & Presentation

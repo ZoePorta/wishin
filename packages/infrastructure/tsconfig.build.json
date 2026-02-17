@@ -4,10 +4,16 @@
     "module": "commonjs",
     "target": "es2020",
     "declaration": true,
+    "rootDir": "src",
     "outDir": "dist",
     "composite": true,
     "tsBuildInfoFile": "tsconfig.build.tsbuildinfo"
   },
+  "references": [
+    {
+      "path": "../domain/tsconfig.build.json"
+    }
+  ],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts", "**/*.test.ts"]
 }
