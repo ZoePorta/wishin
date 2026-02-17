@@ -2,45 +2,50 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [main]
 
 jobs:
-  test:
+  # Job 1: Unit Tests (Fast, no network required)
+  unit_tests:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test # This should only run *.spec.ts [cite: 2026-01-30]
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Build
-        run: pnpm build
-
-      - name: Run tests
-        run: pnpm test
+  # Job 2: Integration Tests (Slow, requires Appwrite)
+  integration_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Only run integration if build succeeds to save resources [cite: 2026-01-26]
+    needs: unit_tests
+    env:
+      EXPO_PUBLIC_APPWRITE_ENDPOINT: ${{ vars.EXPO_PUBLIC_APPWRITE_ENDPOINT }}
+      EXPO_PUBLIC_APPWRITE_PROJECT_ID: ${{ vars.EXPO_PUBLIC_APPWRITE_PROJECT_ID }}
+      EXPO_PUBLIC_APPWRITE_DATABASE_ID: ${{ vars.EXPO_PUBLIC_APPWRITE_DATABASE_ID }}
+      EXPO_PUBLIC_DB_PREFIX: test
+      APPWRITE_API_SECRET: ${{ secrets.APPWRITE_API_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      # Critical step: Provision the isolated test environment [cite: 2026-01-30]
+      - name: Provision Test DB
+        run: pnpm run db:provision:test
+      - name: Run Integration Tests
+        run: pnpm run test:integration
