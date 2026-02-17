@@ -17,7 +17,7 @@
 ### 2.2 Application Layer (TDD)
 
 - [x] **DTOs Definition:** Create `GetWishlistInput` and `WishlistOutput` (DTOs).
-- [ ] **TDD - GetWishlistByUUID:**
+- [x] **TDD - GetWishlistByUUID:**
   - [x] Phase RED: Unit test using a Mock Repository (should return wishlist DTO).
   - [x] Phase GREEN: Logic to call `repo.findById` and map to DTO.
 
