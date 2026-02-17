@@ -9,8 +9,21 @@ const palette = {
     600: "#7C3AED", // Violet gradient start [cite: 2026-01-30]
   },
   slate: {
-    500: "#64748B", // Muted text [cite: 2026-01-30]
-    800: "#1E293B", // Main text [cite: 2026-01-30]
+    100: "#F1F5F9",
+    200: "#E2E8F0",
+    500: "#64748B",
+    700: "#334155",
+    800: "#1E293B",
+    900: "#0F172A",
+  },
+  red: {
+    100: "#FEE2E2",
+  },
+  amber: {
+    100: "#FEF3C7",
+  },
+  sky: {
+    100: "#E0F2FE",
   },
   white: "#FFFFFF",
   black: "#000000",
@@ -24,16 +37,26 @@ export const Colors = {
     card: palette.white,
     text: palette.slate[800],
     textMuted: palette.slate[500],
+    slate100: palette.slate[100],
+    slate200: palette.slate[200],
+    red100: palette.red[100],
+    amber100: palette.amber[100],
+    sky100: palette.sky[100],
     // Definition for future gradients
     gradientPrimary: [palette.violet[600], palette.pink[400]],
   },
   dark: {
     primary: palette.pink[400],
     secondary: palette.violet[500],
-    background: "#0F172A",
-    card: "#1E293B",
+    background: palette.slate[900], // #0F172A
+    card: palette.slate[800], // #1E293B
     text: palette.white,
     textMuted: palette.slate[500],
+    slate100: palette.slate[800], // Map to dark equivalents if possible, or just keep distinct
+    slate200: palette.slate[700],
+    red100: "#7F1D1D", // Dark red
+    amber100: "#78350F", // Dark amber
+    sky100: "#0C4A6E", // Dark sky
     gradientPrimary: [palette.violet[500], palette.pink[600]],
   },
 } as const;

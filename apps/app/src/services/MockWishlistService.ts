@@ -1,19 +1,48 @@
+/**
+ * Represents a single item in a wishlist.
+ *
+ * @remarks
+ * This interface intentionally duplicates `WishlistItemOutput` from `@wishin/domain`
+ * to avoid a direct dependency on the domain layer in the app package for now.
+ * See: packages/domain/src/use-cases/dtos/get-wishlist.dto.ts
+ */
 export interface WishlistItem {
+  /** Unique identifier for the item. */
   id: string;
+  /** Title of the item. */
   title: string;
+  /** Optional description of the item. */
   description?: string;
+  /** Price of the item. */
   price?: number;
+  /** Currency code (e.g., USD). */
   currency?: string;
+  /** URL to the item online. */
   url?: string;
+  /** URL of the item's image. */
   imageUrl?: string;
+  /** Priority level of the item. */
   priority: "low" | "medium" | "high";
+  /** Whether the item is reserved. */
   isReserved: boolean;
 }
 
+/**
+ * Represents a wishlist containing multiple items.
+ *
+ * @remarks
+ * This interface intentionally duplicates `WishlistOutput` from `@wishin/domain`
+ * to avoid a direct dependency on the domain layer in the app package for now.
+ * See: packages/domain/src/use-cases/dtos/get-wishlist.dto.ts
+ */
 export interface Wishlist {
+  /** Unique identifier for the wishlist. */
   id: string;
+  /** Title of the wishlist. */
   title: string;
+  /** Optional description of the wishlist. */
   description?: string;
+  /** List of items in the wishlist. */
   items: WishlistItem[];
 }
 
@@ -59,7 +88,16 @@ const MOCK_WISHLIST: Wishlist = {
   ],
 };
 
+/**
+ * Service to provide mock wishlist data for development and testing.
+ */
 export const MockWishlistService = {
+  /**
+   * Retrieves a wishlist by its ID.
+   *
+   * @param id - The unique identifier of the wishlist to retrieve.
+   * @returns A promise that resolves to the Wishlist object if found, or null if not found.
+   */
   getWishlistById: async (id: string): Promise<Wishlist | null> => {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 500));

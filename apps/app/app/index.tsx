@@ -48,6 +48,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    minHeight: 48,
+    justifyContent: "center",
   },
   buttonText: {
     color: Colors.light.card, // Using generic white/card color for text on primary

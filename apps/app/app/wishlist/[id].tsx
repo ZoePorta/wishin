@@ -1,5 +1,5 @@
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   StyleSheet,
   Text,
@@ -9,41 +9,71 @@ import {
   ActivityIndicator,
   Linking,
   Pressable,
+  useColorScheme,
 } from "react-native";
 import { Colors } from "../../src/constants/Colors";
-import {
-  MockWishlistService,
+import { MockWishlistService } from "../../src/services/MockWishlistService";
+import type {
   Wishlist,
   WishlistItem,
 } from "../../src/services/MockWishlistService";
 
+/**
+ * Display the details of a specific wishlist.
+ *
+ * @returns The WishlistDetail component.
+ */
 export default function WishlistDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [wishlist, setWishlist] = useState<Wishlist | null>(null);
   const [loading, setLoading] = useState(true);
+  const colorScheme = useColorScheme();
+  const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
 
   useEffect(() => {
+    let isMounted = true;
     if (id) {
-      void loadWishlist(id);
+      const fetchWishlist = async () => {
+        try {
+          if (isMounted) setLoading(true);
+          const data = await MockWishlistService.getWishlistById(id);
+          if (isMounted) setWishlist(data);
+        } catch (error) {
+          console.error("Error fetching wishlist:", error);
+        } finally {
+          if (isMounted) setLoading(false);
+        }
+      };
+      void fetchWishlist();
     }
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
-  const loadWishlist = async (wishlistId: string) => {
-    try {
-      setLoading(true);
-      const data = await MockWishlistService.getWishlistById(wishlistId);
-      setWishlist(data);
-    } catch (error) {
-      console.error("Error fetching wishlist:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const ListHeader = useMemo(() => {
+    if (!wishlist) return null;
+    return (
+      <View style={styles.header}>
+        <Text style={[styles.wishlistTitle, { color: theme.text }]}>
+          {wishlist.title}
+        </Text>
+        {wishlist.description && (
+          <Text
+            style={[styles.wishlistDescription, { color: theme.textMuted }]}
+          >
+            {wishlist.description}
+          </Text>
+        )}
+        <View style={[styles.divider, { backgroundColor: theme.slate200 }]} />
+      </View>
+    );
+  }, [wishlist, theme]);
 
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={Colors.light.primary} />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -51,13 +81,23 @@ export default function WishlistDetail() {
   if (!wishlist) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Wishlist not found.</Text>
+        <Text style={[styles.errorText, { color: theme.textMuted }]}>
+          Wishlist not found.
+        </Text>
       </View>
     );
   }
 
   const renderItem = ({ item }: { item: WishlistItem }) => (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.card,
+          borderColor: theme.slate100,
+        },
+      ]}
+    >
       {item.imageUrl && (
         <Image
           source={{ uri: item.imageUrl }}
@@ -65,18 +105,38 @@ export default function WishlistDetail() {
           resizeMode="cover"
         />
       )}
+
+      {/* Reserved Overlay moved here to cover image + content */}
+      {item.isReserved && (
+        <View style={styles.reservedOverlay}>
+          <Text
+            style={[
+              styles.reservedText,
+              { color: theme.text, borderColor: theme.text },
+            ]}
+          >
+            RESERVED
+          </Text>
+        </View>
+      )}
+
       <View style={styles.cardContent}>
         <View style={styles.cardHeader}>
-          <Text style={styles.itemTitle}>{item.title}</Text>
-          {item.price && (
-            <Text style={styles.itemPrice}>
+          <Text style={[styles.itemTitle, { color: theme.text }]}>
+            {item.title}
+          </Text>
+          {item.price != null && (
+            <Text style={[styles.itemPrice, { color: theme.primary }]}>
               {item.currency} {item.price.toFixed(2)}
             </Text>
           )}
         </View>
 
         {item.description && (
-          <Text style={styles.itemDescription} numberOfLines={2}>
+          <Text
+            style={[styles.itemDescription, { color: theme.textMuted }]}
+            numberOfLines={2}
+          >
             {item.description}
           </Text>
         )}
@@ -85,32 +145,36 @@ export default function WishlistDetail() {
           <View
             style={[
               styles.priorityBadge,
-              item.priority === "high"
-                ? styles.priorityHigh
-                : item.priority === "medium"
-                  ? styles.priorityMedium
-                  : styles.priorityLow,
+              {
+                backgroundColor:
+                  item.priority === "high"
+                    ? theme.red100
+                    : item.priority === "medium"
+                      ? theme.amber100
+                      : theme.sky100,
+              },
             ]}
           >
-            <Text style={styles.priorityText}>
+            <Text style={[styles.priorityText, { color: theme.text }]}>
               {item.priority.toUpperCase()}
             </Text>
           </View>
 
           {item.url && (
             <Pressable
+              style={({ pressed }) => [
+                styles.linkButton,
+                pressed && { opacity: 0.7 },
+              ]}
+              hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
               onPress={() => item.url && void Linking.openURL(item.url)}
             >
-              <Text style={styles.linkText}>View Online</Text>
+              <Text style={[styles.linkText, { color: theme.secondary }]}>
+                View Online
+              </Text>
             </Pressable>
           )}
         </View>
-
-        {item.isReserved && (
-          <View style={styles.reservedOverlay}>
-            <Text style={styles.reservedText}>RESERVED</Text>
-          </View>
-        )}
       </View>
     </View>
   );
@@ -119,21 +183,15 @@ export default function WishlistDetail() {
     <>
       <Stack.Screen options={{ title: wishlist.title }} />
       <FlatList
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { backgroundColor: theme.background },
+        ]}
         data={wishlist.items}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={() => (
-          <View style={styles.header}>
-            <Text style={styles.wishlistTitle}>{wishlist.title}</Text>
-            {wishlist.description && (
-              <Text style={styles.wishlistDescription}>
-                {wishlist.description}
-              </Text>
-            )}
-            <View style={styles.divider} />
-          </View>
-        )}
+        ListHeaderComponent={ListHeader}
+        style={{ backgroundColor: theme.background }}
       />
     </>
   );
@@ -147,10 +205,10 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: Colors.light.textMuted,
   },
   listContent: {
     padding: 16,
+    flexGrow: 1,
   },
   header: {
     marginBottom: 20,
@@ -158,21 +216,17 @@ const styles = StyleSheet.create({
   wishlistTitle: {
     fontSize: 28,
     fontWeight: "bold",
-    color: Colors.light.text,
     marginBottom: 8,
   },
   wishlistDescription: {
     fontSize: 16,
-    color: Colors.light.textMuted,
     lineHeight: 22,
   },
   divider: {
     height: 1,
-    backgroundColor: "#E2E8F0", // Slate 200 equivalent
     marginTop: 16,
   },
   card: {
-    backgroundColor: Colors.light.card,
     borderRadius: 12,
     marginBottom: 16,
     overflow: "hidden",
@@ -182,7 +236,6 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
     borderWidth: 1,
-    borderColor: "#F1F5F9", // Slate 100
   },
   itemImage: {
     width: "100%",
@@ -200,18 +253,15 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.light.text,
     flex: 1,
     marginRight: 8,
   },
   itemPrice: {
     fontSize: 16,
     fontWeight: "700",
-    color: Colors.light.primary,
   },
   itemDescription: {
     fontSize: 14,
-    color: Colors.light.textMuted,
     marginBottom: 12,
   },
   cardFooter: {
@@ -224,16 +274,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 4,
   },
-  priorityHigh: { backgroundColor: "#FEE2E2" }, // Red 100
-  priorityMedium: { backgroundColor: "#FEF3C7" }, // Amber 100
-  priorityLow: { backgroundColor: "#E0F2FE" }, // Sky 100
   priorityText: {
     fontSize: 10,
     fontWeight: "bold",
-    color: Colors.light.text,
+  },
+  linkButton: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
   },
   linkText: {
-    color: Colors.light.secondary,
     fontWeight: "600",
   },
   reservedOverlay: {
@@ -241,13 +292,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.7)",
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 1,
   },
   reservedText: {
-    color: Colors.light.text,
     fontWeight: "bold",
     fontSize: 16,
     borderWidth: 2,
-    borderColor: Colors.light.text,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
