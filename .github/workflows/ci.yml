@@ -32,7 +32,7 @@ jobs:
       EXPO_PUBLIC_APPWRITE_PROJECT_ID: ${{ vars.EXPO_PUBLIC_APPWRITE_PROJECT_ID }}
       EXPO_PUBLIC_APPWRITE_DATABASE_ID: ${{ vars.EXPO_PUBLIC_APPWRITE_DATABASE_ID }}
       EXPO_PUBLIC_DB_PREFIX: test
-      APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+      APPWRITE_API_SECRET: ${{ secrets.APPWRITE_API_SECRET }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
