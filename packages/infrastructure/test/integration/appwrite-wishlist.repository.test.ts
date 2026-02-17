@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, beforeAll, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { Client as ServerClient, TablesDB } from "node-appwrite";
 import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "../../src/appwrite/client";
@@ -60,11 +60,29 @@ describe.skipIf(!shouldRun)(
     });
 
     const wishlistId = randomUUID();
+    const item1Id = randomUUID();
     const ownerId = randomUUID();
 
-    beforeEach(async () => {
-      // Note: Provisioning script should have created the collections.
-      // We just seed data here.
+    afterEach(async () => {
+      try {
+        await tablesDb.deleteRow({
+          databaseId,
+          tableId: wishlistItemsCollectionId,
+          rowId: item1Id,
+        });
+      } catch {
+        // Ignore if not found
+      }
+
+      try {
+        await tablesDb.deleteRow({
+          databaseId,
+          tableId: wishlistCollectionId,
+          rowId: wishlistId,
+        });
+      } catch {
+        // Ignore if not found
+      }
     });
 
     it("should find a wishlist by id including its items", async () => {
@@ -86,7 +104,6 @@ describe.skipIf(!shouldRun)(
       });
 
       // 2. Seed Wishlist Items
-      const item1Id = randomUUID();
       await tablesDb.createRow({
         databaseId,
         tableId: wishlistItemsCollectionId,

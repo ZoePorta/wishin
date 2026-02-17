@@ -1,8 +1,8 @@
 import { Client, TablesDB, Query, type Models } from "appwrite";
-import { Wishlist } from "@wishin/domain";
-import { WishlistRepository } from "@wishin/domain";
+import { type WishlistRepository, Wishlist } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
+import { toDocument } from "../utils/to-document";
 
 /**
  * Appwrite implementation of the WishlistRepository.
@@ -36,14 +36,12 @@ export class AppwriteWishlistRepository implements WishlistRepository {
   async findById(id: string): Promise<Wishlist | null> {
     try {
       // 1. Fetch Wishlist Document
-      // 1. Fetch Wishlist Document
       const wishlistDoc = await this.tablesDb.getRow({
         databaseId: this.databaseId,
         tableId: this.wishlistCollectionId,
         rowId: id,
       });
 
-      // 2. Fetch Wishlist Items
       // 2. Fetch Wishlist Items
       const itemsResponse = await this.tablesDb.listRows({
         databaseId: this.databaseId,
@@ -52,12 +50,12 @@ export class AppwriteWishlistRepository implements WishlistRepository {
       });
 
       // 3. Map to Domain
-      const items = (itemsResponse.rows as unknown as Models.Document[]).map(
+      const items = toDocument<Models.Document[]>(itemsResponse.rows).map(
         (doc) => WishlistItemMapper.toDomain(doc),
       );
 
       return WishlistMapper.toDomain(
-        wishlistDoc as unknown as Models.Document,
+        toDocument<Models.Document>(wishlistDoc),
         items,
       );
     } catch (error: unknown) {
