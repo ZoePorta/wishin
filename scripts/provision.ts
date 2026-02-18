@@ -208,7 +208,7 @@ const schema: CollectionSchema[] = [
         relatedCollectionId: "wishlist_items",
         relationshipType: RelationshipType.ManyToOne,
         key: "itemId",
-        onDelete: RelationMutate.Cascade,
+        onDelete: RelationMutate.SetNull,
         required: false,
       },
       {
@@ -216,7 +216,7 @@ const schema: CollectionSchema[] = [
         relatedCollectionId: "users",
         relationshipType: RelationshipType.ManyToOne,
         key: "userId",
-        onDelete: RelationMutate.Cascade,
+        onDelete: RelationMutate.SetNull,
         required: false,
       },
       { key: "guestSessionId", type: "string", required: false, size: 255 },

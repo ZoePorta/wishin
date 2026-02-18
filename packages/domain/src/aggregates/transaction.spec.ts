@@ -220,6 +220,48 @@ describe("Transaction Aggregate", () => {
     });
   });
 
+  describe("Reconstitution (Handling null FKs)", () => {
+    it("should allow reconstituting with null itemId (deleted item)", () => {
+      const transaction = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: null,
+        userId: VALID_USER_ID,
+        status: TransactionStatus.PURCHASED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      expect(transaction.itemId).toBeNull();
+    });
+
+    it("should allow reconstituting with null userId (deleted user)", () => {
+      const transaction = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: VALID_ITEM_ID,
+        userId: null,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      expect(transaction.userId).toBeNull();
+    });
+
+    it("should still enforce valid UUID for non-null itemId/userId", () => {
+      expect(() =>
+        Transaction.reconstitute({
+          id: VALID_TRANSACTION_ID,
+          itemId: "invalid-uuid",
+          userId: VALID_USER_ID,
+          status: TransactionStatus.RESERVED,
+          quantity: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
+  });
+
   describe("Identity and State", () => {
     it("should have equality based on ID", () => {
       const props = {
