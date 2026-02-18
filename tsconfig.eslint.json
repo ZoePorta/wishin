@@ -4,7 +4,8 @@
     "eslint.config.js",
     "vitest.config.ts",
     "vitest.workspace.ts",
-    "vitest.config.base.ts"
+    "vitest.config.base.ts",
+    "apps/app/babel.config.js"
   ],
   "compilerOptions": {
     "noEmit": true,

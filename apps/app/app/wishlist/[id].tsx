@@ -1,0 +1,391 @@
+import { useLocalSearchParams, Stack } from "expo-router";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  Image,
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  useColorScheme,
+} from "react-native";
+import { Colors } from "../../src/constants/Colors";
+import { MockWishlistService } from "../../src/services/MockWishlistService";
+import type {
+  Wishlist,
+  WishlistItem,
+} from "../../src/services/MockWishlistService";
+
+/**
+ * Display the details of a specific wishlist.
+ *
+ * @returns The WishlistDetail component.
+ */
+export default function WishlistDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [wishlist, setWishlist] = useState<Wishlist | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const colorScheme = useColorScheme();
+  const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const themedStyles = useMemo(() => getThemedStyles(theme), [theme]);
+
+  const fetchIdRef = useRef(0);
+
+  const loadWishlist = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current;
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await MockWishlistService.getWishlistById(id);
+      if (fetchId === fetchIdRef.current) {
+        setWishlist(data);
+      }
+    } catch (err) {
+      if (fetchId === fetchIdRef.current) {
+        console.error("Error fetching wishlist:", err);
+        setError(err instanceof Error ? err.message : "An error occurred");
+      }
+    } finally {
+      if (fetchId === fetchIdRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      void loadWishlist();
+    } else {
+      setLoading(false);
+    }
+
+    return () => {
+      // Invalidate any in-flight requests on unmount
+      fetchIdRef.current++;
+    };
+  }, [id, loadWishlist]);
+
+  const ListHeader = useMemo(() => {
+    if (!wishlist) return null;
+    return (
+      <View style={styles.header}>
+        <Text style={[styles.wishlistTitle, themedStyles.text]}>
+          {wishlist.title}
+        </Text>
+        {wishlist.description && (
+          <Text style={[styles.wishlistDescription, themedStyles.textMuted]}>
+            {wishlist.description}
+          </Text>
+        )}
+        <View style={[styles.divider, themedStyles.surfaceMuted]} />
+      </View>
+    );
+  }, [wishlist, themedStyles]);
+
+  // Hoisted renderItem
+  const renderItem = useCallback(
+    ({ item }: { item: WishlistItem }) => (
+      <View style={[styles.card, themedStyles.card]}>
+        {item.imageUrl && (
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.itemImage}
+            resizeMode="cover"
+            accessibilityLabel={item.title}
+          />
+        )}
+
+        {/* Reserved Overlay moved here to cover image + content */}
+        {item.isReserved && (
+          <View style={[styles.reservedOverlay, themedStyles.overlay]}>
+            <Text style={[styles.reservedText, themedStyles.reservedText]}>
+              RESERVED
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.cardContent}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.itemTitle, themedStyles.text]}>
+              {item.title}
+            </Text>
+            {item.price != null && (
+              <Text style={[styles.itemPrice, themedStyles.primaryText]}>
+                {item.currency} {item.price.toFixed(2)}
+              </Text>
+            )}
+          </View>
+
+          {item.description && (
+            <Text
+              style={[styles.itemDescription, themedStyles.textMuted]}
+              numberOfLines={2}
+            >
+              {item.description}
+            </Text>
+          )}
+
+          <View style={styles.cardFooter}>
+            <View
+              style={[
+                styles.priorityBadge,
+                item.priority === "high"
+                  ? themedStyles.priorityHigh
+                  : item.priority === "medium"
+                    ? themedStyles.priorityMedium
+                    : themedStyles.priorityLow,
+              ]}
+            >
+              <Text style={[styles.priorityText, themedStyles.text]}>
+                {item.priority.toUpperCase()}
+              </Text>
+            </View>
+
+            {item.url && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.linkButton,
+                  pressed && styles.pressed,
+                ]}
+                hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
+                onPress={() => item.url && void Linking.openURL(item.url)}
+                accessibilityLabel={`View Online, ${item.title}`}
+                accessibilityRole="link"
+              >
+                <Text style={[styles.linkText, themedStyles.secondaryText]}>
+                  View Online
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </View>
+    ),
+    [themedStyles],
+  );
+
+  if (loading) {
+    return (
+      <View style={[styles.centerContainer, themedStyles.background]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.centerContainer, themedStyles.background]}>
+        <Text style={[styles.errorText, themedStyles.textMuted]}>{error}</Text>
+        <Pressable
+          onPress={() => void loadWishlist()}
+          style={styles.retryButton}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading wishlist"
+        >
+          <Text style={[styles.retryText, themedStyles.primaryText]}>
+            Tap to Retry
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (!wishlist) {
+    return (
+      <View style={[styles.centerContainer, themedStyles.background]}>
+        <Text style={[styles.errorText, themedStyles.textMuted]}>
+          Wishlist not found.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <Stack.Screen options={{ title: wishlist.title }} />
+      <FlatList
+        contentContainerStyle={[styles.listContent, themedStyles.background]}
+        data={wishlist.items}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={ListHeader}
+        style={themedStyles.background}
+      />
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  pressed: {
+    opacity: 0.7,
+  },
+  errorText: {
+    fontSize: 18,
+  },
+  retryButton: {
+    marginTop: 20,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  retryText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  listContent: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  wishlistTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  wishlistDescription: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  divider: {
+    height: 1,
+    marginTop: 16,
+  },
+  card: {
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+    borderWidth: 1,
+  },
+  itemImage: {
+    width: "100%",
+    height: 150,
+  },
+  cardContent: {
+    padding: 16,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  itemTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    flex: 1,
+    marginRight: 8,
+  },
+  itemPrice: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  itemDescription: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  priorityText: {
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  linkButton: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  linkText: {
+    fontWeight: "600",
+  },
+  reservedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    // backgroundColor handled dynamically
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  reservedText: {
+    fontWeight: "bold",
+    fontSize: 16,
+    borderWidth: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    transform: [{ rotate: "-5deg" }],
+  },
+});
+
+/**
+ * Creates dynamic styles based on the current theme.
+ *
+ * @param theme - The current theme colors.
+ * @returns A style object with themed properties.
+ */
+function getThemedStyles(theme: (typeof Colors)["light" | "dark"]) {
+  return StyleSheet.create({
+    text: {
+      color: theme.text,
+    },
+    textMuted: {
+      color: theme.textMuted,
+    },
+    secondaryText: {
+      color: theme.secondary,
+    },
+    primaryText: {
+      color: theme.primary,
+    },
+    surfaceMuted: {
+      backgroundColor: theme.surfaceMuted,
+    },
+    background: {
+      backgroundColor: theme.background,
+    },
+    card: {
+      backgroundColor: theme.card,
+      borderColor: theme.surfaceSubtle,
+    },
+    overlay: {
+      backgroundColor: theme.overlay,
+    },
+    reservedText: {
+      color: theme.text,
+      borderColor: theme.text,
+    },
+    priorityHigh: {
+      backgroundColor: theme.red100,
+    },
+    priorityMedium: {
+      backgroundColor: theme.amber100,
+    },
+    priorityLow: {
+      backgroundColor: theme.sky100,
+    },
+  });
+}
