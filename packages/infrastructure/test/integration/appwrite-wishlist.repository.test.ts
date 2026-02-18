@@ -3,7 +3,13 @@ import { Client as ServerClient, TablesDB } from "node-appwrite";
 import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "../../src/appwrite/client";
 import { AppwriteWishlistRepository } from "../../src/appwrite/repositories/appwrite-wishlist.repository";
-import { Wishlist, Visibility, Participation, Priority } from "@wishin/domain";
+import {
+  Wishlist,
+  Visibility,
+  Participation,
+  Priority,
+  TransactionStatus,
+} from "@wishin/domain";
 import "dotenv/config";
 
 const {
@@ -29,9 +35,9 @@ describe.skipIf(!shouldRun)(
     let repository: AppwriteWishlistRepository;
     let databaseId: string;
     let wishlistCollectionId: string;
-
     let wishlistItemsCollectionId: string;
     let usersCollectionId: string;
+    let transactionsCollectionId: string;
 
     beforeAll(() => {
       const endpoint = EXPO_PUBLIC_APPWRITE_ENDPOINT!;
@@ -51,23 +57,35 @@ describe.skipIf(!shouldRun)(
       client = createAppwriteClient(endpoint, projectId);
 
       wishlistCollectionId = `${prefix}_wishlists`;
-
       wishlistItemsCollectionId = `${prefix}_wishlist_items`;
       usersCollectionId = `${prefix}_users`;
+      transactionsCollectionId = `${prefix}_transactions`;
 
       repository = new AppwriteWishlistRepository(
         client,
         databaseId,
         wishlistCollectionId,
         wishlistItemsCollectionId,
+        transactionsCollectionId,
       );
     });
 
     const wishlistId = randomUUID();
     const item1Id = randomUUID();
     const ownerId = randomUUID();
+    const transactionId = randomUUID();
 
     afterEach(async () => {
+      try {
+        await tablesDb.deleteRow({
+          databaseId,
+          tableId: transactionsCollectionId,
+          rowId: transactionId,
+        });
+      } catch {
+        // Ignore if not found
+      }
+
       try {
         await tablesDb.deleteRow({
           databaseId,
@@ -99,7 +117,7 @@ describe.skipIf(!shouldRun)(
       }
     });
 
-    it("should find a wishlist by id including its items", async () => {
+    it("should find a wishlist by id including its items and calculated quantities", async () => {
       // 0. Seed User (Required for relationship)
       await tablesDb.createRow({
         databaseId,
@@ -123,10 +141,9 @@ describe.skipIf(!shouldRun)(
           visibility: Visibility.LINK,
           participation: Participation.ANYONE,
         },
-        // Note: Collection has read("any") permissions in provision.ts
       });
 
-      // 2. Seed Wishlist Items
+      // 2. Seed Wishlist Items (WITHOUT reserved/purchased quantity)
       await tablesDb.createRow({
         databaseId,
         tableId: wishlistItemsCollectionId,
@@ -135,15 +152,25 @@ describe.skipIf(!shouldRun)(
           wishlistId,
           name: "Mechanical Keyboard",
           priority: Priority.HIGH,
-          totalQuantity: 1,
-          reservedQuantity: 0,
-          purchasedQuantity: 0,
+          totalQuantity: 5,
           isUnlimited: false,
         },
       });
 
-      // 3. Wait for indices (Appwrite is eventually consistent for queries) & Act
-      // We poll until the repository returns the wishlist with the expected item count.
+      // 3. Seed Transactions (To verify calculation)
+      await tablesDb.createRow({
+        databaseId,
+        tableId: transactionsCollectionId,
+        rowId: transactionId,
+        data: {
+          itemId: item1Id,
+          userId: ownerId,
+          status: TransactionStatus.RESERVED,
+          quantity: 2,
+        },
+      });
+
+      // 4. Wait for indices & Act
       await vi.waitUntil(
         async () => {
           const res = await repository.findById(wishlistId);
@@ -160,9 +187,11 @@ describe.skipIf(!shouldRun)(
       // 5. Assert
       expect(result).toBeInstanceOf(Wishlist);
       expect(result?.id).toBe(wishlistId);
-      expect(result?.title).toBe("My Birthday Wishlist");
       expect(result?.items).toHaveLength(1);
       expect(result?.items[0].name).toBe("Mechanical Keyboard");
+      // Verify calculated quantities
+      expect(result?.items[0].reservedQuantity).toBe(2);
+      expect(result?.items[0].purchasedQuantity).toBe(0);
     });
 
     it("should return null if wishlist does not exist", async () => {

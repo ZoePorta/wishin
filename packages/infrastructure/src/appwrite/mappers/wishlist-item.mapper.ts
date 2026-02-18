@@ -16,8 +16,6 @@ interface WishlistItemDocument extends Models.Document {
   imageUrl?: string | null;
   isUnlimited: boolean;
   totalQuantity: number;
-  reservedQuantity: number;
-  purchasedQuantity: number;
 }
 
 /**
@@ -34,8 +32,6 @@ export interface WishlistItemPersistence {
   imageUrl?: string;
   isUnlimited: boolean;
   totalQuantity: number;
-  reservedQuantity: number;
-  purchasedQuantity: number;
 }
 
 /**
@@ -60,17 +56,21 @@ export const WishlistItemMapper = {
       imageUrl: props.imageUrl,
       isUnlimited: props.isUnlimited,
       totalQuantity: props.totalQuantity,
-      reservedQuantity: props.reservedQuantity,
-      purchasedQuantity: props.purchasedQuantity,
     };
   },
 
   /**
    * Converts an Appwrite document to a WishlistItem domain entity.
    * @param doc - The Appwrite document from the wishlist_items collection.
+   * @param reservedQuantity - Calculated reserved quantity (default: 0).
+   * @param purchasedQuantity - Calculated purchased quantity (default: 0).
    * @returns A reconstituted WishlistItem domain entity.
    */
-  toDomain(doc: Models.Document): WishlistItem {
+  toDomain(
+    doc: Models.Document,
+    reservedQuantity = 0,
+    purchasedQuantity = 0,
+  ): WishlistItem {
     const data = doc as WishlistItemDocument;
     return WishlistItem.reconstitute({
       id: doc.$id,
@@ -84,8 +84,8 @@ export const WishlistItemMapper = {
       imageUrl: data.imageUrl ?? undefined,
       isUnlimited: data.isUnlimited,
       totalQuantity: data.totalQuantity,
-      reservedQuantity: data.reservedQuantity,
-      purchasedQuantity: data.purchasedQuantity,
+      reservedQuantity: reservedQuantity,
+      purchasedQuantity: purchasedQuantity,
     });
   },
 };
