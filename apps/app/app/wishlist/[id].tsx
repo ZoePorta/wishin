@@ -1,5 +1,5 @@
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -45,6 +45,8 @@ export default function WishlistDetail() {
         }
       };
       void fetchWishlist();
+    } else {
+      setLoading(false);
     }
     return () => {
       isMounted = false;
@@ -90,95 +92,106 @@ export default function WishlistDetail() {
     );
   }
 
-  const renderItem = ({ item }: { item: WishlistItem }) => (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: theme.card,
-          borderColor: theme.surfaceSubtle,
-        },
-      ]}
-    >
-      {item.imageUrl && (
-        <Image
-          source={{ uri: item.imageUrl }}
-          style={styles.itemImage}
-          resizeMode="cover"
-        />
-      )}
-
-      {/* Reserved Overlay moved here to cover image + content */}
-      {item.isReserved && (
-        <View style={styles.reservedOverlay}>
-          <Text
-            style={[
-              styles.reservedText,
-              { color: theme.text, borderColor: theme.text },
-            ]}
-          >
-            RESERVED
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.cardContent}>
-        <View style={styles.cardHeader}>
-          <Text style={[styles.itemTitle, { color: theme.text }]}>
-            {item.title}
-          </Text>
-          {item.price != null && (
-            <Text style={[styles.itemPrice, { color: theme.primary }]}>
-              {item.currency} {item.price.toFixed(2)}
-            </Text>
-          )}
-        </View>
-
-        {item.description && (
-          <Text
-            style={[styles.itemDescription, { color: theme.textMuted }]}
-            numberOfLines={2}
-          >
-            {item.description}
-          </Text>
+  const renderItem = useCallback(
+    ({ item }: { item: WishlistItem }) => (
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.card,
+            borderColor: theme.surfaceSubtle,
+          },
+        ]}
+      >
+        {item.imageUrl && (
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.itemImage}
+            resizeMode="cover"
+          />
         )}
 
-        <View style={styles.cardFooter}>
+        {/* Reserved Overlay moved here to cover image + content */}
+        {item.isReserved && (
           <View
             style={[
-              styles.priorityBadge,
+              styles.reservedOverlay,
               {
-                backgroundColor:
-                  item.priority === "high"
-                    ? theme.red100
-                    : item.priority === "medium"
-                      ? theme.amber100
-                      : theme.sky100,
+                backgroundColor: theme.overlay,
               },
             ]}
           >
-            <Text style={[styles.priorityText, { color: theme.text }]}>
-              {item.priority.toUpperCase()}
+            <Text
+              style={[
+                styles.reservedText,
+                { color: theme.text, borderColor: theme.text },
+              ]}
+            >
+              RESERVED
             </Text>
           </View>
+        )}
 
-          {item.url && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.linkButton,
-                pressed && { opacity: 0.7 },
-              ]}
-              hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
-              onPress={() => item.url && void Linking.openURL(item.url)}
-            >
-              <Text style={[styles.linkText, { color: theme.secondary }]}>
-                View Online
+        <View style={styles.cardContent}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.itemTitle, { color: theme.text }]}>
+              {item.title}
+            </Text>
+            {item.price != null && (
+              <Text style={[styles.itemPrice, { color: theme.primary }]}>
+                {item.currency} {item.price.toFixed(2)}
               </Text>
-            </Pressable>
+            )}
+          </View>
+
+          {item.description && (
+            <Text
+              style={[styles.itemDescription, { color: theme.textMuted }]}
+              numberOfLines={2}
+            >
+              {item.description}
+            </Text>
           )}
+
+          <View style={styles.cardFooter}>
+            <View
+              style={[
+                styles.priorityBadge,
+                {
+                  backgroundColor:
+                    item.priority === "high"
+                      ? theme.red100
+                      : item.priority === "medium"
+                        ? theme.amber100
+                        : theme.sky100,
+                },
+              ]}
+            >
+              <Text style={[styles.priorityText, { color: theme.text }]}>
+                {item.priority.toUpperCase()}
+              </Text>
+            </View>
+
+            {item.url && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.linkButton,
+                  pressed && { opacity: 0.7 },
+                ]}
+                hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
+                onPress={() => item.url && void Linking.openURL(item.url)}
+                accessibilityLabel={`View Online, ${item.title}`}
+              >
+                <Text style={[styles.linkText, { color: theme.secondary }]}>
+                  View Online
+                </Text>
+              </Pressable>
+            )}
+          </View>
         </View>
       </View>
-    </View>
+    ),
+    [theme, colorScheme],
   );
 
   return (
@@ -291,7 +304,7 @@ const styles = StyleSheet.create({
   },
   reservedOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    // backgroundColor handled dynamically
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1,

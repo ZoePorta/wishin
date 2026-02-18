@@ -61,6 +61,7 @@ export const Colors = {
     red100: palette.red[100],
     amber100: palette.amber[100],
     sky100: palette.sky[100],
+    overlay: "rgba(255, 255, 255, 0.7)",
     // Definition for future gradients
     gradientPrimary: [palette.violet[600], palette.pink[400]],
   },
@@ -76,6 +77,7 @@ export const Colors = {
     red100: "#7F1D1D", // Dark red
     amber100: "#78350F", // Dark amber
     sky100: "#0C4A6E", // Dark sky
+    overlay: "rgba(0, 0, 0, 0.7)",
     gradientPrimary: [palette.violet[500], palette.pink[600]],
   },
 } as const;

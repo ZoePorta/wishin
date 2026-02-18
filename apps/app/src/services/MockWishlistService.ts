@@ -103,7 +103,9 @@ export const MockWishlistService = {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     if (id === MOCK_WISHLIST.id) {
-      return { ...MOCK_WISHLIST };
+      // Deep clone items to prevent shared references
+      const clonedItems = MOCK_WISHLIST.items.map((item) => ({ ...item }));
+      return { ...MOCK_WISHLIST, items: clonedItems };
     }
     return null;
   },
