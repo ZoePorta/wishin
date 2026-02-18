@@ -23,21 +23,22 @@ Unlike other entities where business rules might evolve (e.g., username length),
 - **Business**:
   - `quantity`: Must be a positive integer (> 0).
   - `Identity XOR`: Must have exactly ONE of `userId` or `guestSessionId` defined. Never both, never neither.
-  - `userId`: If present, must be a valid UUID v4. Required for `RESERVED` state.
+  - `userId`: If present, must be a valid UUID v4. Required for `RESERVED` state during creation. Can be null if the user was deleted (persistence).
   - `guestSessionId`: If present, must be a non-empty string. Only allowed for `PURCHASED` state.
+  - `itemId`: Must be a valid UUID v4 if present. Can be null if the item was deleted (persistence).
 
 ## Attributes
 
-| Attribute        | Type                | Description                    | validation           |
-| :--------------- | :------------------ | :----------------------------- | :------------------- |
-| `id`             | `string` (UUID v4)  | Unique identifier              | UUID v4              |
-| `itemId`         | `string` (UUID v4)  | The item being transacted      | UUID v4              |
-| `userId`         | `string` (UUID v4)  | The registered user (if any)   | UUID v4 if present   |
-| `guestSessionId` | `string`            | The guest session (if any)     | Non-empty if present |
-| `status`         | `TransactionStatus` | RESERVED, PURCHASED, CANCELLED | Valid enum           |
-| `quantity`       | `number`            | Amount of items                | Integer > 0          |
-| `createdAt`      | `Date`              | Timestamp of creation          | Valid Date           |
-| `updatedAt`      | `Date`              | Timestamp of last update       | Valid Date           |
+| Attribute        | Type                         | Description                    | validation           |
+| :--------------- | :--------------------------- | :----------------------------- | :------------------- |
+| `id`             | `string` (UUID v4)           | Unique identifier              | UUID v4              |
+| `itemId`         | `string` (UUID v4) \| `null` | The item being transacted      | UUID v4 if present   |
+| `userId`         | `string` (UUID v4) \| `null` | The registered user (if any)   | UUID v4 if present   |
+| `guestSessionId` | `string`                     | The guest session (if any)     | Non-empty if present |
+| `status`         | `TransactionStatus`          | RESERVED, PURCHASED, CANCELLED | Valid enum           |
+| `quantity`       | `number`                     | Amount of items                | Integer > 0          |
+| `createdAt`      | `Date`                       | Timestamp of creation          | Valid Date           |
+| `updatedAt`      | `Date`                       | Timestamp of last update       | Valid Date           |
 
 ## Domain Invariants
 
@@ -72,10 +73,11 @@ Unlike other entities where business rules might evolve (e.g., username length),
 ### `reconstitute(props: TransactionProps)`
 
 - **Effect:** Recreates an instance from persistence.
-- **Validation:** Enforces **STRICT** validation.
+- **Validation:** Enforces **STRUCTURAL** validation.
 - **Behavior:**
   - Restores all properties exactly as they are.
   - Verifies that `createdAt` and `updatedAt` are valid.
+  - Allows `itemId` and `userId` to be null (handling deleted references).
 - **Returns:** `Transaction` instance or throws `InvalidAttributeError`.
 
 ### `cancel()`

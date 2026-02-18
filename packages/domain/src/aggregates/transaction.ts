@@ -22,8 +22,8 @@ import { TransactionStatus } from "../value-objects/transaction-status";
  *
  * @interface TransactionProps
  * @property {string} id - Unique identifier (UUID v4).
- * @property {string} itemId - The item being transacted (UUID v4).
- * @property {string} [userId] - The registered user ID (UUID v4).
+ * @property {string | null} itemId - The item being transacted (UUID v4) or null if deleted.
+ * @property {string | null} [userId] - The registered user ID (UUID v4) or null if deleted.
  * @property {string} [guestSessionId] - The guest session identifier.
  * @property {TransactionStatus} status - Lifecycle state.
  * @property {number} quantity - Positive integer.
@@ -32,8 +32,8 @@ import { TransactionStatus } from "../value-objects/transaction-status";
  */
 export interface TransactionProps {
   id: string;
-  itemId: string;
-  userId?: string;
+  itemId: string | null;
+  userId?: string | null;
   guestSessionId?: string;
   status: TransactionStatus;
   quantity: number;
@@ -85,17 +85,17 @@ export class Transaction {
 
   /**
    * The item being transacted (UUID v4).
-   * @returns {string}
+   * @returns {string | null}
    */
-  public get itemId(): string {
+  public get itemId(): string | null {
     return this.props.itemId;
   }
 
   /**
    * The registered user ID (UUID v4).
-   * @returns {string | undefined}
+   * @returns {string | null | undefined}
    */
-  public get userId(): string | undefined {
+  public get userId(): string | null | undefined {
     return this.props.userId;
   }
 
@@ -159,7 +159,7 @@ export class Transaction {
    * @returns {Transaction}
    */
   public static reconstitute(props: TransactionProps): Transaction {
-    return new Transaction(props, ValidationMode.STRICT);
+    return new Transaction(props, ValidationMode.STRUCTURAL);
   }
 
   /**
@@ -288,7 +288,7 @@ export class Transaction {
     if (!isValidUUID(this.id)) {
       throw new InvalidAttributeError("Invalid id: Must be valid UUID v4");
     }
-    if (!isValidUUID(this.itemId)) {
+    if (this.itemId && !isValidUUID(this.itemId)) {
       throw new InvalidAttributeError("Invalid itemId: Must be valid UUID v4");
     }
     if (isNaN(this.quantity)) {
@@ -305,19 +305,21 @@ export class Transaction {
       );
     }
 
-    // --- Identity XOR (Always) ---
-    const hasUser = !!this.userId;
-    const hasGuest = !!this.guestSessionId;
+    // --- Identity XOR (STRICT Only) ---
+    if (mode === ValidationMode.STRICT) {
+      const hasUser = !!this.userId;
+      const hasGuest = !!this.guestSessionId;
 
-    if (hasUser && hasGuest) {
-      throw new InvalidAttributeError(
-        "Identity XOR: Cannot have both userId and guestSessionId",
-      );
-    }
-    if (!hasUser && !hasGuest) {
-      throw new InvalidAttributeError(
-        "Identity XOR: Must have either userId or guestSessionId",
-      );
+      if (hasUser && hasGuest) {
+        throw new InvalidAttributeError(
+          "Identity XOR: Cannot have both userId and guestSessionId",
+        );
+      }
+      if (!hasUser && !hasGuest) {
+        throw new InvalidAttributeError(
+          "Identity XOR: Must have either userId or guestSessionId",
+        );
+      }
     }
 
     // --- BUSINESS RULES (Always enforced as they are fundamental) ---
@@ -338,6 +340,12 @@ export class Transaction {
     }
 
     if (mode === ValidationMode.STRICT) {
+      if (!this.itemId) {
+        throw new InvalidAttributeError(
+          "Invalid itemId: Must be defined for new transactions",
+        );
+      }
+
       if (this.status === TransactionStatus.RESERVED && !this.userId) {
         throw new InvalidAttributeError(
           "Invalid state: Reserved transactions require a userId",
