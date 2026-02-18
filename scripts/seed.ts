@@ -44,8 +44,8 @@ type UserRow = UserData & Models.Row;
 interface WishlistData {
   ownerId: string;
   title: string;
-  visibility: "public" | "private";
-  participation: "open" | "invite_only";
+  visibility: "link" | "private";
+  participation: "anyone" | "registered" | "contacts";
 }
 type WishlistRow = WishlistData & Models.Row;
 
@@ -140,8 +140,8 @@ async function seed() {
       data: {
         ownerId: user1.$id,
         title: "Alice's Birthday Wishlist",
-        visibility: "public",
-        participation: "open",
+        visibility: "link",
+        participation: "anyone",
       },
     });
     await tablesDb.upsertRow<WishlistRow>({
@@ -151,8 +151,8 @@ async function seed() {
       data: {
         ownerId: user2.$id,
         title: "Bob's Holiday Wishlist",
-        visibility: "public",
-        participation: "invite_only",
+        visibility: "link",
+        participation: "anyone",
       },
     });
 
