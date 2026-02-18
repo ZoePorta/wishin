@@ -5,8 +5,11 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import { type WishlistRepository, Wishlist } from "@wishin/domain";
-import { TransactionStatus } from "@wishin/domain";
+import {
+  type WishlistRepository,
+  Wishlist,
+  TransactionStatus,
+} from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
 import { toDocument } from "../utils/to-document";
@@ -71,27 +74,44 @@ export class AppwriteWishlistRepository implements WishlistRepository {
       const itemIds = itemDocuments.map((doc) => doc.$id);
 
       // 3. Fetch Transactions for items (if any items exist)
-      let transactions: TransactionDocument[] = [];
+      const transactions: TransactionDocument[] = [];
       if (itemIds.length > 0) {
-        // Fetch all transactions related to these items, limited to 100 for now.
-        const transactionsResponse = await this.tablesDb.listRows({
-          databaseId: this.databaseId,
-          tableId: this.transactionsCollectionId,
-          queries: [Query.equal("itemId", itemIds), Query.limit(100)],
-        });
-        transactions = toDocument<TransactionDocument[]>(
-          transactionsResponse.rows,
-        );
+        let cursor: string | undefined = undefined;
+        do {
+          const queries = [Query.equal("itemId", itemIds), Query.limit(100)];
+          if (cursor) {
+            queries.push(Query.cursorAfter(cursor));
+          }
+
+          const response = await this.tablesDb.listRows({
+            databaseId: this.databaseId,
+            tableId: this.transactionsCollectionId,
+            queries,
+          });
+
+          const docs = toDocument<TransactionDocument[]>(response.rows);
+          transactions.push(...docs);
+
+          if (response.rows.length < 100) {
+            cursor = undefined;
+          } else {
+            cursor = response.rows[response.rows.length - 1].$id;
+          }
+        } while (cursor);
       }
 
       // 4. Calculate Quantities & Map
+      // Group transactions by itemId using a Map for O(1) access
+      const transactionsByItem = new Map<string, TransactionDocument[]>();
+      for (const t of transactions) {
+        const tItemId = typeof t.itemId === "string" ? t.itemId : t.itemId.$id;
+        const currentTransactions = transactionsByItem.get(tItemId) ?? [];
+        currentTransactions.push(t);
+        transactionsByItem.set(tItemId, currentTransactions);
+      }
+
       const items = itemDocuments.map((doc) => {
-        const itemTransactions = transactions.filter((t) => {
-          // Handle both expanded object and direct ID string cases
-          const transactionItemId =
-            typeof t.itemId === "string" ? t.itemId : t.itemId.$id;
-          return transactionItemId === doc.$id;
-        });
+        const itemTransactions = transactionsByItem.get(doc.$id) ?? [];
 
         const reservedQuantity = itemTransactions
           .filter((t) => t.status === TransactionStatus.RESERVED)
@@ -101,11 +121,10 @@ export class AppwriteWishlistRepository implements WishlistRepository {
           .filter((t) => t.status === TransactionStatus.PURCHASED)
           .reduce((sum, t) => sum + t.quantity, 0);
 
-        return WishlistItemMapper.toDomain(
-          doc,
+        return WishlistItemMapper.toDomain(doc, {
           reservedQuantity,
           purchasedQuantity,
-        );
+        });
       });
 
       return WishlistMapper.toDomain(

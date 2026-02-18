@@ -174,7 +174,11 @@ describe.skipIf(!shouldRun)(
       await vi.waitUntil(
         async () => {
           const res = await repository.findById(wishlistId);
-          return res !== null && res.items.length === 1;
+          return (
+            res !== null &&
+            res.items.length === 1 &&
+            res.items[0].reservedQuantity === 2
+          );
         },
         {
           timeout: 5000,

@@ -100,7 +100,7 @@ interface RelationshipAttribute {
   relatedCollectionId: string;
   relationshipType: RelationshipType;
   twoWay?: boolean;
-  key?: string;
+  key: string;
   twoWayKey?: string;
   onDelete?: RelationMutate;
 }
@@ -233,7 +233,10 @@ async function cleanup() {
 
   console.log(`Cleaning up collections with prefix "${prefix}_"...`);
   try {
+    const tablesToDelete: Models.Table[] = [];
     let cursor: string | undefined = undefined;
+
+    // 1. Collect all tables
     do {
       const result: Models.TableList = await tablesDb.listTables({
         databaseId,
@@ -245,11 +248,7 @@ async function cleanup() {
 
       for (const table of result.tables) {
         if (table.$id.startsWith(`${prefix}_`)) {
-          console.log(`Deleting collection "${table.name}" (${table.$id})...`);
-          await tablesDb.deleteTable({
-            databaseId,
-            tableId: table.$id,
-          });
+          tablesToDelete.push(table);
         }
       }
 
@@ -263,6 +262,42 @@ async function cleanup() {
         cursor = undefined;
       }
     } while (cursor);
+
+    // 2. Sort tables by dependency order (delete children first)
+    // Order: transactions -> wishlist_items -> wishlists -> users
+    const deleteOrder = [
+      `${prefix}_transactions`,
+      `${prefix}_wishlist_items`,
+      `${prefix}_wishlists`,
+      `${prefix}_users`,
+    ];
+
+    tablesToDelete.sort((a, b) => {
+      const indexA = deleteOrder.indexOf(a.$id);
+      const indexB = deleteOrder.indexOf(b.$id);
+
+      // If both are in the known order list, sort by index
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+
+      // If only A is in the list, it should come first
+      if (indexA !== -1) return -1;
+      // If only B is in the list, it should come first
+      if (indexB !== -1) return 1;
+
+      // Otherwise, keep original relative order
+      return 0;
+    });
+
+    // 3. Delete tables
+    for (const table of tablesToDelete) {
+      console.log(`Deleting collection "${table.name}" (${table.$id})...`);
+      await tablesDb.deleteTable({
+        databaseId,
+        tableId: table.$id,
+      });
+    }
   } catch (error: unknown) {
     if (isAppwriteError(error) && error.code === 404) {
       console.log(`Database "${databaseId}" not found. Skipping cleanup.`);
@@ -348,12 +383,12 @@ async function provision() {
 
           // Check if relationship exists (this is a bit tricky as key might not be directly exposed in simple list if not expanded, but columns usually show it)
           // For now, simple check like other attributes:
-          if (attr.key && existingAttributes.includes(attr.key)) {
+          if (existingAttributes.includes(attr.key)) {
             continue;
           }
 
           console.log(
-            `Creating relationship "${attr.key ?? "unknown"}" in "${collectionId}" linking to "${relatedCollectionId}"...`,
+            `Creating relationship "${attr.key}" in "${collectionId}" linking to "${relatedCollectionId}"...`,
           );
           await tablesDb.createRelationshipColumn({
             databaseId,
@@ -366,14 +401,7 @@ async function provision() {
             onDelete: attr.onDelete,
           });
 
-          if (attr.key) {
-            await waitForAttribute(
-              tablesDb,
-              databaseId,
-              collectionId,
-              attr.key,
-            );
-          }
+          await waitForAttribute(tablesDb, databaseId, collectionId, attr.key);
           continue;
         }
 
@@ -446,6 +474,16 @@ async function provision() {
 
 void provision();
 
+/**
+ * Polls a table until a specific attribute becomes available.
+ *
+ * @param tablesDb - The Appwrite TablesDB instance.
+ * @param databaseId - The ID of the database.
+ * @param collectionId - The ID of the collection (table).
+ * @param key - The key (name) of the attribute to wait for.
+ * @returns A Promise that resolves when the attribute is ready.
+ * @throws {Error} If the attribute fails to become available after the timeout.
+ */
 async function waitForAttribute(
   tablesDb: TablesDB,
   databaseId: string,

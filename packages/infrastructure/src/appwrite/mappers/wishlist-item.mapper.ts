@@ -68,9 +68,9 @@ export const WishlistItemMapper = {
    */
   toDomain(
     doc: Models.Document,
-    reservedQuantity = 0,
-    purchasedQuantity = 0,
+    options: { reservedQuantity?: number; purchasedQuantity?: number } = {},
   ): WishlistItem {
+    const { reservedQuantity = 0, purchasedQuantity = 0 } = options;
     const data = doc as WishlistItemDocument;
     return WishlistItem.reconstitute({
       id: doc.$id,

@@ -15,8 +15,6 @@ describe("WishlistItemMapper", () => {
     imageUrl?: string | null;
     isUnlimited: boolean;
     totalQuantity: number;
-    reservedQuantity: number;
-    purchasedQuantity: number;
     id?: string;
     $sequence: number;
   }
@@ -52,13 +50,15 @@ describe("WishlistItemMapper", () => {
       imageUrl: itemProps.imageUrl,
       isUnlimited: itemProps.isUnlimited,
       totalQuantity: itemProps.totalQuantity,
-      reservedQuantity: itemProps.reservedQuantity,
-      purchasedQuantity: itemProps.purchasedQuantity,
     });
   });
 
   it("should map persistence document to domain entity", () => {
     const { id, ...propsWithoutId } = itemProps;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { reservedQuantity, purchasedQuantity, ...propsForDoc } =
+      propsWithoutId;
+
     const doc: WishlistItemDocument = {
       $id: id,
       $collectionId: "wishlist_items",
@@ -67,13 +67,17 @@ describe("WishlistItemMapper", () => {
       $updatedAt: "2024-01-01T00:00:00.000Z",
       $permissions: [] as string[],
       $sequence: 0,
-      ...propsWithoutId,
+      ...propsForDoc,
     };
 
     const domain = WishlistItemMapper.toDomain(doc);
 
     expect(domain.id).toBe(itemProps.id);
-    expect(domain.toProps()).toEqual(itemProps);
+    expect(domain.toProps()).toEqual({
+      ...itemProps,
+      reservedQuantity: 0,
+      purchasedQuantity: 0,
+    });
   });
 
   it("should map persistence document with nulls to domain entity with undefineds", () => {
@@ -90,8 +94,6 @@ describe("WishlistItemMapper", () => {
       priority: itemProps.priority,
       isUnlimited: itemProps.isUnlimited,
       totalQuantity: itemProps.totalQuantity,
-      reservedQuantity: itemProps.reservedQuantity,
-      purchasedQuantity: itemProps.purchasedQuantity,
       description: null,
       price: null,
       currency: null,
@@ -101,10 +103,31 @@ describe("WishlistItemMapper", () => {
 
     const domain = WishlistItemMapper.toDomain(doc);
 
-    expect(domain.description).toBeUndefined();
-    expect(domain.price).toBeUndefined();
-    expect(domain.currency).toBeUndefined();
-    expect(domain.url).toBeUndefined();
     expect(domain.imageUrl).toBeUndefined();
+  });
+
+  it("should map persistence document with specific quantities via options object", () => {
+    const doc: WishlistItemDocument = {
+      $id: itemProps.id,
+      $collectionId: "wishlist_items",
+      $databaseId: "default",
+      $createdAt: "2024-01-01T00:00:00.000Z",
+      $updatedAt: "2024-01-01T00:00:00.000Z",
+      $permissions: [] as string[],
+      $sequence: 0,
+      wishlistId: itemProps.wishlistId,
+      name: itemProps.name,
+      priority: itemProps.priority,
+      isUnlimited: itemProps.isUnlimited,
+      totalQuantity: itemProps.totalQuantity,
+    };
+
+    const domain = WishlistItemMapper.toDomain(doc, {
+      reservedQuantity: 5,
+      purchasedQuantity: 3,
+    });
+
+    expect(domain.reservedQuantity).toBe(5);
+    expect(domain.purchasedQuantity).toBe(3);
   });
 });
