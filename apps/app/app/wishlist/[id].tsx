@@ -1,5 +1,5 @@
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -31,17 +31,26 @@ export default function WishlistDetail() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
 
+  const fetchIdRef = useRef(0);
+
   const loadWishlist = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current;
     try {
       setLoading(true);
       setError(null);
       const data = await MockWishlistService.getWishlistById(id);
-      setWishlist(data);
+      if (fetchId === fetchIdRef.current) {
+        setWishlist(data);
+      }
     } catch (err) {
-      console.error("Error fetching wishlist:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
+      if (fetchId === fetchIdRef.current) {
+        console.error("Error fetching wishlist:", err);
+        setError(err instanceof Error ? err.message : "An error occurred");
+      }
     } finally {
-      setLoading(false);
+      if (fetchId === fetchIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [id]);
 
@@ -51,6 +60,11 @@ export default function WishlistDetail() {
     } else {
       setLoading(false);
     }
+
+    return () => {
+      // Invalidate any in-flight requests on unmount
+      fetchIdRef.current++;
+    };
   }, [id, loadWishlist]);
 
   const ListHeader = useMemo(() => {
@@ -91,6 +105,7 @@ export default function WishlistDetail() {
             source={{ uri: item.imageUrl }}
             style={styles.itemImage}
             resizeMode="cover"
+            accessibilityLabel={item.title}
           />
         )}
 
@@ -198,11 +213,11 @@ export default function WishlistDetail() {
         </Text>
         <Pressable
           onPress={() => void loadWishlist()}
-          style={{ marginTop: 20 }}
+          style={styles.retryButton}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading wishlist"
         >
-          <Text
-            style={{ color: theme.primary, fontSize: 16, fontWeight: "600" }}
-          >
+          <Text style={[styles.retryText, { color: theme.primary }]}>
             Tap to Retry
           </Text>
         </Pressable>
@@ -248,6 +263,18 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
+  },
+  retryButton: {
+    marginTop: 20,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  retryText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
   listContent: {
     padding: 16,
