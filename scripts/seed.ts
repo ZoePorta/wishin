@@ -1,29 +1,27 @@
-import { Client, TablesDB, ID } from "node-appwrite";
+import { Client, TablesDB, type Models } from "node-appwrite";
 import "dotenv/config";
 
-const {
-  EXPO_PUBLIC_APPWRITE_ENDPOINT,
-  EXPO_PUBLIC_APPWRITE_PROJECT_ID,
-  APPWRITE_API_SECRET,
-  EXPO_PUBLIC_APPWRITE_DATABASE_ID,
-  EXPO_PUBLIC_DB_PREFIX,
-} = process.env;
+const REQUIRED_ENV_VARS = [
+  "EXPO_PUBLIC_APPWRITE_ENDPOINT",
+  "EXPO_PUBLIC_APPWRITE_PROJECT_ID",
+  "APPWRITE_API_SECRET",
+  "EXPO_PUBLIC_APPWRITE_DATABASE_ID",
+] as const;
 
-if (
-  !EXPO_PUBLIC_APPWRITE_ENDPOINT ||
-  !EXPO_PUBLIC_APPWRITE_PROJECT_ID ||
-  !APPWRITE_API_SECRET ||
-  !EXPO_PUBLIC_APPWRITE_DATABASE_ID
-) {
-  console.error("Missing required environment variables.");
+const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]);
+
+if (missingVars.length > 0) {
+  console.error(
+    `Missing required environment variables: ${missingVars.join(", ")}`,
+  );
   process.exit(1);
 }
 
-const endpoint = EXPO_PUBLIC_APPWRITE_ENDPOINT;
-const projectId = EXPO_PUBLIC_APPWRITE_PROJECT_ID;
-const apiKey = APPWRITE_API_SECRET;
-const databaseId = EXPO_PUBLIC_APPWRITE_DATABASE_ID;
-const prefix = EXPO_PUBLIC_DB_PREFIX ?? "";
+const endpoint = process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? "";
+const projectId = process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? "";
+const apiKey = process.env.APPWRITE_API_SECRET ?? "";
+const databaseId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID ?? "";
+const prefix = process.env.EXPO_PUBLIC_DB_PREFIX ?? "";
 
 const client = new Client()
   .setEndpoint(endpoint)
@@ -31,6 +29,75 @@ const client = new Client()
   .setKey(apiKey);
 
 const tablesDb = new TablesDB(client);
+
+/**
+ * Interfaces for database models to ensure type safety.
+ * We use intersection types with Models.Row to satisfy TablesDB constraints.
+ */
+interface UserData {
+  email: string;
+  username: string;
+  bio?: string;
+}
+type UserRow = UserData & Models.Row;
+
+interface WishlistData {
+  ownerId: string;
+  title: string;
+  visibility: "public" | "private";
+  participation: "open" | "invite_only";
+}
+type WishlistRow = WishlistData & Models.Row;
+
+interface ItemData {
+  wishlistId: string;
+  name: string;
+  description?: string;
+  priority: number;
+  price?: number;
+  currency?: string;
+  url?: string;
+  imageUrl?: string;
+  isUnlimited?: boolean;
+  totalQuantity?: number;
+}
+type ItemRow = ItemData & Models.Row;
+
+interface TransactionData {
+  itemId: string;
+  userId?: string;
+  status: "reserved" | "purchased";
+  quantity: number;
+}
+type TransactionRow = TransactionData & Models.Row;
+
+/**
+ * Stable UUIDs for idempotency.
+ */
+const SEED_IDS = {
+  USERS: {
+    ALICE: "550e8400-e29b-41d4-a716-446655440001",
+    BOB: "550e8400-e29b-41d4-a716-446655440002",
+  },
+  WISHLISTS: {
+    ALICE_BIRTHDAY: "550e8400-e29b-41d4-a716-446655440003",
+    BOB_HOLIDAY: "550e8400-e29b-41d4-a716-446655440004",
+  },
+  ITEMS: {
+    KEYBOARD: "550e8400-e29b-41d4-a716-446655440005",
+    HEADPHONES: "550e8400-e29b-41d4-a716-446655440006",
+    JS_BOOK: "550e8400-e29b-41d4-a716-446655440007",
+    SOCKS: "550e8400-e29b-41d4-a716-446655440008",
+    WATER_BOTTLE: "550e8400-e29b-41d4-a716-446655440009",
+    WATCH: "550e8400-e29b-41d4-a716-44665544000a",
+    CAMERA: "550e8400-e29b-41d4-a716-44665544000b",
+  },
+  TRANSACTIONS: {
+    RESERVATION_1: "550e8400-e29b-41d4-a716-44665544000c",
+    RESERVATION_2: "550e8400-e29b-41d4-a716-44665544000d",
+    PURCHASE_1: "550e8400-e29b-41d4-a716-44665544000e",
+  },
+} as const;
 
 /**
  * Seeds the database with test data.
@@ -42,20 +109,20 @@ async function seed() {
     // 1. Seed Users
     console.log("Seeding users...");
     const usersCollectionId = prefix ? `${prefix}_users` : "users";
-    const user1 = await tablesDb.createRow({
+    const user1 = await tablesDb.upsertRow<UserRow>({
       databaseId,
       tableId: usersCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.USERS.ALICE,
       data: {
         email: "alice@example.com",
         username: "alice",
         bio: "Bio of Alice",
       },
     });
-    const user2 = await tablesDb.createRow({
+    const user2 = await tablesDb.upsertRow<UserRow>({
       databaseId,
       tableId: usersCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.USERS.BOB,
       data: {
         email: "bob@example.com",
         username: "bob",
@@ -66,10 +133,10 @@ async function seed() {
     // 2. Seed Wishlists
     console.log("Seeding wishlists...");
     const wishlistsCollectionId = prefix ? `${prefix}_wishlists` : "wishlists";
-    const wishlist1 = await tablesDb.createRow({
+    const wishlist1 = await tablesDb.upsertRow<WishlistRow>({
       databaseId,
       tableId: wishlistsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.WISHLISTS.ALICE_BIRTHDAY,
       data: {
         ownerId: user1.$id,
         title: "Alice's Birthday Wishlist",
@@ -77,10 +144,10 @@ async function seed() {
         participation: "open",
       },
     });
-    const _wishlist2 = await tablesDb.createRow({
+    await tablesDb.upsertRow<WishlistRow>({
       databaseId,
       tableId: wishlistsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.WISHLISTS.BOB_HOLIDAY,
       data: {
         ownerId: user2.$id,
         title: "Bob's Holiday Wishlist",
@@ -95,10 +162,10 @@ async function seed() {
       ? `${prefix}_wishlist_items`
       : "wishlist_items";
 
-    const item1 = await tablesDb.createRow({
+    const item1 = await tablesDb.upsertRow<ItemRow>({
       databaseId,
       tableId: itemsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.ITEMS.KEYBOARD,
       data: {
         wishlistId: wishlist1.$id,
         name: "Mechanical Keyboard",
@@ -113,10 +180,10 @@ async function seed() {
       },
     });
 
-    const _item2 = await tablesDb.createRow({
+    await tablesDb.upsertRow<ItemRow>({
       databaseId,
       tableId: itemsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.ITEMS.HEADPHONES,
       data: {
         wishlistId: wishlist1.$id,
         name: "Noise Cancelling Headphones",
@@ -126,14 +193,14 @@ async function seed() {
         currency: "USD",
         imageUrl:
           "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
-        totalQuantity: 2, // Multiple quantity
+        totalQuantity: 2,
       },
     });
 
-    const _item3 = await tablesDb.createRow({
+    await tablesDb.upsertRow<ItemRow>({
       databaseId,
       tableId: itemsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.ITEMS.JS_BOOK,
       data: {
         wishlistId: wishlist1.$id,
         name: "JavaScript: The Good Parts",
@@ -146,23 +213,22 @@ async function seed() {
       },
     });
 
-    const _item4 = await tablesDb.createRow({
+    await tablesDb.upsertRow<ItemRow>({
       databaseId,
       tableId: itemsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.ITEMS.SOCKS,
       data: {
         wishlistId: wishlist1.$id,
         name: "Cozy Wool Socks",
         priority: 4,
         isUnlimited: true,
-        // No image for this one
       },
     });
 
-    const _item5 = await tablesDb.createRow({
+    await tablesDb.upsertRow<ItemRow>({
       databaseId,
       tableId: itemsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.ITEMS.WATER_BOTTLE,
       data: {
         wishlistId: wishlist1.$id,
         name: "Simple Water Bottle",
@@ -175,10 +241,10 @@ async function seed() {
       },
     });
 
-    const item6 = await tablesDb.createRow({
+    const item6 = await tablesDb.upsertRow<ItemRow>({
       databaseId,
       tableId: itemsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.ITEMS.WATCH,
       data: {
         wishlistId: wishlist1.$id,
         name: "Luxury Watch",
@@ -192,10 +258,10 @@ async function seed() {
       },
     });
 
-    const item7 = await tablesDb.createRow({
+    const item7 = await tablesDb.upsertRow<ItemRow>({
       databaseId,
       tableId: itemsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.ITEMS.CAMERA,
       data: {
         wishlistId: wishlist1.$id,
         name: "Professional Camera",
@@ -203,7 +269,6 @@ async function seed() {
         priority: 1,
         price: 1200.0,
         currency: "USD",
-        // No image for this one
         totalQuantity: 1,
       },
     });
@@ -215,10 +280,10 @@ async function seed() {
       : "transactions";
 
     // Item 1: Partially reserved (1/3)
-    await tablesDb.createRow({
+    await tablesDb.upsertRow<TransactionRow>({
       databaseId,
       tableId: transactionsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.TRANSACTIONS.RESERVATION_1,
       data: {
         itemId: item1.$id,
         userId: user2.$id,
@@ -228,10 +293,10 @@ async function seed() {
     });
 
     // Item 6: Fully reserved (1/1)
-    await tablesDb.createRow({
+    await tablesDb.upsertRow<TransactionRow>({
       databaseId,
       tableId: transactionsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.TRANSACTIONS.RESERVATION_2,
       data: {
         itemId: item6.$id,
         userId: user2.$id,
@@ -241,10 +306,10 @@ async function seed() {
     });
 
     // Item 7: Fully purchased (1/1)
-    await tablesDb.createRow({
+    await tablesDb.upsertRow<TransactionRow>({
       databaseId,
       tableId: transactionsCollectionId,
-      rowId: ID.unique(),
+      rowId: SEED_IDS.TRANSACTIONS.PURCHASE_1,
       data: {
         itemId: item7.$id,
         userId: user2.$id,
