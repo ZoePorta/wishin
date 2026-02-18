@@ -167,8 +167,6 @@ const schema: CollectionSchema[] = [
       { key: "description", type: "string", required: false, size: 500 },
       { key: "visibility", type: "string", required: true, size: 20 },
       { key: "participation", type: "string", required: true, size: 20 },
-      { key: "createdAt", type: "datetime", required: true },
-      { key: "updatedAt", type: "datetime", required: true },
     ],
   },
   {
@@ -221,8 +219,6 @@ const schema: CollectionSchema[] = [
       { key: "guestSessionId", type: "string", required: false, size: 255 },
       { key: "status", type: "string", required: true, size: 20 },
       { key: "quantity", type: "integer", required: false, default: 1 },
-      { key: "createdAt", type: "datetime", required: true },
-      { key: "updatedAt", type: "datetime", required: true },
     ],
   },
 ];

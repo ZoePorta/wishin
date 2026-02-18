@@ -122,8 +122,6 @@ describe.skipIf(!shouldRun)(
           description: "Things I want for my birthday",
           visibility: Visibility.LINK,
           participation: Participation.ANYONE,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
         },
         // Note: Collection has read("any") permissions in provision.ts
       });
