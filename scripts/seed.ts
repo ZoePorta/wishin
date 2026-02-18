@@ -94,6 +94,7 @@ async function seed() {
     const itemsCollectionId = prefix
       ? `${prefix}_wishlist_items`
       : "wishlist_items";
+
     const item1 = await tablesDb.createRow({
       databaseId,
       tableId: itemsCollectionId,
@@ -106,9 +107,12 @@ async function seed() {
         price: 150.0,
         currency: "USD",
         url: "https://example.com/keyboard",
-        totalQuantity: 1,
+        imageUrl:
+          "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=800&q=80",
+        totalQuantity: 3,
       },
     });
+
     const _item2 = await tablesDb.createRow({
       databaseId,
       tableId: itemsCollectionId,
@@ -120,7 +124,86 @@ async function seed() {
         priority: 2,
         price: 300.0,
         currency: "USD",
-        url: "https://example.com/headphones",
+        imageUrl:
+          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
+        totalQuantity: 2, // Multiple quantity
+      },
+    });
+
+    const _item3 = await tablesDb.createRow({
+      databaseId,
+      tableId: itemsCollectionId,
+      rowId: ID.unique(),
+      data: {
+        wishlistId: wishlist1.$id,
+        name: "JavaScript: The Good Parts",
+        description: "A classic programming book",
+        priority: 3,
+        url: "https://example.com/js-book",
+        imageUrl:
+          "https://images.unsplash.com/photo-1589998059171-988d887df646?w=800&q=80",
+        totalQuantity: 1,
+      },
+    });
+
+    const _item4 = await tablesDb.createRow({
+      databaseId,
+      tableId: itemsCollectionId,
+      rowId: ID.unique(),
+      data: {
+        wishlistId: wishlist1.$id,
+        name: "Cozy Wool Socks",
+        priority: 4,
+        isUnlimited: true,
+        // No image for this one
+      },
+    });
+
+    const _item5 = await tablesDb.createRow({
+      databaseId,
+      tableId: itemsCollectionId,
+      rowId: ID.unique(),
+      data: {
+        wishlistId: wishlist1.$id,
+        name: "Simple Water Bottle",
+        priority: 5,
+        price: 20.0,
+        currency: "USD",
+        imageUrl:
+          "https://images.unsplash.com/photo-1523362622744-8c1303cc1014?w=800&q=80",
+        totalQuantity: 5,
+      },
+    });
+
+    const item6 = await tablesDb.createRow({
+      databaseId,
+      tableId: itemsCollectionId,
+      rowId: ID.unique(),
+      data: {
+        wishlistId: wishlist1.$id,
+        name: "Luxury Watch",
+        description: "A beautiful timepiece",
+        priority: 1,
+        price: 500.0,
+        currency: "USD",
+        imageUrl:
+          "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80",
+        totalQuantity: 1,
+      },
+    });
+
+    const item7 = await tablesDb.createRow({
+      databaseId,
+      tableId: itemsCollectionId,
+      rowId: ID.unique(),
+      data: {
+        wishlistId: wishlist1.$id,
+        name: "Professional Camera",
+        description: "For high-quality photography",
+        priority: 1,
+        price: 1200.0,
+        currency: "USD",
+        // No image for this one
         totalQuantity: 1,
       },
     });
@@ -130,6 +213,8 @@ async function seed() {
     const transactionsCollectionId = prefix
       ? `${prefix}_transactions`
       : "transactions";
+
+    // Item 1: Partially reserved (1/3)
     await tablesDb.createRow({
       databaseId,
       tableId: transactionsCollectionId,
@@ -138,6 +223,32 @@ async function seed() {
         itemId: item1.$id,
         userId: user2.$id,
         status: "reserved",
+        quantity: 1,
+      },
+    });
+
+    // Item 6: Fully reserved (1/1)
+    await tablesDb.createRow({
+      databaseId,
+      tableId: transactionsCollectionId,
+      rowId: ID.unique(),
+      data: {
+        itemId: item6.$id,
+        userId: user2.$id,
+        status: "reserved",
+        quantity: 1,
+      },
+    });
+
+    // Item 7: Fully purchased (1/1)
+    await tablesDb.createRow({
+      databaseId,
+      tableId: transactionsCollectionId,
+      rowId: ID.unique(),
+      data: {
+        itemId: item7.$id,
+        userId: user2.$id,
+        status: "purchased",
         quantity: 1,
       },
     });
