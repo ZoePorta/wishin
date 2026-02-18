@@ -102,8 +102,8 @@ export const MockWishlistService = {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    if (id === "test-wishlist-id") {
-      return MOCK_WISHLIST;
+    if (id === MOCK_WISHLIST.id) {
+      return { ...MOCK_WISHLIST };
     }
     return null;
   },

@@ -65,7 +65,9 @@ export default function WishlistDetail() {
             {wishlist.description}
           </Text>
         )}
-        <View style={[styles.divider, { backgroundColor: theme.slate200 }]} />
+        <View
+          style={[styles.divider, { backgroundColor: theme.surfaceMuted }]}
+        />
       </View>
     );
   }, [wishlist, theme]);
@@ -94,7 +96,7 @@ export default function WishlistDetail() {
         styles.card,
         {
           backgroundColor: theme.card,
-          borderColor: theme.slate100,
+          borderColor: theme.surfaceSubtle,
         },
       ]}
     >

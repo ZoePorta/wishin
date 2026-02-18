@@ -29,6 +29,25 @@ const palette = {
   black: "#000000",
 };
 
+/**
+ * App's themed color palette.
+ *
+ * @constant
+ * Returns a read-only theme color object for light and dark modes.
+ *
+ * Properties:
+ * - light/dark: Theme configuration
+ * - primary: Primary brand color
+ * - secondary: Secondary brand color
+ * - background: Page background color
+ * - card: Card/Surface background color
+ * - text: Default text color
+ * - textMuted: Muted/Secondary text color
+ * - surfaceSubtle: Subtle surface/border color (formerly slate100)
+ * - surfaceMuted: Muted surface/divider color (formerly slate200)
+ * - red100, amber100, sky100: Status background colors
+ * - gradientPrimary: Array of two color values [start, end] for primary gradient
+ */
 export const Colors = {
   light: {
     primary: palette.pink[400],
@@ -37,8 +56,8 @@ export const Colors = {
     card: palette.white,
     text: palette.slate[800],
     textMuted: palette.slate[500],
-    slate100: palette.slate[100],
-    slate200: palette.slate[200],
+    surfaceSubtle: palette.slate[100],
+    surfaceMuted: palette.slate[200],
     red100: palette.red[100],
     amber100: palette.amber[100],
     sky100: palette.sky[100],
@@ -52,8 +71,8 @@ export const Colors = {
     card: palette.slate[800], // #1E293B
     text: palette.white,
     textMuted: palette.slate[500],
-    slate100: palette.slate[800], // Map to dark equivalents if possible, or just keep distinct
-    slate200: palette.slate[700],
+    surfaceSubtle: palette.slate[800], // Map to dark equivalents if possible, or just keep distinct
+    surfaceMuted: palette.slate[700],
     red100: "#7F1D1D", // Dark red
     amber100: "#78350F", // Dark amber
     sky100: "#0C4A6E", // Dark sky
