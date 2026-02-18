@@ -11,7 +11,9 @@
     "prepare": "husky",
     "db:provision": "tsx scripts/provision.ts",
     "db:provision:test": "cross-env EXPO_PUBLIC_DB_PREFIX=test CLEANUP=true tsx scripts/provision.ts",
-    "db:reset": "cross-env CLEANUP=true tsx scripts/provision.ts"
+    "db:reset": "cross-env CLEANUP=true tsx scripts/provision.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:seed:test": "cross-env EXPO_PUBLIC_DB_PREFIX=test tsx scripts/seed.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.0",
