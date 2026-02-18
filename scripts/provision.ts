@@ -1,4 +1,11 @@
-import { Client, TablesDB, Query, type Models } from "node-appwrite";
+import {
+  Client,
+  TablesDB,
+  Query,
+  type Models,
+  RelationshipType,
+  RelationMutate,
+} from "node-appwrite";
 import "dotenv/config";
 
 const {
@@ -86,6 +93,19 @@ interface DatetimeAttribute extends BaseAttribute {
 }
 
 /**
+ * Properties for relationship attributes.
+ */
+interface RelationshipAttribute {
+  type: "relationship";
+  relatedCollectionId: string;
+  relationshipType: RelationshipType;
+  twoWay?: boolean;
+  key?: string;
+  twoWayKey?: string;
+  onDelete?: RelationMutate;
+}
+
+/**
  * Union type of all supported attribute definitions.
  */
 type Attribute =
@@ -93,7 +113,8 @@ type Attribute =
   | IntegerAttribute
   | BooleanAttribute
   | DoubleAttribute
-  | DatetimeAttribute;
+  | DatetimeAttribute
+  | RelationshipAttribute;
 
 /**
  * Represents the schema definition for an Appwrite collection (table).
@@ -135,7 +156,13 @@ const schema: CollectionSchema[] = [
     id: "wishlists",
     name: "Wishlists",
     attributes: [
-      { key: "ownerId", type: "string", required: true, size: 36 },
+      {
+        type: "relationship",
+        relatedCollectionId: "users",
+        relationshipType: RelationshipType.ManyToOne,
+        key: "ownerId",
+        onDelete: RelationMutate.Cascade,
+      },
       { key: "title", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
       { key: "visibility", type: "string", required: true, size: 20 },
@@ -148,7 +175,13 @@ const schema: CollectionSchema[] = [
     id: "wishlist_items",
     name: "Wishlist Items",
     attributes: [
-      { key: "wishlistId", type: "string", required: true, size: 36 },
+      {
+        type: "relationship",
+        relatedCollectionId: "wishlists",
+        relationshipType: RelationshipType.ManyToOne,
+        key: "wishlistId",
+        onDelete: RelationMutate.Cascade,
+      },
       { key: "name", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
       { key: "priority", type: "integer", required: true },
@@ -171,8 +204,20 @@ const schema: CollectionSchema[] = [
     id: "transactions",
     name: "Transactions",
     attributes: [
-      { key: "itemId", type: "string", required: true, size: 36 },
-      { key: "userId", type: "string", required: false, size: 36 },
+      {
+        type: "relationship",
+        relatedCollectionId: "wishlist_items",
+        relationshipType: RelationshipType.ManyToOne,
+        key: "itemId",
+        onDelete: RelationMutate.Cascade,
+      },
+      {
+        type: "relationship",
+        relatedCollectionId: "users",
+        relationshipType: RelationshipType.ManyToOne,
+        key: "userId",
+        onDelete: RelationMutate.Cascade,
+      },
       { key: "guestSessionId", type: "string", required: false, size: 255 },
       { key: "status", type: "string", required: true, size: 20 },
       { key: "quantity", type: "integer", required: false, default: 1 },
@@ -264,12 +309,12 @@ async function provision() {
       }
     }
 
-    // 2. Collections & Attributes
+    // 2. Collections (Create all first)
+    // We need to create all collections first so we can link them with relationships
     for (const coll of schema) {
       const collectionId = prefix ? `${prefix}_${coll.id}` : coll.id;
-      let collection;
       try {
-        collection = await tablesDb.getTable({
+        await tablesDb.getTable({
           databaseId,
           tableId: collectionId,
         });
@@ -278,7 +323,7 @@ async function provision() {
         );
       } catch (error: unknown) {
         if (isAppwriteError(error) && error.code === 404) {
-          collection = await tablesDb.createTable({
+          await tablesDb.createTable({
             databaseId,
             tableId: collectionId,
             name: coll.name,
@@ -291,12 +336,58 @@ async function provision() {
           throw error;
         }
       }
+    }
 
-      // Check Attributes
+    // 3. Attributes (and Relationships)
+    for (const coll of schema) {
+      const collectionId = prefix ? `${prefix}_${coll.id}` : coll.id;
+      const collection = await tablesDb.getTable({
+        databaseId,
+        tableId: collectionId,
+      });
+
       const existingAttributes = (collection.columns as { key: string }[]).map(
         (a) => a.key,
       );
+
       for (const attr of coll.attributes) {
+        // Handle Relationships
+        if (attr.type === "relationship") {
+          const relatedCollectionId = prefix
+            ? `${prefix}_${attr.relatedCollectionId}`
+            : attr.relatedCollectionId;
+
+          // Check if relationship exists (this is a bit tricky as key might not be directly exposed in simple list if not expanded, but columns usually show it)
+          // For now, simple check like other attributes:
+          if (attr.key && existingAttributes.includes(attr.key)) {
+            continue;
+          }
+
+          console.log(
+            `Creating relationship "${attr.key ?? "unknown"}" in "${collectionId}" linking to "${relatedCollectionId}"...`,
+          );
+          await tablesDb.createRelationshipColumn({
+            databaseId,
+            tableId: collectionId,
+            relatedTableId: relatedCollectionId,
+            type: attr.relationshipType,
+            twoWay: attr.twoWay,
+            key: attr.key,
+            twoWayKey: attr.twoWayKey,
+            onDelete: attr.onDelete,
+          });
+
+          if (attr.key) {
+            await waitForAttribute(
+              tablesDb,
+              databaseId,
+              collectionId,
+              attr.key,
+            );
+          }
+          continue;
+        }
+
         if (existingAttributes.includes(attr.key)) {
           // console.log(`Attribute "${attr.key}" in "${collectionId}" already exists.`);
           continue;

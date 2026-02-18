@@ -29,7 +29,9 @@ describe.skipIf(!shouldRun)(
     let repository: AppwriteWishlistRepository;
     let databaseId: string;
     let wishlistCollectionId: string;
+
     let wishlistItemsCollectionId: string;
+    let usersCollectionId: string;
 
     beforeAll(() => {
       const endpoint = EXPO_PUBLIC_APPWRITE_ENDPOINT!;
@@ -49,7 +51,9 @@ describe.skipIf(!shouldRun)(
       client = createAppwriteClient(endpoint, projectId);
 
       wishlistCollectionId = `${prefix}_wishlists`;
+
       wishlistItemsCollectionId = `${prefix}_wishlist_items`;
+      usersCollectionId = `${prefix}_users`;
 
       repository = new AppwriteWishlistRepository(
         client,
@@ -83,9 +87,30 @@ describe.skipIf(!shouldRun)(
       } catch {
         // Ignore if not found
       }
+
+      try {
+        await tablesDb.deleteRow({
+          databaseId,
+          tableId: usersCollectionId,
+          rowId: ownerId,
+        });
+      } catch {
+        // Ignore if not found
+      }
     });
 
     it("should find a wishlist by id including its items", async () => {
+      // 0. Seed User (Required for relationship)
+      await tablesDb.createRow({
+        databaseId,
+        tableId: usersCollectionId,
+        rowId: ownerId,
+        data: {
+          email: "test@example.com",
+          username: "testuser",
+        },
+      });
+
       // 1. Seed Wishlist
       await tablesDb.createRow({
         databaseId,
