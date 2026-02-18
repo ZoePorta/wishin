@@ -1,4 +1,11 @@
-import { Client, TablesDB, Query, type Models } from "node-appwrite";
+import {
+  Client,
+  TablesDB,
+  Query,
+  type Models,
+  RelationshipType,
+  RelationMutate,
+} from "node-appwrite";
 import "dotenv/config";
 
 const {
@@ -86,6 +93,18 @@ interface DatetimeAttribute extends BaseAttribute {
 }
 
 /**
+ * Properties for relationship attributes.
+ */
+interface RelationshipAttribute extends BaseAttribute {
+  type: "relationship";
+  relatedCollectionId: string;
+  relationshipType: RelationshipType;
+  twoWay?: boolean;
+  twoWayKey?: string;
+  onDelete?: RelationMutate;
+}
+
+/**
  * Union type of all supported attribute definitions.
  */
 type Attribute =
@@ -93,7 +112,8 @@ type Attribute =
   | IntegerAttribute
   | BooleanAttribute
   | DoubleAttribute
-  | DatetimeAttribute;
+  | DatetimeAttribute
+  | RelationshipAttribute;
 
 /**
  * Represents the schema definition for an Appwrite collection (table).
@@ -117,6 +137,13 @@ function isAppwriteError(
 }
 
 /**
+ * Helper to ensure exhaustive switch cases.
+ */
+function assertUnreachable(x: never): never {
+  throw new Error(`Didn't expect to get here: ${JSON.stringify(x as unknown)}`);
+}
+
+/**
  * The infrastructure schema definition for the Wishin project.
  * Defines collections and their attributes for Users, Wishlists, Items, and Transactions.
  */
@@ -135,20 +162,32 @@ const schema: CollectionSchema[] = [
     id: "wishlists",
     name: "Wishlists",
     attributes: [
-      { key: "ownerId", type: "string", required: true, size: 36 },
+      {
+        type: "relationship",
+        relatedCollectionId: "users",
+        relationshipType: RelationshipType.ManyToOne,
+        key: "ownerId",
+        onDelete: RelationMutate.Cascade,
+        required: false,
+      },
       { key: "title", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
       { key: "visibility", type: "string", required: true, size: 20 },
       { key: "participation", type: "string", required: true, size: 20 },
-      { key: "createdAt", type: "datetime", required: true },
-      { key: "updatedAt", type: "datetime", required: true },
     ],
   },
   {
     id: "wishlist_items",
     name: "Wishlist Items",
     attributes: [
-      { key: "wishlistId", type: "string", required: true, size: 36 },
+      {
+        type: "relationship",
+        relatedCollectionId: "wishlists",
+        relationshipType: RelationshipType.ManyToOne,
+        key: "wishlistId",
+        onDelete: RelationMutate.Cascade,
+        required: false,
+      },
       { key: "name", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
       { key: "priority", type: "integer", required: true },
@@ -158,26 +197,31 @@ const schema: CollectionSchema[] = [
       { key: "imageUrl", type: "string", required: false, size: 2048 },
       { key: "isUnlimited", type: "boolean", required: false, default: false },
       { key: "totalQuantity", type: "integer", required: false, default: 1 },
-      { key: "reservedQuantity", type: "integer", required: false, default: 0 },
-      {
-        key: "purchasedQuantity",
-        type: "integer",
-        required: false,
-        default: 0,
-      },
     ],
   },
   {
     id: "transactions",
     name: "Transactions",
     attributes: [
-      { key: "itemId", type: "string", required: true, size: 36 },
-      { key: "userId", type: "string", required: false, size: 36 },
+      {
+        type: "relationship",
+        relatedCollectionId: "wishlist_items",
+        relationshipType: RelationshipType.ManyToOne,
+        key: "itemId",
+        onDelete: RelationMutate.SetNull,
+        required: false,
+      },
+      {
+        type: "relationship",
+        relatedCollectionId: "users",
+        relationshipType: RelationshipType.ManyToOne,
+        key: "userId",
+        onDelete: RelationMutate.SetNull,
+        required: false,
+      },
       { key: "guestSessionId", type: "string", required: false, size: 255 },
       { key: "status", type: "string", required: true, size: 20 },
       { key: "quantity", type: "integer", required: false, default: 1 },
-      { key: "createdAt", type: "datetime", required: true },
-      { key: "updatedAt", type: "datetime", required: true },
     ],
   },
 ];
@@ -199,7 +243,10 @@ async function cleanup() {
 
   console.log(`Cleaning up collections with prefix "${prefix}_"...`);
   try {
+    const tablesToDelete: Models.Table[] = [];
     let cursor: string | undefined = undefined;
+
+    // 1. Collect all tables
     do {
       const result: Models.TableList = await tablesDb.listTables({
         databaseId,
@@ -211,11 +258,7 @@ async function cleanup() {
 
       for (const table of result.tables) {
         if (table.$id.startsWith(`${prefix}_`)) {
-          console.log(`Deleting collection "${table.name}" (${table.$id})...`);
-          await tablesDb.deleteTable({
-            databaseId,
-            tableId: table.$id,
-          });
+          tablesToDelete.push(table);
         }
       }
 
@@ -229,6 +272,132 @@ async function cleanup() {
         cursor = undefined;
       }
     } while (cursor);
+
+    // 2. Sort tables by dependency order (delete children first)
+    // Build dependency graph from schema
+    const adjacencyList = new Map<string, string[]>();
+    const collectionIds = new Set<string>();
+
+    // Initialize graph
+    for (const coll of schema) {
+      const fullId = prefix ? `${prefix}_${coll.id}` : coll.id;
+      collectionIds.add(fullId);
+      adjacencyList.set(fullId, []);
+    }
+
+    // Populate edges (dependency -> dependent)
+    // If A has a relationship to B, A depends on B.
+    // To delete safely, we should delete A before B.
+    // So edge B -> A means "B must be deleted after A" ??
+    // Wait, if A has FK to B. We must delete A first.
+    // So the order is A, then B.
+    // Let's count "indegree" as number of things depending on it?
+    // Let's do a simple topological sort where edges are "depends on".
+    // A depends on B.
+    // We want to delete A first.
+    // Sort: dependents first.
+
+    // Let's define edge: X -> Y means X depends on Y.
+    // Topo sort gives Y after X? No, usually reverse.
+    // Let's just follow the logic:
+    // transactions depends on wishlist_items
+    // wishlist_items depends on wishlists
+    // wishlists depends on users
+    // Deletion order: transactions, wishlist_items, wishlists, users.
+    // So we want to delete "dependers" first.
+
+    // internal logic:
+    // orderedIds should be [transactions, wishlist_items, wishlists, users]
+
+    const graph = new Map<string, Set<string>>(); // Node -> Dependencies
+    for (const coll of schema) {
+      const collId = prefix ? `${prefix}_${coll.id}` : coll.id;
+      if (!graph.has(collId)) graph.set(collId, new Set());
+
+      for (const attr of coll.attributes) {
+        if (attr.type === "relationship") {
+          const relatedId = prefix
+            ? `${prefix}_${attr.relatedCollectionId}`
+            : attr.relatedCollectionId;
+
+          // collId depends on relatedId
+          graph.get(collId)?.add(relatedId);
+        }
+      }
+    }
+
+    const visited = new Set<string>();
+    const orderedIds: string[] = [];
+
+    const visit = (node: string) => {
+      if (visited.has(node)) return;
+      visited.add(node);
+
+      const dependencies = graph.get(node) ?? new Set();
+      for (const dep of dependencies) {
+        // We are doing a post-order traversal to get dependencies last
+        // But we want to delete dependencies LAST.
+        // So if A depends on B, we want A before B.
+        // Standard topo sort (DFS post-order) gives B then A.
+        // So we can just reverse the standard topo sort result?
+        // Or build it differently.
+
+        // Let's stick to standard DFS topo sort:
+        // visit children (dependencies). adding them to list.
+        // finally add self.
+        // Result: [B, A]
+        // Delete order: A, B.
+        // So we want the reverse of standard topo sort.
+        visit(dep);
+      }
+      orderedIds.push(node);
+    };
+
+    // Make sure we visit all nodes in schema
+    for (const coll of schema) {
+      const collId = prefix ? `${prefix}_${coll.id}` : coll.id;
+      visit(collId);
+    }
+
+    // orderedIds is now [users, wishlists, wishlist_items, transactions] (approx)
+    // We want to delete dependent (transactions) first.
+    // So we want the REVERSE of this.
+    // Wait, let's trace:
+    // visit(transactions) -> visit(wishlist_items) -> visit(wishlists) -> visit(users) -> push(users)
+    // -> push(wishlists)
+    // -> push(wishlist_items)
+    // -> push(transactions)
+    // So orderedIds = [users, wishlists, wishlist_items, transactions]
+    // We want to delete transactions FIRST.
+    // So we reverse orderedIds.
+    orderedIds.reverse();
+
+    tablesToDelete.sort((a, b) => {
+      const indexA = orderedIds.indexOf(a.$id);
+      const indexB = orderedIds.indexOf(b.$id);
+
+      // If both are in the known order list, sort by index
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+
+      // If only A is in the list, it should come first
+      if (indexA !== -1) return -1;
+      // If only B is in the list, it should come first
+      if (indexB !== -1) return 1;
+
+      // Otherwise, keep original relative order
+      return 0;
+    });
+
+    // 3. Delete tables
+    for (const table of tablesToDelete) {
+      console.log(`Deleting collection "${table.name}" (${table.$id})...`);
+      await tablesDb.deleteTable({
+        databaseId,
+        tableId: table.$id,
+      });
+    }
   } catch (error: unknown) {
     if (isAppwriteError(error) && error.code === 404) {
       console.log(`Database "${databaseId}" not found. Skipping cleanup.`);
@@ -264,12 +433,12 @@ async function provision() {
       }
     }
 
-    // 2. Collections & Attributes
+    // 2. Collections (Create all first)
+    // We need to create all collections first so we can link them with relationships
     for (const coll of schema) {
       const collectionId = prefix ? `${prefix}_${coll.id}` : coll.id;
-      let collection;
       try {
-        collection = await tablesDb.getTable({
+        await tablesDb.getTable({
           databaseId,
           tableId: collectionId,
         });
@@ -278,7 +447,7 @@ async function provision() {
         );
       } catch (error: unknown) {
         if (isAppwriteError(error) && error.code === 404) {
-          collection = await tablesDb.createTable({
+          await tablesDb.createTable({
             databaseId,
             tableId: collectionId,
             name: coll.name,
@@ -291,12 +460,51 @@ async function provision() {
           throw error;
         }
       }
+    }
 
-      // Check Attributes
+    // 3. Attributes (and Relationships)
+    for (const coll of schema) {
+      const collectionId = prefix ? `${prefix}_${coll.id}` : coll.id;
+      const collection = await tablesDb.getTable({
+        databaseId,
+        tableId: collectionId,
+      });
+
       const existingAttributes = (collection.columns as { key: string }[]).map(
         (a) => a.key,
       );
+
       for (const attr of coll.attributes) {
+        // Handle Relationships
+        if (attr.type === "relationship") {
+          const relatedCollectionId = prefix
+            ? `${prefix}_${attr.relatedCollectionId}`
+            : attr.relatedCollectionId;
+
+          // Check if relationship exists (this is a bit tricky as key might not be directly exposed in simple list if not expanded, but columns usually show it)
+          // For now, simple check like other attributes:
+          if (existingAttributes.includes(attr.key)) {
+            continue;
+          }
+
+          console.log(
+            `Creating relationship "${attr.key}" in "${collectionId}" linking to "${relatedCollectionId}"...`,
+          );
+          await tablesDb.createRelationshipColumn({
+            databaseId,
+            tableId: collectionId,
+            relatedTableId: relatedCollectionId,
+            type: attr.relationshipType,
+            twoWay: attr.twoWay,
+            key: attr.key,
+            twoWayKey: attr.twoWayKey,
+            onDelete: attr.onDelete,
+          });
+
+          await waitForAttribute(tablesDb, databaseId, collectionId, attr.key);
+          continue;
+        }
+
         if (existingAttributes.includes(attr.key)) {
           // console.log(`Attribute "${attr.key}" in "${collectionId}" already exists.`);
           continue;
@@ -350,6 +558,8 @@ async function provision() {
               xdefault: attr.default,
             });
             break;
+          default:
+            assertUnreachable(attr);
         }
 
         // Wait for attribute to be ready
@@ -366,6 +576,16 @@ async function provision() {
 
 void provision();
 
+/**
+ * Polls a table until a specific attribute becomes available.
+ *
+ * @param tablesDb - The Appwrite TablesDB instance.
+ * @param databaseId - The ID of the database.
+ * @param collectionId - The ID of the collection (table).
+ * @param key - The key (name) of the attribute to wait for.
+ * @returns A Promise that resolves when the attribute is ready.
+ * @throws {Error} If the attribute fails to become available after the timeout.
+ */
 async function waitForAttribute(
   tablesDb: TablesDB,
   databaseId: string,
@@ -399,6 +619,8 @@ async function waitForAttribute(
   }
 
   if (!isReady) {
-    throw new Error(`Attribute "${key}" failed to become available.`);
+    throw new Error(
+      `Attribute "${key}" in collection "${collectionId}" failed to become available.`,
+    );
   }
 }
