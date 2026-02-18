@@ -60,6 +60,9 @@ The project uses Appwrite as a BaaS. To manage namespacing and idempotency acros
 
 Ensure your `.env` file (copied from `.env.example`) contains:
 
+- `EXPO_PUBLIC_APPWRITE_ENDPOINT`: Your Appwrite API endpoint.
+- `EXPO_PUBLIC_APPWRITE_PROJECT_ID`: Your Appwrite project ID.
+- `EXPO_PUBLIC_APPWRITE_DATABASE_ID`: The ID of the database to use.
 - `APPWRITE_API_SECRET`: Required for server-side management.
 - `EXPO_PUBLIC_DB_PREFIX`: Prefix for collections (e.g., `dev`, `test`).
 
@@ -69,6 +72,8 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 | :------------------------- | :---------------------------------------------------------------------------------- |
 | `npm run db:provision`     | Idempotent creation of DB, collections, and attributes using the `.env` prefix.     |
 | `npm run db:reset`         | **Destructive**: Deletes all collections matching current prefix and re-provisions. |
+| `npm run db:seed`          | Populates the database with test data.                                              |
+| `npm run db:seed:test`     | Populates the test database with test data.                                         |
 | `npm run test:integration` | Automates `test` prefix provisioning, cleanup, and runs the test suite.             |
 
 ## Architectural Decision Records (ADR)
