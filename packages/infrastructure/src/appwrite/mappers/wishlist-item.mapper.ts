@@ -62,8 +62,9 @@ export const WishlistItemMapper = {
   /**
    * Converts an Appwrite document to a WishlistItem domain entity.
    * @param doc - The Appwrite document from the wishlist_items collection.
-   * @param reservedQuantity - Calculated reserved quantity (default: 0).
-   * @param purchasedQuantity - Calculated purchased quantity (default: 0).
+   * @param options - Optional parameters for quantity calculations.
+   * @param options.reservedQuantity - Calculated reserved quantity (default: 0).
+   * @param options.purchasedQuantity - Calculated purchased quantity (default: 0).
    * @returns A reconstituted WishlistItem domain entity.
    */
   toDomain(
@@ -84,8 +85,8 @@ export const WishlistItemMapper = {
       imageUrl: data.imageUrl ?? undefined,
       isUnlimited: data.isUnlimited,
       totalQuantity: data.totalQuantity,
-      reservedQuantity: reservedQuantity,
-      purchasedQuantity: purchasedQuantity,
+      reservedQuantity,
+      purchasedQuantity,
     });
   },
 };

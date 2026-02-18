@@ -5,11 +5,8 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import {
-  type WishlistRepository,
-  Wishlist,
-  TransactionStatus,
-} from "@wishin/domain";
+import type { WishlistRepository } from "@wishin/domain";
+import { Wishlist, TransactionStatus } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
 import { toDocument } from "../utils/to-document";
@@ -76,28 +73,38 @@ export class AppwriteWishlistRepository implements WishlistRepository {
       // 3. Fetch Transactions for items (if any items exist)
       const transactions: TransactionDocument[] = [];
       if (itemIds.length > 0) {
-        let cursor: string | undefined = undefined;
-        do {
-          const queries = [Query.equal("itemId", itemIds), Query.limit(100)];
-          if (cursor) {
-            queries.push(Query.cursorAfter(cursor));
-          }
+        // Appwrite has a hard limit of 100 values for Query.equal
+        // We must batch the queries if we have more than 100 items
+        const CHUNK_SIZE = 100;
+        const chunks = [];
+        for (let i = 0; i < itemIds.length; i += CHUNK_SIZE) {
+          chunks.push(itemIds.slice(i, i + CHUNK_SIZE));
+        }
 
-          const response = await this.tablesDb.listRows({
-            databaseId: this.databaseId,
-            tableId: this.transactionsCollectionId,
-            queries,
-          });
+        for (const chunk of chunks) {
+          let cursor: string | undefined = undefined;
+          do {
+            const queries = [Query.equal("itemId", chunk), Query.limit(100)];
+            if (cursor) {
+              queries.push(Query.cursorAfter(cursor));
+            }
 
-          const docs = toDocument<TransactionDocument[]>(response.rows);
-          transactions.push(...docs);
+            const response = await this.tablesDb.listRows({
+              databaseId: this.databaseId,
+              tableId: this.transactionsCollectionId,
+              queries,
+            });
 
-          if (response.rows.length < 100) {
-            cursor = undefined;
-          } else {
-            cursor = response.rows[response.rows.length - 1].$id;
-          }
-        } while (cursor);
+            const docs = toDocument<TransactionDocument[]>(response.rows);
+            transactions.push(...docs);
+
+            if (response.rows.length < 100) {
+              cursor = undefined;
+            } else {
+              cursor = response.rows[response.rows.length - 1].$id;
+            }
+          } while (cursor);
+        }
       }
 
       // 4. Calculate Quantities & Map

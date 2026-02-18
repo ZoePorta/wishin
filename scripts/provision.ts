@@ -95,12 +95,11 @@ interface DatetimeAttribute extends BaseAttribute {
 /**
  * Properties for relationship attributes.
  */
-interface RelationshipAttribute {
+interface RelationshipAttribute extends BaseAttribute {
   type: "relationship";
   relatedCollectionId: string;
   relationshipType: RelationshipType;
   twoWay?: boolean;
-  key: string;
   twoWayKey?: string;
   onDelete?: RelationMutate;
 }
@@ -138,6 +137,13 @@ function isAppwriteError(
 }
 
 /**
+ * Helper to ensure exhaustive switch cases.
+ */
+function assertUnreachable(x: never): never {
+  throw new Error(`Didn't expect to get here: ${JSON.stringify(x as unknown)}`);
+}
+
+/**
  * The infrastructure schema definition for the Wishin project.
  * Defines collections and their attributes for Users, Wishlists, Items, and Transactions.
  */
@@ -162,6 +168,7 @@ const schema: CollectionSchema[] = [
         relationshipType: RelationshipType.ManyToOne,
         key: "ownerId",
         onDelete: RelationMutate.Cascade,
+        required: false,
       },
       { key: "title", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
@@ -179,6 +186,7 @@ const schema: CollectionSchema[] = [
         relationshipType: RelationshipType.ManyToOne,
         key: "wishlistId",
         onDelete: RelationMutate.Cascade,
+        required: false,
       },
       { key: "name", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
@@ -201,6 +209,7 @@ const schema: CollectionSchema[] = [
         relationshipType: RelationshipType.ManyToOne,
         key: "itemId",
         onDelete: RelationMutate.Cascade,
+        required: false,
       },
       {
         type: "relationship",
@@ -208,6 +217,7 @@ const schema: CollectionSchema[] = [
         relationshipType: RelationshipType.ManyToOne,
         key: "userId",
         onDelete: RelationMutate.Cascade,
+        required: false,
       },
       { key: "guestSessionId", type: "string", required: false, size: 255 },
       { key: "status", type: "string", required: true, size: 20 },
@@ -264,17 +274,107 @@ async function cleanup() {
     } while (cursor);
 
     // 2. Sort tables by dependency order (delete children first)
-    // Order: transactions -> wishlist_items -> wishlists -> users
-    const deleteOrder = [
-      `${prefix}_transactions`,
-      `${prefix}_wishlist_items`,
-      `${prefix}_wishlists`,
-      `${prefix}_users`,
-    ];
+    // Build dependency graph from schema
+    const adjacencyList = new Map<string, string[]>();
+    const collectionIds = new Set<string>();
+
+    // Initialize graph
+    for (const coll of schema) {
+      const fullId = prefix ? `${prefix}_${coll.id}` : coll.id;
+      collectionIds.add(fullId);
+      adjacencyList.set(fullId, []);
+    }
+
+    // Populate edges (dependency -> dependent)
+    // If A has a relationship to B, A depends on B.
+    // To delete safely, we should delete A before B.
+    // So edge B -> A means "B must be deleted after A" ??
+    // Wait, if A has FK to B. We must delete A first.
+    // So the order is A, then B.
+    // Let's count "indegree" as number of things depending on it?
+    // Let's do a simple topological sort where edges are "depends on".
+    // A depends on B.
+    // We want to delete A first.
+    // Sort: dependents first.
+
+    // Let's define edge: X -> Y means X depends on Y.
+    // Topo sort gives Y after X? No, usually reverse.
+    // Let's just follow the logic:
+    // transactions depends on wishlist_items
+    // wishlist_items depends on wishlists
+    // wishlists depends on users
+    // Deletion order: transactions, wishlist_items, wishlists, users.
+    // So we want to delete "dependers" first.
+
+    // internal logic:
+    // orderedIds should be [transactions, wishlist_items, wishlists, users]
+
+    const graph = new Map<string, Set<string>>(); // Node -> Dependencies
+    for (const coll of schema) {
+      const collId = prefix ? `${prefix}_${coll.id}` : coll.id;
+      if (!graph.has(collId)) graph.set(collId, new Set());
+
+      for (const attr of coll.attributes) {
+        if (attr.type === "relationship") {
+          const relatedId = prefix
+            ? `${prefix}_${attr.relatedCollectionId}`
+            : attr.relatedCollectionId;
+
+          // collId depends on relatedId
+          graph.get(collId)?.add(relatedId);
+        }
+      }
+    }
+
+    const visited = new Set<string>();
+    const orderedIds: string[] = [];
+
+    const visit = (node: string) => {
+      if (visited.has(node)) return;
+      visited.add(node);
+
+      const dependencies = graph.get(node) ?? new Set();
+      for (const dep of dependencies) {
+        // We are doing a post-order traversal to get dependencies last
+        // But we want to delete dependencies LAST.
+        // So if A depends on B, we want A before B.
+        // Standard topo sort (DFS post-order) gives B then A.
+        // So we can just reverse the standard topo sort result?
+        // Or build it differently.
+
+        // Let's stick to standard DFS topo sort:
+        // visit children (dependencies). adding them to list.
+        // finally add self.
+        // Result: [B, A]
+        // Delete order: A, B.
+        // So we want the reverse of standard topo sort.
+        visit(dep);
+      }
+      orderedIds.push(node);
+    };
+
+    // Make sure we visit all nodes in schema
+    for (const coll of schema) {
+      const collId = prefix ? `${prefix}_${coll.id}` : coll.id;
+      visit(collId);
+    }
+
+    // orderedIds is now [users, wishlists, wishlist_items, transactions] (approx)
+    // We want to delete dependent (transactions) first.
+    // So we want the REVERSE of this.
+    // Wait, let's trace:
+    // visit(transactions) -> visit(wishlist_items) -> visit(wishlists) -> visit(users) -> push(users)
+    // -> push(wishlists)
+    // -> push(wishlist_items)
+    // -> push(transactions)
+    // So orderedIds = [users, wishlists, wishlist_items, transactions]
+    // We want to delete transactions FIRST.
+    // So we reverse orderedIds.
+    orderedIds.reverse();
 
     tablesToDelete.sort((a, b) => {
-      const indexA = deleteOrder.indexOf(a.$id);
-      const indexB = deleteOrder.indexOf(b.$id);
+      const indexA = orderedIds.indexOf(a.$id);
+      const indexB = orderedIds.indexOf(b.$id);
 
       // If both are in the known order list, sort by index
       if (indexA !== -1 && indexB !== -1) {
@@ -458,6 +558,8 @@ async function provision() {
               xdefault: attr.default,
             });
             break;
+          default:
+            assertUnreachable(attr);
         }
 
         // Wait for attribute to be ready
@@ -517,6 +619,8 @@ async function waitForAttribute(
   }
 
   if (!isReady) {
-    throw new Error(`Attribute "${key}" failed to become available.`);
+    throw new Error(
+      `Attribute "${key}" in collection "${collectionId}" failed to become available.`,
+    );
   }
 }
