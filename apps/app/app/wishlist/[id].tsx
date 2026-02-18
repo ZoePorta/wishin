@@ -30,6 +30,7 @@ export default function WishlistDetail() {
   const [error, setError] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const themedStyles = useMemo(() => getThemedStyles(theme), [theme]);
 
   const fetchIdRef = useRef(0);
 
@@ -71,35 +72,23 @@ export default function WishlistDetail() {
     if (!wishlist) return null;
     return (
       <View style={styles.header}>
-        <Text style={[styles.wishlistTitle, { color: theme.text }]}>
+        <Text style={[styles.wishlistTitle, themedStyles.text]}>
           {wishlist.title}
         </Text>
         {wishlist.description && (
-          <Text
-            style={[styles.wishlistDescription, { color: theme.textMuted }]}
-          >
+          <Text style={[styles.wishlistDescription, themedStyles.textMuted]}>
             {wishlist.description}
           </Text>
         )}
-        <View
-          style={[styles.divider, { backgroundColor: theme.surfaceMuted }]}
-        />
+        <View style={[styles.divider, themedStyles.surfaceMuted]} />
       </View>
     );
-  }, [wishlist, theme]);
+  }, [wishlist, themedStyles]);
 
   // Hoisted renderItem
   const renderItem = useCallback(
     ({ item }: { item: WishlistItem }) => (
-      <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: theme.card,
-            borderColor: theme.surfaceSubtle,
-          },
-        ]}
-      >
+      <View style={[styles.card, themedStyles.card]}>
         {item.imageUrl && (
           <Image
             source={{ uri: item.imageUrl }}
@@ -111,20 +100,8 @@ export default function WishlistDetail() {
 
         {/* Reserved Overlay moved here to cover image + content */}
         {item.isReserved && (
-          <View
-            style={[
-              styles.reservedOverlay,
-              {
-                backgroundColor: theme.overlay,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.reservedText,
-                { color: theme.text, borderColor: theme.text },
-              ]}
-            >
+          <View style={[styles.reservedOverlay, themedStyles.overlay]}>
+            <Text style={[styles.reservedText, themedStyles.reservedText]}>
               RESERVED
             </Text>
           </View>
@@ -132,11 +109,11 @@ export default function WishlistDetail() {
 
         <View style={styles.cardContent}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.itemTitle, { color: theme.text }]}>
+            <Text style={[styles.itemTitle, themedStyles.text]}>
               {item.title}
             </Text>
             {item.price != null && (
-              <Text style={[styles.itemPrice, { color: theme.primary }]}>
+              <Text style={[styles.itemPrice, themedStyles.primaryText]}>
                 {item.currency} {item.price.toFixed(2)}
               </Text>
             )}
@@ -144,7 +121,7 @@ export default function WishlistDetail() {
 
           {item.description && (
             <Text
-              style={[styles.itemDescription, { color: theme.textMuted }]}
+              style={[styles.itemDescription, themedStyles.textMuted]}
               numberOfLines={2}
             >
               {item.description}
@@ -155,17 +132,14 @@ export default function WishlistDetail() {
             <View
               style={[
                 styles.priorityBadge,
-                {
-                  backgroundColor:
-                    item.priority === "high"
-                      ? theme.red100
-                      : item.priority === "medium"
-                        ? theme.amber100
-                        : theme.sky100,
-                },
+                item.priority === "high"
+                  ? themedStyles.priorityHigh
+                  : item.priority === "medium"
+                    ? themedStyles.priorityMedium
+                    : themedStyles.priorityLow,
               ]}
             >
-              <Text style={[styles.priorityText, { color: theme.text }]}>
+              <Text style={[styles.priorityText, themedStyles.text]}>
                 {item.priority.toUpperCase()}
               </Text>
             </View>
@@ -174,14 +148,14 @@ export default function WishlistDetail() {
               <Pressable
                 style={({ pressed }) => [
                   styles.linkButton,
-                  pressed && { opacity: 0.7 },
+                  pressed && styles.pressed,
                 ]}
                 hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
                 onPress={() => item.url && void Linking.openURL(item.url)}
                 accessibilityLabel={`View Online, ${item.title}`}
                 accessibilityRole="link"
               >
-                <Text style={[styles.linkText, { color: theme.secondary }]}>
+                <Text style={[styles.linkText, themedStyles.secondaryText]}>
                   View Online
                 </Text>
               </Pressable>
@@ -190,14 +164,12 @@ export default function WishlistDetail() {
         </View>
       </View>
     ),
-    [theme],
+    [themedStyles],
   );
 
   if (loading) {
     return (
-      <View
-        style={[styles.centerContainer, { backgroundColor: theme.background }]}
-      >
+      <View style={[styles.centerContainer, themedStyles.background]}>
         <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
@@ -205,19 +177,15 @@ export default function WishlistDetail() {
 
   if (error) {
     return (
-      <View
-        style={[styles.centerContainer, { backgroundColor: theme.background }]}
-      >
-        <Text style={[styles.errorText, { color: theme.textMuted }]}>
-          {error}
-        </Text>
+      <View style={[styles.centerContainer, themedStyles.background]}>
+        <Text style={[styles.errorText, themedStyles.textMuted]}>{error}</Text>
         <Pressable
           onPress={() => void loadWishlist()}
           style={styles.retryButton}
           accessibilityRole="button"
           accessibilityLabel="Retry loading wishlist"
         >
-          <Text style={[styles.retryText, { color: theme.primary }]}>
+          <Text style={[styles.retryText, themedStyles.primaryText]}>
             Tap to Retry
           </Text>
         </Pressable>
@@ -227,10 +195,8 @@ export default function WishlistDetail() {
 
   if (!wishlist) {
     return (
-      <View
-        style={[styles.centerContainer, { backgroundColor: theme.background }]}
-      >
-        <Text style={[styles.errorText, { color: theme.textMuted }]}>
+      <View style={[styles.centerContainer, themedStyles.background]}>
+        <Text style={[styles.errorText, themedStyles.textMuted]}>
           Wishlist not found.
         </Text>
       </View>
@@ -241,15 +207,12 @@ export default function WishlistDetail() {
     <>
       <Stack.Screen options={{ title: wishlist.title }} />
       <FlatList
-        contentContainerStyle={[
-          styles.listContent,
-          { backgroundColor: theme.background },
-        ]}
+        contentContainerStyle={[styles.listContent, themedStyles.background]}
         data={wishlist.items}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={ListHeader}
-        style={{ backgroundColor: theme.background }}
+        style={themedStyles.background}
       />
     </>
   );
@@ -260,6 +223,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  pressed: {
+    opacity: 0.7,
   },
   errorText: {
     fontSize: 18,
@@ -374,3 +340,52 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "-5deg" }],
   },
 });
+
+/**
+ * Creates dynamic styles based on the current theme.
+ *
+ * @param theme - The current theme colors.
+ * @returns A style object with themed properties.
+ */
+function getThemedStyles(theme: (typeof Colors)["light" | "dark"]) {
+  return StyleSheet.create({
+    text: {
+      color: theme.text,
+    },
+    textMuted: {
+      color: theme.textMuted,
+    },
+    secondaryText: {
+      color: theme.secondary,
+    },
+    primaryText: {
+      color: theme.primary,
+    },
+    surfaceMuted: {
+      backgroundColor: theme.surfaceMuted,
+    },
+    background: {
+      backgroundColor: theme.background,
+    },
+    card: {
+      backgroundColor: theme.card,
+      borderColor: theme.surfaceSubtle,
+    },
+    overlay: {
+      backgroundColor: theme.overlay,
+    },
+    reservedText: {
+      color: theme.text,
+      borderColor: theme.text,
+    },
+    priorityHigh: {
+      backgroundColor: theme.red100,
+    },
+    priorityMedium: {
+      backgroundColor: theme.amber100,
+    },
+    priorityLow: {
+      backgroundColor: theme.sky100,
+    },
+  });
+}
