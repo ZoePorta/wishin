@@ -27,31 +27,31 @@ export default function WishlistDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [wishlist, setWishlist] = useState<Wishlist | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
 
+  const loadWishlist = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await MockWishlistService.getWishlistById(id);
+      setWishlist(data);
+    } catch (err) {
+      console.error("Error fetching wishlist:", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
   useEffect(() => {
-    let isMounted = true;
     if (id) {
-      const fetchWishlist = async () => {
-        try {
-          if (isMounted) setLoading(true);
-          const data = await MockWishlistService.getWishlistById(id);
-          if (isMounted) setWishlist(data);
-        } catch (error) {
-          console.error("Error fetching wishlist:", error);
-        } finally {
-          if (isMounted) setLoading(false);
-        }
-      };
-      void fetchWishlist();
+      void loadWishlist();
     } else {
       setLoading(false);
     }
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
+  }, [id, loadWishlist]);
 
   const ListHeader = useMemo(() => {
     if (!wishlist) return null;
@@ -74,24 +74,7 @@ export default function WishlistDetail() {
     );
   }, [wishlist, theme]);
 
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={theme.primary} />
-      </View>
-    );
-  }
-
-  if (!wishlist) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={[styles.errorText, { color: theme.textMuted }]}>
-          Wishlist not found.
-        </Text>
-      </View>
-    );
-  }
-
+  // Hoisted renderItem
   const renderItem = useCallback(
     ({ item }: { item: WishlistItem }) => (
       <View
@@ -181,6 +164,7 @@ export default function WishlistDetail() {
                 hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
                 onPress={() => item.url && void Linking.openURL(item.url)}
                 accessibilityLabel={`View Online, ${item.title}`}
+                accessibilityRole="link"
               >
                 <Text style={[styles.linkText, { color: theme.secondary }]}>
                   View Online
@@ -191,8 +175,52 @@ export default function WishlistDetail() {
         </View>
       </View>
     ),
-    [theme, colorScheme],
+    [theme],
   );
+
+  if (loading) {
+    return (
+      <View
+        style={[styles.centerContainer, { backgroundColor: theme.background }]}
+      >
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View
+        style={[styles.centerContainer, { backgroundColor: theme.background }]}
+      >
+        <Text style={[styles.errorText, { color: theme.textMuted }]}>
+          {error}
+        </Text>
+        <Pressable
+          onPress={() => void loadWishlist()}
+          style={{ marginTop: 20 }}
+        >
+          <Text
+            style={{ color: theme.primary, fontSize: 16, fontWeight: "600" }}
+          >
+            Tap to Retry
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (!wishlist) {
+    return (
+      <View
+        style={[styles.centerContainer, { backgroundColor: theme.background }]}
+      >
+        <Text style={[styles.errorText, { color: theme.textMuted }]}>
+          Wishlist not found.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <>

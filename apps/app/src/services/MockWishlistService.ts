@@ -46,7 +46,7 @@ export interface Wishlist {
   items: WishlistItem[];
 }
 
-const MOCK_WISHLIST: Wishlist = {
+const MOCK_WISHLIST: Readonly<Wishlist> = {
   id: "test-wishlist-id",
   title: "My Birthday Wishlist",
   description: "Things I would love to receive for my birthday! 🎉",
@@ -103,7 +103,7 @@ export const MockWishlistService = {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     if (id === MOCK_WISHLIST.id) {
-      // Deep clone items to prevent shared references
+      // Shallow clone items (sufficient for current primitive-only WishlistItem shape)
       const clonedItems = MOCK_WISHLIST.items.map((item) => ({ ...item }));
       return { ...MOCK_WISHLIST, items: clonedItems };
     }
