@@ -106,4 +106,59 @@ describe("GetWishlistMapper", () => {
     expect(output.items[0].priority).toBe("LOW");
     expect(output.items[1].priority).toBe("URGENT");
   });
+
+  it("should map a wishlist with no items correctly", () => {
+    const wishlistId = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d";
+    const wishlist = Wishlist.reconstitute({
+      id: wishlistId,
+      ownerId: "123e4567-e89b-42d3-a456-426614174001",
+      title: "Empty Wishlist",
+      visibility: Visibility.LINK,
+      participation: Participation.ANYONE,
+      items: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const output = GetWishlistMapper.toOutput(wishlist);
+
+    expect(output.items).toEqual([]);
+    expect(output.items).toHaveLength(0);
+  });
+
+  it("should map an item with isUnlimited: true correctly", () => {
+    const wishlistId = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d";
+    const itemId = "123e4567-e89b-42d3-a456-426614174000";
+
+    const item = WishlistItem.reconstitute({
+      id: itemId,
+      wishlistId: wishlistId,
+      name: "Unlimited Item",
+      priority: Priority.MEDIUM,
+      totalQuantity: 1,
+      reservedQuantity: 10, // Allowed when unlimited
+      purchasedQuantity: 5,
+      isUnlimited: true,
+    });
+
+    const wishlist = Wishlist.reconstitute({
+      id: wishlistId,
+      ownerId: "123e4567-e89b-42d3-a456-426614174001",
+      title: "Unlimited Wishlist",
+      visibility: Visibility.LINK,
+      participation: Participation.ANYONE,
+      items: [item.toProps()],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const output = GetWishlistMapper.toOutput(wishlist);
+
+    expect(output.items[0]).toMatchObject({
+      id: itemId,
+      isUnlimited: true,
+      reservedQuantity: 10,
+      purchasedQuantity: 5,
+    });
+  });
 });
