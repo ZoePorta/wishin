@@ -27,7 +27,7 @@ export const WishlistRepositoryProvider: React.FC<{
 /**
  * Hook to consume the WishlistRepository from context.
  */
-export const useWishlistRepository = () => {
+export const useWishlistRepository = (): WishlistRepository => {
   const context = useContext(WishlistRepositoryContext);
   if (!context) {
     throw new Error(
