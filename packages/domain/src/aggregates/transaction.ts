@@ -143,7 +143,7 @@ export class Transaction {
   /**
    * Reconstitutes a Transaction from persistence.
    *
-   * **Validation Mode:** STRICT
+   * **Validation Mode:** STRUCTURAL
    *
    * @param {TransactionProps} props
    * @returns {Transaction}

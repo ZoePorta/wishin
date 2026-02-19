@@ -3,7 +3,7 @@ import { WishlistRepository } from "@wishin/domain/repositories/wishlist.reposit
 import { MOCK_WISHLIST_DATA, reconstituteMockWishlist } from "./wishlist.data";
 
 /**
- * Service to provide mock wishlist data for development and testing.
+ * Repository to provide mock wishlist data for development and testing.
  * Implements WishlistRepository to allow easy swapping with a real repository.
  */
 export class MockWishlistRepository implements WishlistRepository {

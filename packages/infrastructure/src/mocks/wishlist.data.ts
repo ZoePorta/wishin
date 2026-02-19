@@ -68,7 +68,7 @@ export const MOCK_WISHLIST_DATA: WishlistOutput = {
 
 /**
  * Reconstitutes the mock data into a Wishlist aggregate.
- * @returns Wishlist | null
+ * @returns {Wishlist}
  */
 export function reconstituteMockWishlist(): Wishlist {
   return Wishlist.reconstitute({
