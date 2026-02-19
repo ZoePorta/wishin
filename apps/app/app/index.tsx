@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, Pressable } from "react-native";
 import { Colors } from "../src/constants/Colors";
 
 export default function Index() {
-  const testWishlistId = "test-wishlist-id";
+  const testWishlistId = "29b8d178-0412-4236-b27e-bdc9a02c8faf";
 
   return (
     <View style={styles.container}>
