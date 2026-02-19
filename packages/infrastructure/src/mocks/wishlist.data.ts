@@ -4,6 +4,8 @@ import { Priority } from "@wishin/domain/value-objects/priority";
 import { Wishlist } from "@wishin/domain/aggregates/wishlist";
 import type { WishlistOutput } from "@wishin/domain/use-cases/dtos/get-wishlist.dto";
 
+const now = new Date().toISOString();
+
 /**
  * Mock data following the WishlistOutput DTO structure.
  */
@@ -14,8 +16,8 @@ export const MOCK_WISHLIST_DATA: WishlistOutput = {
   ownerId: "277e1360-9395-4b7d-a048-79eb5281b549",
   visibility: Visibility.LINK,
   participation: Participation.ANYONE,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
+  createdAt: now,
+  updatedAt: now,
   items: [
     {
       id: "ec6e0f25-4cea-4e60-b371-6658d308ec77",

@@ -15,6 +15,7 @@ import {
 import { Colors } from "@wishin/app/constants/Colors";
 import { useWishlist } from "@wishin/app/hooks/useWishlist";
 import type { UseWishlistReturn } from "@wishin/app/hooks/useWishlist";
+import { Priority } from "@wishin/domain";
 import type { WishlistItemOutput } from "@wishin/domain";
 
 /**
@@ -114,21 +115,16 @@ export default function WishlistDetail() {
               <View
                 style={[
                   styles.priorityBadge,
-                  item.priority === "3" || item.priority === "4"
+                  item.priority === Priority[Priority.HIGH] ||
+                  item.priority === Priority[Priority.URGENT]
                     ? themedStyles.priorityHigh
-                    : item.priority === "2"
+                    : item.priority === Priority[Priority.MEDIUM]
                       ? themedStyles.priorityMedium
                       : themedStyles.priorityLow,
                 ]}
               >
                 <Text style={[styles.priorityText, themedStyles.text]}>
-                  {item.priority === "1"
-                    ? "LOW"
-                    : item.priority === "2"
-                      ? "MEDIUM"
-                      : item.priority === "3"
-                        ? "HIGH"
-                        : "URGENT"}
+                  {item.priority}
                 </Text>
               </View>
 

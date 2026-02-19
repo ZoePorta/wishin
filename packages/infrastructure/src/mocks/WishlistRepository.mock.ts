@@ -1,5 +1,5 @@
-import { Wishlist } from "@wishin/domain/aggregates/wishlist";
-import { WishlistRepository } from "@wishin/domain/repositories/wishlist.repository";
+import type { Wishlist } from "@wishin/domain/aggregates/wishlist";
+import type { WishlistRepository } from "@wishin/domain/repositories/wishlist.repository";
 import { MOCK_WISHLIST_DATA, reconstituteMockWishlist } from "./wishlist.data";
 
 /**
@@ -7,6 +7,12 @@ import { MOCK_WISHLIST_DATA, reconstituteMockWishlist } from "./wishlist.data";
  * Implements WishlistRepository to allow easy swapping with a real repository.
  */
 export class MockWishlistRepository implements WishlistRepository {
+  private readonly delayMs: number;
+
+  constructor(delayMs = 500) {
+    this.delayMs = delayMs;
+  }
+
   /**
    * Retrieves a wishlist by its ID.
    *
@@ -15,7 +21,7 @@ export class MockWishlistRepository implements WishlistRepository {
    */
   async findById(id: string): Promise<Wishlist | null> {
     // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
 
     if (id === MOCK_WISHLIST_DATA.id) {
       return reconstituteMockWishlist();

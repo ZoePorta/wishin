@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import type { WishlistRepository } from "@wishin/domain";
 
@@ -17,8 +17,10 @@ export const WishlistRepositoryProvider: React.FC<{
   repository: WishlistRepository;
   children: ReactNode;
 }> = ({ repository, children }) => {
+  const value = useMemo(() => ({ repository }), [repository]);
+
   return (
-    <WishlistRepositoryContext.Provider value={{ repository }}>
+    <WishlistRepositoryContext.Provider value={value}>
       {children}
     </WishlistRepositoryContext.Provider>
   );
