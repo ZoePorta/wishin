@@ -1,8 +1,8 @@
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { Client as ServerClient, TablesDB } from "node-appwrite";
 import { randomUUID } from "node:crypto";
-import { createAppwriteClient } from "../../src/appwrite/client";
-import { AppwriteWishlistRepository } from "../../src/appwrite/repositories/appwrite-wishlist.repository";
+import { createAppwriteClient } from "@wishin/infrastructure/appwrite/client";
+import { AppwriteWishlistRepository } from "@wishin/infrastructure/appwrite/repositories/appwrite-wishlist.repository";
 import {
   Wishlist,
   Visibility,

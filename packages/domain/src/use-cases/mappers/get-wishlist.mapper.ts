@@ -1,4 +1,4 @@
-import { Wishlist } from "../../aggregates/wishlist";
+import { Wishlist } from "@wishin/domain/aggregates/wishlist";
 import { WishlistOutput } from "../dtos/get-wishlist.dto";
 
 /**

@@ -11,8 +11,8 @@ import {
   Pressable,
   useColorScheme,
 } from "react-native";
-import { Colors } from "../../src/constants/Colors";
-import { useWishlist, UseWishlistReturn } from "../../src/hooks/useWishlist";
+import { Colors } from "@wishin/app/constants/Colors";
+import { useWishlist, UseWishlistReturn } from "@wishin/app/hooks/useWishlist";
 import { WishlistItemOutput } from "@wishin/domain";
 
 /**
