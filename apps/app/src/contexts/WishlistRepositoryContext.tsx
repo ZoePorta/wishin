@@ -1,5 +1,6 @@
-import React, { createContext, useContext, ReactNode } from "react";
-import { WishlistRepository } from "@wishin/domain";
+import React, { createContext, useContext } from "react";
+import type { ReactNode } from "react";
+import type { WishlistRepository } from "@wishin/domain";
 
 interface WishlistRepositoryContextProps {
   repository: WishlistRepository;

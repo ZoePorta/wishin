@@ -12,8 +12,9 @@ import {
   useColorScheme,
 } from "react-native";
 import { Colors } from "@wishin/app/constants/Colors";
-import { useWishlist, UseWishlistReturn } from "@wishin/app/hooks/useWishlist";
-import { WishlistItemOutput } from "@wishin/domain";
+import { useWishlist } from "@wishin/app/hooks/useWishlist";
+import type { UseWishlistReturn } from "@wishin/app/hooks/useWishlist";
+import type { WishlistItemOutput } from "@wishin/domain";
 
 /**
  * Display the details of a specific wishlist.

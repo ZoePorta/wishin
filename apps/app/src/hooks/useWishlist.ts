@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useWishlistRepository } from "../contexts/WishlistRepositoryContext";
-import { WishlistOutput, GetWishlistMapper } from "@wishin/domain";
+import { GetWishlistMapper } from "@wishin/domain";
+import type { WishlistOutput } from "@wishin/domain";
 
 /**
  * Interface for the object returned by the useWishlist hook.

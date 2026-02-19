@@ -2,7 +2,7 @@ import { Visibility } from "@wishin/domain/value-objects/visibility";
 import { Participation } from "@wishin/domain/value-objects/participation";
 import { Priority } from "@wishin/domain/value-objects/priority";
 import { Wishlist } from "@wishin/domain/aggregates/wishlist";
-import { WishlistOutput } from "@wishin/domain/use-cases/dtos/get-wishlist.dto";
+import type { WishlistOutput } from "@wishin/domain/use-cases/dtos/get-wishlist.dto";
 
 /**
  * Mock data following the WishlistOutput DTO structure.

@@ -1,5 +1,6 @@
-import { Wishlist } from "@wishin/domain/aggregates/wishlist";
-import { WishlistOutput } from "../dtos/get-wishlist.dto";
+import type { Wishlist } from "../../aggregates/wishlist";
+import type { WishlistOutput } from "../dtos/get-wishlist.dto";
+import { Priority } from "../../value-objects/priority";
 
 /**
  * Mapper to convert Wishlist aggregates to WishlistOutput DTOs.
@@ -28,7 +29,7 @@ export const GetWishlistMapper = {
         url: item.url,
         price: item.price,
         currency: item.currency,
-        priority: item.priority.toString(),
+        priority: Priority[item.priority],
         imageUrl: item.imageUrl,
         totalQuantity: item.totalQuantity,
         reservedQuantity: item.reservedQuantity,
