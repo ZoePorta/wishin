@@ -5,13 +5,14 @@ import { Visibility, Participation, Priority } from "../../value-objects";
 import { WishlistItem } from "../../entities/wishlist-item";
 
 describe("GetWishlistMapper", () => {
+  const WISHLIST_ID = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d";
+
   it("should map a Wishlist aggregate to a WishlistOutput DTO", () => {
-    const wishlistId = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d";
     const itemId = "123e4567-e89b-42d3-a456-426614174000";
 
     const item = WishlistItem.reconstitute({
       id: itemId,
-      wishlistId: wishlistId,
+      wishlistId: WISHLIST_ID,
       name: "Test Item",
       description: "Test Description",
       priority: Priority.HIGH,
@@ -22,7 +23,7 @@ describe("GetWishlistMapper", () => {
     });
 
     const wishlist = Wishlist.reconstitute({
-      id: wishlistId,
+      id: WISHLIST_ID,
       ownerId: "123e4567-e89b-42d3-a456-426614174001",
       title: "Test Wishlist",
       description: "Test Wishlist Description",
@@ -36,7 +37,7 @@ describe("GetWishlistMapper", () => {
     const output = GetWishlistMapper.toOutput(wishlist);
 
     expect(output).toEqual({
-      id: wishlistId,
+      id: WISHLIST_ID,
       title: "Test Wishlist",
       description: "Test Wishlist Description",
       ownerId: "123e4567-e89b-42d3-a456-426614174001",
@@ -65,11 +66,9 @@ describe("GetWishlistMapper", () => {
   });
 
   it("should handle multiple items and different priorities", () => {
-    const wishlistId = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d";
-
     const item1 = WishlistItem.reconstitute({
-      id: "123e4567-e89b-42d3-a456-426614174001",
-      wishlistId: wishlistId,
+      id: "123e4567-e89b-42d3-a456-426614174011",
+      wishlistId: WISHLIST_ID,
       name: "Low Priority",
       priority: Priority.LOW,
       totalQuantity: 1,
@@ -79,8 +78,8 @@ describe("GetWishlistMapper", () => {
     });
 
     const item2 = WishlistItem.reconstitute({
-      id: "123e4567-e89b-42d3-a456-426614174002",
-      wishlistId: wishlistId,
+      id: "123e4567-e89b-42d3-a456-426614174012",
+      wishlistId: WISHLIST_ID,
       name: "Urgent Priority",
       priority: Priority.URGENT,
       totalQuantity: 1,
@@ -90,7 +89,7 @@ describe("GetWishlistMapper", () => {
     });
 
     const wishlist = Wishlist.reconstitute({
-      id: wishlistId,
+      id: WISHLIST_ID,
       ownerId: "123e4567-e89b-42d3-a456-426614174001",
       title: "Test Wishlist",
       visibility: Visibility.PRIVATE,
@@ -108,9 +107,8 @@ describe("GetWishlistMapper", () => {
   });
 
   it("should map a wishlist with no items correctly", () => {
-    const wishlistId = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d";
     const wishlist = Wishlist.reconstitute({
-      id: wishlistId,
+      id: WISHLIST_ID,
       ownerId: "123e4567-e89b-42d3-a456-426614174001",
       title: "Empty Wishlist",
       visibility: Visibility.LINK,
@@ -123,16 +121,14 @@ describe("GetWishlistMapper", () => {
     const output = GetWishlistMapper.toOutput(wishlist);
 
     expect(output.items).toEqual([]);
-    expect(output.items).toHaveLength(0);
   });
 
   it("should map an item with isUnlimited: true correctly", () => {
-    const wishlistId = "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d";
-    const itemId = "123e4567-e89b-42d3-a456-426614174000";
+    const itemId = "123e4567-e89b-42d3-a456-426614174010";
 
     const item = WishlistItem.reconstitute({
       id: itemId,
-      wishlistId: wishlistId,
+      wishlistId: WISHLIST_ID,
       name: "Unlimited Item",
       priority: Priority.MEDIUM,
       totalQuantity: 1,
@@ -142,7 +138,7 @@ describe("GetWishlistMapper", () => {
     });
 
     const wishlist = Wishlist.reconstitute({
-      id: wishlistId,
+      id: WISHLIST_ID,
       ownerId: "123e4567-e89b-42d3-a456-426614174001",
       title: "Unlimited Wishlist",
       visibility: Visibility.LINK,
@@ -157,6 +153,7 @@ describe("GetWishlistMapper", () => {
     expect(output.items[0]).toMatchObject({
       id: itemId,
       isUnlimited: true,
+      priority: "MEDIUM",
       reservedQuantity: 10,
       purchasedQuantity: 5,
       availableQuantity: item.availableQuantity,

@@ -284,6 +284,19 @@ export class Transaction {
     if (isNaN(this.quantity)) {
       throw new InvalidAttributeError("Invalid quantity: Must be a number");
     }
+    if (this.quantity <= 0 || !Number.isInteger(this.quantity)) {
+      throw new InvalidAttributeError(
+        "Invalid quantity: Must be a positive integer",
+      );
+    }
+    if (this.userId && !isValidUUID(this.userId)) {
+      throw new InvalidAttributeError("Invalid userId: Must be valid UUID v4");
+    }
+    if (this.guestSessionId?.trim() === "") {
+      throw new InvalidAttributeError(
+        "Invalid guestSessionId: Must be a non-empty string",
+      );
+    }
     if (!(this.createdAt instanceof Date) || isNaN(this.createdAt.getTime())) {
       throw new InvalidAttributeError(
         "Invalid createdAt: Must be a valid Date",
@@ -310,26 +323,6 @@ export class Transaction {
           "Identity XOR: Must have either userId or guestSessionId",
         );
       }
-    }
-
-    // --- BUSINESS RULES (Always enforced) ---
-    // Quantity validation
-    if (this.quantity <= 0 || !Number.isInteger(this.quantity)) {
-      throw new InvalidAttributeError(
-        "Invalid quantity: Must be a positive integer",
-      );
-    }
-
-    // User ID structural validation
-    if (this.userId && !isValidUUID(this.userId)) {
-      throw new InvalidAttributeError("Invalid userId: Must be valid UUID v4");
-    }
-
-    // Guest Session structural validation
-    if (this.guestSessionId?.trim() === "") {
-      throw new InvalidAttributeError(
-        "Invalid guestSessionId: Must be a non-empty string",
-      );
     }
 
     // --- ADDITIONAL STRICT VALIDATIONS ---

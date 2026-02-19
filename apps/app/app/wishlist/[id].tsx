@@ -219,6 +219,13 @@ export default function WishlistDetail() {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={ListHeader}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, themedStyles.textMuted]}>
+              No items in this wishlist.
+            </Text>
+          </View>
+        }
         style={themedStyles.background}
       />
     </>
@@ -346,6 +353,14 @@ const styles = StyleSheet.create({
   badgeText: {
     fontWeight: "bold",
     fontSize: 16,
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    fontStyle: "italic",
   },
 });
 

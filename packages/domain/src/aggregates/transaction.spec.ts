@@ -260,6 +260,49 @@ describe("Transaction Aggregate", () => {
         }),
       ).toThrow(InvalidAttributeError);
     });
+
+    it("should throw if userId is invalid UUID in reconstitute", () => {
+      expect(() =>
+        Transaction.reconstitute({
+          id: VALID_TRANSACTION_ID,
+          itemId: VALID_ITEM_ID,
+          userId: "invalid-uuid",
+          status: TransactionStatus.RESERVED,
+          quantity: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw if guestSessionId is whitespace-only in reconstitute", () => {
+      expect(() =>
+        Transaction.reconstitute({
+          id: VALID_TRANSACTION_ID,
+          itemId: VALID_ITEM_ID,
+          guestSessionId: "   ",
+          status: TransactionStatus.PURCHASED,
+          quantity: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should not throw when userId is null and guestSessionId is undefined (soft-deleted identity)", () => {
+      expect(() =>
+        Transaction.reconstitute({
+          id: VALID_TRANSACTION_ID,
+          itemId: VALID_ITEM_ID,
+          userId: null,
+          guestSessionId: undefined,
+          status: TransactionStatus.PURCHASED,
+          quantity: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ).not.toThrow();
+    });
   });
 
   describe("Identity and State", () => {
