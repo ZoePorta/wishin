@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { View, StyleSheet, useColorScheme } from "react-native";
 import { Colors } from "../src/constants/Colors";
 import { WishlistRepositoryProvider } from "../src/contexts/WishlistRepositoryContext";
-import { MockWishlistRepository } from "@wishin/infrastructure";
+import { MockWishlistRepository } from "@wishin/infrastructure/mocks";
 
 /**
  * Root orchestrator component that manages dependencies.
