@@ -312,23 +312,27 @@ export class Transaction {
       }
     }
 
-    // --- BUSINESS RULES (Always enforced as they are fundamental) ---
+    // --- BUSINESS RULES (Always enforced) ---
+    // Quantity validation
     if (this.quantity <= 0 || !Number.isInteger(this.quantity)) {
       throw new InvalidAttributeError(
         "Invalid quantity: Must be a positive integer",
       );
     }
 
+    // User ID structural validation
     if (this.userId && !isValidUUID(this.userId)) {
       throw new InvalidAttributeError("Invalid userId: Must be valid UUID v4");
     }
 
+    // Guest Session structural validation
     if (this.guestSessionId?.trim() === "") {
       throw new InvalidAttributeError(
         "Invalid guestSessionId: Must be a non-empty string",
       );
     }
 
+    // --- ADDITIONAL STRICT VALIDATIONS ---
     if (mode === ValidationMode.STRICT) {
       if (!this.itemId) {
         throw new InvalidAttributeError(

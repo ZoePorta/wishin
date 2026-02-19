@@ -159,6 +159,7 @@ describe("GetWishlistMapper", () => {
       isUnlimited: true,
       reservedQuantity: 10,
       purchasedQuantity: 5,
+      availableQuantity: item.availableQuantity,
     });
   });
 });

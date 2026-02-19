@@ -48,6 +48,28 @@ export default function WishlistDetail() {
     );
   }, [wishlist, themedStyles]);
 
+  const handleOpenUrl = useCallback(async (url?: string) => {
+    if (!url) return;
+
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(
+          "Error",
+          "This link cannot be opened on this device. The URL might be malformed.",
+        );
+      }
+    } catch (err) {
+      Alert.alert(
+        "Error",
+        "An unexpected error occurred while trying to open the link.",
+      );
+      console.error("Failed to open URL:", err);
+    }
+  }, []);
+
   // Hoisted renderItem
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => {
@@ -95,7 +117,7 @@ export default function WishlistDetail() {
               <Text style={[styles.itemTitle, themedStyles.text]}>
                 {item.name}
               </Text>
-              {item.price != null && (
+              {item.price != null && item.currency != null && (
                 <Text style={[styles.itemPrice, themedStyles.primaryText]}>
                   {item.currency} {item.price.toFixed(2)}
                 </Text>
@@ -135,23 +157,7 @@ export default function WishlistDetail() {
                     pressed && styles.pressed,
                   ]}
                   hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
-                  onPress={() => {
-                    const handlePress = async () => {
-                      try {
-                        const url = item.url;
-                        if (url) {
-                          await Linking.openURL(url);
-                        }
-                      } catch (err) {
-                        Alert.alert(
-                          "Error",
-                          "Could not open the link. The URL might be malformed or no browser is available.",
-                        );
-                        console.error("Failed to open URL:", err);
-                      }
-                    };
-                    void handlePress();
-                  }}
+                  onPress={() => void handleOpenUrl(item.url)}
                   accessibilityLabel={`View Online, ${item.name}`}
                   accessibilityRole="link"
                 >
@@ -165,7 +171,7 @@ export default function WishlistDetail() {
         </View>
       );
     },
-    [themedStyles],
+    [themedStyles, handleOpenUrl],
   );
 
   if (loading) {
