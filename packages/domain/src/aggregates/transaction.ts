@@ -1,19 +1,9 @@
-import { ValidationMode as SharedValidationMode } from "../common/validation-mode";
+import { ValidationMode } from "../common/validation-mode";
 import {
   InvalidAttributeError,
   InvalidTransitionError,
 } from "../errors/domain-errors";
 import { isValidUUID } from "../common/validation-utils";
-
-/**
- * Extended ValidationMode for Transaction.
- */
-export const ValidationMode = {
-  ...SharedValidationMode,
-} as const;
-
-export type ValidationMode =
-  (typeof ValidationMode)[keyof typeof ValidationMode];
 
 import { TransactionStatus } from "../value-objects/transaction-status";
 

@@ -10,8 +10,11 @@
     "baseUrl": ".",
     "paths": {
       "@wishin/domain": ["packages/domain/src/index.ts"],
+      "@wishin/domain/*": ["packages/domain/src/*"],
       "@wishin/infrastructure": ["packages/infrastructure/src/index.ts"],
-      "@wishin/shared": ["packages/shared/src/index.ts"]
+      "@wishin/infrastructure/*": ["packages/infrastructure/src/*"],
+      "@wishin/shared": ["packages/shared/src/index.ts"],
+      "@wishin/shared/*": ["packages/shared/src/*"]
     }
   },
   "exclude": ["node_modules", "dist"]

@@ -1,9 +1,29 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useMemo } from "react";
 import { View, StyleSheet, useColorScheme } from "react-native";
 import { Colors } from "../src/constants/Colors";
+import { WishlistRepositoryProvider } from "../src/contexts/WishlistRepositoryContext";
+import { MockWishlistRepository } from "@wishin/infrastructure";
 
-export default function RootLayout() {
+/**
+ * Root orchestrator component that manages dependencies.
+ * This keeps the UI layout clean and focused on navigation.
+ */
+export default function Root() {
+  const repository = useMemo(() => new MockWishlistRepository(), []);
+
+  return (
+    <WishlistRepositoryProvider repository={repository}>
+      <RootLayout />
+    </WishlistRepositoryProvider>
+  );
+}
+
+/**
+ * UI shell for the application including navigation and theme management.
+ */
+function RootLayout() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
 

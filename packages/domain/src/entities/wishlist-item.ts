@@ -6,21 +6,21 @@ import {
 
 import { Priority } from "../value-objects/priority";
 
-import { ValidationMode as SharedValidationMode } from "../common/validation-mode";
+import { ValidationMode } from "../common/validation-mode";
 
 import { isValidUUID } from "../common/validation-utils";
 
 /**
  * Extended ValidationMode for WishlistItem including EVOLUTIVE and TRANSACTION.
  */
-export const ValidationMode = {
-  ...SharedValidationMode,
+export const ItemValidationMode = {
+  ...ValidationMode,
   EVOLUTIVE: "EVOLUTIVE",
   TRANSACTION: "TRANSACTION",
 } as const;
 
-export type ValidationMode =
-  (typeof ValidationMode)[keyof typeof ValidationMode];
+export type ItemValidationMode =
+  (typeof ItemValidationMode)[keyof typeof ItemValidationMode];
 
 /**
  * Properties for a WishlistItem.
@@ -166,7 +166,7 @@ export class WishlistItem {
    * @param props - Raw properties for the entity.
    * @param mode - The validation mode to use.
    */
-  private constructor(props: WishlistItemProps, mode: ValidationMode) {
+  private constructor(props: WishlistItemProps, mode: ItemValidationMode) {
     this.props = props;
     this.validate(mode);
   }
@@ -179,7 +179,7 @@ export class WishlistItem {
    * @throws {InvalidAttributeError} If structural integrity validation fails (e.g. invalid UUIDs, integer types, priority range), as ValidationMode.STRUCTURAL only enforces these and does not perform content validations like name length or price checks in reconstitute().
    */
   public static reconstitute(props: WishlistItemProps): WishlistItem {
-    return WishlistItem._createWithMode(props, ValidationMode.STRUCTURAL);
+    return WishlistItem._createWithMode(props, ItemValidationMode.STRUCTURAL);
   }
 
   /**
@@ -191,12 +191,12 @@ export class WishlistItem {
    * @throws {InsufficientStockError} If inventory invariants are violated (unless skipped).
    */
   public static create(props: WishlistItemCreateProps): WishlistItem {
-    return WishlistItem._createWithMode(props, ValidationMode.STRICT);
+    return WishlistItem._createWithMode(props, ItemValidationMode.STRICT);
   }
 
   private static _createWithMode(
     props: WishlistItemCreateProps,
-    mode: ValidationMode,
+    mode: ItemValidationMode,
   ): WishlistItem {
     const priority = props.priority ?? Priority.MEDIUM;
     const isUnlimited = props.isUnlimited ?? false;
@@ -279,7 +279,7 @@ export class WishlistItem {
         reservedQuantity: newReservedQuantity, // Apply potentially pruned value
         // purchasedQuantity remains untouched as we threw if it was in props
       } as WishlistItemProps,
-      ValidationMode.EVOLUTIVE,
+      ItemValidationMode.EVOLUTIVE,
     );
   }
 
@@ -321,7 +321,7 @@ export class WishlistItem {
         ...this.toProps(),
         reservedQuantity: this.reservedQuantity + amount,
       },
-      ValidationMode.TRANSACTION,
+      ItemValidationMode.TRANSACTION,
     );
   }
 
@@ -348,7 +348,7 @@ export class WishlistItem {
         ...this.toProps(),
         wishlistId: newWishlistId,
       },
-      ValidationMode.STRUCTURAL, // Use STRUCTURAL to avoid re-validating legacy items on move
+      ItemValidationMode.STRUCTURAL, // Use STRUCTURAL to avoid re-validating legacy items on move
     );
   }
 
@@ -381,7 +381,7 @@ export class WishlistItem {
         ...this.toProps(),
         reservedQuantity: this.reservedQuantity - amount,
       },
-      ValidationMode.STRUCTURAL,
+      ItemValidationMode.STRUCTURAL,
     );
   }
 
@@ -442,7 +442,7 @@ export class WishlistItem {
         purchasedQuantity: this.purchasedQuantity + totalAmount,
         reservedQuantity: this.reservedQuantity - consumeFromReserved,
       },
-      ValidationMode.TRANSACTION,
+      ItemValidationMode.TRANSACTION,
     );
   }
 
@@ -476,7 +476,7 @@ export class WishlistItem {
         ...this.toProps(),
         purchasedQuantity: this.purchasedQuantity - amountToCancel,
       },
-      ValidationMode.STRUCTURAL,
+      ItemValidationMode.STRUCTURAL,
     );
   }
 
@@ -489,7 +489,7 @@ export class WishlistItem {
     return this.id === other.id;
   }
 
-  private validate(mode: ValidationMode): void {
+  private validate(mode: ItemValidationMode): void {
     // --- STRUCTURAL INTEGRITY (Always Enforced: ALL Modes) ---
 
     // ID Validation (UUID v4)
@@ -540,7 +540,10 @@ export class WishlistItem {
     }
 
     // --- BUSINESS RULES (Enforced: STRICT, EVOLUTIVE) ---
-    if (mode === ValidationMode.STRICT || mode === ValidationMode.EVOLUTIVE) {
+    if (
+      mode === ItemValidationMode.STRICT ||
+      mode === ItemValidationMode.EVOLUTIVE
+    ) {
       // Name Validation
       if (this.name.length < 3 || this.name.length > 100) {
         throw new InvalidAttributeError(
@@ -581,7 +584,10 @@ export class WishlistItem {
     }
 
     // --- INVENTORY INVARIANTS (Enforced: STRICT, TRANSACTION) ---
-    if (mode === ValidationMode.STRICT || mode === ValidationMode.TRANSACTION) {
+    if (
+      mode === ItemValidationMode.STRICT ||
+      mode === ItemValidationMode.TRANSACTION
+    ) {
       if (!this.isUnlimited) {
         if (
           this.totalQuantity <
