@@ -10,6 +10,7 @@ import {
   Linking,
   Pressable,
   useColorScheme,
+  Alert,
 } from "react-native";
 import { Colors } from "@wishin/app/constants/Colors";
 import { useWishlist } from "@wishin/app/hooks/useWishlist";
@@ -138,7 +139,23 @@ export default function WishlistDetail() {
                     pressed && styles.pressed,
                   ]}
                   hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
-                  onPress={() => item.url && void Linking.openURL(item.url)}
+                  onPress={() => {
+                    const handlePress = async () => {
+                      try {
+                        const url = item.url;
+                        if (url) {
+                          await Linking.openURL(url);
+                        }
+                      } catch (err) {
+                        Alert.alert(
+                          "Error",
+                          "Could not open the link. The URL might be malformed or no browser is available.",
+                        );
+                        console.error("Failed to open URL:", err);
+                      }
+                    };
+                    void handlePress();
+                  }}
                   accessibilityLabel={`View Online, ${item.name}`}
                   accessibilityRole="link"
                 >
