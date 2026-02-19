@@ -49,8 +49,10 @@ export default function WishlistDetail() {
   // Hoisted renderItem
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => {
-      const isCompleted = item.purchasedQuantity >= item.totalQuantity;
+      const isCompleted =
+        !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
       const isReserved =
+        !item.isUnlimited &&
         !isCompleted &&
         item.purchasedQuantity + item.reservedQuantity >= item.totalQuantity;
 
