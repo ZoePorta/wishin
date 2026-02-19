@@ -27,7 +27,12 @@ export function useWishlist(id: string): UseWishlistReturn {
   const fetchIdRef = useRef(0);
 
   const loadWishlist = useCallback(async () => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      setError(null);
+      setWishlist(null);
+      return;
+    }
 
     const fetchId = ++fetchIdRef.current;
     try {
