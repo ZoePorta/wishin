@@ -11,9 +11,9 @@ const { withAndroidManifest } = require("@expo/config-plugins");
  * @returns {import('@expo/config-types').ExpoConfig}
  */
 const withAndroidQueries = (config) => {
-  return withAndroidManifest(config, (config) => {
-    config.modResults = addQueries(config.modResults);
-    return config;
+  return withAndroidManifest(config, (modConfig) => {
+    modConfig.modResults = addQueries(modConfig.modResults);
+    return modConfig;
   });
 };
 

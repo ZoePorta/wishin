@@ -101,7 +101,7 @@ export default function WishlistDetail() {
             </View>
           )}
 
-          {!isCompleted && isReserved && (
+          {isReserved && (
             <View style={[styles.overlay, themedStyles.overlay]}>
               <View style={[styles.badge, themedStyles.reservedBadge]}>
                 <Text style={[styles.badgeText, themedStyles.badgeText]}>

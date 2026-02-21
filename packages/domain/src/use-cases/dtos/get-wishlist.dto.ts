@@ -1,4 +1,5 @@
 import type { Priority } from "../../value-objects/priority";
+import type { Visibility, Participation } from "../../value-objects";
 
 /**
  * Input DTO for fetching a wishlist.
@@ -37,8 +38,8 @@ export interface WishlistOutput {
   title: string;
   description?: string;
   ownerId: string;
-  visibility: string;
-  participation: string;
+  visibility: Visibility;
+  participation: Participation;
   items: WishlistItemOutput[];
   createdAt: string;
   updatedAt: string;

@@ -125,6 +125,16 @@ describe("Transaction Aggregate", () => {
         }),
       ).toThrow(InvalidAttributeError);
     });
+
+    it("should throw if guestSessionId is whitespace-only", () => {
+      expect(() =>
+        Transaction.createPurchase({
+          itemId: VALID_ITEM_ID,
+          guestSessionId: "   ",
+          quantity: 1,
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
   });
 
   describe("Lifecycle Transitions", () => {
