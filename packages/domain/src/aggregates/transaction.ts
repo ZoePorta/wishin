@@ -309,8 +309,9 @@ export class Transaction {
       );
     }
 
-    // --- Identity XOR (STRICT Only) ---
+    // --- STRICT VALIDATIONS ---
     if (mode === ValidationMode.STRICT) {
+      // Identity XOR
       const hasUser = !!this.userId;
       const hasGuest = !!this.guestSessionId;
 
@@ -324,10 +325,8 @@ export class Transaction {
           "Identity XOR: Must have either userId or guestSessionId",
         );
       }
-    }
 
-    // --- ADDITIONAL STRICT VALIDATIONS ---
-    if (mode === ValidationMode.STRICT) {
+      // Metadata presence
       if (!this.itemId) {
         throw new InvalidAttributeError(
           "Invalid itemId: Must be defined for new transactions",
