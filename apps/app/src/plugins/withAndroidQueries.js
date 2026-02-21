@@ -1,4 +1,7 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { withAndroidManifest } = require("@expo/config-plugins");
+
+/** @typedef {import('@expo/config-plugins').AndroidConfig.Manifest.AndroidManifest} AndroidManifest */
 
 /**
  * Expo config plugin to add <queries> for http/https to AndroidManifest.xml
@@ -17,26 +20,34 @@ const withAndroidQueries = (config) => {
 /**
  * Adds the necessary <queries> to the manifest object.
  *
- * @param {Object} androidManifest
- * @returns {Object}
+ * @param {AndroidManifest} androidManifest
+ * @returns {AndroidManifest}
  */
 function addQueries(androidManifest) {
-  if (!androidManifest.queries) {
-    androidManifest.queries = [];
-  }
+  const manifest = androidManifest.manifest;
+
+  // @ts-expect-error - 'queries' might not be in the typings but is supported by Android
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  manifest.queries ??= [];
 
   const schemes = ["http", "https"];
 
   schemes.forEach((scheme) => {
     // Check if the scheme already exists in queries
-    const hasScheme = androidManifest.queries.some((query) =>
+    // @ts-expect-error - manifest.queries typing might be incomplete
+    /** @type {any[]} */
+    const queries = manifest.queries;
+    const hasScheme = queries.some((query) =>
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       query.intent?.some((intent) =>
-        intent.data?.some((data) => data.$["android:scheme"] === scheme),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
+        intent.data?.some((data) => data.$?.["android:scheme"] === scheme),
       ),
     );
 
     if (!hasScheme) {
-      androidManifest.queries.push({
+      // @ts-expect-error - manifest.queries typing might be incomplete
+      manifest.queries.push({
         intent: [
           {
             action: [{ $: { "android:name": "android.intent.action.VIEW" } }],
@@ -51,3 +62,4 @@ function addQueries(androidManifest) {
 }
 
 module.exports = withAndroidQueries;
+module.exports.addQueries = addQueries;
