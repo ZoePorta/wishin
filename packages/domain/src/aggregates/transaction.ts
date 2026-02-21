@@ -59,7 +59,8 @@ export interface TransactionCreatePurchaseProps {
  * - **id**, **itemId**: Must be valid UUID v4.
  * - **quantity**: Must be a positive integer.
  * - **Identity XOR**: Must have exactly ONE of `userId` or `guestSessionId`.
- * - **RESERVED state**: Requires `userId`.
+ * - **Identities (userId/guestSessionId)**: Allow null values during reconstitution to handle deleted entities.
+ * - **RESERVED state**: Requires `userId` (except when the user is deleted and the transaction is being cancelled/auto-corrected).
  * - **PURCHASED state**: Allows either `userId` or `guestSessionId`.
  *
  * @throws {InvalidAttributeError} If validation fails.
@@ -209,7 +210,7 @@ export class Transaction {
       throw new InvalidTransitionError("Transaction is already cancelled");
     }
 
-    if (!this.userId) {
+    if (!this.userId && this.guestSessionId) {
       throw new InvalidTransitionError(
         "Only registered users can cancel transactions",
       );
@@ -221,7 +222,7 @@ export class Transaction {
         status: TransactionStatus.CANCELLED,
         updatedAt: new Date(),
       },
-      ValidationMode.STRICT,
+      ValidationMode.STRUCTURAL,
     );
   }
 
