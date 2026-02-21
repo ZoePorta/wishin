@@ -287,7 +287,6 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     marginBottom: 16,
-    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -298,6 +297,8 @@ const styles = StyleSheet.create({
   itemImage: {
     width: "100%",
     height: 150,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   cardContent: {
     padding: 16,
@@ -350,6 +351,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1,
+    borderRadius: 12,
   },
   badge: {
     paddingHorizontal: 16,
