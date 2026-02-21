@@ -9,6 +9,12 @@ import { MOCK_WISHLIST_DATA, reconstituteMockWishlist } from "./wishlist.data";
 export class MockWishlistRepository implements WishlistRepository {
   private readonly delayMs: number;
 
+  /**
+   * Creates an instance of MockWishlistRepository.
+   *
+   * @param delayMs - Simulated network/processing delay in milliseconds (default: 500).
+   * @returns void
+   */
   constructor(delayMs = 500) {
     this.delayMs = delayMs;
   }

@@ -14,6 +14,7 @@ module.exports = function (api) {
             "@wishin/shared": "../../packages/shared/src",
             "@wishin/app": "./src",
           },
+          cwd: "babelrc",
           extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
         },
       ],

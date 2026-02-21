@@ -12,6 +12,11 @@ const WishlistRepositoryContext = createContext<
 
 /**
  * Provider component for the WishlistRepository.
+ *
+ * @param props - The component props.
+ * @param props.repository - The repository instance to provide.
+ * @param props.children - The child components.
+ * @returns The React elements for the provider.
  */
 export const WishlistRepositoryProvider: React.FC<{
   repository: WishlistRepository;
@@ -28,6 +33,9 @@ export const WishlistRepositoryProvider: React.FC<{
 
 /**
  * Hook to consume the WishlistRepository from context.
+ *
+ * @returns The repository interface.
+ * @throws {Error} If the hook is used outside of a WishlistRepositoryProvider.
  */
 export const useWishlistRepository = (): WishlistRepository => {
   const context = useContext(WishlistRepositoryContext);

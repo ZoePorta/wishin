@@ -60,16 +60,8 @@ export default function WishlistDetail() {
     if (!url) return;
 
     try {
-      const canOpen = await Linking.canOpenURL(url);
-      if (canOpen) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert(
-          "Error",
-          "This link cannot be opened on this device. The URL might be malformed.",
-        );
-      }
-    } catch (err) {
+      await Linking.openURL(url);
+    } catch (err: unknown) {
       Alert.alert(
         "Error",
         "An unexpected error occurred while trying to open the link.",
@@ -77,7 +69,6 @@ export default function WishlistDetail() {
       console.error("Failed to open URL:", err);
     }
   }, []);
-
   // Hoisted renderItem
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => {
