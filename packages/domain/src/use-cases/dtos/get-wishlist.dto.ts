@@ -1,3 +1,5 @@
+import type { Priority } from "../../value-objects/priority";
+
 /**
  * Input DTO for fetching a wishlist.
  */
@@ -18,7 +20,7 @@ export interface WishlistItemOutput {
   url?: string;
   price?: number;
   currency?: string;
-  priority: string;
+  priority: Priority;
   imageUrl?: string;
   totalQuantity: number;
   reservedQuantity: number;

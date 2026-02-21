@@ -3,10 +3,10 @@ import { MOCK_WISHLIST_DATA, reconstituteMockWishlist } from "./wishlist.data";
 import { Priority } from "@wishin/domain/value-objects/priority";
 
 describe("wishlist.data", () => {
-  it("MOCK_WISHLIST_DATA should have priority as enum name strings", () => {
+  it("MOCK_WISHLIST_DATA should have priority as numeric Priority values", () => {
     MOCK_WISHLIST_DATA.items.forEach((item) => {
-      expect(typeof item.priority).toBe("string");
-      expect(Priority).toHaveProperty(item.priority);
+      expect(typeof item.priority).toBe("number");
+      expect(Object.values(Priority)).toContain(item.priority);
     });
   });
 

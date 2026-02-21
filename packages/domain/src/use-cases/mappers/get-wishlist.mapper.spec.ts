@@ -50,7 +50,7 @@ describe("GetWishlistMapper", () => {
           id: itemId,
           name: "Test Item",
           description: "Test Description",
-          priority: "HIGH",
+          priority: Priority.HIGH,
           totalQuantity: 2,
           reservedQuantity: 1,
           purchasedQuantity: 0,
@@ -102,8 +102,8 @@ describe("GetWishlistMapper", () => {
     const output = GetWishlistMapper.toOutput(wishlist);
 
     expect(output.items).toHaveLength(2);
-    expect(output.items[0].priority).toBe("LOW");
-    expect(output.items[1].priority).toBe("URGENT");
+    expect(output.items[0].priority).toBe(Priority.LOW);
+    expect(output.items[1].priority).toBe(Priority.URGENT);
   });
 
   it("should map a wishlist with no items correctly", () => {
@@ -153,7 +153,7 @@ describe("GetWishlistMapper", () => {
     expect(output.items[0]).toMatchObject({
       id: itemId,
       isUnlimited: true,
-      priority: "MEDIUM",
+      priority: Priority.MEDIUM,
       reservedQuantity: 10,
       purchasedQuantity: 5,
       availableQuantity: item.availableQuantity,

@@ -28,7 +28,7 @@ export const MOCK_WISHLIST_DATA: WishlistOutput = {
       url: "https://example.com/headphones",
       imageUrl:
         "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aGVhZHBob25lc3xlbnwwfHwwfHx8MA%3D%3D",
-      priority: Priority[Priority.HIGH],
+      priority: Priority.HIGH,
       totalQuantity: 1,
       reservedQuantity: 0,
       purchasedQuantity: 0,
@@ -42,7 +42,7 @@ export const MOCK_WISHLIST_DATA: WishlistOutput = {
       price: 99.0,
       currency: "USD",
       url: "https://example.com/keyboard",
-      priority: Priority[Priority.MEDIUM],
+      priority: Priority.MEDIUM,
       totalQuantity: 1,
       reservedQuantity: 1,
       purchasedQuantity: 0,
@@ -58,7 +58,7 @@ export const MOCK_WISHLIST_DATA: WishlistOutput = {
       url: "https://example.com/book",
       imageUrl:
         "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGJvb2t8ZW58MHx8MHx8fDA%3D",
-      priority: Priority[Priority.LOW],
+      priority: Priority.LOW,
       totalQuantity: 1,
       reservedQuantity: 0,
       purchasedQuantity: 1,
@@ -88,9 +88,7 @@ export function reconstituteMockWishlist(): Wishlist {
         wishlistId: MOCK_WISHLIST_DATA.id,
         name: item.name,
         description: item.description,
-        priority: Priority[
-          item.priority as keyof typeof Priority
-        ] as unknown as Priority,
+        priority: item.priority,
         price: item.price,
         currency: item.currency,
         url: item.url,

@@ -18,8 +18,16 @@ import type { UseWishlistReturn } from "@wishin/app/hooks/useWishlist";
 import { Priority } from "@wishin/domain";
 import type { WishlistItemOutput } from "@wishin/domain";
 
+const PRIORITY_LABELS: Record<Priority, string> = {
+  [Priority.LOW]: "LOW",
+  [Priority.MEDIUM]: "MEDIUM",
+  [Priority.HIGH]: "HIGH",
+  [Priority.URGENT]: "URGENT",
+};
+
 /**
  * Display the details of a specific wishlist.
+
  *
  * @returns The WishlistDetail component.
  */
@@ -137,16 +145,16 @@ export default function WishlistDetail() {
               <View
                 style={[
                   styles.priorityBadge,
-                  item.priority === Priority[Priority.HIGH] ||
-                  item.priority === Priority[Priority.URGENT]
+                  item.priority === Priority.HIGH ||
+                  item.priority === Priority.URGENT
                     ? themedStyles.priorityHigh
-                    : item.priority === Priority[Priority.MEDIUM]
+                    : item.priority === Priority.MEDIUM
                       ? themedStyles.priorityMedium
                       : themedStyles.priorityLow,
                 ]}
               >
                 <Text style={[styles.priorityText, themedStyles.text]}>
-                  {item.priority}
+                  {PRIORITY_LABELS[item.priority]}
                 </Text>
               </View>
 
