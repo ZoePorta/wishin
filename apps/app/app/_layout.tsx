@@ -8,13 +8,28 @@ import {
   AppwriteWishlistRepository,
   createAppwriteClient,
 } from "@wishin/infrastructure";
+import { AppErrorBoundary } from "../src/components/AppErrorBoundary";
+import { ConfigErrorScreen } from "../src/components/ConfigErrorScreen";
 import { Config, ensureAppwriteConfig } from "../src/constants/Config";
 
 /**
  * Root orchestrator component that manages dependencies.
  * This keeps the UI layout clean and focused on navigation.
+ * Wrapped in AppErrorBoundary to catch configuration errors.
  */
 export default function Root() {
+  return (
+    <AppErrorBoundary fallback={<ConfigErrorScreen />}>
+      <RootContent />
+    </AppErrorBoundary>
+  );
+}
+
+/**
+ * Inner root component that initializes dependencies.
+ * This can throw if configuration is missing.
+ */
+function RootContent() {
   const repository = useMemo(() => {
     ensureAppwriteConfig();
 
