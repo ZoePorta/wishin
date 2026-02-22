@@ -130,4 +130,32 @@ describe("WishlistItemMapper", () => {
     expect(domain.reservedQuantity).toBe(5);
     expect(domain.purchasedQuantity).toBe(3);
   });
+
+  it("should map valid priority string/number to domain Priority enum", () => {
+    const doc = {
+      $id: "550e8400-e29b-41d4-a716-446655440005",
+      wishlistId: "660e8400-e29b-41d4-a716-446655440001",
+      name: "Test Item",
+      priority: "2", // String from DB
+      isUnlimited: false,
+      totalQuantity: 1,
+    } as unknown as Models.Document;
+
+    const domain = WishlistItemMapper.toDomain(doc);
+    expect(domain.priority).toBe(Priority.MEDIUM);
+  });
+
+  it("should default to MEDIUM if priority is invalid", () => {
+    const doc = {
+      $id: "550e8400-e29b-41d4-a716-446655440005",
+      wishlistId: "660e8400-e29b-41d4-a716-446655440001",
+      name: "Test Item",
+      priority: 99, // Invalid value
+      isUnlimited: false,
+      totalQuantity: 1,
+    } as unknown as Models.Document;
+
+    const domain = WishlistItemMapper.toDomain(doc);
+    expect(domain.priority).toBe(Priority.MEDIUM);
+  });
 });

@@ -1,6 +1,5 @@
 import type { Models } from "appwrite";
-import { WishlistItem } from "@wishin/domain";
-import type { Priority } from "@wishin/domain";
+import { WishlistItem, Priority } from "@wishin/domain";
 
 /**
  * Interface representing the Appwrite document structure for a WishlistItem.
@@ -73,12 +72,19 @@ export const WishlistItemMapper = {
   ): WishlistItem {
     const { reservedQuantity = 0, purchasedQuantity = 0 } = options;
     const data = doc as WishlistItemDocument;
+    const priorityValue = Number(data.priority as unknown);
+    const priority = (
+      Object.values(Priority).includes(priorityValue)
+        ? priorityValue
+        : Priority.MEDIUM
+    ) as Priority;
+
     return WishlistItem.reconstitute({
       id: doc.$id,
       wishlistId: data.wishlistId,
       name: data.name,
       description: data.description ?? undefined,
-      priority: data.priority,
+      priority,
       price: data.price ?? undefined,
       currency: data.currency ?? undefined,
       url: data.url ?? undefined,

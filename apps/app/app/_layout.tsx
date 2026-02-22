@@ -4,14 +4,31 @@ import { useMemo } from "react";
 import { View, StyleSheet, useColorScheme } from "react-native";
 import { Colors } from "../src/constants/Colors";
 import { WishlistRepositoryProvider } from "../src/contexts/WishlistRepositoryContext";
-import { MockWishlistRepository } from "@wishin/infrastructure/mocks";
+import {
+  AppwriteWishlistRepository,
+  createAppwriteClient,
+} from "@wishin/infrastructure";
+import { Config } from "../src/constants/Config";
 
 /**
  * Root orchestrator component that manages dependencies.
  * This keeps the UI layout clean and focused on navigation.
  */
 export default function Root() {
-  const repository = useMemo(() => new MockWishlistRepository(), []);
+  const repository = useMemo(() => {
+    const client = createAppwriteClient(
+      Config.appwrite.endpoint,
+      Config.appwrite.projectId,
+    );
+
+    return new AppwriteWishlistRepository(
+      client,
+      Config.appwrite.databaseId,
+      Config.collections.wishlists,
+      Config.collections.wishlistItems,
+      Config.collections.transactions,
+    );
+  }, []);
 
   return (
     <WishlistRepositoryProvider repository={repository}>

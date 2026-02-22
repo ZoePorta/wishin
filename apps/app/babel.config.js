@@ -1,6 +1,7 @@
 /** @type {import("@babel/core").ConfigFunction} */
 module.exports = function (api) {
-  api.cache(true);
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  api?.cache(true);
   return {
     presets: ["babel-preset-expo"],
     plugins: [
@@ -14,7 +15,6 @@ module.exports = function (api) {
             "@wishin/shared": "../../packages/shared/src",
             "@wishin/app": "./src",
           },
-          cwd: "babelrc",
           extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
         },
       ],

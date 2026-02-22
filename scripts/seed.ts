@@ -44,8 +44,8 @@ type UserRow = UserData & Models.Row;
 interface WishlistData {
   ownerId: string;
   title: string;
-  visibility: "link" | "private";
-  participation: "anyone" | "registered" | "contacts";
+  visibility: "LINK" | "PRIVATE";
+  participation: "ANYONE" | "REGISTERED" | "CONTACTS";
 }
 type WishlistRow = WishlistData & Models.Row;
 
@@ -66,7 +66,7 @@ type ItemRow = ItemData & Models.Row;
 interface TransactionData {
   itemId: string;
   userId?: string;
-  status: "reserved" | "purchased";
+  status: "RESERVED" | "PURCHASED";
   quantity: number;
 }
 type TransactionRow = TransactionData & Models.Row;
@@ -140,8 +140,8 @@ async function seed() {
       data: {
         ownerId: user1.$id,
         title: "Alice's Birthday Wishlist",
-        visibility: "link",
-        participation: "anyone",
+        visibility: "LINK",
+        participation: "ANYONE",
       },
     });
     await tablesDb.upsertRow<WishlistRow>({
@@ -151,8 +151,8 @@ async function seed() {
       data: {
         ownerId: user2.$id,
         title: "Bob's Holiday Wishlist",
-        visibility: "link",
-        participation: "anyone",
+        visibility: "LINK",
+        participation: "ANYONE",
       },
     });
 
@@ -232,7 +232,7 @@ async function seed() {
       data: {
         wishlistId: wishlist1.$id,
         name: "Simple Water Bottle",
-        priority: 5,
+        priority: 4,
         price: 20.0,
         currency: "USD",
         imageUrl:
@@ -287,7 +287,7 @@ async function seed() {
       data: {
         itemId: item1.$id,
         userId: user2.$id,
-        status: "reserved",
+        status: "RESERVED",
         quantity: 1,
       },
     });
@@ -300,7 +300,7 @@ async function seed() {
       data: {
         itemId: item6.$id,
         userId: user2.$id,
-        status: "reserved",
+        status: "RESERVED",
         quantity: 1,
       },
     });
@@ -313,7 +313,7 @@ async function seed() {
       data: {
         itemId: item7.$id,
         userId: user2.$id,
-        status: "purchased",
+        status: "PURCHASED",
         quantity: 1,
       },
     });
