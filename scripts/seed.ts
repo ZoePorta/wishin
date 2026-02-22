@@ -1,5 +1,10 @@
 import { Client, TablesDB, type Models } from "node-appwrite";
 import "dotenv/config";
+import {
+  Visibility,
+  Participation,
+  TransactionStatus,
+} from "../packages/domain/src/index.js";
 
 const REQUIRED_ENV_VARS = [
   "EXPO_PUBLIC_APPWRITE_ENDPOINT",
@@ -44,8 +49,8 @@ type UserRow = UserData & Models.Row;
 interface WishlistData {
   ownerId: string;
   title: string;
-  visibility: "LINK" | "PRIVATE";
-  participation: "ANYONE" | "REGISTERED" | "CONTACTS";
+  visibility: Visibility;
+  participation: Participation;
 }
 type WishlistRow = WishlistData & Models.Row;
 
@@ -66,7 +71,7 @@ type ItemRow = ItemData & Models.Row;
 interface TransactionData {
   itemId: string;
   userId?: string;
-  status: "RESERVED" | "PURCHASED";
+  status: TransactionStatus;
   quantity: number;
 }
 type TransactionRow = TransactionData & Models.Row;
@@ -140,8 +145,8 @@ async function seed() {
       data: {
         ownerId: user1.$id,
         title: "Alice's Birthday Wishlist",
-        visibility: "LINK",
-        participation: "ANYONE",
+        visibility: Visibility.LINK,
+        participation: Participation.ANYONE,
       },
     });
     await tablesDb.upsertRow<WishlistRow>({
@@ -151,8 +156,8 @@ async function seed() {
       data: {
         ownerId: user2.$id,
         title: "Bob's Holiday Wishlist",
-        visibility: "LINK",
-        participation: "ANYONE",
+        visibility: Visibility.LINK,
+        participation: Participation.ANYONE,
       },
     });
 
@@ -287,7 +292,7 @@ async function seed() {
       data: {
         itemId: item1.$id,
         userId: user2.$id,
-        status: "RESERVED",
+        status: TransactionStatus.RESERVED,
         quantity: 1,
       },
     });
@@ -300,7 +305,7 @@ async function seed() {
       data: {
         itemId: item6.$id,
         userId: user2.$id,
-        status: "RESERVED",
+        status: TransactionStatus.RESERVED,
         quantity: 1,
       },
     });
@@ -313,7 +318,7 @@ async function seed() {
       data: {
         itemId: item7.$id,
         userId: user2.$id,
-        status: "PURCHASED",
+        status: TransactionStatus.PURCHASED,
         quantity: 1,
       },
     });

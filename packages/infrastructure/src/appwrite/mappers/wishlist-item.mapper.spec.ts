@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { WishlistItemMapper } from "./wishlist-item.mapper";
-import { type WishlistItem, Priority } from "@wishin/domain";
+import { WishlistItem, Priority } from "@wishin/domain";
 import type { Models } from "appwrite";
 
 describe("WishlistItemMapper", () => {

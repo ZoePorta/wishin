@@ -74,7 +74,7 @@ export const WishlistItemMapper = {
     const data = doc as WishlistItemDocument;
     const priorityValue = Number(data.priority as unknown);
     const priority = (
-      Object.values(Priority).includes(priorityValue)
+      Object.prototype.hasOwnProperty.call(Priority, priorityValue)
         ? priorityValue
         : Priority.MEDIUM
     ) as Priority;
