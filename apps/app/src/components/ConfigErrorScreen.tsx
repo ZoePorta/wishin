@@ -38,8 +38,12 @@ export function ConfigErrorScreen({ onRetry }: Props) {
           <TouchableOpacity
             style={[styles.button, { backgroundColor: theme.primary }]}
             onPress={onRetry}
+            accessibilityRole="button"
+            accessibilityLabel="Try Again"
           >
-            <Text style={styles.buttonText}>Try Again</Text>
+            <Text style={[styles.buttonText, { color: theme.buttonText }]}>
+              Try Again
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -97,7 +101,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
   },

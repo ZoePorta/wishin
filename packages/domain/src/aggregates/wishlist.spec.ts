@@ -116,7 +116,14 @@ describe("Wishlist Aggregate", () => {
           ...validProps,
           visibility: "INVALID_VISIBILITY" as Visibility,
         });
-      }).toThrow(new InvalidAttributeError(INVALID_VISIBILITY_ERROR));
+      }).toThrowError(InvalidAttributeError);
+
+      expect(() => {
+        Wishlist.create({
+          ...validProps,
+          visibility: "INVALID_VISIBILITY" as Visibility,
+        });
+      }).toThrow(INVALID_VISIBILITY_ERROR);
     });
 
     it("should throw InvalidAttributeError if participation is invalid", () => {
@@ -125,7 +132,14 @@ describe("Wishlist Aggregate", () => {
           ...validProps,
           participation: "INVALID_PARTICIPATION" as Participation,
         });
-      }).toThrow(new InvalidAttributeError(INVALID_PARTICIPATION_ERROR));
+      }).toThrowError(InvalidAttributeError);
+
+      expect(() => {
+        Wishlist.create({
+          ...validProps,
+          participation: "INVALID_PARTICIPATION" as Participation,
+        });
+      }).toThrow(INVALID_PARTICIPATION_ERROR);
     });
   });
 

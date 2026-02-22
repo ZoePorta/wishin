@@ -82,10 +82,17 @@ export class NotFoundError extends Error {
 }
 /**
  * Error message used when a visibility value is invalid.
+ * Invariant: Visibility must be one of the following:
+ * - Visibility.LINK: Anyone with the link can view.
+ * - Visibility.PRIVATE: Only the owner can view.
  */
 export const INVALID_VISIBILITY_ERROR = "Invalid visibility" as const;
 
 /**
  * Error message used when a participation value is invalid.
+ * Invariant: Participation must be one of the following:
+ * - Participation.ANYONE: Anyone can participate.
+ * - Participation.REGISTERED: Only registered users can participate.
+ * - Participation.CONTACTS: Only owner's contacts can participate.
  */
 export const INVALID_PARTICIPATION_ERROR = "Invalid participation" as const;

@@ -11,11 +11,7 @@ import { AppErrorBoundary } from "../src/components/AppErrorBoundary";
 import { ConfigErrorScreen } from "../src/components/ConfigErrorScreen";
 import { Config, ensureAppwriteConfig } from "../src/constants/Config";
 
-/**
- * Root orchestrator component that manages dependencies.
- * This keeps the UI layout clean and focused on navigation.
- * Wrapped in AppErrorBoundary to catch configuration errors.
- */
+// cached AppwriteWishlistRepository singleton
 let cachedRepository: AppwriteWishlistRepository | null = null;
 
 /**
@@ -49,6 +45,11 @@ function getAppwriteRepository(): AppwriteWishlistRepository {
   return cachedRepository;
 }
 
+/**
+ * Root orchestrator component that manages dependencies.
+ * This keeps the UI layout clean and focused on navigation.
+ * Wrapped in AppErrorBoundary to catch configuration errors.
+ */
 export default function Root() {
   return (
     <AppErrorBoundary fallback={<ConfigErrorScreen />}>

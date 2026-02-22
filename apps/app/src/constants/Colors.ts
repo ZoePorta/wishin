@@ -64,6 +64,7 @@ export const Colors = {
     overlay: "rgba(255, 255, 255, 0.7)",
     // Definition for future gradients
     gradientPrimary: [palette.violet[600], palette.pink[400]],
+    buttonText: palette.white,
   },
   dark: {
     primary: palette.pink[400],
@@ -79,5 +80,6 @@ export const Colors = {
     sky100: "#0C4A6E", // Dark sky
     overlay: "rgba(0, 0, 0, 0.7)",
     gradientPrimary: [palette.violet[500], palette.pink[600]],
+    buttonText: palette.white,
   },
 } as const;
