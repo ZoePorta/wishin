@@ -9,6 +9,7 @@ import {
 } from "@wishin/infrastructure";
 import { AppErrorBoundary } from "../src/components/AppErrorBoundary";
 import { ConfigErrorScreen } from "../src/components/ConfigErrorScreen";
+import { GeneralErrorScreen } from "../src/components/GeneralErrorScreen";
 import { Config, ensureAppwriteConfig } from "../src/constants/Config";
 
 // cached AppwriteWishlistRepository singleton
@@ -48,21 +49,32 @@ function getAppwriteRepository(): AppwriteWishlistRepository {
 /**
  * Root orchestrator component that manages dependencies.
  * This keeps the UI layout clean and focused on navigation.
- * Wrapped in AppErrorBoundary to catch configuration errors.
+ * Wrapped in a general AppErrorBoundary to catch any unexpected runtime errors.
  */
 export default function Root() {
   return (
-    <AppErrorBoundary fallback={<ConfigErrorScreen />}>
+    <AppErrorBoundary fallback={<GeneralErrorScreen />}>
       <RootContent />
     </AppErrorBoundary>
   );
 }
 
 /**
- * Inner root component that initializes dependencies.
- * This can throw if configuration is missing.
+ * Inner root component that narrows the boundary for configuration-related errors.
  */
 function RootContent() {
+  return (
+    <AppErrorBoundary fallback={<ConfigErrorScreen />}>
+      <AuthenticatedApp />
+    </AppErrorBoundary>
+  );
+}
+
+/**
+ * Component that initializes the repository and provides it to the app.
+ * This can throw if configuration is missing (via getAppwriteRepository).
+ */
+function AuthenticatedApp() {
   const repository = getAppwriteRepository();
 
   return (
