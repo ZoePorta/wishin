@@ -8,7 +8,7 @@ import {
   AppwriteWishlistRepository,
   createAppwriteClient,
 } from "@wishin/infrastructure";
-import { Config } from "../src/constants/Config";
+import { Config, ensureAppwriteConfig } from "../src/constants/Config";
 
 /**
  * Root orchestrator component that manages dependencies.
@@ -16,6 +16,8 @@ import { Config } from "../src/constants/Config";
  */
 export default function Root() {
   const repository = useMemo(() => {
+    ensureAppwriteConfig();
+
     const client = createAppwriteClient(
       Config.appwrite.endpoint,
       Config.appwrite.projectId,

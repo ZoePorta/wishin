@@ -8,12 +8,21 @@ const projectId = process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? "";
 const databaseId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID ?? "";
 const prefix = process.env.EXPO_PUBLIC_DB_PREFIX ?? "";
 
-if (!endpoint || !projectId || !databaseId) {
-  throw new Error(
-    "Missing required Appwrite environment variables. " +
-      "Ensure EXPO_PUBLIC_APPWRITE_ENDPOINT, EXPO_PUBLIC_APPWRITE_PROJECT_ID, " +
-      "and EXPO_PUBLIC_APPWRITE_DATABASE_ID are set in your .env file.",
-  );
+/**
+ * Validates that all required Appwrite environment variables are set.
+ * Tests should set these environment variables or call a helper to stub them.
+ *
+ * @throws {Error} If EXPO_PUBLIC_APPWRITE_ENDPOINT, EXPO_PUBLIC_APPWRITE_PROJECT_ID,
+ * or EXPO_PUBLIC_APPWRITE_DATABASE_ID are missing.
+ */
+export function ensureAppwriteConfig() {
+  if (!endpoint || !projectId || !databaseId) {
+    throw new Error(
+      "Missing required Appwrite environment variables. " +
+        "Ensure EXPO_PUBLIC_APPWRITE_ENDPOINT, EXPO_PUBLIC_APPWRITE_PROJECT_ID, " +
+        "and EXPO_PUBLIC_APPWRITE_DATABASE_ID are set in your .env file.",
+    );
+  }
 }
 
 export const Config = {
