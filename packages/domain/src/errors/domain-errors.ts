@@ -80,3 +80,5 @@ export class NotFoundError extends Error {
     Object.setPrototypeOf(this, NotFoundError.prototype);
   }
 }
+export const INVALID_VISIBILITY_ERROR = "Invalid visibility";
+export const INVALID_PARTICIPATION_ERROR = "Invalid participation";

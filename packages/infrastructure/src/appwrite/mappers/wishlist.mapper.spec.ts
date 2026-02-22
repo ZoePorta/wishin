@@ -6,6 +6,7 @@ import {
   Participation,
   WishlistItem,
   Priority,
+  INVALID_VISIBILITY_ERROR,
 } from "@wishin/domain";
 import type { Models } from "appwrite";
 
@@ -128,7 +129,7 @@ describe("WishlistMapper", () => {
     } as unknown as Models.Document;
 
     expect(() => WishlistMapper.toDomain(doc, [])).toThrow(
-      "Invalid visibility",
+      INVALID_VISIBILITY_ERROR,
     );
   });
 

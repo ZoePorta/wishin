@@ -1,10 +1,6 @@
 import type { Models } from "appwrite";
-import {
-  Wishlist,
-  WishlistItem,
-  Visibility,
-  Participation,
-} from "@wishin/domain";
+import { Wishlist, Visibility, Participation } from "@wishin/domain";
+import type { WishlistItem } from "@wishin/domain";
 
 /**
  * Interface representing the Appwrite document structure for a Wishlist.
