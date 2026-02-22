@@ -1,6 +1,5 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useMemo } from "react";
 import { View, StyleSheet, useColorScheme } from "react-native";
 import { Colors } from "../src/constants/Colors";
 import { WishlistRepositoryProvider } from "../src/contexts/WishlistRepositoryContext";
@@ -17,6 +16,39 @@ import { Config, ensureAppwriteConfig } from "../src/constants/Config";
  * This keeps the UI layout clean and focused on navigation.
  * Wrapped in AppErrorBoundary to catch configuration errors.
  */
+let cachedRepository: AppwriteWishlistRepository | null = null;
+
+/**
+ * Lazy singleton factory that creates and caches the AppwriteWishlistRepository.
+ * This ensures that the Appwrite client and repository are only created once
+ * and not during the render phase of any component.
+ *
+ * @returns {AppwriteWishlistRepository} The initialized Appwrite repository.
+ * @throws {Error} if the Appwrite configuration is invalid or missing.
+ */
+function getAppwriteRepository(): AppwriteWishlistRepository {
+  if (cachedRepository) {
+    return cachedRepository;
+  }
+
+  ensureAppwriteConfig();
+
+  const client = createAppwriteClient(
+    Config.appwrite.endpoint,
+    Config.appwrite.projectId,
+  );
+
+  cachedRepository = new AppwriteWishlistRepository(
+    client,
+    Config.appwrite.databaseId,
+    Config.collections.wishlists,
+    Config.collections.wishlistItems,
+    Config.collections.transactions,
+  );
+
+  return cachedRepository;
+}
+
 export default function Root() {
   return (
     <AppErrorBoundary fallback={<ConfigErrorScreen />}>
@@ -30,22 +62,7 @@ export default function Root() {
  * This can throw if configuration is missing.
  */
 function RootContent() {
-  const repository = useMemo(() => {
-    ensureAppwriteConfig();
-
-    const client = createAppwriteClient(
-      Config.appwrite.endpoint,
-      Config.appwrite.projectId,
-    );
-
-    return new AppwriteWishlistRepository(
-      client,
-      Config.appwrite.databaseId,
-      Config.collections.wishlists,
-      Config.collections.wishlistItems,
-      Config.collections.transactions,
-    );
-  }, []);
+  const repository = getAppwriteRepository();
 
   return (
     <WishlistRepositoryProvider repository={repository}>
