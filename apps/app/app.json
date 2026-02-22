@@ -3,7 +3,7 @@
     "name": "app",
     "slug": "app",
     "scheme": "wishin",
-    "plugins": ["expo-router"],
+    "plugins": ["expo-router", "./src/plugins/withAndroidQueries"],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

@@ -125,6 +125,16 @@ describe("Transaction Aggregate", () => {
         }),
       ).toThrow(InvalidAttributeError);
     });
+
+    it("should throw if guestSessionId is whitespace-only", () => {
+      expect(() =>
+        Transaction.createPurchase({
+          itemId: VALID_ITEM_ID,
+          guestSessionId: "   ",
+          quantity: 1,
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
   });
 
   describe("Lifecycle Transitions", () => {
@@ -220,6 +230,72 @@ describe("Transaction Aggregate", () => {
     });
   });
 
+  describe("Orphan Transactions (null FKs)", () => {
+    it("should allow cancelling a reservation even if itemId is null (deleted item)", () => {
+      const reservation = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: null,
+        userId: VALID_USER_ID,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const cancelled = reservation.cancel();
+      expect(cancelled.status).toBe(TransactionStatus.CANCELLED);
+      expect(cancelled.itemId).toBeNull();
+    });
+
+    it("should allow cancelling a reservation even if userId is null (deleted user)", () => {
+      const reservation = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: VALID_ITEM_ID,
+        userId: null,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const cancelled = reservation.cancel();
+      expect(cancelled.status).toBe(TransactionStatus.CANCELLED);
+      expect(cancelled.userId).toBeNull();
+    });
+
+    it("should throw if confirming purchase when itemId is null (STRICT validation)", () => {
+      const reservation = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: null,
+        userId: VALID_USER_ID,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(() => reservation.confirmPurchase()).toThrow(
+        InvalidAttributeError,
+      );
+    });
+
+    it("should throw if confirming purchase when userId is null (STRICT validation)", () => {
+      const reservation = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: VALID_ITEM_ID,
+        userId: null,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(() => reservation.confirmPurchase()).toThrow(
+        InvalidAttributeError,
+      );
+    });
+  });
+
   describe("Reconstitution (Handling null FKs)", () => {
     it("should allow reconstituting with null itemId (deleted item)", () => {
       const transaction = Transaction.reconstitute({
@@ -259,6 +335,49 @@ describe("Transaction Aggregate", () => {
           updatedAt: new Date(),
         }),
       ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw if userId is invalid UUID in reconstitute", () => {
+      expect(() =>
+        Transaction.reconstitute({
+          id: VALID_TRANSACTION_ID,
+          itemId: VALID_ITEM_ID,
+          userId: "invalid-uuid",
+          status: TransactionStatus.RESERVED,
+          quantity: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw if guestSessionId is whitespace-only in reconstitute", () => {
+      expect(() =>
+        Transaction.reconstitute({
+          id: VALID_TRANSACTION_ID,
+          itemId: VALID_ITEM_ID,
+          guestSessionId: "   ",
+          status: TransactionStatus.PURCHASED,
+          quantity: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should not throw when userId is null and guestSessionId is undefined (soft-deleted identity)", () => {
+      expect(() =>
+        Transaction.reconstitute({
+          id: VALID_TRANSACTION_ID,
+          itemId: VALID_ITEM_ID,
+          userId: null,
+          guestSessionId: undefined,
+          status: TransactionStatus.PURCHASED,
+          quantity: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ).not.toThrow();
     });
   });
 

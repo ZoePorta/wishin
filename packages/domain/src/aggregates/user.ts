@@ -1,16 +1,6 @@
 import { InvalidAttributeError } from "../errors/domain-errors";
-import { ValidationMode as SharedValidationMode } from "../common/validation-mode";
+import { ValidationMode } from "../common/validation-mode";
 import { isValidUUID } from "../common/validation-utils";
-
-/**
- * Extended ValidationMode for User.
- */
-export const ValidationMode = {
-  ...SharedValidationMode,
-} as const;
-
-export type ValidationMode =
-  (typeof ValidationMode)[keyof typeof ValidationMode];
 
 /**
  * Public interface defining the shape of User data.

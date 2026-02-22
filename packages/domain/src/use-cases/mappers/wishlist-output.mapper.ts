@@ -1,4 +1,4 @@
-import { Wishlist } from "../../aggregates/wishlist";
+import type { Wishlist } from "../../aggregates/wishlist";
 import { WishlistOutput } from "../dtos/get-wishlist.dto";
 
 /**
@@ -30,7 +30,7 @@ export const WishlistOutputMapper = {
           url: itemProps.url,
           price: itemProps.price,
           currency: itemProps.currency,
-          priority: itemProps.priority.toString(),
+          priority: itemProps.priority,
           imageUrl: itemProps.imageUrl,
           totalQuantity: itemProps.totalQuantity,
           reservedQuantity: itemProps.reservedQuantity,

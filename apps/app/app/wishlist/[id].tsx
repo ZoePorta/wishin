@@ -1,5 +1,5 @@
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useMemo, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,63 +10,34 @@ import {
   Linking,
   Pressable,
   useColorScheme,
+  Alert,
 } from "react-native";
-import { Colors } from "../../src/constants/Colors";
-import { MockWishlistService } from "../../src/services/MockWishlistService";
-import type {
-  Wishlist,
-  WishlistItem,
-} from "../../src/services/MockWishlistService";
+import { Colors } from "@wishin/app/constants/Colors";
+import { useWishlist } from "@wishin/app/hooks/useWishlist";
+import type { UseWishlistReturn } from "@wishin/app/hooks/useWishlist";
+import { Priority } from "@wishin/domain";
+import type { WishlistItemOutput } from "@wishin/domain";
+
+const PRIORITY_LABELS: Record<Priority, string> = {
+  [Priority.LOW]: "LOW",
+  [Priority.MEDIUM]: "MEDIUM",
+  [Priority.HIGH]: "HIGH",
+  [Priority.URGENT]: "URGENT",
+};
 
 /**
  * Display the details of a specific wishlist.
+
  *
  * @returns The WishlistDetail component.
  */
 export default function WishlistDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [wishlist, setWishlist] = useState<Wishlist | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { wishlist, loading, error, refetch }: UseWishlistReturn =
+    useWishlist(id);
   const colorScheme = useColorScheme();
   const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
   const themedStyles = useMemo(() => getThemedStyles(theme), [theme]);
-
-  const fetchIdRef = useRef(0);
-
-  const loadWishlist = useCallback(async () => {
-    const fetchId = ++fetchIdRef.current;
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await MockWishlistService.getWishlistById(id);
-      if (fetchId === fetchIdRef.current) {
-        setWishlist(data);
-      }
-    } catch (err) {
-      if (fetchId === fetchIdRef.current) {
-        console.error("Error fetching wishlist:", err);
-        setError(err instanceof Error ? err.message : "An error occurred");
-      }
-    } finally {
-      if (fetchId === fetchIdRef.current) {
-        setLoading(false);
-      }
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (id) {
-      void loadWishlist();
-    } else {
-      setLoading(false);
-    }
-
-    return () => {
-      // Invalidate any in-flight requests on unmount
-      fetchIdRef.current++;
-    };
-  }, [id, loadWishlist]);
 
   const ListHeader = useMemo(() => {
     if (!wishlist) return null;
@@ -85,86 +56,121 @@ export default function WishlistDetail() {
     );
   }, [wishlist, themedStyles]);
 
+  const handleOpenUrl = useCallback(async (url?: string) => {
+    if (!url) return;
+
+    try {
+      await Linking.openURL(url);
+    } catch (err: unknown) {
+      Alert.alert(
+        "Error",
+        "An unexpected error occurred while trying to open the link.",
+      );
+      console.error("Failed to open URL:", err);
+    }
+  }, []);
   // Hoisted renderItem
   const renderItem = useCallback(
-    ({ item }: { item: WishlistItem }) => (
-      <View style={[styles.card, themedStyles.card]}>
-        {item.imageUrl && (
-          <Image
-            source={{ uri: item.imageUrl }}
-            style={styles.itemImage}
-            resizeMode="cover"
-            accessibilityLabel={item.title}
-          />
-        )}
+    ({ item }: { item: WishlistItemOutput }) => {
+      const isCompleted =
+        !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
+      const isReserved =
+        !item.isUnlimited &&
+        !isCompleted &&
+        item.purchasedQuantity + item.reservedQuantity >= item.totalQuantity;
 
-        {/* Reserved Overlay moved here to cover image + content */}
-        {item.isReserved && (
-          <View style={[styles.reservedOverlay, themedStyles.overlay]}>
-            <Text style={[styles.reservedText, themedStyles.reservedText]}>
-              RESERVED
-            </Text>
-          </View>
-        )}
-
-        <View style={styles.cardContent}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.itemTitle, themedStyles.text]}>
-              {item.title}
-            </Text>
-            {item.price != null && (
-              <Text style={[styles.itemPrice, themedStyles.primaryText]}>
-                {item.currency} {item.price.toFixed(2)}
-              </Text>
-            )}
-          </View>
-
-          {item.description && (
-            <Text
-              style={[styles.itemDescription, themedStyles.textMuted]}
-              numberOfLines={2}
-            >
-              {item.description}
-            </Text>
+      return (
+        <View style={[styles.card, themedStyles.card]}>
+          {item.imageUrl && (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.itemImage}
+              resizeMode="cover"
+              accessibilityLabel={item.name}
+            />
           )}
 
-          <View style={styles.cardFooter}>
-            <View
-              style={[
-                styles.priorityBadge,
-                item.priority === "high"
-                  ? themedStyles.priorityHigh
-                  : item.priority === "medium"
-                    ? themedStyles.priorityMedium
-                    : themedStyles.priorityLow,
-              ]}
-            >
-              <Text style={[styles.priorityText, themedStyles.text]}>
-                {item.priority.toUpperCase()}
+          {/* Overlays */}
+          {isCompleted && (
+            <View style={[styles.overlay, themedStyles.overlay]}>
+              <View style={[styles.badge, themedStyles.completedBadge]}>
+                <Text style={[styles.badgeText, themedStyles.badgeText]}>
+                  COMPLETED
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {isReserved && (
+            <View style={[styles.overlay, themedStyles.overlay]}>
+              <View style={[styles.badge, themedStyles.reservedBadge]}>
+                <Text style={[styles.badgeText, themedStyles.badgeText]}>
+                  RESERVED
+                </Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.cardContent}>
+            <View style={styles.cardHeader}>
+              <Text style={[styles.itemTitle, themedStyles.text]}>
+                {item.name}
               </Text>
+              {item.price != null && item.currency != null && (
+                <Text style={[styles.itemPrice, themedStyles.primaryText]}>
+                  {item.currency} {item.price.toFixed(2)}
+                </Text>
+              )}
             </View>
 
-            {item.url && (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.linkButton,
-                  pressed && styles.pressed,
-                ]}
-                hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
-                onPress={() => item.url && void Linking.openURL(item.url)}
-                accessibilityLabel={`View Online, ${item.title}`}
-                accessibilityRole="link"
+            {item.description && (
+              <Text
+                style={[styles.itemDescription, themedStyles.textMuted]}
+                numberOfLines={2}
               >
-                <Text style={[styles.linkText, themedStyles.secondaryText]}>
-                  View Online
-                </Text>
-              </Pressable>
+                {item.description}
+              </Text>
             )}
+
+            <View style={styles.cardFooter}>
+              <View
+                style={[
+                  styles.priorityBadge,
+                  item.priority === Priority.HIGH ||
+                  item.priority === Priority.URGENT
+                    ? themedStyles.priorityHigh
+                    : item.priority === Priority.MEDIUM
+                      ? themedStyles.priorityMedium
+                      : themedStyles.priorityLow,
+                ]}
+              >
+                <Text style={[styles.priorityText, themedStyles.text]}>
+                  {PRIORITY_LABELS[item.priority]}
+                </Text>
+              </View>
+
+              {item.url && (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.linkButton,
+                    pressed && styles.pressed,
+                  ]}
+                  hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
+                  onPress={() => void handleOpenUrl(item.url)}
+                  accessibilityLabel={`View Online, ${item.name}`}
+                  accessibilityRole="link"
+                >
+                  <Text style={[styles.linkText, themedStyles.secondaryText]}>
+                    View Online
+                  </Text>
+                </Pressable>
+              )}
+            </View>
           </View>
         </View>
-      </View>
-    ),
-    [themedStyles],
+      );
+    },
+    [themedStyles, handleOpenUrl],
   );
 
   if (loading) {
@@ -180,7 +186,7 @@ export default function WishlistDetail() {
       <View style={[styles.centerContainer, themedStyles.background]}>
         <Text style={[styles.errorText, themedStyles.textMuted]}>{error}</Text>
         <Pressable
-          onPress={() => void loadWishlist()}
+          onPress={() => void refetch()}
           style={styles.retryButton}
           accessibilityRole="button"
           accessibilityLabel="Retry loading wishlist"
@@ -212,6 +218,13 @@ export default function WishlistDetail() {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={ListHeader}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, themedStyles.textMuted]}>
+              No items in this wishlist.
+            </Text>
+          </View>
+        }
         style={themedStyles.background}
       />
     </>
@@ -265,7 +278,6 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     marginBottom: 16,
-    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -276,6 +288,8 @@ const styles = StyleSheet.create({
   itemImage: {
     width: "100%",
     height: 150,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   cardContent: {
     padding: 16,
@@ -323,21 +337,31 @@ const styles = StyleSheet.create({
   linkText: {
     fontWeight: "600",
   },
-  reservedOverlay: {
+  overlay: {
     ...StyleSheet.absoluteFillObject,
-    // backgroundColor handled dynamically
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1,
+    borderRadius: 12,
   },
-  reservedText: {
-    fontWeight: "bold",
-    fontSize: 16,
-    borderWidth: 2,
+  badge: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+    borderWidth: 2,
     transform: [{ rotate: "-5deg" }],
+  },
+  badgeText: {
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontSize: 16,
+    fontStyle: "italic",
   },
 });
 
@@ -374,9 +398,17 @@ function getThemedStyles(theme: (typeof Colors)["light" | "dark"]) {
     overlay: {
       backgroundColor: theme.overlay,
     },
-    reservedText: {
-      color: theme.text,
+    completedBadge: {
       borderColor: theme.text,
+      backgroundColor: theme.card,
+    },
+    reservedBadge: {
+      borderColor: theme.text,
+      borderStyle: "dashed",
+      backgroundColor: theme.card,
+    },
+    badgeText: {
+      color: theme.text,
     },
     priorityHigh: {
       backgroundColor: theme.red100,

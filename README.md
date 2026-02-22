@@ -94,6 +94,7 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 - [ADR 014: Identity and Repository Mapping Strategy](docs/adr/014-identity-and-repository-mapping-strategy.md)
 - [ADR 015: Automated Infrastructure Provisioning and Namespacing](docs/adr/015-automated-infrastructure-provisioning-and-namespacing.md)
 - [ADR 016: Database Seeding Strategy](docs/adr/016-database-seeding-strategy.md)
+- [ADR 017: Orphan Transactions Lifecycle Management](docs/adr/017-orphan-transactions-lifecycle-management.md)
 
 ## [Project Roadmap](docs/roadmap.md)
 

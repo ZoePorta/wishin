@@ -1,16 +1,17 @@
 import { Link } from "expo-router";
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import { Colors } from "../src/constants/Colors";
+import { MOCK_WISHLIST_DATA } from "@wishin/infrastructure/mocks";
 
 export default function Index() {
-  const testWishlistId = "test-wishlist-id";
+  const demoWishlistId = MOCK_WISHLIST_DATA.id;
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Wishin</Text>
       <Text style={styles.subtitle}>Share your wishes with the world.</Text>
 
-      <Link href={`/wishlist/${testWishlistId}`} asChild>
+      <Link href={`/wishlist/${demoWishlistId}`} asChild>
         <Pressable style={styles.button}>
           <Text style={styles.buttonText}>View Demo Wishlist</Text>
         </Pressable>

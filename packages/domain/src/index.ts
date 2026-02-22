@@ -5,3 +5,5 @@ export * from "./errors/domain-errors";
 export * from "./aggregates/wishlist";
 export * from "./entities/wishlist-item";
 export * from "./value-objects";
+export * from "./use-cases/mappers/get-wishlist.mapper";
+export * from "./common/validation-mode";

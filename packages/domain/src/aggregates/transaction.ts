@@ -1,19 +1,9 @@
-import { ValidationMode as SharedValidationMode } from "../common/validation-mode";
+import { ValidationMode } from "../common/validation-mode";
 import {
   InvalidAttributeError,
   InvalidTransitionError,
 } from "../errors/domain-errors";
 import { isValidUUID } from "../common/validation-utils";
-
-/**
- * Extended ValidationMode for Transaction.
- */
-export const ValidationMode = {
-  ...SharedValidationMode,
-} as const;
-
-export type ValidationMode =
-  (typeof ValidationMode)[keyof typeof ValidationMode];
 
 import { TransactionStatus } from "../value-objects/transaction-status";
 
@@ -69,7 +59,8 @@ export interface TransactionCreatePurchaseProps {
  * - **id**, **itemId**: Must be valid UUID v4.
  * - **quantity**: Must be a positive integer.
  * - **Identity XOR**: Must have exactly ONE of `userId` or `guestSessionId`.
- * - **RESERVED state**: Requires `userId`.
+ * - **Identities (userId/guestSessionId)**: Allow null values during reconstitution to handle deleted entities.
+ * - **RESERVED state**: Requires `userId` (except when the user is deleted and the transaction is being cancelled/auto-corrected).
  * - **PURCHASED state**: Allows either `userId` or `guestSessionId`.
  *
  * @throws {InvalidAttributeError} If validation fails.
@@ -153,7 +144,7 @@ export class Transaction {
   /**
    * Reconstitutes a Transaction from persistence.
    *
-   * **Validation Mode:** STRICT
+   * **Validation Mode:** STRUCTURAL
    *
    * @param {TransactionProps} props
    * @returns {Transaction}
@@ -219,7 +210,7 @@ export class Transaction {
       throw new InvalidTransitionError("Transaction is already cancelled");
     }
 
-    if (!this.userId) {
+    if (!this.userId && this.guestSessionId) {
       throw new InvalidTransitionError(
         "Only registered users can cancel transactions",
       );
@@ -231,7 +222,7 @@ export class Transaction {
         status: TransactionStatus.CANCELLED,
         updatedAt: new Date(),
       },
-      ValidationMode.STRICT,
+      ValidationMode.STRUCTURAL,
     );
   }
 
@@ -294,6 +285,19 @@ export class Transaction {
     if (isNaN(this.quantity)) {
       throw new InvalidAttributeError("Invalid quantity: Must be a number");
     }
+    if (this.quantity <= 0 || !Number.isInteger(this.quantity)) {
+      throw new InvalidAttributeError(
+        "Invalid quantity: Must be a positive integer",
+      );
+    }
+    if (this.userId && !isValidUUID(this.userId)) {
+      throw new InvalidAttributeError("Invalid userId: Must be valid UUID v4");
+    }
+    if (this.guestSessionId?.trim() === "") {
+      throw new InvalidAttributeError(
+        "Invalid guestSessionId: Must be a non-empty string",
+      );
+    }
     if (!(this.createdAt instanceof Date) || isNaN(this.createdAt.getTime())) {
       throw new InvalidAttributeError(
         "Invalid createdAt: Must be a valid Date",
@@ -305,8 +309,9 @@ export class Transaction {
       );
     }
 
-    // --- Identity XOR (STRICT Only) ---
+    // --- STRICT VALIDATIONS ---
     if (mode === ValidationMode.STRICT) {
+      // Identity XOR
       const hasUser = !!this.userId;
       const hasGuest = !!this.guestSessionId;
 
@@ -320,26 +325,8 @@ export class Transaction {
           "Identity XOR: Must have either userId or guestSessionId",
         );
       }
-    }
 
-    // --- BUSINESS RULES (Always enforced as they are fundamental) ---
-    if (this.quantity <= 0 || !Number.isInteger(this.quantity)) {
-      throw new InvalidAttributeError(
-        "Invalid quantity: Must be a positive integer",
-      );
-    }
-
-    if (this.userId && !isValidUUID(this.userId)) {
-      throw new InvalidAttributeError("Invalid userId: Must be valid UUID v4");
-    }
-
-    if (this.guestSessionId?.trim() === "") {
-      throw new InvalidAttributeError(
-        "Invalid guestSessionId: Must be a non-empty string",
-      );
-    }
-
-    if (mode === ValidationMode.STRICT) {
+      // Metadata presence
       if (!this.itemId) {
         throw new InvalidAttributeError(
           "Invalid itemId: Must be defined for new transactions",
