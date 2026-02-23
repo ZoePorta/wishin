@@ -1,9 +1,12 @@
 import { View, Text, StyleSheet, useColorScheme } from "react-native";
 import { Colors } from "../constants/Colors";
+import { createSharedErrorStyles } from "./error-screen.styles";
 
 /**
  * Generic fallback screen for uncaught runtime errors.
  * Adheres to the getThemedStyles(theme) pattern.
+ *
+ * @returns {JSX.Element} The rendered fallback UI for uncaught runtime errors.
  */
 export function GeneralErrorScreen() {
   const colorScheme = useColorScheme();
@@ -27,56 +30,19 @@ export function GeneralErrorScreen() {
 
 /**
  * Generates themed styles for GeneralErrorScreen.
+ * Reuses shared error screen styles.
  *
  * @param {typeof Colors.light} theme - The current theme.
- * @returns {object} The themed styles.
+ * @returns {ReturnType<typeof StyleSheet.create>} The themed styles.
  */
 function getThemedStyles(theme: typeof Colors.light) {
+  const baseStyles = createSharedErrorStyles(theme);
+
   return StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 24,
-      backgroundColor: theme.background,
-    },
-    card: {
-      padding: 32,
-      borderRadius: 24,
-      width: "100%",
-      maxWidth: 400,
-      alignItems: "center",
-      backgroundColor: theme.card,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 5,
-    },
+    ...baseStyles,
     iconContainer: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: 24,
+      ...baseStyles.iconContainer,
       backgroundColor: theme.red100,
-    },
-    icon: {
-      fontSize: 32,
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: "bold",
-      marginBottom: 16,
-      textAlign: "center",
-      color: theme.text,
-    },
-    message: {
-      fontSize: 16,
-      lineHeight: 24,
-      textAlign: "center",
-      color: theme.textMuted,
     },
   });
 }

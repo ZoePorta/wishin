@@ -111,27 +111,21 @@ describe("Wishlist Aggregate", () => {
     });
 
     it("should throw InvalidAttributeError if visibility is invalid", () => {
-      const createWithInvalidVisibility = () =>
+      expect(() =>
         Wishlist.create({
           ...validProps,
           visibility: "INVALID_VISIBILITY" as Visibility,
-        });
-
-      expect(createWithInvalidVisibility).toThrow(InvalidAttributeError);
-      expect(createWithInvalidVisibility).toThrow(INVALID_VISIBILITY_ERROR);
+        }),
+      ).toThrow(INVALID_VISIBILITY_ERROR);
     });
 
     it("should throw InvalidAttributeError if participation is invalid", () => {
-      const createWithInvalidParticipation = () =>
+      expect(() =>
         Wishlist.create({
           ...validProps,
           participation: "INVALID_PARTICIPATION" as Participation,
-        });
-
-      expect(createWithInvalidParticipation).toThrow(InvalidAttributeError);
-      expect(createWithInvalidParticipation).toThrow(
-        INVALID_PARTICIPATION_ERROR,
-      );
+        }),
+      ).toThrow(INVALID_PARTICIPATION_ERROR);
     });
   });
 

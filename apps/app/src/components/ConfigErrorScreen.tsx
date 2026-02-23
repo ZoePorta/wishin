@@ -6,8 +6,10 @@ import {
   useColorScheme,
 } from "react-native";
 import { Colors } from "../constants/Colors";
+import { createSharedErrorStyles } from "./error-screen.styles";
 
 interface Props {
+  /** Callback to retry the operation that failed. */
   onRetry?: () => void;
 }
 
@@ -15,6 +17,10 @@ interface Props {
  * Fallback screen for configuration errors.
  * Displays a clear message when environment variables are missing.
  * Adheres to the getThemedStyles(theme) pattern.
+ *
+ * @param {Props} props - The component props.
+ * @param {() => void} [props.onRetry] - Optional callback to retry.
+ * @returns {JSX.Element} The rendered error screen.
  */
 export function ConfigErrorScreen({ onRetry }: Props) {
   const colorScheme = useColorScheme();
@@ -51,57 +57,23 @@ export function ConfigErrorScreen({ onRetry }: Props) {
 
 /**
  * Generates themed styles for ConfigErrorScreen.
+ * Reuses shared error screen styles and adds component-specific styles.
  *
  * @param {typeof Colors.light} theme - The current theme.
- * @returns {object} The themed styles.
+ * @returns {ReturnType<typeof StyleSheet.create>} The themed styles.
  */
 function getThemedStyles(theme: typeof Colors.light) {
+  const baseStyles = createSharedErrorStyles(theme);
+
   return StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 24,
-      backgroundColor: theme.background,
-    },
-    card: {
-      padding: 32,
-      borderRadius: 24,
-      width: "100%",
-      maxWidth: 400,
-      alignItems: "center",
-      backgroundColor: theme.card,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 5,
-    },
+    ...baseStyles,
     iconContainer: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      justifyContent: "center",
-      alignItems: "center",
-      marginBottom: 24,
-      backgroundColor: theme.red100,
-    },
-    icon: {
-      fontSize: 32,
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: "bold",
-      marginBottom: 16,
-      textAlign: "center",
-      color: theme.text,
+      ...baseStyles.iconContainer,
+      backgroundColor: theme.amber100, // Use semantically correct amber warning token
     },
     message: {
-      fontSize: 16,
-      lineHeight: 24,
-      textAlign: "center",
+      ...baseStyles.message,
       marginBottom: 32,
-      color: theme.textMuted,
     },
     button: {
       paddingVertical: 14,
