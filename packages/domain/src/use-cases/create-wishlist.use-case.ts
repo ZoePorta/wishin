@@ -1,7 +1,7 @@
 import { Wishlist } from "../aggregates/wishlist";
 import { WishlistRepository } from "../repositories/wishlist.repository";
 import { CreateWishlistInput, WishlistOutput } from "./dtos";
-import { GetWishlistMapper } from "./mappers/get-wishlist.mapper";
+import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
 import { randomUUID } from "crypto";
 
 /**
@@ -28,6 +28,6 @@ export class CreateWishlistUseCase {
 
     await this.wishlistRepository.save(wishlist);
 
-    return GetWishlistMapper.toOutput(wishlist);
+    return WishlistOutputMapper.toDTO(wishlist);
   }
 }
