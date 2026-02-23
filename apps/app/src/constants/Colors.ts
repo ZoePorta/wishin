@@ -81,6 +81,7 @@ export const Colors = {
     sky100: "#0C4A6E", // Dark sky
     overlay: "rgba(0, 0, 0, 0.7)",
     gradientPrimary: [palette.violet[600], palette.pink[400]],
+    // Intended for use on buttons with a light/primary (pink) background only
     buttonText: palette.slate[900],
   },
 } as const;
