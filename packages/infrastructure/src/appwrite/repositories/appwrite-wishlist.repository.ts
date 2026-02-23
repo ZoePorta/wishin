@@ -84,7 +84,7 @@ export class AppwriteWishlistRepository implements WishlistRepository {
       const itemsResponse = await this.tablesDb.listRows({
         databaseId: this.databaseId,
         tableId: this.wishlistItemsCollectionId,
-        queries: [Query.equal("wishlistId", id)],
+        queries: [Query.equal("wishlistId", id), Query.limit(100)],
       });
 
       const itemDocuments = toDocument<Models.Document[]>(itemsResponse.rows);
@@ -189,7 +189,7 @@ export class AppwriteWishlistRepository implements WishlistRepository {
     const existingItemsResponse = await this.tablesDb.listRows({
       databaseId: this.databaseId,
       tableId: this.wishlistItemsCollectionId,
-      queries: [Query.equal("wishlistId", wishlist.id)],
+      queries: [Query.equal("wishlistId", wishlist.id), Query.limit(100)],
     });
     const existingItemIds = existingItemsResponse.rows.map((row) => row.$id);
 
