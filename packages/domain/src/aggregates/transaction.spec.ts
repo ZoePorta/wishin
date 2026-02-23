@@ -27,8 +27,11 @@ describe("Transaction Aggregate", () => {
     };
 
     it("should create a valid reservation", () => {
-      const transaction = Transaction.createReservation(validProps);
-      expect(transaction.id).toBeDefined();
+      const transaction = Transaction.createReservation({
+        ...validProps,
+        id: VALID_TRANSACTION_ID,
+      });
+      expect(transaction.id).toBe(VALID_TRANSACTION_ID);
       expect(transaction.itemId).toBe(VALID_ITEM_ID);
       expect(transaction.userId).toBe(VALID_USER_ID);
       expect(transaction.guestSessionId).toBeUndefined();
@@ -41,13 +44,18 @@ describe("Transaction Aggregate", () => {
         Transaction.createReservation({
           ...validProps,
           userId: undefined,
+          id: VALID_TRANSACTION_ID,
         } as unknown as TransactionCreateReservationProps),
       ).toThrow(InvalidAttributeError);
     });
 
     it("should throw if itemId is invalid UUID", () => {
       expect(() =>
-        Transaction.createReservation({ ...validProps, itemId: "invalid" }),
+        Transaction.createReservation({
+          ...validProps,
+          itemId: "invalid",
+          id: VALID_TRANSACTION_ID,
+        }),
       ).toThrow(InvalidAttributeError);
     });
 
@@ -56,19 +64,53 @@ describe("Transaction Aggregate", () => {
         Transaction.createReservation({
           ...validProps,
           itemId: INVALID_UUID_V1,
+          id: VALID_TRANSACTION_ID,
         }),
       ).toThrow(InvalidAttributeError);
     });
 
     it("should throw if quantity is not a positive integer", () => {
       expect(() =>
-        Transaction.createReservation({ ...validProps, quantity: 0 }),
+        Transaction.createReservation({
+          ...validProps,
+          quantity: 0,
+          id: VALID_TRANSACTION_ID,
+        }),
       ).toThrow(InvalidAttributeError);
       expect(() =>
-        Transaction.createReservation({ ...validProps, quantity: -1 }),
+        Transaction.createReservation({
+          ...validProps,
+          quantity: -1,
+          id: VALID_TRANSACTION_ID,
+        }),
       ).toThrow(InvalidAttributeError);
       expect(() =>
-        Transaction.createReservation({ ...validProps, quantity: 1.5 }),
+        Transaction.createReservation({
+          ...validProps,
+          quantity: 1.5,
+          id: VALID_TRANSACTION_ID,
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw if id is invalid", () => {
+      expect(() =>
+        Transaction.createReservation({
+          ...validProps,
+          id: "invalid",
+        }),
+      ).toThrow(InvalidAttributeError);
+      expect(() =>
+        Transaction.createReservation({
+          ...validProps,
+          id: INVALID_UUID_V1,
+        }),
+      ).toThrow(InvalidAttributeError);
+      expect(() =>
+        Transaction.createReservation({
+          ...validProps,
+          id: "",
+        }),
       ).toThrow(InvalidAttributeError);
     });
   });
@@ -79,8 +121,10 @@ describe("Transaction Aggregate", () => {
         itemId: VALID_ITEM_ID,
         userId: VALID_USER_ID,
         quantity: 1,
+        id: VALID_TRANSACTION_ID,
       });
       expect(transaction.status).toBe(TransactionStatus.PURCHASED);
+      expect(transaction.id).toBe(VALID_TRANSACTION_ID);
       expect(transaction.userId).toBe(VALID_USER_ID);
       expect(transaction.guestSessionId).toBeUndefined();
     });
@@ -90,8 +134,10 @@ describe("Transaction Aggregate", () => {
         itemId: VALID_ITEM_ID,
         guestSessionId: VALID_GUEST_ID,
         quantity: 2,
+        id: VALID_TRANSACTION_ID,
       });
       expect(transaction.status).toBe(TransactionStatus.PURCHASED);
+      expect(transaction.id).toBe(VALID_TRANSACTION_ID);
       expect(transaction.guestSessionId).toBe(VALID_GUEST_ID);
       expect(transaction.userId).toBeUndefined();
     });
@@ -101,6 +147,7 @@ describe("Transaction Aggregate", () => {
         Transaction.createPurchase({
           itemId: VALID_ITEM_ID,
           quantity: 1,
+          id: VALID_TRANSACTION_ID,
         }),
       ).toThrow(InvalidAttributeError);
     });
@@ -112,6 +159,7 @@ describe("Transaction Aggregate", () => {
           userId: VALID_USER_ID,
           guestSessionId: VALID_GUEST_ID,
           quantity: 1,
+          id: VALID_TRANSACTION_ID,
         }),
       ).toThrow(InvalidAttributeError);
     });
@@ -122,6 +170,7 @@ describe("Transaction Aggregate", () => {
           itemId: VALID_ITEM_ID,
           guestSessionId: "",
           quantity: 1,
+          id: VALID_TRANSACTION_ID,
         }),
       ).toThrow(InvalidAttributeError);
     });
@@ -132,6 +181,26 @@ describe("Transaction Aggregate", () => {
           itemId: VALID_ITEM_ID,
           guestSessionId: "   ",
           quantity: 1,
+          id: VALID_TRANSACTION_ID,
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw if id is invalid", () => {
+      expect(() =>
+        Transaction.createPurchase({
+          itemId: VALID_ITEM_ID,
+          userId: VALID_USER_ID,
+          quantity: 1,
+          id: "invalid",
+        }),
+      ).toThrow(InvalidAttributeError);
+      expect(() =>
+        Transaction.createPurchase({
+          itemId: VALID_ITEM_ID,
+          userId: VALID_USER_ID,
+          quantity: 1,
+          id: INVALID_UUID_V1,
         }),
       ).toThrow(InvalidAttributeError);
     });

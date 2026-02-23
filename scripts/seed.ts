@@ -1,10 +1,6 @@
 import { Client, TablesDB, type Models } from "node-appwrite";
 import "dotenv/config";
-import {
-  Visibility,
-  Participation,
-  TransactionStatus,
-} from "../packages/domain/src/index.js";
+import { Visibility, Participation, TransactionStatus } from "@wishin/domain";
 
 const REQUIRED_ENV_VARS = [
   "EXPO_PUBLIC_APPWRITE_ENDPOINT",
