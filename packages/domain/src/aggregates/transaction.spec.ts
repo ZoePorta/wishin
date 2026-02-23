@@ -27,12 +27,11 @@ describe("Transaction Aggregate", () => {
     };
 
     it("should create a valid reservation", () => {
-      const id = "9f8c05c0-e89b-42d3-a456-426614174002";
       const transaction = Transaction.createReservation({
         ...validProps,
-        id,
+        id: VALID_TRANSACTION_ID,
       });
-      expect(transaction.id).toBe(id);
+      expect(transaction.id).toBe(VALID_TRANSACTION_ID);
       expect(transaction.itemId).toBe(VALID_ITEM_ID);
       expect(transaction.userId).toBe(VALID_USER_ID);
       expect(transaction.guestSessionId).toBeUndefined();
@@ -46,7 +45,7 @@ describe("Transaction Aggregate", () => {
           ...validProps,
           userId: undefined,
           id: VALID_TRANSACTION_ID,
-        } as unknown as TransactionCreateReservationProps & { id: string }),
+        } as unknown as TransactionCreateReservationProps),
       ).toThrow(InvalidAttributeError);
     });
 
@@ -93,33 +92,52 @@ describe("Transaction Aggregate", () => {
         }),
       ).toThrow(InvalidAttributeError);
     });
+
+    it("should throw if id is invalid", () => {
+      expect(() =>
+        Transaction.createReservation({
+          ...validProps,
+          id: "invalid",
+        }),
+      ).toThrow(InvalidAttributeError);
+      expect(() =>
+        Transaction.createReservation({
+          ...validProps,
+          id: INVALID_UUID_V1,
+        }),
+      ).toThrow(InvalidAttributeError);
+      expect(() =>
+        Transaction.createReservation({
+          ...validProps,
+          id: "",
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
   });
 
   describe("Factory: createPurchase", () => {
     it("should create a valid purchase for a registered user", () => {
-      const id = VALID_TRANSACTION_ID;
       const transaction = Transaction.createPurchase({
         itemId: VALID_ITEM_ID,
         userId: VALID_USER_ID,
         quantity: 1,
-        id,
+        id: VALID_TRANSACTION_ID,
       });
       expect(transaction.status).toBe(TransactionStatus.PURCHASED);
-      expect(transaction.id).toBe(id);
+      expect(transaction.id).toBe(VALID_TRANSACTION_ID);
       expect(transaction.userId).toBe(VALID_USER_ID);
       expect(transaction.guestSessionId).toBeUndefined();
     });
 
     it("should create a valid purchase for a guest", () => {
-      const id = VALID_TRANSACTION_ID;
       const transaction = Transaction.createPurchase({
         itemId: VALID_ITEM_ID,
         guestSessionId: VALID_GUEST_ID,
         quantity: 2,
-        id,
+        id: VALID_TRANSACTION_ID,
       });
       expect(transaction.status).toBe(TransactionStatus.PURCHASED);
-      expect(transaction.id).toBe(id);
+      expect(transaction.id).toBe(VALID_TRANSACTION_ID);
       expect(transaction.guestSessionId).toBe(VALID_GUEST_ID);
       expect(transaction.userId).toBeUndefined();
     });
@@ -164,6 +182,25 @@ describe("Transaction Aggregate", () => {
           guestSessionId: "   ",
           quantity: 1,
           id: VALID_TRANSACTION_ID,
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should throw if id is invalid", () => {
+      expect(() =>
+        Transaction.createPurchase({
+          itemId: VALID_ITEM_ID,
+          userId: VALID_USER_ID,
+          quantity: 1,
+          id: "invalid",
+        }),
+      ).toThrow(InvalidAttributeError);
+      expect(() =>
+        Transaction.createPurchase({
+          itemId: VALID_ITEM_ID,
+          userId: VALID_USER_ID,
+          quantity: 1,
+          id: INVALID_UUID_V1,
         }),
       ).toThrow(InvalidAttributeError);
     });

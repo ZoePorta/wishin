@@ -5,6 +5,13 @@ import type { Wishlist } from "../aggregates/wishlist";
  */
 export interface WishlistRepository {
   /**
+   * Ensures an active session exists.
+   * Creates an anonymous session if no session is active.
+   * @returns A Promise that resolves when a session is ensured.
+   */
+  ensureSession(): Promise<void>;
+
+  /**
    * Finds a wishlist by its unique identifier.
    * @param id The UUID of the wishlist.
    * @returns A Promise that resolves to the Wishlist aggregate or null if not found.

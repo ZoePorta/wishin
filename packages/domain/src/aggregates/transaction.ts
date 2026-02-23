@@ -37,6 +37,7 @@ export interface TransactionProps {
  * Props for creating a reservation.
  */
 export interface TransactionCreateReservationProps {
+  id: string;
   itemId: string;
   userId: string;
   quantity: number;
@@ -46,6 +47,7 @@ export interface TransactionCreateReservationProps {
  * Props for creating a purchase.
  */
 export interface TransactionCreatePurchaseProps {
+  id: string;
   itemId: string;
   userId?: string;
   guestSessionId?: string;
@@ -172,7 +174,7 @@ export class Transaction {
    * @returns {Transaction}
    */
   public static createReservation(
-    props: TransactionCreateReservationProps & { id: string },
+    props: TransactionCreateReservationProps,
   ): Transaction {
     const now = new Date();
     return Transaction.create({
@@ -192,7 +194,7 @@ export class Transaction {
    * @returns {Transaction}
    */
   public static createPurchase(
-    props: TransactionCreatePurchaseProps & { id: string },
+    props: TransactionCreatePurchaseProps,
   ): Transaction {
     const now = new Date();
     return Transaction.create({

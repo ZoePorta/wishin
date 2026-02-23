@@ -102,7 +102,6 @@ interface RelationshipAttribute extends Omit<BaseAttribute, "required"> {
   twoWay?: boolean;
   twoWayKey?: string;
   onDelete?: RelationMutate;
-  required?: boolean;
 }
 
 /**
