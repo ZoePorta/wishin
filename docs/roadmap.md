@@ -41,9 +41,9 @@
 ### 3.2 Application Layer (TDD)
 
 - [x] **DTOs Definition:** Create `CreateWishlistInput`, `AddWishlistItemInput`, `UpdateWishlistItemInput`, `RemoveWishlistItemInput`.
-- [ ] **TDD - CreateWishlist:**
-  - [ ] Phase RED: Test explicit visibility/participation requirements (ADR 011).
-  - [ ] Phase GREEN: Logic to instantiate `Wishlist` and call `repo.save()`.
+- [x] **TDD - CreateWishlist:**
+  - [x] Phase RED: Test explicit visibility/participation requirements (ADR 011).
+  - [x] Phase GREEN: Logic to instantiate `Wishlist` and call `repo.save()`.
 - [ ] **TDD - AddWishlistItem:**
   - [ ] Phase RED: Test retrieval -> add -> save cycle.
   - [ ] Phase GREEN: Implementation of coordination logic.

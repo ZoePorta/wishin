@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { View, StyleSheet, useColorScheme } from "react-native";
 import { Colors } from "../src/constants/Colors";
@@ -76,6 +77,11 @@ function RootContent() {
  */
 function AuthenticatedApp() {
   const repository = getAppwriteRepository();
+
+  useEffect(() => {
+    // Establish anonymous session on boot for MVP testing
+    repository.ensureSession().catch(console.error);
+  }, [repository]);
 
   return (
     <WishlistRepositoryProvider repository={repository}>

@@ -1,5 +1,6 @@
 import {
   Client,
+  Account,
   TablesDB,
   Query,
   AppwriteException,
@@ -25,6 +26,7 @@ interface TransactionDocument extends Models.Document {
  */
 export class AppwriteWishlistRepository implements WishlistRepository {
   private readonly tablesDb: TablesDB;
+  private readonly account: Account;
 
   /**
    * Initializes the repository.
@@ -43,6 +45,20 @@ export class AppwriteWishlistRepository implements WishlistRepository {
     private readonly transactionsCollectionId: string,
   ) {
     this.tablesDb = new TablesDB(this.client);
+    this.account = new Account(this.client);
+  }
+
+  /**
+   * Ensures an active session exists.
+   * Creates an anonymous session if no session is active.
+   * // TODO: Replace with authenticated sessions once Phase 5 is implemented
+   */
+  async ensureSession(): Promise<void> {
+    try {
+      await this.account.get();
+    } catch {
+      await this.account.createAnonymousSession();
+    }
   }
 
   /**
@@ -148,23 +164,75 @@ export class AppwriteWishlistRepository implements WishlistRepository {
 
   /**
    * Persists a wishlist aggregate.
-   * NOTE: Planned for Phase 3.3 Infrastructure Layer.
+   * Synchronizes the main wishlist document and all its items.
    *
-   * @param _wishlist - The wishlist to save.
-   * @throws Error always, as it is not yet implemented.
+   * @param wishlist - The wishlist to save.
    */
-  async save(_wishlist: Wishlist): Promise<void> {
-    throw new Error("Method not implemented.");
+  async save(wishlist: Wishlist): Promise<void> {
+    // 1. Establish anonymous session for testing if needed
+    await this.ensureSession();
+
+    // 2. Upsert Wishlist Document
+    await this.tablesDb.upsertRow({
+      databaseId: this.databaseId,
+      tableId: this.wishlistCollectionId,
+      rowId: wishlist.id,
+      data: WishlistMapper.toPersistence(wishlist),
+    });
+
+    // 3. Sync Wishlist Items
+    // 3a. Get existing items IDs to identify removals
+    const existingItemsResponse = await this.tablesDb.listRows({
+      databaseId: this.databaseId,
+      tableId: this.wishlistItemsCollectionId,
+      queries: [Query.equal("wishlistId", wishlist.id)],
+    });
+    const existingItemIds = existingItemsResponse.rows.map((row) => row.$id);
+
+    // 3b. Upsert current items
+    const currentItems = wishlist.items;
+    const currentItemIds = new Set(currentItems.map((item) => item.id));
+
+    for (const item of currentItems) {
+      await this.tablesDb.upsertRow({
+        databaseId: this.databaseId,
+        tableId: this.wishlistItemsCollectionId,
+        rowId: item.id,
+        data: WishlistItemMapper.toPersistence(item),
+      });
+    }
+
+    // 3c. Delete removed items
+    const itemIdsToDelete = existingItemIds.filter(
+      (id) => !currentItemIds.has(id),
+    );
+    for (const id of itemIdsToDelete) {
+      await this.tablesDb.deleteRow({
+        databaseId: this.databaseId,
+        tableId: this.wishlistItemsCollectionId,
+        rowId: id,
+      });
+    }
   }
 
   /**
    * Deletes a wishlist by its unique identifier.
-   * NOTE: Planned for Phase 3.3 Infrastructure Layer.
+   * Cascading deletion handles items and transactions.
    *
-   * @param _id - The UUID of the wishlist to delete.
-   * @throws Error always, as it is not yet implemented.
+   * @param id - The UUID of the wishlist to delete.
    */
-  async delete(_id: string): Promise<void> {
-    throw new Error("Method not implemented.");
+  async delete(id: string): Promise<void> {
+    try {
+      await this.tablesDb.deleteRow({
+        databaseId: this.databaseId,
+        tableId: this.wishlistCollectionId,
+        rowId: id,
+      });
+    } catch (error) {
+      if (error instanceof AppwriteException && error.code === 404) {
+        return; // Already deleted
+      }
+      throw error;
+    }
   }
 }
