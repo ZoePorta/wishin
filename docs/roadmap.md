@@ -53,10 +53,10 @@
 
 ### 3.3 Infrastructure Layer (Appwrite)
 
-- [ ] **Schema Definition:** Create collections/attributes in Appwrite matching `UserProps` and `WishlistProps`.
-- [ ] **Integration Tests:**
-  - [ ] Test `AppwriteWishlistRepository.save()` (Insert and Update scenarios).
-  - [ ] Test `AppwriteWishlistRepository.findById()` ensures full reconstitution (including items).
+- [x] **Schema Definition:** Create collections/attributes in Appwrite matching `UserProps` and `WishlistProps`.
+- [x] **Integration Tests:**
+  - [x] Test `AppwriteWishlistRepository.save()` (Insert and Update scenarios).
+  - [x] Test `AppwriteWishlistRepository.findById()` ensures full reconstitution (including items).
 
 ### 3.4 UI & Presentation
 
@@ -82,7 +82,7 @@
 
 ### 4.3 Infrastructure Layer (Appwrite)
 
-- [ ] **Schema Definition:** Create `Transactions` collection.
+- [x] **Schema Definition:** Create `Transactions` collection (Simplified MVP version).
 - [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI).
 - [ ] **Integration Tests:** Test transaction persistence and stock consistency.
 
@@ -101,7 +101,7 @@
 
 ### 5.2 Infrastructure Layer
 
-- [ ] **Appwrite Auth:** Implement `AuthService` adapter.
+- [x] **Appwrite Auth:** Implement `AuthService` adapter (Started with Anonymous Sessions).
 - [ ] **Identity Mapping:** ADR 014 implementation details.
 
 ### 5.3 UI & Presentation
