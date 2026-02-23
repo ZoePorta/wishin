@@ -5,7 +5,8 @@
     "vitest.config.ts",
     "vitest.workspace.ts",
     "vitest.config.base.ts",
-    "apps/app/babel.config.js"
+    "apps/app/babel.config.js",
+    "scripts/**/*.ts"
   ],
   "compilerOptions": {
     "noEmit": true,

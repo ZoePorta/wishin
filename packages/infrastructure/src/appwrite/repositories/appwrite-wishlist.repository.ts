@@ -197,26 +197,28 @@ export class AppwriteWishlistRepository implements WishlistRepository {
     const currentItems = wishlist.items;
     const currentItemIds = new Set(currentItems.map((item) => item.id));
 
-    for (const item of currentItems) {
-      await this.tablesDb.upsertRow({
+    const upsertPromises = currentItems.map((item) =>
+      this.tablesDb.upsertRow({
         databaseId: this.databaseId,
         tableId: this.wishlistItemsCollectionId,
         rowId: item.id,
         data: WishlistItemMapper.toPersistence(item),
-      });
-    }
+      }),
+    );
 
     // 3c. Delete removed items
     const itemIdsToDelete = existingItemIds.filter(
       (id) => !currentItemIds.has(id),
     );
-    for (const id of itemIdsToDelete) {
-      await this.tablesDb.deleteRow({
+    const deletePromises = itemIdsToDelete.map((id) =>
+      this.tablesDb.deleteRow({
         databaseId: this.databaseId,
         tableId: this.wishlistItemsCollectionId,
         rowId: id,
-      });
-    }
+      }),
+    );
+
+    await Promise.all([...upsertPromises, ...deletePromises]);
   }
 
   /**

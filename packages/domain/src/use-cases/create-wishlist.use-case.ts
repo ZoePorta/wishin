@@ -1,12 +1,21 @@
 import { Wishlist } from "../aggregates/wishlist";
-import { WishlistRepository } from "../repositories/wishlist.repository";
-import { CreateWishlistInput, WishlistOutput } from "./dtos";
+import type { WishlistRepository } from "../repositories/wishlist.repository";
+import type { CreateWishlistInput, WishlistOutput } from "./dtos";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
 
 /**
  * Use case for creating a new wishlist.
+ *
+ * This class coordinates the domain logic to create a wishlist aggregate,
+ * persists it via the repository, and returns a sanitized DTO.
  */
 export class CreateWishlistUseCase {
+  /**
+   * Initializes the use case with dependencies.
+   *
+   * @param wishlistRepository - The repository for persisting wishlists.
+   * @param uuidFn - Optional factory function for generating IDs (defaults to crypto.randomUUID).
+   */
   constructor(
     private readonly wishlistRepository: WishlistRepository,
     private readonly uuidFn: () => string = () =>

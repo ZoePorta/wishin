@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CreateWishlistUseCase } from "./create-wishlist.use-case";
-import { WishlistRepository } from "../repositories/wishlist.repository";
+import type { WishlistRepository } from "../repositories/wishlist.repository";
 import { Visibility, Participation } from "../value-objects";
-import { CreateWishlistInput } from "./dtos";
+import type { CreateWishlistInput } from "./dtos";
 
 describe("CreateWishlistUseCase", () => {
   let useCase: CreateWishlistUseCase;
@@ -35,9 +35,21 @@ describe("CreateWishlistUseCase", () => {
     const result = await useCase.execute(input);
 
     // Assert
-    expect(mockRepo.save).toHaveBeenCalled();
+    expect(mockRepo.save).toHaveBeenCalledTimes(1);
+    expect(mockRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: input.title,
+        description: input.description,
+        ownerId: input.ownerId,
+        visibility: input.visibility,
+        participation: input.participation,
+        items: [],
+      }),
+    );
+
     expect(result).toBeDefined();
     expect(result.title).toBe(input.title);
+    expect(result.description).toBe(input.description);
     expect(result.ownerId).toBe(input.ownerId);
     expect(result.visibility).toBe(input.visibility);
     expect(result.participation).toBe(input.participation);

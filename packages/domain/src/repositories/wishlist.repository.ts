@@ -1,4 +1,4 @@
-import { Wishlist } from "../aggregates/wishlist";
+import type { Wishlist } from "../aggregates/wishlist";
 
 /**
  * Repository interface for Wishlist aggregate.
