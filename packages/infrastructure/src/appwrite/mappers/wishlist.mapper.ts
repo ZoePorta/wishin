@@ -1,6 +1,6 @@
 import type { Models } from "appwrite";
-import { Wishlist, WishlistItem } from "@wishin/domain";
-import type { Visibility, Participation } from "@wishin/domain";
+import { Wishlist, Visibility, Participation } from "@wishin/domain";
+import type { WishlistItem } from "@wishin/domain";
 
 /**
  * Interface representing the Appwrite document structure for a Wishlist.
@@ -8,9 +8,9 @@ import type { Visibility, Participation } from "@wishin/domain";
 interface WishlistDocument extends Models.Document {
   ownerId: string;
   title: string;
-  description: string;
-  visibility: Visibility;
-  participation: Participation;
+  description: string | null;
+  visibility: Visibility | string | null;
+  participation: Participation | string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,9 +50,13 @@ export const WishlistMapper = {
       id: doc.$id,
       ownerId: data.ownerId,
       title: data.title,
-      description: data.description,
-      visibility: data.visibility,
-      participation: data.participation,
+      description: data.description ?? undefined,
+      visibility:
+        (data.visibility?.toUpperCase() as Visibility | undefined) ??
+        Visibility.LINK,
+      participation:
+        (data.participation?.toUpperCase() as Participation | undefined) ??
+        Participation.ANYONE,
       items: items.map((item) => item.toProps()),
       createdAt: new Date(data.createdAt || doc.$createdAt),
       updatedAt: new Date(data.updatedAt || doc.$updatedAt),

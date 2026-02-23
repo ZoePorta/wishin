@@ -47,6 +47,7 @@ const palette = {
  * - surfaceMuted: Muted surface/divider color (formerly slate200)
  * - red100, amber100, sky100: Status background colors
  * - gradientPrimary: Array of two color values [start, end] for primary gradient
+ * - buttonText: Color used for text on buttons
  */
 export const Colors = {
   light: {
@@ -64,6 +65,7 @@ export const Colors = {
     overlay: "rgba(255, 255, 255, 0.7)",
     // Definition for future gradients
     gradientPrimary: [palette.violet[600], palette.pink[400]],
+    buttonText: palette.slate[800],
   },
   dark: {
     primary: palette.pink[400],
@@ -78,6 +80,10 @@ export const Colors = {
     amber100: "#78350F", // Dark amber
     sky100: "#0C4A6E", // Dark sky
     overlay: "rgba(0, 0, 0, 0.7)",
-    gradientPrimary: [palette.violet[500], palette.pink[600]],
+    gradientPrimary: [palette.violet[600], palette.pink[400]],
+    // Intended for use on buttons with a light/primary (pink) background only
+    buttonText: palette.slate[900],
   },
 } as const;
+
+export type AppTheme = typeof Colors.light | typeof Colors.dark;
