@@ -80,6 +80,9 @@ export const Colors = {
     amber100: "#78350F", // Dark amber
     sky100: "#0C4A6E", // Dark sky
     overlay: "rgba(0, 0, 0, 0.7)",
+    gradientPrimary: [palette.violet[600], palette.pink[400]],
     buttonText: palette.slate[900],
   },
 } as const;
+
+export type AppTheme = typeof Colors.light | typeof Colors.dark;

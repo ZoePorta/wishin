@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, useColorScheme } from "react-native";
-import { Colors } from "../constants/Colors";
+import { Colors, type AppTheme } from "../constants/Colors";
 import { createSharedErrorStyles } from "./error-screen.styles";
 
 /**
@@ -32,10 +32,10 @@ export function GeneralErrorScreen() {
  * Generates themed styles for GeneralErrorScreen.
  * Reuses shared error screen styles.
  *
- * @param {typeof Colors.light} theme - The current theme.
+ * @param {AppTheme} theme - The current theme.
  * @returns {ReturnType<typeof StyleSheet.create>} The themed styles.
  */
-function getThemedStyles(theme: typeof Colors.light) {
+function getThemedStyles(theme: AppTheme) {
   const baseStyles = createSharedErrorStyles(theme);
 
   return StyleSheet.create({

@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   useColorScheme,
 } from "react-native";
-import { Colors } from "../constants/Colors";
+import { Colors, type AppTheme } from "../constants/Colors";
 import { createSharedErrorStyles } from "./error-screen.styles";
 
 interface Props {
@@ -59,10 +59,10 @@ export function ConfigErrorScreen({ onRetry }: Props) {
  * Generates themed styles for ConfigErrorScreen.
  * Reuses shared error screen styles and adds component-specific styles.
  *
- * @param {typeof Colors.light} theme - The current theme.
+ * @param {AppTheme} theme - The current theme.
  * @returns {ReturnType<typeof StyleSheet.create>} The themed styles.
  */
-function getThemedStyles(theme: typeof Colors.light) {
+function getThemedStyles(theme: AppTheme) {
   const baseStyles = createSharedErrorStyles(theme);
 
   return StyleSheet.create({

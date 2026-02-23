@@ -1,5 +1,6 @@
-import { ViewStyle, TextStyle } from "react-native";
-import { Colors } from "../constants/Colors";
+import { StyleSheet } from "react-native";
+import type { ViewStyle, TextStyle } from "react-native";
+import { type AppTheme } from "../constants/Colors";
 
 /**
  * Shared style definitions for error screens.
@@ -16,13 +17,11 @@ export interface ErrorScreenStyles {
 /**
  * Creates a shared style factory for error screens.
  *
- * @param {typeof Colors.light} theme - The current theme.
+ * @param {AppTheme} theme - The current theme.
  * @returns {ErrorScreenStyles} The shared styles.
  */
-export function createSharedErrorStyles(
-  theme: typeof Colors.light,
-): ErrorScreenStyles {
-  return {
+export function createSharedErrorStyles(theme: AppTheme): ErrorScreenStyles {
+  return StyleSheet.create({
     container: {
       flex: 1,
       justifyContent: "center",
@@ -67,5 +66,5 @@ export function createSharedErrorStyles(
       textAlign: "center",
       color: theme.textMuted,
     },
-  };
+  });
 }

@@ -28,7 +28,7 @@
 
 ### 2.4 UI & Presentation
 
-- [x] Basic Expo Router setup & Wishlist view (Read-only view for guests).
+- [x] Basic Expo Router setup & Wishlist view (Read-only view).
 
 ---
 
