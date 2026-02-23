@@ -145,4 +145,26 @@ export class AppwriteWishlistRepository implements WishlistRepository {
       throw error;
     }
   }
+
+  /**
+   * Persists a wishlist aggregate.
+   * NOTE: Planned for Phase 3.3 Infrastructure Layer.
+   *
+   * @param _wishlist - The wishlist to save.
+   * @throws Error always, as it is not yet implemented.
+   */
+  async save(_wishlist: Wishlist): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
+
+  /**
+   * Deletes a wishlist by its unique identifier.
+   * NOTE: Planned for Phase 3.3 Infrastructure Layer.
+   *
+   * @param _id - The UUID of the wishlist to delete.
+   * @throws Error always, as it is not yet implemented.
+   */
+  async delete(_id: string): Promise<void> {
+    throw new Error("Method not implemented.");
+  }
 }

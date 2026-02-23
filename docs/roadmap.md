@@ -36,11 +36,11 @@
 
 ### 3.1 Domain Refinement
 
-- [ ] Extend `WishlistRepository` interface with `save(wishlist: Wishlist): Promise<void>` and `delete(id: string): Promise<void>`.
+- [x] Extend `WishlistRepository` interface with `save(wishlist: Wishlist): Promise<void>` and `delete(id: string): Promise<void>`.
 
 ### 3.2 Application Layer (TDD)
 
-- [ ] **DTOs Definition:** Create `CreateWishlistInput`, `AddWishlistItemInput`, `UpdateWishlistItemInput`, `RemoveWishlistItemInput`.
+- [x] **DTOs Definition:** Create `CreateWishlistInput`, `AddWishlistItemInput`, `UpdateWishlistItemInput`, `RemoveWishlistItemInput`.
 - [ ] **TDD - CreateWishlist:**
   - [ ] Phase RED: Test explicit visibility/participation requirements (ADR 011).
   - [ ] Phase GREEN: Logic to instantiate `Wishlist` and call `repo.save()`.
