@@ -7,6 +7,7 @@ import { WishlistRepositoryProvider } from "../src/contexts/WishlistRepositoryCo
 import {
   AppwriteWishlistRepository,
   createAppwriteClient,
+  type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { AppErrorBoundary } from "../src/components/AppErrorBoundary";
 import { ConfigErrorScreen } from "../src/components/ConfigErrorScreen";
@@ -77,17 +78,18 @@ function RootContent() {
  */
 function AuthenticatedApp() {
   const repository = getAppwriteRepository();
+  const sessionAwareRepo = repository as SessionAwareRepository;
   const [sessionError, setSessionError] = useState<Error | null>(null);
 
   useEffect(() => {
     // Establish anonymous session on boot for MVP testing
-    repository.ensureSession().catch((error: unknown) => {
+    sessionAwareRepo.ensureSession().catch((error: unknown) => {
       console.error("Failed to establish session:", error);
       setSessionError(
         error instanceof Error ? error : new Error(String(error)),
       );
     });
-  }, [repository]);
+  }, [sessionAwareRepo]);
 
   if (sessionError) {
     throw sessionError;

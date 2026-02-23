@@ -219,5 +219,24 @@ describe("AppwriteWishlistRepository", () => {
         rowId: "orphaned-item",
       });
     });
+
+    it("should treat 404 errors during item deletion in save() as success (idempotency)", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({} as any);
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+        rows: [{ $id: "already-deleted-item" }],
+      } as any);
+      vi.mocked(mockTablesDb.upsertRow).mockResolvedValue({} as any);
+      vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(
+        new AppwriteException("Not found", 404),
+      );
+
+      await expect(repository.save(mockWishlist)).resolves.not.toThrow();
+
+      expect(mockTablesDb.deleteRow).toHaveBeenCalledWith({
+        databaseId: config.databaseId,
+        tableId: config.wishlistItemsCollectionId,
+        rowId: "already-deleted-item",
+      });
+    });
   });
 });

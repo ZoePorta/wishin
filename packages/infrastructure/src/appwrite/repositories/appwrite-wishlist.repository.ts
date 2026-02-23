@@ -11,6 +11,7 @@ import { Wishlist, TransactionStatus } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
 import { toDocument } from "../utils/to-document";
+import type { SessionAwareRepository } from "./session-aware-repository.interface";
 
 /**
  * Interface representing a Transaction document in Appwrite.
@@ -24,7 +25,9 @@ interface TransactionDocument extends Models.Document {
 /**
  * Appwrite implementation of the WishlistRepository.
  */
-export class AppwriteWishlistRepository implements WishlistRepository {
+export class AppwriteWishlistRepository
+  implements WishlistRepository, SessionAwareRepository
+{
   private readonly tablesDb: TablesDB;
   private readonly account: Account;
 
@@ -37,6 +40,17 @@ export class AppwriteWishlistRepository implements WishlistRepository {
    * @param wishlistItemsCollectionId - The ID of the wishlist items collection.
    * @param transactionsCollectionId - The ID of the transactions collection.
    */
+  constructor(
+    private readonly client: Client,
+    private readonly databaseId: string,
+    private readonly wishlistCollectionId: string,
+    private readonly wishlistItemsCollectionId: string,
+    private readonly transactionsCollectionId: string,
+  ) {
+    this.tablesDb = new TablesDB(this.client);
+    this.account = new Account(this.client);
+  }
+
   /**
    * Protected access for testing.
    */
@@ -49,17 +63,6 @@ export class AppwriteWishlistRepository implements WishlistRepository {
    */
   protected get tablesDbAccess(): TablesDB {
     return this.tablesDb;
-  }
-
-  constructor(
-    private readonly client: Client,
-    private readonly databaseId: string,
-    private readonly wishlistCollectionId: string,
-    private readonly wishlistItemsCollectionId: string,
-    private readonly transactionsCollectionId: string,
-  ) {
-    this.tablesDb = new TablesDB(this.client);
-    this.account = new Account(this.client);
   }
 
   /**
@@ -221,13 +224,21 @@ export class AppwriteWishlistRepository implements WishlistRepository {
           }),
         );
 
-        const deletePromises = itemIdsToDelete.map((id) =>
-          this.tablesDb.deleteRow({
-            databaseId: this.databaseId,
-            tableId: this.wishlistItemsCollectionId,
-            rowId: id,
-          }),
-        );
+        const deletePromises = itemIdsToDelete.map(async (id) => {
+          try {
+            await this.tablesDb.deleteRow({
+              databaseId: this.databaseId,
+              tableId: this.wishlistItemsCollectionId,
+              rowId: id,
+            });
+          } catch (error) {
+            // Treat 404 (Not Found) as a success to ensure idempotency
+            if (error instanceof AppwriteException && error.code === 404) {
+              return;
+            }
+            throw error;
+          }
+        });
 
         await Promise.all([...upsertPromises, ...deletePromises]);
         break; // Success

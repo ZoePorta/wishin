@@ -101,6 +101,11 @@ interface RelationshipAttribute extends Omit<BaseAttribute, "required"> {
   relationshipType: RelationshipType;
   twoWay?: boolean;
   twoWayKey?: string;
+  /**
+   * For the MVP, we use RelationMutate.Cascade to physically delete
+   * orphan transactions. This matches the infrastructure limitations
+   * documented in ADR 017.
+   */
   onDelete?: RelationMutate;
 }
 
@@ -206,6 +211,7 @@ const schema: CollectionSchema[] = [
         relatedCollectionId: "wishlist_items",
         relationshipType: RelationshipType.ManyToOne,
         key: "itemId",
+        // Cascade is used for MVP as per ADR 017
         onDelete: RelationMutate.Cascade,
       },
       {
@@ -213,6 +219,7 @@ const schema: CollectionSchema[] = [
         relatedCollectionId: "users",
         relationshipType: RelationshipType.ManyToOne,
         key: "userId",
+        // Cascade is used for MVP as per ADR 017
         onDelete: RelationMutate.Cascade,
       },
       { key: "guestSessionId", type: "string", required: false, size: 255 },
