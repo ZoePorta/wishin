@@ -13,7 +13,9 @@ import { TransactionStatus } from "../value-objects/transaction-status";
  * @interface TransactionProps
  * @property {string} id - Unique identifier (UUID v4).
  * @property {string | null} itemId - The item being transacted (UUID v4) or null if deleted.
+ * Note: Domain supports null to handle orphan transactions (ADR 017), though MVP Infrastructure enforces non-null.
  * @property {string | null} [userId] - The registered user ID (UUID v4) or null if deleted.
+ * Note: Domain supports null to handle orphan transactions (ADR 017), though MVP Infrastructure enforces non-null.
  * @property {string} [guestSessionId] - The guest session identifier.
  * @property {TransactionStatus} status - Lifecycle state.
  * @property {number} quantity - Positive integer.
@@ -76,6 +78,10 @@ export class Transaction {
 
   /**
    * The item being transacted (UUID v4).
+   *
+   * @note Supports null to allow the Domain to represent orphan transactions resulting from deleted items (ADR 017).
+   * Note that for the MVP, the Infrastructure (Appwrite) enforces non-null constraints via Cascade deletion.
+   *
    * @returns {string | null}
    */
   public get itemId(): string | null {
@@ -84,6 +90,10 @@ export class Transaction {
 
   /**
    * The registered user ID (UUID v4).
+   *
+   * @note Supports null/undefined to allow the Domain to represent orphan transactions resulting from deleted users (ADR 017).
+   * Note that for the MVP, the Infrastructure (Appwrite) enforces non-null constraints via Cascade deletion.
+   *
    * @returns {string | null | undefined}
    */
   public get userId(): string | null | undefined {

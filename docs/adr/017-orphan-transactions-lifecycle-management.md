@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -34,7 +34,12 @@ The `Transaction` aggregate will handle orphan states as follows:
 When recovering data from persistence (e.g., via a Repository or a specialized Background Job), any transaction found in a `RESERVED` state but with a `null` `itemId` or `userId` MUST be treated as an inconsistency.
 
 - The system should automatically call `cancel()` on these orphans and persist the new `CANCELLED` state to the database.
-- If a use case attempts to perform a `confirmPurchase()` on such an orphan before it is auto-corrected, the aggregate will block it, and the use case should ensure the state is corrected to `CANCELLED`.
+
+### 4. MVP Infrastructure Simplification
+
+> [!NOTE]
+> For the MVP, the Infrastructure layer (Appwrite) enforces non-null constraints on `itemId` and `userId` via **Cascade deletion**.
+> This simplifies early development but means orphan transactions will be physically deleted by the database. The Domain Aggregate's preparation for nullability ensures we can migrate to a "SetNull" + Soft-Cleanup strategy in later phases without breaking domain logic.
 
 ## Consequences
 

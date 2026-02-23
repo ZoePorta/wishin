@@ -95,13 +95,14 @@ interface DatetimeAttribute extends BaseAttribute {
 /**
  * Properties for relationship attributes.
  */
-interface RelationshipAttribute extends BaseAttribute {
+interface RelationshipAttribute extends Omit<BaseAttribute, "required"> {
   type: "relationship";
   relatedCollectionId: string;
   relationshipType: RelationshipType;
   twoWay?: boolean;
   twoWayKey?: string;
   onDelete?: RelationMutate;
+  required?: boolean;
 }
 
 /**
@@ -168,7 +169,6 @@ const schema: CollectionSchema[] = [
         relationshipType: RelationshipType.ManyToOne,
         key: "ownerId",
         onDelete: RelationMutate.Cascade,
-        required: false,
       },
       { key: "title", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
@@ -186,7 +186,6 @@ const schema: CollectionSchema[] = [
         relationshipType: RelationshipType.ManyToOne,
         key: "wishlistId",
         onDelete: RelationMutate.Cascade,
-        required: false,
       },
       { key: "name", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
@@ -208,20 +207,14 @@ const schema: CollectionSchema[] = [
         relatedCollectionId: "wishlist_items",
         relationshipType: RelationshipType.ManyToOne,
         key: "itemId",
-        // onDelete: RelationMutate.SetNull, // Deferred for post-MVP
-        // required: false,
         onDelete: RelationMutate.Cascade,
-        required: true,
       },
       {
         type: "relationship",
         relatedCollectionId: "users",
         relationshipType: RelationshipType.ManyToOne,
         key: "userId",
-        // onDelete: RelationMutate.SetNull, // Deferred for post-MVP
-        // required: false,
         onDelete: RelationMutate.Cascade,
-        required: true,
       },
       { key: "guestSessionId", type: "string", required: false, size: 255 },
       { key: "status", type: "string", required: true, size: 20 },
