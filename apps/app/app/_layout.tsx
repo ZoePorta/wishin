@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { View, StyleSheet, useColorScheme } from "react-native";
 import { Colors } from "../src/constants/Colors";
@@ -77,11 +77,21 @@ function RootContent() {
  */
 function AuthenticatedApp() {
   const repository = getAppwriteRepository();
+  const [sessionError, setSessionError] = useState<Error | null>(null);
 
   useEffect(() => {
     // Establish anonymous session on boot for MVP testing
-    repository.ensureSession().catch(console.error);
+    repository.ensureSession().catch((error: unknown) => {
+      console.error("Failed to establish session:", error);
+      setSessionError(
+        error instanceof Error ? error : new Error(String(error)),
+      );
+    });
   }, [repository]);
+
+  if (sessionError) {
+    throw sessionError;
+  }
 
   return (
     <WishlistRepositoryProvider repository={repository}>

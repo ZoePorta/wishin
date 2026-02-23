@@ -56,8 +56,12 @@ export class AppwriteWishlistRepository implements WishlistRepository {
   async ensureSession(): Promise<void> {
     try {
       await this.account.get();
-    } catch {
-      await this.account.createAnonymousSession();
+    } catch (error) {
+      if (error instanceof AppwriteException && error.code === 401) {
+        await this.account.createAnonymousSession();
+        return;
+      }
+      throw error;
     }
   }
 
@@ -222,6 +226,7 @@ export class AppwriteWishlistRepository implements WishlistRepository {
    * @param id - The UUID of the wishlist to delete.
    */
   async delete(id: string): Promise<void> {
+    await this.ensureSession();
     try {
       await this.tablesDb.deleteRow({
         databaseId: this.databaseId,
