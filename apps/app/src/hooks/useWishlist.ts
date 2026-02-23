@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useWishlistRepository } from "../contexts/WishlistRepositoryContext";
-import { GetWishlistMapper } from "@wishin/domain";
+import { WishlistOutputMapper } from "@wishin/domain";
 import type { WishlistOutput } from "@wishin/domain";
 
 /**
@@ -42,7 +42,7 @@ export function useWishlist(id: string): UseWishlistReturn {
 
       if (fetchId === fetchIdRef.current) {
         if (data) {
-          setWishlist(GetWishlistMapper.toOutput(data));
+          setWishlist(WishlistOutputMapper.toDTO(data));
         } else {
           setWishlist(null);
         }
