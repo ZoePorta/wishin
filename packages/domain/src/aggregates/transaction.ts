@@ -172,13 +172,12 @@ export class Transaction {
    * @returns {Transaction}
    */
   public static createReservation(
-    props: TransactionCreateReservationProps,
+    props: TransactionCreateReservationProps & { id: string },
   ): Transaction {
     const now = new Date();
     return Transaction.create({
       ...props,
       status: TransactionStatus.RESERVED,
-      id: crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,
     });
@@ -193,13 +192,12 @@ export class Transaction {
    * @returns {Transaction}
    */
   public static createPurchase(
-    props: TransactionCreatePurchaseProps,
+    props: TransactionCreatePurchaseProps & { id: string },
   ): Transaction {
     const now = new Date();
     return Transaction.create({
       ...props,
       status: TransactionStatus.PURCHASED,
-      id: crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,
     });

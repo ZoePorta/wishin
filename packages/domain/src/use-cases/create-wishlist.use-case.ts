@@ -2,13 +2,16 @@ import { Wishlist } from "../aggregates/wishlist";
 import { WishlistRepository } from "../repositories/wishlist.repository";
 import { CreateWishlistInput, WishlistOutput } from "./dtos";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
-import { randomUUID } from "crypto";
 
 /**
  * Use case for creating a new wishlist.
  */
 export class CreateWishlistUseCase {
-  constructor(private readonly wishlistRepository: WishlistRepository) {}
+  constructor(
+    private readonly wishlistRepository: WishlistRepository,
+    private readonly uuidFn: () => string = () =>
+      globalThis.crypto.randomUUID(),
+  ) {}
 
   /**
    * Executes the use case to create and save a new wishlist.
@@ -18,7 +21,7 @@ export class CreateWishlistUseCase {
    */
   async execute(input: CreateWishlistInput): Promise<WishlistOutput> {
     const wishlist = Wishlist.create({
-      id: randomUUID(),
+      id: this.uuidFn(),
       ownerId: input.ownerId,
       title: input.title,
       description: input.description,

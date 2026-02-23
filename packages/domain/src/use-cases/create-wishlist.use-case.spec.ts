@@ -15,7 +15,10 @@ describe("CreateWishlistUseCase", () => {
       save: vi.fn(),
       delete: vi.fn(),
     };
-    useCase = new CreateWishlistUseCase(mockRepo);
+    useCase = new CreateWishlistUseCase(
+      mockRepo,
+      () => "550e8400-e29b-41d4-a716-446655440000",
+    );
   });
 
   it("should successfully create and save a wishlist with valid inputs", async () => {
@@ -40,10 +43,8 @@ describe("CreateWishlistUseCase", () => {
     expect(result.participation).toBe(input.participation);
     expect(result.items).toEqual([]);
 
-    // Check that we got a valid UUID
-    expect(result.id).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-    );
+    // Check that we got the predictable UUID
+    expect(result.id).toBe("550e8400-e29b-41d4-a716-446655440000");
   });
 
   it("should throw an error if domain validation fails (ADR 011: explicit requirements)", async () => {
