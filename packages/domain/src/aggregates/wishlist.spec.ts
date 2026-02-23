@@ -10,6 +10,8 @@ import {
   InvalidAttributeError,
   LimitExceededError,
   InvalidOperationError,
+  INVALID_VISIBILITY_ERROR,
+  INVALID_PARTICIPATION_ERROR,
 } from "../errors/domain-errors";
 
 describe("Wishlist Aggregate", () => {
@@ -109,21 +111,21 @@ describe("Wishlist Aggregate", () => {
     });
 
     it("should throw InvalidAttributeError if visibility is invalid", () => {
-      expect(() => {
+      expect(() =>
         Wishlist.create({
           ...validProps,
           visibility: "INVALID_VISIBILITY" as Visibility,
-        });
-      }).toThrow(InvalidAttributeError);
+        }),
+      ).toThrow(INVALID_VISIBILITY_ERROR);
     });
 
     it("should throw InvalidAttributeError if participation is invalid", () => {
-      expect(() => {
+      expect(() =>
         Wishlist.create({
           ...validProps,
           participation: "INVALID_PARTICIPATION" as Participation,
-        });
-      }).toThrow(InvalidAttributeError);
+        }),
+      ).toThrow(INVALID_PARTICIPATION_ERROR);
     });
   });
 

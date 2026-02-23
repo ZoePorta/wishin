@@ -4,6 +4,8 @@ import {
   InvalidAttributeError,
   LimitExceededError,
   InvalidOperationError,
+  INVALID_VISIBILITY_ERROR,
+  INVALID_PARTICIPATION_ERROR,
 } from "../errors/domain-errors";
 import { ValidationMode } from "../common/validation-mode";
 
@@ -496,10 +498,10 @@ export class Wishlist {
       throw new InvalidAttributeError("Invalid description: Must be a string");
     }
     if (!Object.values(Visibility).includes(this.visibility)) {
-      throw new InvalidAttributeError("Invalid visibility");
+      throw new InvalidAttributeError(INVALID_VISIBILITY_ERROR);
     }
     if (!Object.values(Participation).includes(this.participation)) {
-      throw new InvalidAttributeError("Invalid participation");
+      throw new InvalidAttributeError(INVALID_PARTICIPATION_ERROR);
     }
 
     // Item Ownership Validation (Always)

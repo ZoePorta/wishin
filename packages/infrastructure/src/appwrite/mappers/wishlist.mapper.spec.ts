@@ -6,6 +6,7 @@ import {
   Participation,
   WishlistItem,
   Priority,
+  INVALID_VISIBILITY_ERROR,
 } from "@wishin/domain";
 import type { Models } from "appwrite";
 
@@ -95,5 +96,75 @@ describe("WishlistMapper", () => {
     expect(domain.participation).toBe(wishlistProps.participation);
     expect(domain.createdAt.getTime()).toBe(wishlistProps.createdAt.getTime());
     expect(domain.updatedAt.getTime()).toBe(wishlistProps.updatedAt.getTime());
+  });
+
+  it("should map persistence document with null description to domain aggregate with undefined description", () => {
+    const doc = {
+      $id: wishlistId,
+      ownerId,
+      title: "My Wishlist",
+      description: null, // Test case for null description
+      visibility: Visibility.LINK,
+      participation: Participation.ANYONE,
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString(),
+    } as unknown as Models.Document;
+
+    const domain = WishlistMapper.toDomain(doc, []);
+
+    expect(domain.description).toBeUndefined();
+    expect(domain.title).toBe("My Wishlist");
+  });
+
+  it("should fail if visibility is invalid (simulating domain error)", () => {
+    const doc = {
+      $id: wishlistId,
+      ownerId,
+      title: "My Wishlist",
+      description: "Desc",
+      visibility: "INVALID", // Should fail validation
+      participation: Participation.ANYONE,
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString(),
+    } as unknown as Models.Document;
+
+    expect(() => WishlistMapper.toDomain(doc, [])).toThrow(
+      INVALID_VISIBILITY_ERROR,
+    );
+  });
+
+  it("should handle missing or null visibility/participation by using defaults", () => {
+    const doc = {
+      $id: wishlistId,
+      ownerId,
+      title: "My Wishlist",
+      description: "Desc",
+      visibility: null,
+      participation: null,
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString(),
+    } as unknown as Models.Document;
+
+    const domain = WishlistMapper.toDomain(doc, []);
+
+    expect(domain.visibility).toBe(Visibility.LINK);
+    expect(domain.participation).toBe(Participation.ANYONE);
+  });
+
+  it("should map lowercase visibility and participation to uppercase enums", () => {
+    const doc = {
+      $id: wishlistId,
+      ownerId,
+      title: "My Wishlist",
+      visibility: "link", // Lowercase
+      participation: "anyone", // Lowercase
+      createdAt: createdAt.toISOString(),
+      updatedAt: updatedAt.toISOString(),
+    } as unknown as Models.Document;
+
+    const domain = WishlistMapper.toDomain(doc, []);
+
+    expect(domain.visibility).toBe(Visibility.LINK);
+    expect(domain.participation).toBe(Participation.ANYONE);
   });
 });
