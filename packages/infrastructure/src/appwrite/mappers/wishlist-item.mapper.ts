@@ -1,5 +1,5 @@
 import type { Models } from "appwrite";
-import { WishlistItem, Priority } from "@wishin/domain";
+import { type WishlistItem, Priority } from "@wishin/domain";
 
 /**
  * Interface representing the Appwrite document structure for a WishlistItem.
