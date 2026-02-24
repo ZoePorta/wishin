@@ -15,7 +15,7 @@
       "@wishin/infrastructure/*": ["packages/infrastructure/src/*"],
       "@wishin/shared": ["packages/shared/src/index.ts"],
       "@wishin/shared/*": ["packages/shared/src/*"],
-      "@wishin/app/*": ["apps/app/src/*"]
+      "@wishin/expo-client/*": ["apps/expo-client/src/*"]
     }
   },
   "exclude": ["node_modules", "dist"]

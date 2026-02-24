@@ -12,7 +12,7 @@ module.exports = function (api) {
             "@wishin/domain": "../../packages/domain/src",
             "@wishin/infrastructure": "../../packages/infrastructure/src",
             "@wishin/shared": "../../packages/shared/src",
-            "@wishin/app": "./src",
+            "@wishin/expo-client": "./src",
           },
           extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
         },
