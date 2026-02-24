@@ -36,14 +36,14 @@
 
 ### 3.1 Domain Refinement
 
-- [ ] Extend `WishlistRepository` interface with `save(wishlist: Wishlist): Promise<void>` and `delete(id: string): Promise<void>`.
+- [x] Extend `WishlistRepository` interface with `save(wishlist: Wishlist): Promise<void>` and `delete(id: string): Promise<void>`.
 
 ### 3.2 Application Layer (TDD)
 
-- [ ] **DTOs Definition:** Create `CreateWishlistInput`, `AddWishlistItemInput`, `UpdateWishlistItemInput`, `RemoveWishlistItemInput`.
-- [ ] **TDD - CreateWishlist:**
-  - [ ] Phase RED: Test explicit visibility/participation requirements (ADR 011).
-  - [ ] Phase GREEN: Logic to instantiate `Wishlist` and call `repo.save()`.
+- [x] **DTOs Definition:** Create `CreateWishlistInput`, `AddWishlistItemInput`, `UpdateWishlistItemInput`, `RemoveWishlistItemInput`.
+- [x] **TDD - CreateWishlist:**
+  - [x] Phase RED: Test explicit visibility/participation requirements (ADR 011).
+  - [x] Phase GREEN: Logic to instantiate `Wishlist` and call `repo.save()`.
 - [ ] **TDD - AddWishlistItem:**
   - [ ] Phase RED: Test retrieval -> add -> save cycle.
   - [ ] Phase GREEN: Implementation of coordination logic.
@@ -53,10 +53,10 @@
 
 ### 3.3 Infrastructure Layer (Appwrite)
 
-- [ ] **Schema Definition:** Create collections/attributes in Appwrite matching `UserProps` and `WishlistProps`.
-- [ ] **Integration Tests:**
-  - [ ] Test `AppwriteWishlistRepository.save()` (Insert and Update scenarios).
-  - [ ] Test `AppwriteWishlistRepository.findById()` ensures full reconstitution (including items).
+- [x] **Schema Definition:** Create collections/attributes in Appwrite matching `UserProps` and `WishlistProps`.
+- [x] **Integration Tests:**
+  - [x] Test `AppwriteWishlistRepository.save()` (Insert and Update scenarios).
+  - [x] Test `AppwriteWishlistRepository.findById()` ensures full reconstitution (including items).
 
 ### 3.4 UI & Presentation
 
@@ -82,7 +82,7 @@
 
 ### 4.3 Infrastructure Layer (Appwrite)
 
-- [ ] **Schema Definition:** Create `Transactions` collection.
+- [x] **Schema Definition:** Create `Transactions` collection (Simplified MVP version).
 - [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI).
 - [ ] **Integration Tests:** Test transaction persistence and stock consistency.
 
@@ -101,7 +101,7 @@
 
 ### 5.2 Infrastructure Layer
 
-- [ ] **Appwrite Auth:** Implement `AuthService` adapter.
+- [x] **Appwrite Auth:** Implement `AuthService` adapter (Started with Anonymous Sessions).
 - [ ] **Identity Mapping:** ADR 014 implementation details.
 
 ### 5.3 UI & Presentation

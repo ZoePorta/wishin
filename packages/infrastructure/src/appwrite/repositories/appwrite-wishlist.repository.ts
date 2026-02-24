@@ -1,5 +1,6 @@
 import {
   Client,
+  Account,
   TablesDB,
   Query,
   AppwriteException,
@@ -10,6 +11,7 @@ import { Wishlist, TransactionStatus } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
 import { toDocument } from "../utils/to-document";
+import type { SessionAwareRepository } from "./session-aware-repository.interface";
 
 /**
  * Interface representing a Transaction document in Appwrite.
@@ -23,8 +25,11 @@ interface TransactionDocument extends Models.Document {
 /**
  * Appwrite implementation of the WishlistRepository.
  */
-export class AppwriteWishlistRepository implements WishlistRepository {
+export class AppwriteWishlistRepository
+  implements WishlistRepository, SessionAwareRepository
+{
   private readonly tablesDb: TablesDB;
+  private readonly account: Account;
 
   /**
    * Initializes the repository.
@@ -43,6 +48,38 @@ export class AppwriteWishlistRepository implements WishlistRepository {
     private readonly transactionsCollectionId: string,
   ) {
     this.tablesDb = new TablesDB(this.client);
+    this.account = new Account(this.client);
+  }
+
+  /**
+   * Protected access for testing.
+   */
+  protected get accountAccess(): Account {
+    return this.account;
+  }
+
+  /**
+   * Protected access for testing.
+   */
+  protected get tablesDbAccess(): TablesDB {
+    return this.tablesDb;
+  }
+
+  /**
+   * Ensures an active session exists.
+   * Creates an anonymous session if no session is active.
+   * // TODO: Replace with authenticated sessions once Phase 5 is implemented
+   */
+  async ensureSession(): Promise<void> {
+    try {
+      await this.account.get();
+    } catch (error) {
+      if (error instanceof AppwriteException && error.code === 401) {
+        await this.account.createAnonymousSession();
+        return;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -52,6 +89,7 @@ export class AppwriteWishlistRepository implements WishlistRepository {
    * @returns A Promise that resolves to the Wishlist aggregate or null if not found.
    */
   async findById(id: string): Promise<Wishlist | null> {
+    await this.ensureSession();
     try {
       // 1. Fetch Wishlist Document
       const wishlistDoc = await this.tablesDb.getRow({
@@ -64,7 +102,7 @@ export class AppwriteWishlistRepository implements WishlistRepository {
       const itemsResponse = await this.tablesDb.listRows({
         databaseId: this.databaseId,
         tableId: this.wishlistItemsCollectionId,
-        queries: [Query.equal("wishlistId", id)],
+        queries: [Query.equal("wishlistId", id), Query.limit(100)],
       });
 
       const itemDocuments = toDocument<Models.Document[]>(itemsResponse.rows);
@@ -141,6 +179,106 @@ export class AppwriteWishlistRepository implements WishlistRepository {
     } catch (error) {
       if (error instanceof AppwriteException && error.code === 404) {
         return null;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Persists a wishlist aggregate.
+   * Synchronizes the main wishlist document and all its items.
+   *
+   * @param wishlist - The wishlist to save.
+   */
+  async save(wishlist: Wishlist): Promise<void> {
+    // 1. Ensure active session
+    await this.ensureSession();
+
+    // 2. Sync Wishlist Items First (Atomicity step)
+    // 2a. Get existing items IDs to identify removals
+    const existingItemsResponse = await this.tablesDb.listRows({
+      databaseId: this.databaseId,
+      tableId: this.wishlistItemsCollectionId,
+      queries: [Query.equal("wishlistId", wishlist.id), Query.limit(100)],
+    });
+    const existingItemIds = existingItemsResponse.rows.map((row) => row.$id);
+
+    // 2b. Prepare upserts and deletes
+    const currentItems = wishlist.items;
+    const currentItemIds = new Set(currentItems.map((item) => item.id));
+    const itemIdsToDelete = existingItemIds.filter(
+      (id) => !currentItemIds.has(id),
+    );
+
+    // 2c. Execute sync with retry logic
+    const MAX_RETRIES = 2;
+    let attempt = 0;
+    while (attempt <= MAX_RETRIES) {
+      try {
+        const upsertPromises = currentItems.map((item) =>
+          this.tablesDb.upsertRow({
+            databaseId: this.databaseId,
+            tableId: this.wishlistItemsCollectionId,
+            rowId: item.id,
+            data: WishlistItemMapper.toPersistence(item),
+          }),
+        );
+
+        const deletePromises = itemIdsToDelete.map(async (id) => {
+          try {
+            await this.tablesDb.deleteRow({
+              databaseId: this.databaseId,
+              tableId: this.wishlistItemsCollectionId,
+              rowId: id,
+            });
+          } catch (error) {
+            // Treat 404 (Not Found) as a success to ensure idempotency
+            if (error instanceof AppwriteException && error.code === 404) {
+              return;
+            }
+            throw error;
+          }
+        });
+
+        await Promise.all([...upsertPromises, ...deletePromises]);
+        break; // Success
+      } catch (error) {
+        attempt++;
+        if (attempt > MAX_RETRIES) {
+          console.error("Failed to sync wishlist items after retries:", error);
+          throw error;
+        }
+        // Small backoff
+        await new Promise((resolve) => setTimeout(resolve, attempt * 100));
+      }
+    }
+
+    // 3. Upsert Wishlist Document AFTER successful item sync
+    await this.tablesDb.upsertRow({
+      databaseId: this.databaseId,
+      tableId: this.wishlistCollectionId,
+      rowId: wishlist.id,
+      data: WishlistMapper.toPersistence(wishlist),
+    });
+  }
+
+  /**
+   * Deletes a wishlist by its unique identifier.
+   * Cascading deletion handles items and transactions.
+   *
+   * @param id - The UUID of the wishlist to delete.
+   */
+  async delete(id: string): Promise<void> {
+    await this.ensureSession();
+    try {
+      await this.tablesDb.deleteRow({
+        databaseId: this.databaseId,
+        tableId: this.wishlistCollectionId,
+        rowId: id,
+      });
+    } catch (error) {
+      if (error instanceof AppwriteException && error.code === 404) {
+        return; // Already deleted
       }
       throw error;
     }

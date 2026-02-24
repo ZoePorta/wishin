@@ -12,6 +12,8 @@ describe("GetWishlistByUUIDUseCase", () => {
   beforeEach(() => {
     mockRepo = {
       findById: vi.fn(),
+      save: vi.fn(),
+      delete: vi.fn(),
     };
     useCase = new GetWishlistByUUIDUseCase(mockRepo);
   });

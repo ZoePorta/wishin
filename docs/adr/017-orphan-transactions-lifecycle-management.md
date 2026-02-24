@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -34,11 +34,23 @@ The `Transaction` aggregate will handle orphan states as follows:
 When recovering data from persistence (e.g., via a Repository or a specialized Background Job), any transaction found in a `RESERVED` state but with a `null` `itemId` or `userId` MUST be treated as an inconsistency.
 
 - The system should automatically call `cancel()` on these orphans and persist the new `CANCELLED` state to the database.
-- If a use case attempts to perform a `confirmPurchase()` on such an orphan before it is auto-corrected, the aggregate will block it, and the use case should ensure the state is corrected to `CANCELLED`.
+
+> [!NOTE]
+> **MVP note**: The auto-cancellation and persistence of `CANCELLED` states described in Section 3 are deferred in the MVP. As detailed in Section 4, the infrastructure currently physically deletes records.
+
+### 4. MVP Infrastructure Simplification
+
+> [!IMPORTANT]
+> **MVP note**: For the MVP, the Infrastructure layer physically deletes transaction documents when the parent `WishlistItem` or `User` is deleted (Infrastructure cascade), so transactions are removed rather than left with null foreign keys.
+>
+> **Experimental Feature Alert**: This behavior relies on **Appwrite Relationships**, which is currently an experimental feature. Its cascade-deletion behavior may change in future SDK updates, posing a stability risk.
+>
+> Despite this infrastructure-level physical deletion, the Domain Aggregate is prepared for nullability. This ensures we can migrate to a "SetNull" + Soft-Cleanup strategy in later phases (SetNull instead of Cascade) without breaking domain logic.
 
 ## Consequences
 
 - **Consistency**: Prevents inventory from being permanently locked by reservations pointing to non-existent items.
 - **Robustness**: Allows the system to gracefully handle partial failures during deletion of primary entities.
 - **Safety**: Blocks revenue-critical operations (purchases) on inconsistent data while allowing cleanup (cancellations).
-- **Technical Debt**: Requires consumers of the `Transaction` aggregate to handle potential `InvalidAttributeError` during purchase confirmation by implementing fallback correction logic.
+- **Audit Trail Gap (MVP)**: Physical cascade deletion (Section 4) means orphaned Transaction records are permanently removed instead of being marked as `CANCELLED`, creating a gap in historical auditing and observability during the MVP phase.
+- **Technical Debt**: Post-MVP migration to "SetNull" will require implementing the domain-layer correction logic described in Section 3 to ensure system consistency when records are no longer physically deleted.

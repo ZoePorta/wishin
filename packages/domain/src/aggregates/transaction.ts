@@ -13,7 +13,9 @@ import { TransactionStatus } from "../value-objects/transaction-status";
  * @interface TransactionProps
  * @property {string} id - Unique identifier (UUID v4).
  * @property {string | null} itemId - The item being transacted (UUID v4) or null if deleted.
+ * @remarks Domain supports null to handle orphan transactions (ADR 017), though MVP Infrastructure enforces non-null.
  * @property {string | null} [userId] - The registered user ID (UUID v4) or null if deleted.
+ * @remarks Domain supports null to handle orphan transactions (ADR 017), though MVP Infrastructure enforces non-null.
  * @property {string} [guestSessionId] - The guest session identifier.
  * @property {TransactionStatus} status - Lifecycle state.
  * @property {number} quantity - Positive integer.
@@ -35,6 +37,7 @@ export interface TransactionProps {
  * Props for creating a reservation.
  */
 export interface TransactionCreateReservationProps {
+  id: string;
   itemId: string;
   userId: string;
   quantity: number;
@@ -44,6 +47,7 @@ export interface TransactionCreateReservationProps {
  * Props for creating a purchase.
  */
 export interface TransactionCreatePurchaseProps {
+  id: string;
   itemId: string;
   userId?: string;
   guestSessionId?: string;
@@ -76,6 +80,10 @@ export class Transaction {
 
   /**
    * The item being transacted (UUID v4).
+   *
+   * @remarks Supports null to allow the Domain to represent orphan transactions resulting from deleted items (ADR 017).
+   * Note that for the MVP, the Infrastructure layer enforces non-null constraints via Cascade deletion.
+   *
    * @returns {string | null}
    */
   public get itemId(): string | null {
@@ -84,6 +92,10 @@ export class Transaction {
 
   /**
    * The registered user ID (UUID v4).
+   *
+   * @remarks Supports null/undefined to allow the Domain to represent orphan transactions resulting from deleted users (ADR 017).
+   * Note that for the MVP, the Infrastructure layer enforces non-null constraints via Cascade deletion.
+   *
    * @returns {string | null | undefined}
    */
   public get userId(): string | null | undefined {
@@ -168,7 +180,6 @@ export class Transaction {
     return Transaction.create({
       ...props,
       status: TransactionStatus.RESERVED,
-      id: crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,
     });
@@ -189,7 +200,6 @@ export class Transaction {
     return Transaction.create({
       ...props,
       status: TransactionStatus.PURCHASED,
-      id: crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,
     });

@@ -34,4 +34,28 @@ export class MockWishlistRepository implements WishlistRepository {
     }
     return null;
   }
+
+  /**
+   * Persists a wishlist aggregate.
+   *
+   * @param wishlist - The wishlist to save.
+   * @returns A promise that resolves when the wishlist is saved.
+   */
+  async save(wishlist: Wishlist): Promise<void> {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    console.warn(`[MockWishlistRepository] Saved wishlist: ${wishlist.id}`);
+  }
+
+  /**
+   * Deletes a wishlist by its ID.
+   *
+   * @param id - The unique identifier of the wishlist to delete.
+   * @returns A promise that resolves when the wishlist is deleted.
+   */
+  async delete(id: string): Promise<void> {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    console.warn(`[MockWishlistRepository] Deleted wishlist: ${id}`);
+  }
 }
