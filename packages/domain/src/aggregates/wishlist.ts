@@ -17,18 +17,17 @@ import { Visibility, Participation } from "../value-objects";
  * Interface representing a plain data snapshot of a Wishlist.
  *
  * This structure is used exclusively for reanimating the entity from persistence
- * (e.g., database, API) via the `reconstitute()` method. It contains only
- * primitive-friendly types or DTO-like structures.
+ * (e.g., database, API) via the `reconstitute()` method.
  *
- * @property id - Unique identifier (UUID v4) for the wishlist.
- * @property ownerId - UUID of the user who owns the wishlist.
- * @property title - Human-readable title of the wishlist.
- * @property description - Optional detailed description of the wishlist.
- * @property visibility - Visibility setting (e.g., LINK, PRIVATE).
- * @property participation - Participation setting (e.g., ANYONE, REGISTERED).
- * @property items - Collection of WishlistItem Snapshots included in the list.
- * @property createdAt - Timestamp when the wishlist was created.
- * @property updatedAt - Timestamp when the wishlist was last updated.
+ * @property {string} id - Unique identifier (UUID v4) for the wishlist.
+ * @property {string} ownerId - Unique identity (UUID or Appwrite ID) of the profile who owns the wishlist.
+ * @property {string} title - Human-readable title of the wishlist.
+ * @property {string} [description] - Optional detailed description of the wishlist.
+ * @property {Visibility} visibility - Visibility setting (LINK, PRIVATE).
+ * @property {Participation} participation - Participation setting (ANYONE, REGISTERED).
+ * @property {WishlistItemProps[]} items - Collection of WishlistItem Snapshots included in the list.
+ * @property {Date} createdAt - Timestamp when the wishlist was created.
+ * @property {Date} updatedAt - Timestamp when the wishlist was last updated.
  */
 export interface WishlistSnapshot {
   id: string;
@@ -45,8 +44,7 @@ export interface WishlistSnapshot {
 /**
  * Internal interface representing the rich properties of a Wishlist.
  *
- * This structure is used for internal state management within the aggregate.
- * It contains rich domain entities (like `WishlistItem`) instead of plain snapshots.
+ * @interface WishlistProps
  */
 interface WishlistProps {
   id: string;
@@ -79,8 +77,8 @@ export class Wishlist {
     return this.props.id;
   }
   /**
-   * UUID of the user who owns the wishlist.
-   * @returns string
+   * Unique identity (UUID or Appwrite ID) of the profile who owns the wishlist.
+   * @returns {string}
    */
   public get ownerId(): string {
     return this.props.ownerId;

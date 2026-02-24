@@ -12,11 +12,9 @@ import { TransactionStatus } from "../value-objects/transaction-status";
  *
  * @interface TransactionProps
  * @property {string} id - Unique identifier (UUID v4).
- * @property {string | null} itemId - The item being transacted (UUID v4) or null if deleted.
- * @remarks Domain supports null to handle orphan transactions (ADR 017), though MVP Infrastructure enforces non-null.
- * @property {string | null} [userId] - The registered user ID (UUID v4) or null if deleted.
- * @remarks Domain supports null to handle orphan transactions (ADR 017), though MVP Infrastructure enforces non-null.
- * @property {TransactionStatus} status - Lifecycle state.
+ * @property {string | null} itemId - The item being transacted (UUID v4) or null if deleted (ADR 017).
+ * @property {string | null} [userId] - Unique identity (UUID or Appwrite ID) or null if deleted (ADR 017).
+ * @property {TransactionStatus} status - Lifecycle state (RESERVED, PURCHASED, CANCELLED).
  * @property {number} quantity - Positive integer.
  * @property {Date} createdAt - Creation timestamp.
  * @property {Date} updatedAt - Last update timestamp.
@@ -84,11 +82,7 @@ export class Transaction {
   }
 
   /**
-   * The user ID (Registered or Anonymous).
-   *
-   * @remarks Supports null/undefined to allow the Domain to represent orphan transactions resulting from deleted users (ADR 017).
-   * Note that for the MVP, the Infrastructure layer enforces non-null constraints via Cascade deletion.
-   *
+   * The user identity (Registered or Anonymous).
    * @returns {string | null | undefined}
    */
   public get userId(): string | null | undefined {

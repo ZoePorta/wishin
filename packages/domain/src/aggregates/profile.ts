@@ -38,8 +38,8 @@ export interface ProfileProps {
  */
 export class Profile {
   /**
-   * Unique identifier for the user (from Auth).
-   * @returns {string} The legacy userId.
+   * Unique identity (UUID or Appwrite ID) for the user (from Auth).
+   * @returns {string}
    */
   public get id(): string {
     return this.props.id;
@@ -47,7 +47,7 @@ export class Profile {
 
   /**
    * The user's display handle.
-   * @returns {string} The profile username.
+   * @returns {string}
    */
   public get username(): string {
     return this.props.username;

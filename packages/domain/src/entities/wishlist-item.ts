@@ -96,7 +96,7 @@ export class WishlistItem {
   }
   /**
    * The priority of the item.
-   * @returns Priority
+   * @returns {Priority}
    */
   public get priority(): Priority {
     return this.props.priority;

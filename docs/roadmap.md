@@ -53,7 +53,7 @@
 
 ### 3.3 Infrastructure Layer (Appwrite)
 
-- [x] **Schema Definition:** Create collections/attributes in Appwrite matching `UserProps` and `WishlistProps`.
+- [x] **Schema Definition:** Create collections/attributes in Appwrite matching `ProfileProps` and `WishlistProps`.
 - [x] **Integration Tests:**
   - [x] Test `AppwriteWishlistRepository.save()` (Insert and Update scenarios).
   - [x] Test `AppwriteWishlistRepository.findById()` ensures full reconstitution (including items).
@@ -101,7 +101,7 @@
 
 ### 5.2 Infrastructure Layer
 
-- [x] **Appwrite Auth:** Implement `AuthService` adapter (Using Anonymous Sessions - ADR 018).
+- [ ] **Appwrite Auth:** Implement `AuthService` adapter (Using Anonymous Sessions - ADR 018).
 - [ ] **Security & Permissions:** Configure Appwrite collection/attribute permissions in `provision.ts`.
 - [ ] **Identity Mapping & Evolution:** Seamless conversion from anonymous to registered users (ADR 018).
 
