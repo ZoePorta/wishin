@@ -45,4 +45,3 @@ We will adopt Appwrite Anonymous Sessions as the primary mechanism for guest int
 - **Cons**:
   - **Database Growth**: Every guest creates an account document in Appwrite.
   - **Cleanup Requirement**: Post-MVP, we will need a strategy to delete inactive anonymous accounts (e.g., after 90 days of inactivity) to prevent storage bloat.
-  - **Cleanup Requirement**: Post-MVP, we will need a strategy to delete inactive anonymous accounts (e.g., after 90 days of inactivity) to prevent storage bloat.

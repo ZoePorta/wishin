@@ -23,8 +23,8 @@ Unlike other entities where business rules might evolve (e.g., username length),
 - **Business**:
   - `quantity`: Must be a positive integer (> 0).
   - `Identity Mandate`: Must have a `userId` defined.
-  - `userId`: Must be a non-empty string. If starting with a UUID v4 format, it is prioritized. Required for all states. Can be null if the user was deleted (persistence).
-  - `itemId`: Must be a valid UUID v4 if present. Can be null if the item was deleted (persistence).
+  - `userId`: It must be a non-empty string. If starting with a UUID v4 format, it is prioritized. Required for all states. It can be null if the user was deleted (persistence).
+  - `itemId`: It must be a valid UUID v4 if present. It can be null if the item was deleted (persistence).
 
 ## Attributes
 
@@ -86,7 +86,7 @@ Unlike other entities where business rules might evolve (e.g., username length),
   - Transitions `status` to `CANCELLED`.
   - Updates `updatedAt` to current date.
   - Throws `InvalidTransitionError` if already cancelled.
-  - **Permission Rule**: A transaction can only be cancelled by the user (`userId`) who created it. This applies to both anonymous and registered sessions.
+  - **Permission Rule**: A transaction can only be cancelled by the user (`userId`) who created it. This applies to both anonymous and registered sessions. **Note**: This rule is enforced by the application/use-case layer (e.g., the service or handler that invokes `Transaction.cancel()`), not by the aggregate itself.
 - **Returns:** New `Transaction` instance with updated status.
 
 ### `confirmPurchase()`

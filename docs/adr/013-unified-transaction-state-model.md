@@ -2,7 +2,7 @@
 
 ## Status
 
-Amended by [ADR 018](docs/adr/018-unified-identity-anonymous-sessions.md) (Allows anonymous users to cancel transactions).
+Amended by [ADR 018](./018-unified-identity-anonymous-sessions.md) (Allows anonymous users to cancel transactions).
 
 ## Context
 

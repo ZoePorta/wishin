@@ -137,6 +137,9 @@ export class Profile {
 
   /**
    * Compares this entity with another `Profile` based on domain identity.
+   *
+   * @param {unknown} other - The object to compare with this profile.
+   * @returns {boolean} True if the other object is a Profile with the same ID, false otherwise.
    */
   public equals(other: unknown): boolean {
     if (!other || !(other instanceof Profile)) {
@@ -210,6 +213,8 @@ export class Profile {
 
   /**
    * Returns a snapshot of the internal properties.
+   *
+   * @returns {ProfileProps} a shallow copy of the Profile's properties.
    */
   public toProps(): ProfileProps {
     return {

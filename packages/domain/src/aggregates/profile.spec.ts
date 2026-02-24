@@ -17,6 +17,20 @@ describe("Profile Entity", () => {
       expect(profile.toProps()).toEqual(validProps);
     });
 
+    it("should create a profile when optional fields are omitted", () => {
+      const minimalProps = {
+        id: validProps.id,
+        username: "  testuser  ", // Testing trim too
+      };
+      const profile = Profile.create(minimalProps);
+      expect(profile).toBeInstanceOf(Profile);
+      const props = profile.toProps();
+      expect(props.id).toBe(validProps.id);
+      expect(props.username).toBe("testuser");
+      expect(props.bio).toBeUndefined();
+      expect(props.imageUrl).toBeUndefined();
+    });
+
     it("should trim username and bio during creation", () => {
       const profile = Profile.create({
         ...validProps,

@@ -218,9 +218,13 @@ export class Wishlist {
       Pick<
         WishlistSnapshot,
         "title" | "description" | "visibility" | "participation"
-      >
+      > & { id?: string }
     >,
   ): Wishlist {
+    if (props.id !== undefined && props.id !== this.id) {
+      throw new InvalidAttributeError("Cannot update entity ID");
+    }
+
     // Only allow specific properties to be updated
     const allowedProps: Partial<WishlistProps> = {};
     if (props.title !== undefined) allowedProps.title = props.title;

@@ -1,6 +1,6 @@
 # ADR 014: Identity and Repository Mapping Strategy
 
-**Status:** Amended by [ADR 018](docs/adr/018-unified-identity-anonymous-sessions.md)  
+**Status:** Amended by [ADR 018](./018-unified-identity-anonymous-sessions.md)  
 **Date:** 2026-02-12
 
 ## Context

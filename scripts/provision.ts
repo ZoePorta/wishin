@@ -288,10 +288,10 @@ async function cleanup() {
     // Let's define edge: X -> Y means X depends on Y.
     // Topo sort gives Y after X? No, usually reverse.
     // Let's just follow the logic:
-    // transactions depends on wishlist_items
-    // wishlist_items depends on wishlists
-    // wishlists depends on users
-    // Deletion order: transactions, wishlist_items, wishlists, users.
+    // Current dependency order (delete children first):
+    // transactions -> wishlist_items -> wishlists
+    // Note: profiles (formerly users) are no longer a parent of wishlists or transactions.
+    // Deletion order: transactions, wishlist_items, wishlists, profiles.
     // So we want to delete "dependers" first.
 
     // internal logic:

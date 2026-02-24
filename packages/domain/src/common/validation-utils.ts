@@ -19,7 +19,9 @@ export function isValidUUID(uuid: string): boolean {
  * @returns True if valid Appwrite ID, false otherwise.
  */
 export function isValidAppwriteId(id: string): boolean {
-  const appwriteIdRegex = /^[a-zA-Z0-9._:-]{1,36}$/;
+  // Appwrite IDs must start with a letter or number and contain only letters,
+  // numbers, periods, hyphens, and underscores. Max 36 characters.
+  const appwriteIdRegex = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,35}$/;
   return appwriteIdRegex.test(id);
 }
 
