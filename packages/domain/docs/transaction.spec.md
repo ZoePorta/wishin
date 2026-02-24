@@ -22,28 +22,26 @@ Unlike other entities where business rules might evolve (e.g., username length),
 
 - **Business**:
   - `quantity`: Must be a positive integer (> 0).
-  - `Identity XOR`: Must have exactly ONE of `userId` or `guestSessionId` defined. Never both, never neither.
-  - `userId`: If present, must be a valid UUID v4. Required for `RESERVED` state during creation. Can be null if the user was deleted (persistence).
-  - `guestSessionId`: If present, must be a non-empty string. Only allowed for `PURCHASED` state.
+  - `Identity Mandate`: Must have a `userId` defined.
+  - `userId`: Must be a non-empty string. If starting with a UUID v4 format, it is prioritized. Required for all states. Can be null if the user was deleted (persistence).
   - `itemId`: Must be a valid UUID v4 if present. Can be null if the item was deleted (persistence).
 
 ## Attributes
 
-| Attribute        | Type                         | Description                    | validation           |
-| :--------------- | :--------------------------- | :----------------------------- | :------------------- |
-| `id`             | `string` (UUID v4)           | Unique identifier              | UUID v4              |
-| `itemId`         | `string` (UUID v4) \| `null` | The item being transacted      | UUID v4 if present   |
-| `userId`         | `string` (UUID v4) \| `null` | The registered user (if any)   | UUID v4 if present   |
-| `guestSessionId` | `string`                     | The guest session (if any)     | Non-empty if present |
-| `status`         | `TransactionStatus`          | RESERVED, PURCHASED, CANCELLED | Valid enum           |
-| `quantity`       | `number`                     | Amount of items                | Integer > 0          |
-| `createdAt`      | `Date`                       | Timestamp of creation          | Valid Date           |
-| `updatedAt`      | `Date`                       | Timestamp of last update       | Valid Date           |
+| Attribute   | Type                         | Description                           | validation           |
+| :---------- | :--------------------------- | :------------------------------------ | :------------------- |
+| `id`        | `string` (UUID v4)           | Unique identifier                     | UUID v4              |
+| `itemId`    | `string` (UUID v4) \| `null` | The item being transacted             | UUID v4 if present   |
+| `userId`    | `string` \| `null`           | The user ID (Registered or Anonymous) | Non-empty if present |
+| `status`    | `TransactionStatus`          | RESERVED, PURCHASED, CANCELLED        | Valid enum           |
+| `quantity`  | `number`                     | Amount of items                       | Integer > 0          |
+| `createdAt` | `Date`                       | Timestamp of creation                 | Valid Date           |
+| `updatedAt` | `Date`                       | Timestamp of last update              | Valid Date           |
 
 ## Domain Invariants
 
 1. **Immutability:** The transaction record is immutable. Core attributes (`itemId`, `quantity`, actors) never change. Any evolution of the `status` MUST result in a **new immutable instance** with the updated state.
-2. **Identity XOR:** A transaction belongs to EITHER a User OR a Guest. It cannot belong to both.
+2. **Identity Mandate:** A transaction MUST belong to a User (either registered or anonymous).
 3. **Irreversibility of Creation:** Once created, a transaction allows the `WishlistItem` to decrement stock.
 4. **Lifecycle Transitions:**
    - A transaction can move from `RESERVED` to `PURCHASED`.
@@ -66,7 +64,7 @@ Unlike other entities where business rules might evolve (e.g., username length),
 - **Effect:** Initializes a new Transaction in `PURCHASED` state.
 - **Validation:** Enforces **STRICT** validation.
 - **Behavior:**
-  - Accepts either `userId` or `guestSessionId`.
+  - Requires `userId`.
   - Delegates to a **private static `create()`** method for common initialization.
 - **Returns:** The created `Transaction` or throws `InvalidAttributeError`.
 
@@ -88,6 +86,7 @@ Unlike other entities where business rules might evolve (e.g., username length),
   - Transitions `status` to `CANCELLED`.
   - Updates `updatedAt` to current date.
   - Throws `InvalidTransitionError` if already cancelled.
+  - **Permission Rule**: A transaction can only be cancelled by the user (`userId`) who created it. This applies to both anonymous and registered sessions.
 - **Returns:** New `Transaction` instance with updated status.
 
 ### `confirmPurchase()`

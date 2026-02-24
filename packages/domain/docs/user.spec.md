@@ -4,6 +4,9 @@
 
 The `User` entity represents a registered member of the platform. It serves as the root for user-specific data (like Wishlists) and encapsulates profile information. This entity is **strictly immutable**.
 
+> [!NOTE]
+> **Anonymous Users**: While the Domain User often implies a registered member with an email, the infrastructure supports "Anonymous Users" (ADR 018) who share the same identity space (`userId`) but lack credentials. These users are treated as guests with restricted permissions.
+
 ## Validation Modes
 
 The entity supports two validation modes to ensure consistent behavior with the rest of the domain:

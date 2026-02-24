@@ -101,8 +101,8 @@
 
 ### 5.2 Infrastructure Layer
 
-- [x] **Appwrite Auth:** Implement `AuthService` adapter (Started with Anonymous Sessions).
-- [ ] **Identity Mapping:** ADR 014 implementation details.
+- [x] **Appwrite Auth:** Implement `AuthService` adapter (Using Anonymous Sessions - ADR 018).
+- [ ] **Identity Mapping & Evolution:** Seamless conversion from anonymous to registered users (ADR 018).
 
 ### 5.3 UI & Presentation
 
