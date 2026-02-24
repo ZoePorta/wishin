@@ -5,6 +5,7 @@ export * from "./use-cases/dtos";
 export * from "./use-cases/mappers/wishlist-output.mapper";
 export * from "./errors/domain-errors";
 export * from "./aggregates/wishlist";
+export * from "./aggregates/profile";
 export * from "./entities/wishlist-item";
 export * from "./value-objects";
 export * from "./common/validation-mode";

@@ -3,7 +3,7 @@ import {
   InvalidAttributeError,
   InvalidTransitionError,
 } from "../errors/domain-errors";
-import { isValidUUID } from "../common/validation-utils";
+import { isValidUUID, isValidIdentity } from "../common/validation-utils";
 
 import { TransactionStatus } from "../value-objects/transaction-status";
 
@@ -282,11 +282,10 @@ export class Transaction {
         "Invalid quantity: Must be a positive integer",
       );
     }
-    if (this.userId && !isValidUUID(this.userId)) {
-      // Note: Appwrite Anonymous IDs might not be UUID v4.
-      // We allow non-UUID strings if they are formatted by Appwrite (ADR 018 Loosening).
-      // For now, if it's not a UUID and not an Appwrite ID, we might need a more flexible check.
-      // However, infra mapping should ensure correct format.
+    if (this.userId && !isValidIdentity(this.userId)) {
+      throw new InvalidAttributeError(
+        "Invalid userId: Must be a valid identity (UUID or Appwrite ID)",
+      );
     }
     if (!(this.createdAt instanceof Date) || isNaN(this.createdAt.getTime())) {
       throw new InvalidAttributeError(

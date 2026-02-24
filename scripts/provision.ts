@@ -154,11 +154,10 @@ function assertUnreachable(x: never): never {
  */
 const schema: CollectionSchema[] = [
   {
-    id: "users",
-    name: "Users",
+    id: "profiles",
+    name: "Profiles",
     attributes: [
-      { key: "email", type: "string", required: true, size: 255 },
-      { key: "username", type: "string", required: true, size: 30 },
+      { key: "username", type: "string", required: false, size: 30 },
       { key: "imageUrl", type: "string", required: false, size: 2048 },
       { key: "bio", type: "string", required: false, size: 500 },
     ],
@@ -167,13 +166,7 @@ const schema: CollectionSchema[] = [
     id: "wishlists",
     name: "Wishlists",
     attributes: [
-      {
-        type: "relationship",
-        relatedCollectionId: "users",
-        relationshipType: RelationshipType.ManyToOne,
-        key: "ownerId",
-        onDelete: RelationMutate.Cascade,
-      },
+      { key: "ownerId", type: "string", required: true, size: 255 },
       { key: "title", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
       { key: "visibility", type: "string", required: true, size: 20 },
@@ -214,15 +207,7 @@ const schema: CollectionSchema[] = [
         // Cascade is used for MVP as per ADR 017
         onDelete: RelationMutate.Cascade,
       },
-      {
-        type: "relationship",
-        relatedCollectionId: "users",
-        relationshipType: RelationshipType.ManyToOne,
-        key: "userId",
-        // Cascade is used for MVP as per ADR 017
-        onDelete: RelationMutate.Cascade,
-      },
-      { key: "guestSessionId", type: "string", required: false, size: 255 },
+      { key: "userId", type: "string", required: true, size: 255 },
       { key: "status", type: "string", required: true, size: 20 },
       { key: "quantity", type: "integer", required: false, default: 1 },
     ],

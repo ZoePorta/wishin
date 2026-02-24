@@ -344,7 +344,7 @@ describe("Transaction Aggregate", () => {
       expect(transaction.userId).toBeNull();
     });
 
-    it("should still enforce valid UUID for non-null itemId/userId", () => {
+    it("should still enforce valid UUID for non-null itemId", () => {
       expect(() =>
         Transaction.reconstitute({
           id: VALID_TRANSACTION_ID,
@@ -358,12 +358,26 @@ describe("Transaction Aggregate", () => {
       ).toThrow(InvalidAttributeError);
     });
 
-    it("should allow reconstituting with any userId format (Loosened validation for anonymous)", () => {
+    it("should enforce valid identity for non-null userId", () => {
       expect(() =>
         Transaction.reconstitute({
           id: VALID_TRANSACTION_ID,
           itemId: VALID_ITEM_ID,
-          userId: "some-non-uuid-string",
+          userId: "invalid$id",
+          status: TransactionStatus.RESERVED,
+          quantity: 1,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ).toThrow(InvalidAttributeError);
+    });
+
+    it("should allow reconstituting with any valid identity format (Loosened validation for anonymous)", () => {
+      expect(() =>
+        Transaction.reconstitute({
+          id: VALID_TRANSACTION_ID,
+          itemId: VALID_ITEM_ID,
+          userId: "appwrite_user_123",
           status: TransactionStatus.PURCHASED,
           quantity: 1,
           createdAt: new Date(),

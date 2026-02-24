@@ -98,10 +98,23 @@ describe("Wishlist Aggregate", () => {
       }).toThrow(InvalidAttributeError);
     });
 
-    it("should throw InvalidAttributeError if ownerId is not a valid UUID v4", () => {
+    it("should throw InvalidAttributeError if ownerId is not a valid identity", () => {
       expect(() => {
-        Wishlist.create({ ...validProps, ownerId: "not-a-uuid" });
+        Wishlist.create({
+          ...validProps,
+          ownerId: "not-a-uuid-and-too-long-for-appwrite-id-" + "a".repeat(40),
+        });
       }).toThrow(InvalidAttributeError);
+
+      expect(() => {
+        Wishlist.create({ ...validProps, ownerId: "invalid$character" });
+      }).toThrow(InvalidAttributeError);
+    });
+
+    it("should allow Appwrite-style IDs as ownerId", () => {
+      const appwriteId = "user_123456789_abcdef";
+      const wishlist = Wishlist.create({ ...validProps, ownerId: appwriteId });
+      expect(wishlist.ownerId).toBe(appwriteId);
     });
 
     it("should throw InvalidAttributeError if description is too long", () => {

@@ -18,19 +18,23 @@ Appwrite provides **Anonymous Sessions**, which create a first-class (but unauth
 
 We will adopt Appwrite Anonymous Sessions as the primary mechanism for guest interaction.
 
-1.  **Identity Unification**:
-    - Remove `guestSessionId` from the Domain Layer (`Transaction` aggregate and related DTOs).
-    - Every action (Purchase, Reservation, etc.) will be associated with a `userId`.
-2.  **Expanded Guest Capabilities**:
-    - Anonymous users will now have access to their "Gifting History".
-    - Anonymous users are permitted to `CANCEL` their own transactions (transitioning from hard-delete "Undo" to soft-delete "Cancellation"). In line with domain rules, any user can only cancel their own transactions.
-3.  **Permission Tiers (Business Rules)**:
-    - **Anonymous Users**: Can only `PURCHASE` and `CANCEL` their own transactions. They CANNOT `RESERVE` items or create/manage wishlists.
-    - **Registered Users**: Full access (Reservation, List Management, etc.).
-4.  **Transition Strategy**:
-    - When an anonymous user decides to register (Phase 5), we will update the existing account with credentials (email/password/OAuth) instead of creating a new one. This preserves the `userId` and all associated transactions automatically.
+1.  **Identity Decoupling**:
+    - **Source of Truth**: Appwrite Auth service is the master of `userId`.
+    - **Loose Mapping**: Database collections (`wishlists`, `transactions`) will use **String attributes** for `userId` / `ownerId` instead of Relationship attributes. This allows anonymous users (who lack documents in the `profiles` collection) to be first-class citizens in the domain while maintaining structural integrity via application-level logic.
+    - **Implicit Identity**: Every session (Anonymous or Authenticated) provides a persistent `userId`.
+2.  **Profiles Persistence**:
+    - The existing `users` database collection is renamed to `profiles` (or `user_metadata`).
+    - This collection stores **only public metadata** (`username`, `avatar`, `bio`).
+    - **Email** is removed from the database collection as it is handled securely by Appwrite Auth.
+    - **Registration Flow**: When an anonymous user converts, we update their Auth record. Their profile record (if created) remains linked by the same `userId`.
+3.  **Expanded Guest Capabilities**:
+    - Anonymous users will now have access to their "Gifting History" via their Auth `userId`.
+    - Anonymous users are permitted to `CANCEL` their own transactions.
+4.  **Permission Tiers (Business Rules)**:
+    - **Anonymous Users**: Can only `PURCHASE` and `CANCEL` their own transactions. They CANNOT `RESERVE` items or create/manage wishlists (which require a registered profile).
+    - **Registered Users**: Full access.
 5.  **MVP Implementation Shortcut**:
-    - To facilitate testing during development (up to the end of Phase 5), we will introduce an environment variable `EXPO_PUBLIC_BYPASS_ANONYMOUS_RESTRICTIONS` to allow anonymous users full permissions in development environments. This bypasses the role check to enable manual testing of all features without full registration logic being complete.
+    - An environment variable `EXPO_PUBLIC_BYPASS_ANONYMOUS_RESTRICTIONS` will bypass role checks in development.
 
 ## Consequences
 

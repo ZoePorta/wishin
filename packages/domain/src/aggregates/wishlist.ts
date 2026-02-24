@@ -9,7 +9,7 @@ import {
 } from "../errors/domain-errors";
 import { ValidationMode } from "../common/validation-mode";
 
-import { isValidUUID } from "../common/validation-utils";
+import { isValidUUID, isValidIdentity } from "../common/validation-utils";
 
 import { Visibility, Participation } from "../value-objects";
 
@@ -483,9 +483,9 @@ export class Wishlist {
     if (!isValidUUID(this.id)) {
       throw new InvalidAttributeError("Invalid id: Must be a valid UUID v4");
     }
-    if (!isValidUUID(this.ownerId)) {
+    if (!isValidIdentity(this.ownerId)) {
       throw new InvalidAttributeError(
-        "Invalid ownerId: Must be a valid UUID v4",
+        "Invalid ownerId: Must be a valid identity (UUID or Appwrite ID)",
       );
     }
     if (typeof this.title !== "string") {

@@ -102,6 +102,7 @@
 ### 5.2 Infrastructure Layer
 
 - [x] **Appwrite Auth:** Implement `AuthService` adapter (Using Anonymous Sessions - ADR 018).
+- [ ] **Security & Permissions:** Configure Appwrite collection/attribute permissions in `provision.ts`.
 - [ ] **Identity Mapping & Evolution:** Seamless conversion from anonymous to registered users (ADR 018).
 
 ### 5.3 UI & Presentation
