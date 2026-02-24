@@ -174,14 +174,14 @@ const schema: CollectionSchema[] = [
         type: "string",
         required: true,
         size: 20,
-        default: "PRIVATE", // Security by Default. Application layer must set to LINK for MVP.
+        // Security Note: Application layer must set to LINK for MVP.
       },
       {
         key: "participation",
         type: "string",
         required: true,
         size: 20,
-        default: "CONTACTS", // Security by Default. Application layer must set to ANYONE for MVP.
+        // Security Note: Application layer must set to ANYONE for MVP.
       },
     ],
   },
