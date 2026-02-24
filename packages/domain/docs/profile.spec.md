@@ -32,7 +32,7 @@ The entity supports two validation modes:
 | `id`       | `string`  | Unique identifier     | Required, non-empty    | Valid ID (isValidIdentity)       |
 | `username` | `string`  | Display name (handle) | Required, non-empty    | 3-30 chars, alphanumeric + `.-_` |
 | `imageUrl` | `string?` | Profile picture URL   | Valid URL if present   | —                                |
-| `bio`      | `string`  | User biography        | Optional               | Max 500 chars                    |
+| `bio`      | `string?` | User biography        | Optional               | Max 500 chars                    |
 
 ## Domain Invariants
 

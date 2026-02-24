@@ -158,8 +158,8 @@ export class Profile {
 
   private validate(mode: ValidationMode): void {
     // Structural integrity
-    if (!this.id) {
-      throw new InvalidAttributeError("Invalid id: Must be present");
+    if (typeof this.id !== "string" || !this.id) {
+      throw new InvalidAttributeError("Invalid id: Must be a non-empty string");
     }
 
     // Supports standard UUIDs or Appwrite-assigned IDs

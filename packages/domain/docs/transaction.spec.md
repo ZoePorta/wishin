@@ -23,8 +23,8 @@ Unlike other entities where business rules might evolve (e.g., username length),
 - **Business**:
   - `quantity`: Must be a positive integer (> 0).
   - `Identity Mandate`: Must have a `userId` defined.
-  - `userId`: It must be a non-empty string. `isValidIdentity` accepts either a UUID v4 or an Appwrite ID with no preferential treatment. Required for all states. **During reconstitution from persistence, it can be null** to represent users who have been deleted while maintaining the transaction record.
-  - `itemId`: It must be a valid UUID v4 if present. **During reconstitution from persistence, it can be null** if the item was deleted.
+  - `userId`: It must be a non-empty string. `isValidIdentity` accepts either a UUID v4 or an Appwrite ID with no preferential treatment. Required for creation and normal lifecycle operations; nullable only during reconstitution from persistence to represent users who have been deleted while maintaining the transaction record.
+  - `itemId`: It must be a valid UUID v4 if present. Required for creation and normal lifecycle operations; nullable only during reconstitution from persistence if the item was deleted.
 
 ## Attributes
 
