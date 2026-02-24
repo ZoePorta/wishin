@@ -76,7 +76,7 @@
 - [ ] **DTOs Definition:** `ReserveItemInput`, `PurchaseItemInput`, `ConfirmPurchaseInput`, `CancelTransactionInput`.
 - [ ] **TDD - Gifting Cycles:**
   - [ ] **ReserveItem:** RED (Registered only) -> GREEN (Coordination).
-  - [ ] **DirectPurchase:** RED (Guest/User) -> GREEN (Immediate stock update).
+  - [ ] **DirectPurchase:** RED (Anonymous/Registered) -> GREEN (Immediate stock update).
   - [ ] **Undo (Immediate):** RED (Hard delete within window) -> GREEN (Implementation).
   - [ ] **Confirm/Cancel:** RED (State transitions) -> GREEN (Persistence).
 
@@ -88,7 +88,7 @@
 
 ### 4.4 UI & Presentation
 
-- [ ] Guest interaction: Reservation/Purchase buttons with immediate "Undo" snackbar.
+- [ ] Guest/Anonymous interaction: Reservation/Purchase buttons with immediate "Undo" snackbar.
 
 ---
 
