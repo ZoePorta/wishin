@@ -27,12 +27,12 @@ The entity supports two validation modes:
 
 ## Attributes
 
-| Attribute  | Type               | Description           | Structural (Hydration) | Business (Strict)                |
-| :--------- | :----------------- | :-------------------- | :--------------------- | :------------------------------- |
-| `id`       | `string`           | Unique identifier     | Required, Valid ID     | —                                |
-| `username` | `string`           | Display name (handle) | Required, non-empty    | 3-30 chars, alphanumeric + `.-_` |
-| `imageUrl` | `string`           | Profile picture URL   | Optional               | Valid URL (http/https)           |
-| `bio`      | `string`           | User biography        | Optional               | Max 500 chars                    |
+| Attribute  | Type      | Description           | Structural (Hydration) | Business (Strict)                |
+| :--------- | :-------- | :-------------------- | :--------------------- | :------------------------------- |
+| `id`       | `string`  | Unique identifier     | Required, Valid ID     | —                                |
+| `username` | `string`  | Display name (handle) | Required, non-empty    | 3-30 chars, alphanumeric + `.-_` |
+| `imageUrl` | `string?` | Profile picture URL   | Optional               | Valid URL (http/https)           |
+| `bio`      | `string`  | User biography        | Optional               | Max 500 chars                    |
 
 ## Domain Invariants
 

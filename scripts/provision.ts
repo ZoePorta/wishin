@@ -207,7 +207,18 @@ const schema: CollectionSchema[] = [
         // Cascade is used for MVP as per ADR 017
         onDelete: RelationMutate.Cascade,
       },
-      { key: "userId", type: "string", required: true, size: 255 },
+      {
+        key: "userId",
+        type: "string",
+        required: true,
+        size: 255,
+        /*
+         * Note: ADR 017 warns that Cascade deletion (on itemId) is experimental.
+         * required:true is allowed here while we use Cascade for MVP.
+         * Future migration to SetNull + Soft-Cleanup (Section 4 of ADR 017)
+         * is a prerequisite for removing cascading deletions.
+         */
+      },
       { key: "status", type: "string", required: true, size: 20 },
       { key: "quantity", type: "integer", required: false, default: 1 },
     ],

@@ -174,7 +174,7 @@ export class Profile {
       throw new InvalidAttributeError("Invalid imageUrl: Must be a string");
     }
 
-    if (this.imageUrl) {
+    if (this.imageUrl !== undefined) {
       let url: URL;
       try {
         url = new URL(this.imageUrl);

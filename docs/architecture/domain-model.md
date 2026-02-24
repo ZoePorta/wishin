@@ -44,7 +44,7 @@ classDiagram
     class Transaction {
         +string id
         +string itemId
-        +string userId
+        +string? userId
         +TransactionStatus status
         +number quantity
         +Date createdAt
@@ -55,7 +55,7 @@ classDiagram
 
     Profile "1" -- "0..*" Wishlist : owns
     Wishlist "1" *-- "0..100" WishlistItem : contains
-    Profile "1" -- "0..*" Transaction : performs
+    Profile "0..1" -- "0..*" Transaction : performs
     Transaction "*" -- "1" WishlistItem : targets
 ```
 
