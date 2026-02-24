@@ -81,6 +81,7 @@ export class Profile {
    *
    * @param {ProfileProps} props - The properties to restore.
    * @returns {Profile}
+   * @throws {InvalidAttributeError} If validation of ProfileProps fails.
    */
   public static reconstitute(props: ProfileProps): Profile {
     return Profile._createWithMode(props, ValidationMode.STRUCTURAL);
@@ -91,6 +92,7 @@ export class Profile {
    *
    * @param {ProfileProps} props - The initial properties.
    * @returns {Profile}
+   * @throws {InvalidAttributeError} If validation of ProfileProps fails.
    */
   public static create(props: ProfileProps): Profile {
     return Profile._createWithMode(props, ValidationMode.STRICT);
@@ -116,15 +118,21 @@ export class Profile {
    *
    * @param {Partial<ProfileProps>} props - Partial properties to update.
    * @returns {Profile}
+   * @throws {InvalidAttributeError} If props.id differs or validation fails.
    */
   public update(props: Partial<ProfileProps>): Profile {
     if (props.id !== undefined && props.id !== this.id) {
       throw new InvalidAttributeError("Cannot update entity ID");
     }
 
-    const sanitizedUpdateProps = Object.fromEntries(
-      Object.entries(props).filter(([, value]) => typeof value !== "undefined"),
-    ) as Partial<ProfileProps>;
+    const sanitizedUpdateProps = (
+      Object.keys(props) as (keyof ProfileProps)[]
+    ).reduce<Partial<ProfileProps>>((acc, key) => {
+      if (key !== "id") {
+        acc[key] = props[key];
+      }
+      return acc;
+    }, {});
 
     return Profile._createWithMode(
       {

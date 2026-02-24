@@ -16,7 +16,7 @@ The entity supports two validation modes:
 
 ### Structural Integrity (Always Enforced)
 
-- `id`: Must be a valid identity (UUID v4 or Appwrite ID).
+- `id`: Must be a non-empty string (structural). `isValidIdentity` check is deferred to `ValidationMode.STRICT`.
 - `username`: Must be a non-empty string.
 
 ### Business Rules (Enforced by STRICT)
@@ -29,9 +29,9 @@ The entity supports two validation modes:
 
 | Attribute  | Type      | Description           | Structural (Hydration) | Business (Strict)                |
 | :--------- | :-------- | :-------------------- | :--------------------- | :------------------------------- |
-| `id`       | `string`  | Unique identifier     | Required, Valid ID     | —                                |
+| `id`       | `string`  | Unique identifier     | Required, non-empty    | Valid ID (isValidIdentity)       |
 | `username` | `string`  | Display name (handle) | Required, non-empty    | 3-30 chars, alphanumeric + `.-_` |
-| `imageUrl` | `string?` | Profile picture URL   | Optional               | Valid URL (http/https)           |
+| `imageUrl` | `string?` | Profile picture URL   | Valid URL if present   | —                                |
 | `bio`      | `string`  | User biography        | Optional               | Max 500 chars                    |
 
 ## Domain Invariants

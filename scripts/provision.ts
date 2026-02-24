@@ -157,7 +157,7 @@ const schema: CollectionSchema[] = [
     id: "profiles",
     name: "Profiles",
     attributes: [
-      { key: "username", type: "string", required: false, size: 30 },
+      { key: "username", type: "string", required: true, size: 30 },
       { key: "imageUrl", type: "string", required: false, size: 2048 },
       { key: "bio", type: "string", required: false, size: 500 },
     ],
@@ -169,8 +169,20 @@ const schema: CollectionSchema[] = [
       { key: "ownerId", type: "string", required: true, size: 255 },
       { key: "title", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
-      { key: "visibility", type: "string", required: true, size: 20 },
-      { key: "participation", type: "string", required: true, size: 20 },
+      {
+        key: "visibility",
+        type: "string",
+        required: true,
+        size: 20,
+        default: "PRIVATE", // Security by Default. Application layer must set to LINK for MVP.
+      },
+      {
+        key: "participation",
+        type: "string",
+        required: true,
+        size: 20,
+        default: "CONTACTS", // Security by Default. Application layer must set to ANYONE for MVP.
+      },
     ],
   },
   {
@@ -301,12 +313,12 @@ async function cleanup() {
     // Let's just follow the logic:
     // Current dependency order (delete children first):
     // transactions -> wishlist_items -> wishlists
-    // Note: profiles (formerly users) are no longer a parent of wishlists or transactions.
+    // Note: profiles are no longer a parent of wishlists or transactions.
     // Deletion order: transactions, wishlist_items, wishlists, profiles.
     // So we want to delete "dependers" first.
 
     // internal logic:
-    // orderedIds should be [transactions, wishlist_items, wishlists, users]
+    // orderedIds should be [transactions, wishlist_items, wishlists, profiles]
 
     const graph = new Map<string, Set<string>>(); // Node -> Dependencies
     for (const coll of schema) {
@@ -358,17 +370,6 @@ async function cleanup() {
       visit(collId);
     }
 
-    // orderedIds is now [users, wishlists, wishlist_items, transactions] (approx)
-    // We want to delete dependent (transactions) first.
-    // So we want the REVERSE of this.
-    // Wait, let's trace:
-    // visit(transactions) -> visit(wishlist_items) -> visit(wishlists) -> visit(users) -> push(users)
-    // -> push(wishlists)
-    // -> push(wishlist_items)
-    // -> push(transactions)
-    // So orderedIds = [users, wishlists, wishlist_items, transactions]
-    // We want to delete transactions FIRST.
-    // So we reverse orderedIds.
     orderedIds.reverse();
 
     tablesToDelete.sort((a, b) => {

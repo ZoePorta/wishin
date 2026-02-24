@@ -44,7 +44,7 @@ classDiagram
     class Transaction {
         +string id
         +string itemId
-        +string? userId
+        +string userId
         +TransactionStatus status
         +number quantity
         +Date createdAt
