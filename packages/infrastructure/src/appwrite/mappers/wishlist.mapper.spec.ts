@@ -38,8 +38,6 @@ describe("WishlistMapper", () => {
       description: wishlistProps.description,
       visibility: wishlistProps.visibility,
       participation: wishlistProps.participation,
-      createdAt: wishlistProps.createdAt.toISOString(),
-      updatedAt: wishlistProps.updatedAt.toISOString(),
     });
   });
 
@@ -50,8 +48,6 @@ describe("WishlistMapper", () => {
       description: string;
       visibility: Visibility;
       participation: Participation;
-      createdAt: string;
-      updatedAt: string;
       $sequence: number;
     }
 
@@ -68,8 +64,6 @@ describe("WishlistMapper", () => {
       description: "A description",
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
-      createdAt: createdAt.toISOString(),
-      updatedAt: updatedAt.toISOString(),
     };
 
     const itemProps = {
@@ -106,8 +100,8 @@ describe("WishlistMapper", () => {
       description: null, // Test case for null description
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
-      createdAt: createdAt.toISOString(),
-      updatedAt: updatedAt.toISOString(),
+      $createdAt: createdAt.toISOString(),
+      $updatedAt: updatedAt.toISOString(),
     } as unknown as Models.Document;
 
     const domain = WishlistMapper.toDomain(doc, []);
@@ -124,8 +118,8 @@ describe("WishlistMapper", () => {
       description: "Desc",
       visibility: "INVALID", // Should fail validation
       participation: Participation.ANYONE,
-      createdAt: createdAt.toISOString(),
-      updatedAt: updatedAt.toISOString(),
+      $createdAt: createdAt.toISOString(),
+      $updatedAt: updatedAt.toISOString(),
     } as unknown as Models.Document;
 
     expect(() => WishlistMapper.toDomain(doc, [])).toThrow(
@@ -141,8 +135,8 @@ describe("WishlistMapper", () => {
       description: "Desc",
       visibility: null,
       participation: null,
-      createdAt: createdAt.toISOString(),
-      updatedAt: updatedAt.toISOString(),
+      $createdAt: createdAt.toISOString(),
+      $updatedAt: updatedAt.toISOString(),
     } as unknown as Models.Document;
 
     const domain = WishlistMapper.toDomain(doc, []);
@@ -158,8 +152,8 @@ describe("WishlistMapper", () => {
       title: "My Wishlist",
       visibility: "link", // Lowercase
       participation: "anyone", // Lowercase
-      createdAt: createdAt.toISOString(),
-      updatedAt: updatedAt.toISOString(),
+      $createdAt: createdAt.toISOString(),
+      $updatedAt: updatedAt.toISOString(),
     } as unknown as Models.Document;
 
     const domain = WishlistMapper.toDomain(doc, []);
