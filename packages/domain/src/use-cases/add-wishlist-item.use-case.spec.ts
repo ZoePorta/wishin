@@ -4,6 +4,7 @@ import { AddWishlistItemUseCase } from "./add-wishlist-item.use-case";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
 import { Wishlist } from "../aggregates/wishlist";
 import { Priority, Visibility, Participation } from "../value-objects";
+import { WishlistNotFoundError } from "../errors/domain-errors";
 import type { AddWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 
 describe("AddWishlistItemUseCase", () => {
@@ -73,15 +74,15 @@ describe("AddWishlistItemUseCase", () => {
     mockRepo.findById = vi.fn().mockResolvedValue(null);
 
     const input: AddWishlistItemInput = {
-      wishlistId: "non-existent",
+      wishlistId: "550e8400-e29b-41d4-a716-446655449999",
       name: "Item",
       priority: Priority.MEDIUM,
-      isUnlimited: true,
-      totalQuantity: 0,
+      isUnlimited: false,
+      totalQuantity: 1,
     };
 
     // Act & Assert
-    await expect(useCase.execute(input)).rejects.toThrow();
+    await expect(useCase.execute(input)).rejects.toThrow(WishlistNotFoundError);
     expect(mockRepo.save).not.toHaveBeenCalled();
   });
 });

@@ -3,6 +3,7 @@ import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
 import type { AddWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 import type { WishlistOutput } from "./dtos/get-wishlist.dto";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
+import { WishlistNotFoundError } from "../errors/domain-errors";
 
 /**
  * Use case for adding a new item to a wishlist.
@@ -10,7 +11,7 @@ import type { WishlistRepository } from "../repositories/wishlist.repository";
  * This class coordinates the retrieval of a wishlist aggregate,
  * adding a new item to it, and persisting the changes via the repository.
  *
- * @throws {Error} If the wishlist is not found.
+ * @throws {WishlistNotFoundError} If the wishlist is not found.
  */
 export class AddWishlistItemUseCase {
   /**
@@ -36,12 +37,12 @@ export class AddWishlistItemUseCase {
     const wishlist = await this.wishlistRepository.findById(input.wishlistId);
 
     if (!wishlist) {
-      throw new Error(`Wishlist with ID ${input.wishlistId} not found`);
+      throw new WishlistNotFoundError(input.wishlistId);
     }
 
     const item = WishlistItem.create({
       id: this.uuidFn(),
-      wishlistId: input.wishlistId,
+      wishlistId: wishlist.id,
       name: input.name,
       description: input.description,
       priority: input.priority,
