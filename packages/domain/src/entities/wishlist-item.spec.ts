@@ -57,10 +57,21 @@ describe("WishlistItem Entity", () => {
       );
     });
 
-    it("should throw InvalidAttributeError if price is set but currency is missing", () => {
-      expect(() =>
-        WishlistItem.create({ ...validProps, price: 100, currency: "" }),
-      ).toThrow(InvalidAttributeError);
+    it("should default currency to '€' if price is set but currency is missing", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        price: 100,
+        currency: undefined,
+      });
+      expect(item.currency).toBe("€");
+    });
+    it("should allow setting a custom currency", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        price: 100,
+        currency: "USD",
+      });
+      expect(item.currency).toBe("USD");
     });
     it("should allow price with decimals", () => {
       const item = WishlistItem.create({ ...validProps, price: 49.99 });
