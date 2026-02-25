@@ -27,7 +27,7 @@ The entity supports four validation modes to ensure data integrity while allowin
 ### Business Rules (Enforced by STRICT & EVOLUTIVE)
 
 - `name`: 3-100 chars.
-- `description`: max 500 chars.
+- `description`: max 200 chars.
 - `price`: $\ge 0$ if present.
 - `url`/`imageUrl`: valid URLs.
 
@@ -42,7 +42,7 @@ The entity supports four validation modes to ensure data integrity while allowin
 | `id`                | `string` (UUID v4) | Unique identifier      | Required                                                          |
 | `wishlistId`        | `string` (UUID v4) | Parent wishlist ID     | Required                                                          |
 | `name`              | `string`           | Item name              | 3-100 chars, trimmed                                              |
-| `description`       | `string`           | Optional details       | Max 500 chars                                                     |
+| `description`       | `string`           | Optional details       | Max 200 chars                                                     |
 | `priority`          | `Priority`         | Item urgency           | Numeric: LOW(1), MEDIUM(2), HIGH(3), URGENT(4). Default: `MEDIUM` |
 | `price`             | `number`           | Reference price        | Optional, must be $\ge 0$                                         |
 | `currency`          | `string`           | ISO currency code      | Required if price is set                                          |

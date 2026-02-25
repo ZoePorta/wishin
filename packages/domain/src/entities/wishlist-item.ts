@@ -552,9 +552,9 @@ export class WishlistItem {
       }
 
       // Description Validation
-      if (this.description && this.description.length > 500) {
+      if (this.description && this.description.length > 200) {
         throw new InvalidAttributeError(
-          "Invalid description: Must be 500 characters or less",
+          "Invalid description: Must be 200 characters or less",
         );
       }
 
