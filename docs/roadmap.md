@@ -44,9 +44,9 @@
 - [x] **TDD - CreateWishlist:**
   - [x] Phase RED: Test explicit visibility/participation requirements (ADR 011).
   - [x] Phase GREEN: Logic to instantiate `Wishlist` and call `repo.save()`.
-- [ ] **TDD - AddWishlistItem:**
-  - [ ] Phase RED: Test retrieval -> add -> save cycle.
-  - [ ] Phase GREEN: Implementation of coordination logic.
+- [x] **TDD - AddWishlistItem:**
+  - [x] Phase RED: Test retrieval -> add -> save cycle.
+  - [x] Phase GREEN: Implementation of coordination logic.
 - [ ] **TDD - Update/Remove Item:**
   - [ ] Phase RED: Test editing item metadata and removing items.
   - [ ] Phase GREEN: Logic to update aggregate state and persist.
