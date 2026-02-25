@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { UpdateWishlistItemUseCase } from "./update-wishlist-item.use-case";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
+import type { PruningNotificationService } from "../services/pruning-notification.service";
 import { Wishlist } from "../aggregates/wishlist";
 import { WishlistItem } from "../entities/wishlist-item";
 import { Priority, Visibility, Participation } from "../value-objects";
@@ -15,6 +16,7 @@ import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 describe("UpdateWishlistItemUseCase", () => {
   let useCase: UpdateWishlistItemUseCase;
   let mockRepo: WishlistRepository;
+  let mockNotification: PruningNotificationService;
   const WISHLIST_ID = "550e8400-e29b-41d4-a716-446655440000";
   const ITEM_ID = "660e8400-e29b-41d4-a716-446655441111";
 
@@ -24,7 +26,10 @@ describe("UpdateWishlistItemUseCase", () => {
       save: vi.fn(),
       delete: vi.fn(),
     };
-    useCase = new UpdateWishlistItemUseCase(mockRepo);
+    mockNotification = {
+      notifyReservationCancelledByPruning: vi.fn(),
+    };
+    useCase = new UpdateWishlistItemUseCase(mockRepo, mockNotification);
   });
 
   const createExistingWishlistWithItem = () => {
@@ -88,7 +93,7 @@ describe("UpdateWishlistItemUseCase", () => {
     );
   });
 
-  it("should prune reserved quantity when totalQuantity is reduced", async () => {
+  it("should cancel ALL reservations when totalQuantity reduction causes over-commitment (ADR 019)", async () => {
     // Arrange
     const existingWishlist = createExistingWishlistWithItem(); // total: 10, reserved: 2, purchased: 3
     mockRepo.findById = vi.fn().mockResolvedValue(existingWishlist);
@@ -97,7 +102,7 @@ describe("UpdateWishlistItemUseCase", () => {
     const input: UpdateWishlistItemInput = {
       wishlistId: WISHLIST_ID,
       itemId: ITEM_ID,
-      totalQuantity: 4, // 4 < 2 (reserved) + 3 (purchased) -> reserved should be pruned to 4-3=1
+      totalQuantity: 4, // 4 < 2 (reserved) + 3 (purchased) -> ALL reservations should be cancelled (reserved = 0)
     };
 
     // Act
@@ -107,8 +112,13 @@ describe("UpdateWishlistItemUseCase", () => {
     const savedWishlist = vi.mocked(mockRepo.save).mock.calls[0][0];
     const updatedItem = savedWishlist.items.find((i) => i.id === ITEM_ID);
     expect(updatedItem?.totalQuantity).toBe(4);
-    expect(updatedItem?.reservedQuantity).toBe(1);
+    expect(updatedItem?.reservedQuantity).toBe(0); // Mass cancellation
     expect(updatedItem?.purchasedQuantity).toBe(3);
+
+    // Verify notification was called (intent)
+    expect(
+      mockNotification.notifyReservationCancelledByPruning,
+    ).toHaveBeenCalled();
   });
 
   it("should throw WishlistNotFoundError if the wishlist does not exist", async () => {

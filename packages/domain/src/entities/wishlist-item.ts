@@ -264,11 +264,13 @@ export class WishlistItem {
       sanitizedUpdateProps.totalQuantity < currentProps.totalQuantity
     ) {
       const currentPurchased = currentProps.purchasedQuantity;
-      const maxAllowedReserved = Math.max(
-        0,
-        sanitizedUpdateProps.totalQuantity - currentPurchased,
-      );
-      newReservedQuantity = Math.min(newReservedQuantity, maxAllowedReserved);
+      const newTotal = sanitizedUpdateProps.totalQuantity;
+
+      // If the new total is less than current commitment (reserved + purchased),
+      // we cancel ALL reservations for this item (simplified MVP pruning).
+      if (newTotal < currentProps.reservedQuantity + currentPurchased) {
+        newReservedQuantity = 0;
+      }
     }
 
     return WishlistItem._createWithMode(

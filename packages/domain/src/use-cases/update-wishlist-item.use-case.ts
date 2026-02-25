@@ -1,6 +1,7 @@
 import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 import type { WishlistOutput } from "./dtos/get-wishlist.dto";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
+import type { PruningNotificationService } from "../services/pruning-notification.service";
 
 /**
  * Use case for updating an existing wishlist item.
@@ -9,7 +10,10 @@ import type { WishlistRepository } from "../repositories/wishlist.repository";
  * @throws {WishlistItemNotFoundError} If the item is not found.
  */
 export class UpdateWishlistItemUseCase {
-  constructor(private readonly wishlistRepository: WishlistRepository) {}
+  constructor(
+    private readonly wishlistRepository: WishlistRepository,
+    private readonly notificationService?: PruningNotificationService,
+  ) {}
 
   /**
    * Executes the use case to update an existing item.
