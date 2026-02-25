@@ -16,6 +16,14 @@ export default function Index() {
           <Text style={styles.buttonText}>View Demo Wishlist</Text>
         </Pressable>
       </Link>
+
+      <View style={{ height: 16 }} />
+
+      <Link href="/owner/dashboard" asChild>
+        <Pressable style={styles.secondaryButton}>
+          <Text style={styles.secondaryButtonText}>Go to Owner Dashboard</Text>
+        </Pressable>
+      </Link>
     </View>
   );
 }
@@ -44,17 +52,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     minHeight: 48,
     justifyContent: "center",
   },
   buttonText: {
-    color: Colors.light.card, // Using generic white/card color for text on primary
+    color: Colors.light.card,
     fontSize: 16,
     fontWeight: "600",
+    textAlign: "center",
+  },
+  secondaryButton: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: Colors.light.primary,
+    paddingVertical: 10, // Adjust for border width
+    paddingHorizontal: 22,
+    borderRadius: 8,
+    minHeight: 48,
+    justifyContent: "center",
+  },
+  secondaryButtonText: {
+    color: Colors.light.primary,
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
   },
 });

@@ -12,6 +12,16 @@ export interface GetWishlistInput {
 }
 
 /**
+ * Input DTO for fetching a wishlist by owner.
+ */
+export interface GetWishlistByOwnerInput {
+  /**
+   * Unique identifier (UUID or Appwrite ID) of the owner.
+   */
+  ownerId: string;
+}
+
+/**
  * Output DTO for individual wishlist items.
  */
 export interface WishlistItemOutput {

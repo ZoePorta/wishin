@@ -10,7 +10,7 @@ const PRIORITY_LABELS: Record<Priority, string> = {
   [Priority.URGENT]: "URGENT",
 };
 
-import type { WishlistStyles } from "../../hooks/useWishlistStyles";
+import type { WishlistStyles } from "../hooks/useWishlistStyles";
 
 interface WishlistItemCardProps {
   item: WishlistItemOutput;

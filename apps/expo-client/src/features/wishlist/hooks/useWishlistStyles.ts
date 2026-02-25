@@ -1,5 +1,5 @@
 import { StyleSheet, useColorScheme } from "react-native";
-import { Colors } from "../constants/Colors";
+import { Colors } from "../../../constants/Colors";
 import { useMemo } from "react";
 
 /**

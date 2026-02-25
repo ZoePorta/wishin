@@ -186,6 +186,47 @@ export class AppwriteWishlistRepository
   }
 
   /**
+   * Finds a wishlist by its owner's identifier.
+   *
+   * @param ownerId - The identifier of the owner (UUID or Appwrite ID).
+   * @returns A Promise that resolves to the Wishlist aggregate or null if not found.
+   */
+  async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
+    await this.ensureSession();
+    // 1. Fetch all Wishlist Documents by ownerId
+    const response = await this.tablesDb.listRows({
+      databaseId: this.databaseId,
+      tableId: this.wishlistCollectionId,
+      queries: [Query.equal("ownerId", ownerId)],
+    });
+
+    if (response.rows.length === 0) {
+      return [];
+    }
+
+    // 2. Map docs to aggregates by fetching details for each
+    const wishlists = await Promise.all(
+      response.rows.map((row) =>
+        this.findById(toDocument<Models.Document>(row).$id),
+      ),
+    );
+
+    // Filter out any nulls if findById could potentially return null (though in this repo it shouldn't for existing rows)
+    return wishlists.filter((w): w is Wishlist => w !== null);
+  }
+
+  /**
+   * Retrieves the current user's unique identifier.
+   *
+   * @returns A Promise that resolves to the current user ID.
+   */
+  async getCurrentUserId(): Promise<string> {
+    await this.ensureSession();
+    const user = await this.account.get();
+    return user.$id;
+  }
+
+  /**
    * Persists a wishlist aggregate.
    * Synchronizes the main wishlist document and all its items.
    *

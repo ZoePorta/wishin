@@ -7,11 +7,11 @@ import {
   ActivityIndicator,
   Pressable,
 } from "react-native";
-import { useWishlist } from "@wishin/expo-client/hooks/useWishlist";
-import type { UseWishlistReturn } from "@wishin/expo-client/hooks/useWishlist";
+import { useWishlist } from "../../src/hooks/useWishlist";
+import type { UseWishlistReturn } from "../../src/hooks/useWishlist";
 import type { WishlistItemOutput } from "@wishin/domain";
-import { useWishlistStyles } from "@wishin/expo-client/hooks/useWishlistStyles";
-import { WishlistItemCard } from "@wishin/expo-client/components/wishlist/WishlistItemCard";
+import { useWishlistStyles } from "../../src/features/wishlist/hooks/useWishlistStyles";
+import { WishlistItemCard } from "../../src/features/wishlist/components/WishlistItemCard";
 
 /**
  * Display the details of a specific wishlist.
