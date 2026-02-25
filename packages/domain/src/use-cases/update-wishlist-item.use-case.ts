@@ -1,3 +1,8 @@
+import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
+import {
+  WishlistNotFoundError,
+  WishlistItemNotFoundError,
+} from "../errors/domain-errors";
 import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 import type { WishlistOutput } from "./dtos/get-wishlist.dto";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
@@ -17,7 +22,32 @@ export class UpdateWishlistItemUseCase {
    * @param input - The data for updating the item.
    * @returns A Promise that resolves to the updated WishlistOutput DTO.
    */
-  async execute(_input: UpdateWishlistItemInput): Promise<WishlistOutput> {
-    throw new Error("Method not implemented.");
+  async execute(input: UpdateWishlistItemInput): Promise<WishlistOutput> {
+    const wishlist = await this.wishlistRepository.findById(input.wishlistId);
+
+    if (!wishlist) {
+      throw new WishlistNotFoundError(input.wishlistId);
+    }
+
+    const itemExists = wishlist.items.some((item) => item.id === input.itemId);
+    if (!itemExists) {
+      throw new WishlistItemNotFoundError(input.itemId);
+    }
+
+    const updatedWishlist = wishlist.updateItem(input.itemId, {
+      name: input.name,
+      description: input.description,
+      priority: input.priority,
+      price: input.price,
+      currency: input.currency,
+      url: input.url,
+      imageUrl: input.imageUrl,
+      isUnlimited: input.isUnlimited,
+      totalQuantity: input.totalQuantity,
+    });
+
+    await this.wishlistRepository.save(updatedWishlist);
+
+    return WishlistOutputMapper.toDTO(updatedWishlist);
   }
 }
