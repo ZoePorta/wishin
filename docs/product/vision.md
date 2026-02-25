@@ -17,8 +17,8 @@ The "Mother Factor" is the guiding design principle of Wishin. It recognizes tha
 
 - **Actor:** Maria (Non-technical Guest user).
 - **The Situation:** Maria receives a link to her son's birthday list. She wants to buy a "Mechanical Keyboard" but is wary of apps that require sign-ups, passwords, or complex flows.
-- **The Flow:** 1. Maria clicks the link and immediately sees the list. 2. She clicks "Purchase" on the keyboard. 3. The system locks the item using a `sessionID` (Transaction Mode), ignoring the fact that her son might have entered an "invalid" short name like "KBD" years ago.
-- **The Result:** Maria completes her purchase in the real world with the peace of mind that no one else will buy the same item. She never saw a registration screen, and the "surprise factor" remains intact for her son.
+- **The Flow:** 1. Maria clicks the link and immediately sees the list. 2. She clicks "Purchase" on the keyboard. 3. The system locks the item using a first-class **Anonymous Session** (ADR 018).
+- **The Result:** Maria completes her purchase. Because she has a persistent anonymous identity, she can return later to see her purchase history or even cancel the purchase if she changes her mind, all without ever seeing a registration screen.
 
 ---
 
@@ -50,9 +50,11 @@ The "Mother Factor" is the guiding design principle of Wishin. It recognizes tha
 
 ### C. The Guest (Anonymous)
 
-- **Goal:** Zero-friction interaction.
-- **Session:** Uses `sessionID` for a "grace period" to undo accidental actions.
-- **Constraints:** Cannot manage a long-term history once the session/cache is cleared.
+- **Goal:** Zero-friction interaction with first-class history.
+- **Session:** Uses an **Appwrite Anonymous Session** (ADR 018).
+- **Benefits:** Access to a persistent "My Gifting" history on the same device. Can cancel purchases.
+- **Evolution:** Can "Upgrade" to a full account at any time, preserving all data.
+- **Constraints:** Cannot create or manage wishlists; cannot reserve items (Purchase only).
 
 ---
 

@@ -101,11 +101,7 @@ interface RelationshipAttribute extends Omit<BaseAttribute, "required"> {
   relationshipType: RelationshipType;
   twoWay?: boolean;
   twoWayKey?: string;
-  /**
-   * For the MVP, we use RelationMutate.Cascade to physically delete
-   * orphan transactions. This matches the infrastructure limitations
-   * documented in ADR 017.
-   */
+  /** Physical deletion of orphans for MVP (ADR 017) */
   onDelete?: RelationMutate;
 }
 
@@ -150,14 +146,13 @@ function assertUnreachable(x: never): never {
 
 /**
  * The infrastructure schema definition for the Wishin project.
- * Defines collections and their attributes for Users, Wishlists, Items, and Transactions.
+ * Defines collections and their attributes for Profiles, Wishlists, Items, and Transactions.
  */
 const schema: CollectionSchema[] = [
   {
-    id: "users",
-    name: "Users",
+    id: "profiles",
+    name: "Profiles",
     attributes: [
-      { key: "email", type: "string", required: true, size: 255 },
       { key: "username", type: "string", required: true, size: 30 },
       { key: "imageUrl", type: "string", required: false, size: 2048 },
       { key: "bio", type: "string", required: false, size: 500 },
@@ -167,17 +162,23 @@ const schema: CollectionSchema[] = [
     id: "wishlists",
     name: "Wishlists",
     attributes: [
-      {
-        type: "relationship",
-        relatedCollectionId: "users",
-        relationshipType: RelationshipType.ManyToOne,
-        key: "ownerId",
-        onDelete: RelationMutate.Cascade,
-      },
+      { key: "ownerId", type: "string", required: true, size: 255 },
       { key: "title", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
-      { key: "visibility", type: "string", required: true, size: 20 },
-      { key: "participation", type: "string", required: true, size: 20 },
+      {
+        key: "visibility",
+        type: "string",
+        required: true,
+        size: 20,
+        // Security Note: Application layer must set to LINK for MVP.
+      },
+      {
+        key: "participation",
+        type: "string",
+        required: true,
+        size: 20,
+        // Security Note: Application layer must set to ANYONE for MVP.
+      },
     ],
   },
   {
@@ -211,18 +212,15 @@ const schema: CollectionSchema[] = [
         relatedCollectionId: "wishlist_items",
         relationshipType: RelationshipType.ManyToOne,
         key: "itemId",
-        // Cascade is used for MVP as per ADR 017
-        onDelete: RelationMutate.Cascade,
+        onDelete: RelationMutate.Cascade, // Cascade for MVP (ADR 017)
       },
       {
-        type: "relationship",
-        relatedCollectionId: "users",
-        relationshipType: RelationshipType.ManyToOne,
         key: "userId",
-        // Cascade is used for MVP as per ADR 017
-        onDelete: RelationMutate.Cascade,
+        type: "string",
+        required: true,
+        size: 255,
+        // required:true allowed while using Cascade delete for MVP (ADR 017).
       },
-      { key: "guestSessionId", type: "string", required: false, size: 255 },
       { key: "status", type: "string", required: true, size: 20 },
       { key: "quantity", type: "integer", required: false, default: 1 },
     ],
@@ -278,40 +276,9 @@ async function cleanup() {
 
     // 2. Sort tables by dependency order (delete children first)
     // Build dependency graph from schema
-    const adjacencyList = new Map<string, string[]>();
-    const collectionIds = new Set<string>();
 
-    // Initialize graph
-    for (const coll of schema) {
-      const fullId = prefix ? `${prefix}_${coll.id}` : coll.id;
-      collectionIds.add(fullId);
-      adjacencyList.set(fullId, []);
-    }
-
-    // Populate edges (dependency -> dependent)
-    // If A has a relationship to B, A depends on B.
-    // To delete safely, we should delete A before B.
-    // So edge B -> A means "B must be deleted after A" ??
-    // Wait, if A has FK to B. We must delete A first.
-    // So the order is A, then B.
-    // Let's count "indegree" as number of things depending on it?
-    // Let's do a simple topological sort where edges are "depends on".
-    // A depends on B.
-    // We want to delete A first.
-    // Sort: dependents first.
-
-    // Let's define edge: X -> Y means X depends on Y.
-    // Topo sort gives Y after X? No, usually reverse.
-    // Let's just follow the logic:
-    // transactions depends on wishlist_items
-    // wishlist_items depends on wishlists
-    // wishlists depends on users
-    // Deletion order: transactions, wishlist_items, wishlists, users.
-    // So we want to delete "dependers" first.
-
-    // internal logic:
-    // orderedIds should be [transactions, wishlist_items, wishlists, users]
-
+    // Build dependency graph and sort (children first)
+    // Deletion: transactions -> wishlist_items -> wishlists -> profiles.
     const graph = new Map<string, Set<string>>(); // Node -> Dependencies
     for (const coll of schema) {
       const collId = prefix ? `${prefix}_${coll.id}` : coll.id;
@@ -338,19 +305,6 @@ async function cleanup() {
 
       const dependencies = graph.get(node) ?? new Set();
       for (const dep of dependencies) {
-        // We are doing a post-order traversal to get dependencies last
-        // But we want to delete dependencies LAST.
-        // So if A depends on B, we want A before B.
-        // Standard topo sort (DFS post-order) gives B then A.
-        // So we can just reverse the standard topo sort result?
-        // Or build it differently.
-
-        // Let's stick to standard DFS topo sort:
-        // visit children (dependencies). adding them to list.
-        // finally add self.
-        // Result: [B, A]
-        // Delete order: A, B.
-        // So we want the reverse of standard topo sort.
         visit(dep);
       }
       orderedIds.push(node);
@@ -362,34 +316,14 @@ async function cleanup() {
       visit(collId);
     }
 
-    // orderedIds is now [users, wishlists, wishlist_items, transactions] (approx)
-    // We want to delete dependent (transactions) first.
-    // So we want the REVERSE of this.
-    // Wait, let's trace:
-    // visit(transactions) -> visit(wishlist_items) -> visit(wishlists) -> visit(users) -> push(users)
-    // -> push(wishlists)
-    // -> push(wishlist_items)
-    // -> push(transactions)
-    // So orderedIds = [users, wishlists, wishlist_items, transactions]
-    // We want to delete transactions FIRST.
-    // So we reverse orderedIds.
     orderedIds.reverse();
 
     tablesToDelete.sort((a, b) => {
       const indexA = orderedIds.indexOf(a.$id);
       const indexB = orderedIds.indexOf(b.$id);
-
-      // If both are in the known order list, sort by index
-      if (indexA !== -1 && indexB !== -1) {
-        return indexA - indexB;
-      }
-
-      // If only A is in the list, it should come first
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
       if (indexA !== -1) return -1;
-      // If only B is in the list, it should come first
       if (indexB !== -1) return 1;
-
-      // Otherwise, keep original relative order
       return 0;
     });
 

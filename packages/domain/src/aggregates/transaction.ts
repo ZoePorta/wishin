@@ -3,7 +3,7 @@ import {
   InvalidAttributeError,
   InvalidTransitionError,
 } from "../errors/domain-errors";
-import { isValidUUID } from "../common/validation-utils";
+import { isValidUUID, isValidIdentity } from "../common/validation-utils";
 
 import { TransactionStatus } from "../value-objects/transaction-status";
 
@@ -12,12 +12,9 @@ import { TransactionStatus } from "../value-objects/transaction-status";
  *
  * @interface TransactionProps
  * @property {string} id - Unique identifier (UUID v4).
- * @property {string | null} itemId - The item being transacted (UUID v4) or null if deleted.
- * @remarks Domain supports null to handle orphan transactions (ADR 017), though MVP Infrastructure enforces non-null.
- * @property {string | null} [userId] - The registered user ID (UUID v4) or null if deleted.
- * @remarks Domain supports null to handle orphan transactions (ADR 017), though MVP Infrastructure enforces non-null.
- * @property {string} [guestSessionId] - The guest session identifier.
- * @property {TransactionStatus} status - Lifecycle state.
+ * @property {string | null} itemId - The item being transacted (UUID v4) or null if deleted (ADR 017).
+ * @property {string | null} [userId] - Unique identity (UUID or Appwrite ID) or null if deleted (ADR 017).
+ * @property {TransactionStatus} status - Lifecycle state (RESERVED, PURCHASED, CANCELLED).
  * @property {number} quantity - Positive integer.
  * @property {Date} createdAt - Creation timestamp.
  * @property {Date} updatedAt - Last update timestamp.
@@ -26,7 +23,6 @@ export interface TransactionProps {
   id: string;
   itemId: string | null;
   userId?: string | null;
-  guestSessionId?: string;
   status: TransactionStatus;
   quantity: number;
   createdAt: Date;
@@ -49,8 +45,7 @@ export interface TransactionCreateReservationProps {
 export interface TransactionCreatePurchaseProps {
   id: string;
   itemId: string;
-  userId?: string;
-  guestSessionId?: string;
+  userId: string;
   quantity: number;
 }
 
@@ -59,13 +54,9 @@ export interface TransactionCreatePurchaseProps {
  *
  * Tracks the reservation or purchase of a specific WishlistItem.
  *
- * **Business Invariants:**
- * - **id**, **itemId**: Must be valid UUID v4.
- * - **quantity**: Must be a positive integer.
- * - **Identity XOR**: Must have exactly ONE of `userId` or `guestSessionId`.
- * - **Identities (userId/guestSessionId)**: Allow null values during reconstitution to handle deleted entities.
- * - **RESERVED state**: Requires `userId` (except when the user is deleted and the transaction is being cancelled/auto-corrected).
- * - **PURCHASED state**: Allows either `userId` or `guestSessionId`.
+ * - **userId**: Mandatory for all strictly validated transactions. Allows null values during reconstitution to handle deleted entities (ADR 017).
+ * - **RESERVED state**: Requires `userId`.
+ * - **PURCHASED state**: Requires `userId`.
  *
  * @throws {InvalidAttributeError} If validation fails.
  */
@@ -91,23 +82,11 @@ export class Transaction {
   }
 
   /**
-   * The registered user ID (UUID v4).
-   *
-   * @remarks Supports null/undefined to allow the Domain to represent orphan transactions resulting from deleted users (ADR 017).
-   * Note that for the MVP, the Infrastructure layer enforces non-null constraints via Cascade deletion.
-   *
+   * The user identity (Registered or Anonymous).
    * @returns {string | null | undefined}
    */
   public get userId(): string | null | undefined {
     return this.props.userId;
-  }
-
-  /**
-   * The guest session identifier.
-   * @returns {string | undefined}
-   */
-  public get guestSessionId(): string | undefined {
-    return this.props.guestSessionId;
   }
 
   /**
@@ -220,11 +199,8 @@ export class Transaction {
       throw new InvalidTransitionError("Transaction is already cancelled");
     }
 
-    if (!this.userId && this.guestSessionId) {
-      throw new InvalidTransitionError(
-        "Only registered users can cancel transactions",
-      );
-    }
+    // Permission Rule (ADR 018): Universal creator check is enforced at the Application/Infrastructure layer.
+    // The domain only ensures the state transition is valid.
 
     return new Transaction(
       {
@@ -300,12 +276,9 @@ export class Transaction {
         "Invalid quantity: Must be a positive integer",
       );
     }
-    if (this.userId && !isValidUUID(this.userId)) {
-      throw new InvalidAttributeError("Invalid userId: Must be valid UUID v4");
-    }
-    if (this.guestSessionId?.trim() === "") {
+    if (this.userId && !isValidIdentity(this.userId)) {
       throw new InvalidAttributeError(
-        "Invalid guestSessionId: Must be a non-empty string",
+        "Invalid userId: Must be a valid identity (UUID or Appwrite ID)",
       );
     }
     if (!(this.createdAt instanceof Date) || isNaN(this.createdAt.getTime())) {
@@ -321,18 +294,10 @@ export class Transaction {
 
     // --- STRICT VALIDATIONS ---
     if (mode === ValidationMode.STRICT) {
-      // Identity XOR
-      const hasUser = !!this.userId;
-      const hasGuest = !!this.guestSessionId;
-
-      if (hasUser && hasGuest) {
+      // Identity Mandate
+      if (!this.userId) {
         throw new InvalidAttributeError(
-          "Identity XOR: Cannot have both userId and guestSessionId",
-        );
-      }
-      if (!hasUser && !hasGuest) {
-        throw new InvalidAttributeError(
-          "Identity XOR: Must have either userId or guestSessionId",
+          "Identity Mandate: userId must be defined for new transactions",
         );
       }
 

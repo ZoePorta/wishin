@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Wishlist } from "./wishlist";
+import { Wishlist, type WishlistSnapshot } from "./wishlist";
 import { Visibility, Participation } from "../value-objects";
 import {
   WishlistItem,
@@ -98,10 +98,23 @@ describe("Wishlist Aggregate", () => {
       }).toThrow(InvalidAttributeError);
     });
 
-    it("should throw InvalidAttributeError if ownerId is not a valid UUID v4", () => {
+    it("should throw InvalidAttributeError if ownerId is not a valid identity", () => {
       expect(() => {
-        Wishlist.create({ ...validProps, ownerId: "not-a-uuid" });
+        Wishlist.create({
+          ...validProps,
+          ownerId: "not-a-uuid-and-too-long-for-appwrite-id-" + "a".repeat(40),
+        });
       }).toThrow(InvalidAttributeError);
+
+      expect(() => {
+        Wishlist.create({ ...validProps, ownerId: "invalid$character" });
+      }).toThrow(InvalidAttributeError);
+    });
+
+    it("should allow Appwrite-style IDs as ownerId", () => {
+      const appwriteId = "user_123456789_abcdef";
+      const wishlist = Wishlist.create({ ...validProps, ownerId: appwriteId });
+      expect(wishlist.ownerId).toBe(appwriteId);
     });
 
     it("should throw InvalidAttributeError if description is too long", () => {
@@ -164,12 +177,10 @@ describe("Wishlist Aggregate", () => {
     });
 
     it("should not allow updating immutable properties via update method", () => {
-      // This is enforced by type system, but we can verify runtime behavior if we cast or bypass.
-      // For strictly typed TDD, we verify the method signature and functionality of allowed props.
       const wishlist = Wishlist.create(validProps);
-      // @ts-expect-error - Testing immutability of properties not allowed in update
-      const updated = wishlist.update({ id: "new-id" });
-      expect(updated.id).toBe(wishlist.id);
+      expect(() =>
+        wishlist.update({ id: "new-id" } as Partial<WishlistSnapshot>),
+      ).toThrow(InvalidAttributeError);
     });
 
     it("should update item title via aggregate", () => {

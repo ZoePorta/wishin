@@ -18,6 +18,7 @@ import type { SessionAwareRepository } from "./session-aware-repository.interfac
  */
 interface TransactionDocument extends Models.Document {
   itemId: string | Models.Document;
+  userId: string;
   status: TransactionStatus;
   quantity: number;
 }

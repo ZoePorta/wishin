@@ -35,12 +35,11 @@ const tablesDb = new TablesDB(client);
  * Interfaces for database models to ensure type safety.
  * We use intersection types with Models.Row to satisfy TablesDB constraints.
  */
-interface UserData {
-  email: string;
+interface ProfileData {
   username: string;
   bio?: string;
 }
-type UserRow = UserData & Models.Row;
+type ProfileRow = ProfileData & Models.Row;
 
 interface WishlistData {
   ownerId: string;
@@ -76,7 +75,7 @@ type TransactionRow = TransactionData & Models.Row;
  * Stable UUIDs for idempotency.
  */
 const SEED_IDS = {
-  USERS: {
+  PROFILES: {
     ALICE: "550e8400-e29b-41d4-a716-446655440001",
     BOB: "550e8400-e29b-41d4-a716-446655440002",
   },
@@ -97,6 +96,7 @@ const SEED_IDS = {
     RESERVATION_1: "550e8400-e29b-41d4-a716-44665544000c",
     RESERVATION_2: "550e8400-e29b-41d4-a716-44665544000d",
     PURCHASE_1: "550e8400-e29b-41d4-a716-44665544000e",
+    PURCHASE_ANONYMOUS: "550e8400-e29b-41d4-a716-44665544000f",
   },
 } as const;
 
@@ -107,25 +107,23 @@ async function seed() {
   console.log("Starting database seeding...");
 
   try {
-    // 1. Seed Users
-    console.log("Seeding users...");
-    const usersCollectionId = prefix ? `${prefix}_users` : "users";
-    const user1 = await tablesDb.upsertRow<UserRow>({
+    // 1. Seed Profiles
+    console.log("Seeding profiles...");
+    const profilesCollectionId = prefix ? `${prefix}_profiles` : "profiles";
+    const user1 = await tablesDb.upsertRow<ProfileRow>({
       databaseId,
-      tableId: usersCollectionId,
-      rowId: SEED_IDS.USERS.ALICE,
+      tableId: profilesCollectionId,
+      rowId: SEED_IDS.PROFILES.ALICE,
       data: {
-        email: "alice@example.com",
         username: "alice",
         bio: "Bio of Alice",
       },
     });
-    const user2 = await tablesDb.upsertRow<UserRow>({
+    const user2 = await tablesDb.upsertRow<ProfileRow>({
       databaseId,
-      tableId: usersCollectionId,
-      rowId: SEED_IDS.USERS.BOB,
+      tableId: profilesCollectionId,
+      rowId: SEED_IDS.PROFILES.BOB,
       data: {
-        email: "bob@example.com",
         username: "bob",
         bio: "Bio of Bob",
       },
@@ -314,6 +312,18 @@ async function seed() {
       data: {
         itemId: item7.$id,
         userId: user2.$id,
+        status: TransactionStatus.PURCHASED,
+        quantity: 1,
+      },
+    });
+    // Item 1: Anonymous purchase (for validation)
+    await tablesDb.upsertRow<TransactionRow>({
+      databaseId,
+      tableId: transactionsCollectionId,
+      rowId: SEED_IDS.TRANSACTIONS.PURCHASE_ANONYMOUS,
+      data: {
+        itemId: item1.$id,
+        userId: "550e8400-e29b-41d4-a716-44665544000x", // Maria (Anonymous)
         status: TransactionStatus.PURCHASED,
         quantity: 1,
       },

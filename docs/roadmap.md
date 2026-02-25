@@ -53,7 +53,7 @@
 
 ### 3.3 Infrastructure Layer (Appwrite)
 
-- [x] **Schema Definition:** Create collections/attributes in Appwrite matching `UserProps` and `WishlistProps`.
+- [x] **Schema Definition:** Create collections/attributes in Appwrite matching `ProfileProps` and `WishlistProps`.
 - [x] **Integration Tests:**
   - [x] Test `AppwriteWishlistRepository.save()` (Insert and Update scenarios).
   - [x] Test `AppwriteWishlistRepository.findById()` ensures full reconstitution (including items).
@@ -76,7 +76,7 @@
 - [ ] **DTOs Definition:** `ReserveItemInput`, `PurchaseItemInput`, `ConfirmPurchaseInput`, `CancelTransactionInput`.
 - [ ] **TDD - Gifting Cycles:**
   - [ ] **ReserveItem:** RED (Registered only) -> GREEN (Coordination).
-  - [ ] **DirectPurchase:** RED (Guest/User) -> GREEN (Immediate stock update).
+  - [ ] **DirectPurchase:** RED (Anonymous/Registered) -> GREEN (Immediate stock update).
   - [ ] **Undo (Immediate):** RED (Hard delete within window) -> GREEN (Implementation).
   - [ ] **Confirm/Cancel:** RED (State transitions) -> GREEN (Persistence).
 
@@ -88,7 +88,7 @@
 
 ### 4.4 UI & Presentation
 
-- [ ] Guest interaction: Reservation/Purchase buttons with immediate "Undo" snackbar.
+- [ ] Guest/Anonymous interaction: Reservation/Purchase buttons with immediate "Undo" snackbar.
 
 ---
 
@@ -101,8 +101,9 @@
 
 ### 5.2 Infrastructure Layer
 
-- [x] **Appwrite Auth:** Implement `AuthService` adapter (Started with Anonymous Sessions).
-- [ ] **Identity Mapping:** ADR 014 implementation details.
+- [ ] **Appwrite Auth:** Implement `AuthService` adapter (Using Anonymous Sessions - ADR 018).
+- [ ] **Security & Permissions:** Configure Appwrite collection/attribute permissions in `provision.ts`.
+- [ ] **Identity Mapping & Evolution:** Seamless conversion from anonymous to registered users (ADR 018).
 
 ### 5.3 UI & Presentation
 

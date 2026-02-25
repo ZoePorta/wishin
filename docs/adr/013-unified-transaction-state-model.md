@@ -2,11 +2,14 @@
 
 ## Status
 
-Accepted
+Amended by [ADR 018](./018-unified-identity-anonymous-sessions.md) (Allows anonymous users to cancel transactions).
 
 ## Context
 
 Initially, the `Transaction` entity relied on a combination of `TransactionType` (RESERVATION, PURCHASE) and `TransactionStatus` (ACTIVE, CANCELLED). This dual-field approach introduced unnecessary complexity in domain validations and increased the risk of state inconsistencies.
+
+> [!NOTE]
+> **Update (ADR 018)**: The permission model was expanded to allow anonymous sessions to access their history and reach the `CANCELLED` state.
 
 Furthermore, the requirement to handle both anonymous guests and registered users necessitated a clearer distinction in how transactions are initiated, as guests are only permitted to perform direct purchases (no reservations).
 

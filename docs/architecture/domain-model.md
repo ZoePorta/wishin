@@ -6,9 +6,8 @@ The Wishin domain is structured around a central aggregate root: the **Wishlist*
 
 ```mermaid
 classDiagram
-    class User {
+    class Profile {
         +string id
-        +string email
         +string username
         +string? imageUrl
         +string? bio
@@ -45,8 +44,7 @@ classDiagram
     class Transaction {
         +string id
         +string itemId
-        +string userId?
-        +string guestSessionId?
+        +string userId
         +TransactionStatus status
         +number quantity
         +Date createdAt
@@ -55,9 +53,9 @@ classDiagram
 
     note for Transaction "States: RESERVED, PURCHASED, CANCELLED"
 
-    User "1" -- "0..*" Wishlist : owns
+    Profile "1" -- "0..*" Wishlist : owns
     Wishlist "1" *-- "0..100" WishlistItem : contains
-    User "0..1" -- "0..*" Transaction : performs
+    Profile "0..1" -- "0..*" Transaction : performs
     Transaction "*" -- "1" WishlistItem : targets
 ```
 
@@ -149,16 +147,16 @@ To minimize friction while maintaining data integrity, anonymous actions are han
 ### 4.5 Cancellation vs. Undo
 
 - **Undo:** Available to everyone on Purchase. Deletes the transaction record. Only available immediately after the action.
-- **Cancellation:** Available only to **Registered Users** via their "Gifting History". It transitions the transaction to a `CANCELLED` status (Soft Delete) for audit purposes.
+- **Cancellation:** Available to both **Registered** and **Anonymous** users (via ADR 018) via their "Gifting History", **restricted to their own transactions**. It transitions the transaction to a `CANCELLED` status (Soft Delete) for audit purposes.
 
 ## 5. Domain Invariants & Lifecycle
 
 1.  **Identity Immutability:** An item's `id` cannot be changed after creation.
 2.  **Atomic State Transitions:** All changes to domain aggregates (e.g., `WishlistItem`, `Transaction`) result in a new immutable instance.
-3.  **Transaction Identity Invariant:** Exactly one of `userId` and `guestSessionId` MUST be set. This ensures a transaction is performed by either a registered user OR a guest, never both or neither. Enforced at creation validation.
-4.  **Transaction Lifecycle:**
+3.  **Transaction Identity Invariant:** Every `Transaction` MUST have a `userId`. The distinction between anonymous and registered users is handled at the Authentication service level (Appwrite Auth).
+4.  **Profile Identity:** A `Profile` instance contains public metadata linked to a `userId` from the Auth service.
+5.  **Transaction Lifecycle:**
     - **Undo:** A hard delete of the `Transaction` record, triggered only during the active UI session.
-    - **Cancellation:** A status update (`status: CANCELLED`) allowed only for registered users, which triggers a stock restock in the target `WishlistItem`.
+    - **Cancellation:** A status update (`status: CANCELLED`) which triggers a stock restock in the target `WishlistItem`.
     - **Confirmation:** A status update from `RESERVED` to `PURCHASED`.
-    - **Invariants by State:** `RESERVED` status REQUIRES a `userId`. `guestSessionId` is only allowed for `PURCHASED` status.
-5.  **Role Isolation:** Guests are restricted to `PURCHASED` transactions and immediate "Undo" (deletion).
+6.  **Role Isolation:** Anonymous users are restricted to `PURCHASED` transactions and `CANCELLED` status management. They cannot initiate `RESERVED` states or create lists (ADR 018).

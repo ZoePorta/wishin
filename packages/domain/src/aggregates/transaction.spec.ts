@@ -13,7 +13,6 @@ describe("Transaction Aggregate", () => {
   // Valid UUID v4
   const VALID_ITEM_ID = "9f8c05c0-e89b-42d3-a456-426614174000";
   const VALID_USER_ID = "9f8c05c0-e89b-42d3-a456-426614174001";
-  const VALID_GUEST_ID = "guest-session-123";
   const VALID_TRANSACTION_ID = "9f8c05c0-e89b-42d3-a456-426614174002";
 
   // Invalid UUID v1 (for testing rejection)
@@ -34,7 +33,6 @@ describe("Transaction Aggregate", () => {
       expect(transaction.id).toBe(VALID_TRANSACTION_ID);
       expect(transaction.itemId).toBe(VALID_ITEM_ID);
       expect(transaction.userId).toBe(VALID_USER_ID);
-      expect(transaction.guestSessionId).toBeUndefined();
       expect(transaction.status).toBe(TransactionStatus.RESERVED);
       expect(transaction.quantity).toBe(1);
     });
@@ -116,7 +114,7 @@ describe("Transaction Aggregate", () => {
   });
 
   describe("Factory: createPurchase", () => {
-    it("should create a valid purchase for a registered user", () => {
+    it("should create a valid purchase", () => {
       const transaction = Transaction.createPurchase({
         itemId: VALID_ITEM_ID,
         userId: VALID_USER_ID,
@@ -126,60 +124,13 @@ describe("Transaction Aggregate", () => {
       expect(transaction.status).toBe(TransactionStatus.PURCHASED);
       expect(transaction.id).toBe(VALID_TRANSACTION_ID);
       expect(transaction.userId).toBe(VALID_USER_ID);
-      expect(transaction.guestSessionId).toBeUndefined();
     });
 
-    it("should create a valid purchase for a guest", () => {
-      const transaction = Transaction.createPurchase({
-        itemId: VALID_ITEM_ID,
-        guestSessionId: VALID_GUEST_ID,
-        quantity: 2,
-        id: VALID_TRANSACTION_ID,
-      });
-      expect(transaction.status).toBe(TransactionStatus.PURCHASED);
-      expect(transaction.id).toBe(VALID_TRANSACTION_ID);
-      expect(transaction.guestSessionId).toBe(VALID_GUEST_ID);
-      expect(transaction.userId).toBeUndefined();
-    });
-
-    it("should throw if neither userId nor guestSessionId is provided (Identity XOR)", () => {
+    it("should throw if userId is missing (Identity Mandate)", () => {
       expect(() =>
         Transaction.createPurchase({
           itemId: VALID_ITEM_ID,
-          quantity: 1,
-          id: VALID_TRANSACTION_ID,
-        }),
-      ).toThrow(InvalidAttributeError);
-    });
-
-    it("should throw if both userId and guestSessionId are provided (Identity XOR)", () => {
-      expect(() =>
-        Transaction.createPurchase({
-          itemId: VALID_ITEM_ID,
-          userId: VALID_USER_ID,
-          guestSessionId: VALID_GUEST_ID,
-          quantity: 1,
-          id: VALID_TRANSACTION_ID,
-        }),
-      ).toThrow(InvalidAttributeError);
-    });
-
-    it("should throw if guestSessionId is empty", () => {
-      expect(() =>
-        Transaction.createPurchase({
-          itemId: VALID_ITEM_ID,
-          guestSessionId: "",
-          quantity: 1,
-          id: VALID_TRANSACTION_ID,
-        }),
-      ).toThrow(InvalidAttributeError);
-    });
-
-    it("should throw if guestSessionId is whitespace-only", () => {
-      expect(() =>
-        Transaction.createPurchase({
-          itemId: VALID_ITEM_ID,
-          guestSessionId: "   ",
+          userId: undefined as unknown as string,
           quantity: 1,
           id: VALID_TRANSACTION_ID,
         }),
@@ -270,18 +221,19 @@ describe("Transaction Aggregate", () => {
       expect(cancelled.status).toBe(TransactionStatus.CANCELLED);
     });
 
-    it("should throw if cancelling a guest purchase", () => {
+    it("should allow cancelling even for anonymous sessions (ADR 018)", () => {
       const purchase = Transaction.reconstitute({
         id: VALID_TRANSACTION_ID,
         itemId: VALID_ITEM_ID,
-        guestSessionId: VALID_GUEST_ID,
+        userId: "anonymous-user-123",
         status: TransactionStatus.PURCHASED,
         quantity: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
-      expect(() => purchase.cancel()).toThrow(InvalidTransitionError);
+      const cancelled = purchase.cancel();
+      expect(cancelled.status).toBe(TransactionStatus.CANCELLED);
     });
 
     it("should throw if cancelling an already cancelled transaction", () => {
@@ -392,7 +344,7 @@ describe("Transaction Aggregate", () => {
       expect(transaction.userId).toBeNull();
     });
 
-    it("should still enforce valid UUID for non-null itemId/userId", () => {
+    it("should still enforce valid UUID for non-null itemId", () => {
       expect(() =>
         Transaction.reconstitute({
           id: VALID_TRANSACTION_ID,
@@ -406,12 +358,12 @@ describe("Transaction Aggregate", () => {
       ).toThrow(InvalidAttributeError);
     });
 
-    it("should throw if userId is invalid UUID in reconstitute", () => {
+    it("should enforce valid identity for non-null userId", () => {
       expect(() =>
         Transaction.reconstitute({
           id: VALID_TRANSACTION_ID,
           itemId: VALID_ITEM_ID,
-          userId: "invalid-uuid",
+          userId: "invalid$id",
           status: TransactionStatus.RESERVED,
           quantity: 1,
           createdAt: new Date(),
@@ -420,27 +372,26 @@ describe("Transaction Aggregate", () => {
       ).toThrow(InvalidAttributeError);
     });
 
-    it("should throw if guestSessionId is whitespace-only in reconstitute", () => {
+    it("should allow reconstituting with any valid identity format (Loosened validation for anonymous)", () => {
       expect(() =>
         Transaction.reconstitute({
           id: VALID_TRANSACTION_ID,
           itemId: VALID_ITEM_ID,
-          guestSessionId: "   ",
+          userId: "appwrite_user_123",
           status: TransactionStatus.PURCHASED,
           quantity: 1,
           createdAt: new Date(),
           updatedAt: new Date(),
         }),
-      ).toThrow(InvalidAttributeError);
+      ).not.toThrow();
     });
 
-    it("should not throw when userId is null and guestSessionId is undefined (soft-deleted identity)", () => {
+    it("should not throw when userId is null (soft-deleted identity)", () => {
       expect(() =>
         Transaction.reconstitute({
           id: VALID_TRANSACTION_ID,
           itemId: VALID_ITEM_ID,
           userId: null,
-          guestSessionId: undefined,
           status: TransactionStatus.PURCHASED,
           quantity: 1,
           createdAt: new Date(),

@@ -36,7 +36,7 @@ describe.skipIf(!shouldRun)(
     let databaseId: string;
     let wishlistCollectionId: string;
     let wishlistItemsCollectionId: string;
-    let usersCollectionId: string;
+    let profilesCollectionId: string;
     let transactionsCollectionId: string;
 
     beforeAll(() => {
@@ -58,7 +58,7 @@ describe.skipIf(!shouldRun)(
 
       wishlistCollectionId = `${prefix}_wishlists`;
       wishlistItemsCollectionId = `${prefix}_wishlist_items`;
-      usersCollectionId = `${prefix}_users`;
+      profilesCollectionId = `${prefix}_profiles`;
       transactionsCollectionId = `${prefix}_transactions`;
 
       repository = new AppwriteWishlistRepository(
@@ -109,7 +109,7 @@ describe.skipIf(!shouldRun)(
       try {
         await tablesDb.deleteRow({
           databaseId,
-          tableId: usersCollectionId,
+          tableId: profilesCollectionId,
           rowId: ownerId,
         });
       } catch {
@@ -118,13 +118,12 @@ describe.skipIf(!shouldRun)(
     });
 
     it("should find a wishlist by id including its items and calculated quantities", async () => {
-      // 0. Seed User (Required for relationship)
+      // 0. Seed User Profile (Required for relationship)
       await tablesDb.createRow({
         databaseId,
-        tableId: usersCollectionId,
+        tableId: profilesCollectionId,
         rowId: ownerId,
         data: {
-          email: "test@example.com",
           username: "testuser",
         },
       });
