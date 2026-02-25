@@ -85,6 +85,15 @@ describe("Profile Entity", () => {
       );
     });
 
+    it("should throw InvalidAttributeError if bio is empty after trimming in STRICT mode", () => {
+      expect(() => Profile.create({ ...validProps, bio: "   " })).toThrow(
+        InvalidAttributeError,
+      );
+      expect(() => Profile.create({ ...validProps, bio: "" })).toThrow(
+        InvalidAttributeError,
+      );
+    });
+
     it("should throw InvalidAttributeError if imageUrl is not a string", () => {
       expect(() =>
         Profile.create({ ...validProps, imageUrl: 123 as unknown as string }),

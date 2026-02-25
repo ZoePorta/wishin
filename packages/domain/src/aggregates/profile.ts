@@ -32,9 +32,6 @@ export interface ProfileProps {
  * - **username**: Must be a non-empty string, length 3-30 characters, alphanumeric with `.-_` separators.
  * - **bio**: Optional. If present, must not exceed 500 characters.
  * - **imageUrl**: Optional. If present, must be a valid URL string.
- *
- * @param {ProfileProps} props - The properties to initialize the profile with.
- * @param {ValidationMode} mode - The validation mode to use (STRICT or STRUCTURAL).
  */
 export class Profile {
   /**
@@ -211,10 +208,13 @@ export class Profile {
         throw new InvalidAttributeError("Invalid username format");
       }
 
-      if (this.bio && this.bio.length > 500) {
+      if (this.bio !== undefined && this.bio.length > 500) {
         throw new InvalidAttributeError(
           "Invalid bio: Must be at most 500 characters",
         );
+      }
+      if (this.bio === "") {
+        throw new InvalidAttributeError("Invalid bio: cannot be empty");
       }
     }
   }

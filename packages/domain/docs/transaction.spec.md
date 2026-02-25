@@ -4,7 +4,7 @@
 
 The `Transaction` aggregate represents a solitary unit of work tracking the reservation or purchase of a specific `WishlistItem`. It serves as the immutable record of "who reserved what and when".
 
-While the `WishlistItem` aggregate manages the total inventory counts (availability), `Transaction` manages the individual records that justify those counts. It handles the lifecycle of the action (Reserved -> Purchased -> Cancelled) and enforces strict identity rules (Guest vs User).
+While the `WishlistItem` aggregate manages the total inventory counts (availability), `Transaction` manages the individual records that justify those counts. It handles the lifecycle of the action (Reserved -> Purchased -> Cancelled) and enforces strict identity rules (registered or anonymous).
 
 ## Validation
 
@@ -15,7 +15,8 @@ Unlike other entities where business rules might evolve (e.g., username length),
 ### Rules (Always Enforced)
 
 - **Structural**:
-  - `id`, `itemId`: Must be valid UUID v4.
+  - `id`: Must be valid UUID v4.
+  - `itemId`: Must be valid UUID v4 if present / nullable during reconstitution.
   - `quantity`: Must be a number.
   - `status`: Must be a valid enum value (`RESERVED`, `PURCHASED`, `CANCELLED`).
   - `createdAt`, `updatedAt`: Must be valid Date objects.
