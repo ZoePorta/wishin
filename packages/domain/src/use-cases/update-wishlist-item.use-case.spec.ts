@@ -33,6 +33,7 @@ describe("UpdateWishlistItemUseCase", () => {
       save: vi.fn(),
       findById: vi.fn(),
       findByItemId: vi.fn().mockResolvedValue([]),
+      cancelByItemId: vi.fn(),
     };
     useCase = new UpdateWishlistItemUseCase(mockRepo, mockTransactionRepo);
   });
@@ -162,13 +163,7 @@ describe("UpdateWishlistItemUseCase", () => {
     await useCase.execute(input);
 
     // Assert
-    expect(mockTransactionRepo.findByItemId).toHaveBeenCalledWith(ITEM_ID);
-    expect(mockTransactionRepo.save).toHaveBeenCalledTimes(2);
-
-    const cancelled1 = vi.mocked(mockTransactionRepo.save).mock.calls[0][0];
-    const cancelled2 = vi.mocked(mockTransactionRepo.save).mock.calls[1][0];
-    expect(cancelled1.status).toBe(TransactionStatus.CANCELLED_BY_OWNER);
-    expect(cancelled2.status).toBe(TransactionStatus.CANCELLED_BY_OWNER);
+    expect(mockTransactionRepo.cancelByItemId).toHaveBeenCalledWith(ITEM_ID);
   });
 
   it("should throw WishlistNotFoundError if the wishlist does not exist", async () => {

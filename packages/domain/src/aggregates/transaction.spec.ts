@@ -247,7 +247,87 @@ describe("Transaction Aggregate", () => {
         updatedAt: new Date(),
       });
 
-      expect(() => cancelled.cancel()).toThrow(InvalidTransitionError);
+      const again = cancelled.cancel();
+      expect(again).toBe(cancelled);
+    });
+
+    it("should return same instance if cancelling a transaction already cancelled by owner (No Friction)", () => {
+      const cancelled = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: VALID_ITEM_ID,
+        userId: VALID_USER_ID,
+        status: TransactionStatus.CANCELLED_BY_OWNER,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const result = cancelled.cancel();
+      expect(result).toBe(cancelled);
+    });
+  });
+
+  describe("Lifecycle Transitions: cancelByOwner", () => {
+    it("should allow cancelling a reservation (Success)", () => {
+      const reservation = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: VALID_ITEM_ID,
+        userId: VALID_USER_ID,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const cancelled = reservation.cancelByOwner();
+      expect(cancelled.status).toBe(TransactionStatus.CANCELLED_BY_OWNER);
+      expect(cancelled.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        reservation.updatedAt.getTime(),
+      );
+    });
+
+    it("should return same instance if already CANCELLED_BY_OWNER (Idempotency/No Friction)", () => {
+      const cancelled = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: VALID_ITEM_ID,
+        userId: VALID_USER_ID,
+        status: TransactionStatus.CANCELLED_BY_OWNER,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const result = cancelled.cancelByOwner();
+      expect(result).toBe(cancelled);
+    });
+
+    it("should return same instance if already CANCELLED (No Friction)", () => {
+      const cancelled = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: VALID_ITEM_ID,
+        userId: VALID_USER_ID,
+        status: TransactionStatus.CANCELLED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const result = cancelled.cancelByOwner();
+      expect(result).toBe(cancelled);
+    });
+
+    it("should throw InvalidTransitionError if status is PURCHASED (Owner cannot cancel purchases)", () => {
+      const purchase = Transaction.reconstitute({
+        id: VALID_TRANSACTION_ID,
+        itemId: VALID_ITEM_ID,
+        userId: VALID_USER_ID,
+        status: TransactionStatus.PURCHASED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(() => purchase.cancelByOwner()).toThrow(InvalidTransitionError);
     });
   });
 

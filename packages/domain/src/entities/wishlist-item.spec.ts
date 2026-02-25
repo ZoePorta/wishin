@@ -214,9 +214,10 @@ describe("WishlistItem Entity", () => {
       expect(newItem.reservedQuantity).toBe(1);
     });
 
-    it("should throw InvalidTransitionError if cancelling more than reserved", () => {
+    it("should cap at 0 if cancelling more than reserved (No Friction)", () => {
       const item = WishlistItem.create({ ...validProps, reservedQuantity: 1 });
-      expect(() => item.cancelReservation(2)).toThrow(InvalidTransitionError); // Or generic Error depending on implementation, spec implies logic violation
+      const newItem = item.cancelReservation(2);
+      expect(newItem.reservedQuantity).toBe(0);
     });
 
     it("should throw InvalidAttributeError if amount is negative or zero", () => {
@@ -635,7 +636,7 @@ describe("WishlistItem Entity", () => {
       expect(() => item.purchase(1, 0)).toThrow(InsufficientStockError);
     });
 
-    it("should allow cancelling reservation on pruned item (valid state)", () => {
+    it("should allow cancelling reservation on pruned item (Success/No Friction)", () => {
       // Create valid item: T=5, R=3.
       const item = WishlistItem.create({
         ...validProps,
@@ -645,13 +646,12 @@ describe("WishlistItem Entity", () => {
       // Update Total to 2. Pruning happens: R = 0.
       const updatedItem = item.update({ totalQuantity: 2 });
 
-      // Cannot cancel 1 reservation as it's now 0.
-      expect(() => updatedItem.cancelReservation(1)).toThrow(
-        InvalidTransitionError,
-      );
+      // Should stay at 0.
+      const newItem = updatedItem.cancelReservation(1);
+      expect(newItem.reservedQuantity).toBe(0);
     });
 
-    it("should allow cancelling reservation on severely pruned item (pruned to valid)", () => {
+    it("should allow cancelling reservation on severely pruned item (Success/No Friction)", () => {
       // Total=1, Reserved=3.
       const item = WishlistItem.create({
         ...validProps,
@@ -662,10 +662,21 @@ describe("WishlistItem Entity", () => {
       const updatedItem = item.update({ totalQuantity: 1 });
       expect(updatedItem.reservedQuantity).toBe(0);
 
-      // Cancel 1 -> Throws as reserved is 0.
-      expect(() => updatedItem.cancelReservation(1)).toThrow(
-        InvalidTransitionError,
-      );
+      // Cancel 1 -> Should stay at 0.
+      const newItem = updatedItem.cancelReservation(1);
+      expect(newItem.reservedQuantity).toBe(0);
+      expect(newItem).toBe(updatedItem);
+    });
+
+    it("should cap cancellation at 0 if amount > reservedQuantity (No Friction)", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        totalQuantity: 5,
+        reservedQuantity: 2,
+      });
+
+      const newItem = item.cancelReservation(5);
+      expect(newItem.reservedQuantity).toBe(0);
     });
 
     describe("Reconstitute (bypass validation)", () => {

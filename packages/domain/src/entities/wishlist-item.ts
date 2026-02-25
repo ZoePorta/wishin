@@ -360,10 +360,10 @@ export class WishlistItem {
       throw new InvalidAttributeError("Amount must be positive");
     }
 
-    if (amount > this.reservedQuantity) {
-      throw new InvalidTransitionError(
-        `Cannot cancel more reservations than reserved. Requested: ${amount.toString()}, Reserved: ${this.reservedQuantity.toString()}`,
-      );
+    const newReservedQuantity = Math.max(0, this.reservedQuantity - amount);
+
+    if (newReservedQuantity === this.reservedQuantity) {
+      return this;
     }
 
     // Reducing reserved quantity reduces (or keeps same) the constraint sum.
@@ -372,7 +372,7 @@ export class WishlistItem {
     return WishlistItem._createWithMode(
       {
         ...this.toProps(),
-        reservedQuantity: this.reservedQuantity - amount,
+        reservedQuantity: newReservedQuantity,
       },
       ItemValidationMode.STRUCTURAL,
     );

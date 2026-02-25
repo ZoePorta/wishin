@@ -7,7 +7,6 @@ import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 import type { WishlistOutput } from "./dtos/get-wishlist.dto";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
 import type { TransactionRepository } from "../repositories/transaction.repository";
-import { TransactionStatus } from "../value-objects/transaction-status";
 import type { WishlistItem } from "../entities/wishlist-item";
 
 /**
@@ -64,17 +63,7 @@ export class UpdateWishlistItemUseCase {
       originalItem.reservedQuantity > 0 &&
       updatedItem?.reservedQuantity === 0
     ) {
-      const transactions = await this.transactionRepository.findByItemId(
-        input.itemId,
-      );
-      const reservedTransactions = transactions.filter(
-        (t) => t.status === TransactionStatus.RESERVED,
-      );
-
-      for (const transaction of reservedTransactions) {
-        const cancelledTransaction = transaction.cancelByOwner();
-        await this.transactionRepository.save(cancelledTransaction);
-      }
+      await this.transactionRepository.cancelByItemId(input.itemId);
     }
 
     await this.wishlistRepository.save(updatedWishlist);
