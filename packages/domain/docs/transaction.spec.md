@@ -79,12 +79,22 @@ Unlike other entities where business rules might evolve (e.g., username length),
   - Allows `itemId` and `userId` to be null (handling deleted references).
 - **Returns:** `Transaction` instance or throws `InvalidAttributeError`.
 
-- **Returns:** New `Transaction` instance with updated status. If transaction is already in a cancelled state (`CANCELLED` or `CANCELLED_BY_OWNER`), it returns the same instance (No Friction/Idempotent).
+### `cancel()`
+
+- **Effect:** Marks the transaction as cancelled.
+- **Validation:** Idempotent for already-cancelled states.
+- **Behavior:**
+  - Transitions `RESERVED` → `CANCELLED`.
+  - Transitions `PURCHASED` → `CANCELLED`.
+  - Updates `updatedAt` to current date.
+  - **No Friction Rule**: returns same instance if status is `CANCELLED` or `CANCELLED_BY_OWNER`.
+  - **Permission Rule**: Enforced by the application layer (only the creator can cancel).
+- **Returns:** New `Transaction` instance with updated status or current instance if already cancelled.
 
 ### `cancelByOwner()`
 
 - **Effect:** Marks the transaction as cancelled by the owner (e.g., due to item pruning).
-- **Validation:** Only valid if current status is `RESERVED`.
+- **Validation:** Transitions `RESERVED` → `CANCELLED_BY_OWNER`; idempotent for already-cancelled states; throws for `PURCHASED`.
 - **Behavior:**
   - Transitions `status` to `CANCELLED_BY_OWNER`.
   - Updates `updatedAt` to current date.
@@ -116,4 +126,4 @@ Unlike other entities where business rules might evolve (e.g., username length),
 ## Domain Errors
 
 - `InvalidAttributeError`: Thrown when validation rules are violated.
-- `InvalidTransitionError`: Thrown when attempting to cancel an already cancelled transaction.
+- `InvalidTransitionError`: Thrown when invalid state transitions are attempted (e.g., calling `cancelByOwner()` from `PURCHASED` or calling `confirmPurchase()` when the transaction is not in `RESERVED`). Note that `cancel()` and `cancelByOwner()` are idempotent when the transaction is already cancelled.

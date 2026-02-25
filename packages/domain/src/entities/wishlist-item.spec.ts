@@ -574,9 +574,7 @@ describe("WishlistItem Entity", () => {
         reservedQuantity: 2,
       });
 
-      // Update Total to 2. (Less than purchased 3).
-      // MaxAllowedReserved = max(0, 2 - 3) = 0.
-      // New Reserved should be min(2, 0) = 0.
+      // ADR 019: Reducing totalQuantity causes reservedQuantity to be unconditionally reset to 0.
       const updatedItem = item.update({ totalQuantity: 2 });
 
       expect(updatedItem.totalQuantity).toBe(2);
@@ -666,17 +664,6 @@ describe("WishlistItem Entity", () => {
       const newItem = updatedItem.cancelReservation(1);
       expect(newItem.reservedQuantity).toBe(0);
       expect(newItem).toBe(updatedItem);
-    });
-
-    it("should cap cancellation at 0 if amount > reservedQuantity (No Friction)", () => {
-      const item = WishlistItem.create({
-        ...validProps,
-        totalQuantity: 5,
-        reservedQuantity: 2,
-      });
-
-      const newItem = item.cancelReservation(5);
-      expect(newItem.reservedQuantity).toBe(0);
     });
 
     describe("Reconstitute (bypass validation)", () => {

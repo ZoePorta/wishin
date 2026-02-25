@@ -236,7 +236,7 @@ describe("Transaction Aggregate", () => {
       expect(cancelled.status).toBe(TransactionStatus.CANCELLED);
     });
 
-    it("should throw if cancelling an already cancelled transaction", () => {
+    it("should be idempotent when cancelling an already cancelled transaction (No Friction)", () => {
       const cancelled = Transaction.reconstitute({
         id: VALID_TRANSACTION_ID,
         itemId: VALID_ITEM_ID,

@@ -347,9 +347,9 @@ export class WishlistItem {
 
   /**
    * Cancels a previously made reservation, releasing the stock back to available.
+   *
    * @param amount - The number of units to release (must be a positive integer).
-   * @returns A new WishlistItem instance with updated reserved quantity.
-   * @throws {InvalidTransitionError} If trying to cancel more than what is currently reserved.
+   * @returns A new WishlistItem instance with its `reservedQuantity` clamped to a minimum of 0 (over-cancellation is silently reduced to zero rather than throwing). If no change occurs, returns `this`.
    * @throws {InvalidAttributeError} If amount is not a positive integer.
    */
   public cancelReservation(amount: number): WishlistItem {

@@ -13,8 +13,6 @@ import {
 import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 
 import type { TransactionRepository } from "../repositories/transaction.repository";
-import { Transaction } from "../aggregates/transaction";
-import { TransactionStatus } from "../value-objects/transaction-status";
 
 describe("UpdateWishlistItemUseCase", () => {
   let useCase: UpdateWishlistItemUseCase;
@@ -129,28 +127,6 @@ describe("UpdateWishlistItemUseCase", () => {
     const existingWishlist = createExistingWishlistWithItem(); // reserved: 2
     mockRepo.findById = vi.fn().mockResolvedValue(existingWishlist);
 
-    const reservation1 = Transaction.reconstitute({
-      id: "770e8400-e29b-41d4-a716-446655442222",
-      itemId: ITEM_ID,
-      userId: "user-1",
-      status: TransactionStatus.RESERVED,
-      quantity: 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    const reservation2 = Transaction.reconstitute({
-      id: "880e8400-e29b-41d4-a716-446655443333",
-      itemId: ITEM_ID,
-      userId: "user-2",
-      status: TransactionStatus.RESERVED,
-      quantity: 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    mockTransactionRepo.findByItemId = vi
-      .fn()
-      .mockResolvedValue([reservation1, reservation2]);
     mockTransactionRepo.save = vi.fn().mockResolvedValue(undefined);
 
     const input: UpdateWishlistItemInput = {
