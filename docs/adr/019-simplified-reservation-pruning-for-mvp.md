@@ -24,7 +24,7 @@ To streamline the MVP development and ensure predictable behavior, we have decid
     - Identifying if pruning is required.
     - Triggering the cancellation of all associated `RESERVED` transactions.
     - Resetting the `reservedQuantity` on the `WishlistItem` to `0`.
-4.  **Notification Strategy**: Although the domain/application layer coordinates the state change, the actual delivery of notifications will be handled by **Appwrite Functions** triggered by database changes (e.g., when a transaction status changes to `CANCELLED_BY_OWNER`). This keeps the notification logic decoupled and ensures it remains automatic.
+4.  **Automatic Notifications**: No code is required in the application or domain layers for notifications. The actual delivery will be handled by **Appwrite Functions** triggered directly by the database whenever a transaction status changes to `CANCELLED_BY_OWNER`. This ensures the notification flow is decoupled and purely infrastructure-driven.
 
 ## Consequences
 

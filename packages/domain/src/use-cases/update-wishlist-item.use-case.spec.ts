@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { UpdateWishlistItemUseCase } from "./update-wishlist-item.use-case";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
-import type { PruningNotificationService } from "../services/pruning-notification.service";
 import { Wishlist } from "../aggregates/wishlist";
 import { WishlistItem } from "../entities/wishlist-item";
 import { Priority, Visibility, Participation } from "../value-objects";
@@ -16,7 +15,6 @@ import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 describe("UpdateWishlistItemUseCase", () => {
   let useCase: UpdateWishlistItemUseCase;
   let mockRepo: WishlistRepository;
-  let mockNotification: PruningNotificationService;
   const WISHLIST_ID = "550e8400-e29b-41d4-a716-446655440000";
   const ITEM_ID = "660e8400-e29b-41d4-a716-446655441111";
 
@@ -26,10 +24,7 @@ describe("UpdateWishlistItemUseCase", () => {
       save: vi.fn(),
       delete: vi.fn(),
     };
-    mockNotification = {
-      notifyReservationCancelledByPruning: vi.fn(),
-    };
-    useCase = new UpdateWishlistItemUseCase(mockRepo, mockNotification);
+    useCase = new UpdateWishlistItemUseCase(mockRepo);
   });
 
   const createExistingWishlistWithItem = () => {
@@ -114,11 +109,6 @@ describe("UpdateWishlistItemUseCase", () => {
     expect(updatedItem?.totalQuantity).toBe(4);
     expect(updatedItem?.reservedQuantity).toBe(0); // Mass cancellation
     expect(updatedItem?.purchasedQuantity).toBe(3);
-
-    // Verify notification was called (intent)
-    expect(
-      mockNotification.notifyReservationCancelledByPruning,
-    ).toHaveBeenCalled();
   });
 
   it("should throw WishlistNotFoundError if the wishlist does not exist", async () => {
