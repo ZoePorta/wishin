@@ -555,14 +555,13 @@ describe("WishlistItem Entity", () => {
       });
 
       // Update Total to 2.
-      // MaxAllowedReserved = max(0, 2 - 1) = 1.
-      // New Reserved should be min(3, 1) = 1.
+      // Unconditional Reset: New Reserved should be 0.
       const updatedItem = item.update({ totalQuantity: 2 });
 
       expect(updatedItem.totalQuantity).toBe(2);
       expect(updatedItem.purchasedQuantity).toBe(1); // Unchanged
-      expect(updatedItem.reservedQuantity).toBe(1); // Pruned from 3 to 1
-      expect(updatedItem.availableQuantity).toBe(0);
+      expect(updatedItem.reservedQuantity).toBe(0); // Pruned to 0
+      expect(updatedItem.availableQuantity).toBe(1); // T(2) - (0+1) = 1
     });
 
     it("should allow over-commitment if total drops below purchased even after pruning reserved", () => {
@@ -643,13 +642,13 @@ describe("WishlistItem Entity", () => {
         totalQuantity: 5,
         reservedQuantity: 3,
       });
-      // Update Total to 2. Pruning happens: MaxR = 2.
-      // New Reserved = 2.
+      // Update Total to 2. Pruning happens: R = 0.
       const updatedItem = item.update({ totalQuantity: 2 });
 
-      // Cancel 1 reservation: T=2, R=2 -> R=1. Valid.
-      const newItem = updatedItem.cancelReservation(1);
-      expect(newItem.reservedQuantity).toBe(1);
+      // Cannot cancel 1 reservation as it's now 0.
+      expect(() => updatedItem.cancelReservation(1)).toThrow(
+        InvalidTransitionError,
+      );
     });
 
     it("should allow cancelling reservation on severely pruned item (pruned to valid)", () => {
@@ -659,13 +658,14 @@ describe("WishlistItem Entity", () => {
         totalQuantity: 5,
         reservedQuantity: 3,
       });
-      // Update to 1. Pruning: MaxR = 1.
+      // Update to 1. Pruning: R = 0.
       const updatedItem = item.update({ totalQuantity: 1 });
-      expect(updatedItem.reservedQuantity).toBe(1);
+      expect(updatedItem.reservedQuantity).toBe(0);
 
-      // Cancel 1 -> T=1, R=0. Valid.
-      const newItem = updatedItem.cancelReservation(1);
-      expect(newItem.reservedQuantity).toBe(0);
+      // Cancel 1 -> Throws as reserved is 0.
+      expect(() => updatedItem.cancelReservation(1)).toThrow(
+        InvalidTransitionError,
+      );
     });
 
     describe("Reconstitute (bypass validation)", () => {

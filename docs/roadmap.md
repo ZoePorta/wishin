@@ -47,9 +47,9 @@
 - [x] **TDD - AddWishlistItem:**
   - [x] Phase RED: Test retrieval -> add -> save cycle.
   - [x] Phase GREEN: Implementation of coordination logic.
-- [ ] **TDD - Update/Remove Item:**
-  - [ ] Phase RED: Test editing item metadata and removing items.
-  - [ ] Phase GREEN: Logic to update aggregate state and persist.
+- [x] **TDD - Update/Remove Item:**
+  - [x] Phase RED: Test editing item metadata and removing items.
+  - [x] Phase GREEN: Logic to update aggregate state and persist.
 
 ### 3.3 Infrastructure Layer (Appwrite)
 

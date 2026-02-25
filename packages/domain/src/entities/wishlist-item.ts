@@ -215,10 +215,8 @@ export class WishlistItem {
    * Updates the mutable properties of the WishlistItem.
    *
    * **Side Effects**:
-   * - **Reservation Pruning**: If `totalQuantity` is reduced, `reservedQuantity` is automatically pruned
-   *   to fit within the new limit (minimizing over-commitment), prioritizing `purchasedQuantity`.
-   * - **Privacy Preservation**: Explicitly allows "over-commitment" (where `total < reserved + purchased`)
-   *   when the owner reduces the total quantity, to avoid leaking information about hidden purchases.
+   * - **Reservation Pruning**: If `totalQuantity` is reduced, all existing reservations are cancelled
+   *   (`reservedQuantity` set to 0) to avoid complex prioritization or over-commitment in the MVP.
    *
    * @param props - The properties to update.
    * @returns A new WishlistItem instance with updated properties.
@@ -263,14 +261,7 @@ export class WishlistItem {
       sanitizedUpdateProps.totalQuantity !== undefined &&
       sanitizedUpdateProps.totalQuantity < currentProps.totalQuantity
     ) {
-      const currentPurchased = currentProps.purchasedQuantity;
-      const newTotal = sanitizedUpdateProps.totalQuantity;
-
-      // If the new total is less than current commitment (reserved + purchased),
-      // we cancel ALL reservations for this item (simplified MVP pruning).
-      if (newTotal < currentProps.reservedQuantity + currentPurchased) {
-        newReservedQuantity = 0;
-      }
+      newReservedQuantity = 0;
     }
 
     return WishlistItem._createWithMode(

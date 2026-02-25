@@ -92,9 +92,7 @@ describe("RemoveWishlistItemUseCase", () => {
 
     // Assert
     expect(mockRepo.findById).toHaveBeenCalledWith(WISHLIST_ID);
-    // Ideally no save call if nothing changed, but repo.save is also fine as long as no error occurs.
-    // However, clean architecture suggests avoid saving if no state change.
-    // We'll leave it open for implementation, but the main point is NO error and returning the wishlist.
+    expect(mockRepo.save).not.toHaveBeenCalled();
     expect(result.id).toBe(WISHLIST_ID);
   });
 

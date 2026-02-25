@@ -6,6 +6,9 @@ import {
 import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 import type { WishlistOutput } from "./dtos/get-wishlist.dto";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
+import type { TransactionRepository } from "../repositories/transaction.repository";
+import { TransactionStatus } from "../value-objects/transaction-status";
+import type { WishlistItem } from "../entities/wishlist-item";
 
 /**
  * Use case for updating an existing wishlist item.
@@ -14,7 +17,10 @@ import type { WishlistRepository } from "../repositories/wishlist.repository";
  * @throws {WishlistItemNotFoundError} If the item is not found.
  */
 export class UpdateWishlistItemUseCase {
-  constructor(private readonly wishlistRepository: WishlistRepository) {}
+  constructor(
+    private readonly wishlistRepository: WishlistRepository,
+    private readonly transactionRepository: TransactionRepository,
+  ) {}
 
   /**
    * Executes the use case to update an existing item.
@@ -29,8 +35,10 @@ export class UpdateWishlistItemUseCase {
       throw new WishlistNotFoundError(input.wishlistId);
     }
 
-    const itemExists = wishlist.items.some((item) => item.id === input.itemId);
-    if (!itemExists) {
+    const originalItem = wishlist.items.find(
+      (item) => item.id === input.itemId,
+    );
+    if (!originalItem) {
       throw new WishlistItemNotFoundError(input.itemId);
     }
 
@@ -45,6 +53,29 @@ export class UpdateWishlistItemUseCase {
       isUnlimited: input.isUnlimited,
       totalQuantity: input.totalQuantity,
     });
+
+    const updatedItem = updatedWishlist.items.find(
+      (item: WishlistItem) => item.id === input.itemId,
+    );
+
+    // ADR 019: If reservations were pruned (reservedQuantity set to 0),
+    // transition all related RESERVED transactions to CANCELLED_BY_OWNER.
+    if (
+      originalItem.reservedQuantity > 0 &&
+      updatedItem?.reservedQuantity === 0
+    ) {
+      const transactions = await this.transactionRepository.findByItemId(
+        input.itemId,
+      );
+      const reservedTransactions = transactions.filter(
+        (t) => t.status === TransactionStatus.RESERVED,
+      );
+
+      for (const transaction of reservedTransactions) {
+        const cancelledTransaction = transaction.cancelByOwner();
+        await this.transactionRepository.save(cancelledTransaction);
+      }
+    }
 
     await this.wishlistRepository.save(updatedWishlist);
 

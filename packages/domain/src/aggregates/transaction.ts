@@ -213,6 +213,30 @@ export class Transaction {
   }
 
   /**
+   * Marks the transaction as CANCELLED_BY_OWNER (e.g., due to item pruning).
+   *
+   * @returns {Transaction} New instance with updated status.
+   * @throws {InvalidTransitionError} If already cancelled.
+   */
+  public cancelByOwner(): Transaction {
+    if (
+      this.status === TransactionStatus.CANCELLED ||
+      this.status === TransactionStatus.CANCELLED_BY_OWNER
+    ) {
+      throw new InvalidTransitionError("Transaction is already cancelled");
+    }
+
+    return new Transaction(
+      {
+        ...this.toProps(),
+        status: TransactionStatus.CANCELLED_BY_OWNER,
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRUCTURAL,
+    );
+  }
+
+  /**
    * Confirms a reservation as a purchase.
    *
    * @returns {Transaction} New instance with PURCHASED status.

@@ -12,9 +12,14 @@ import {
 } from "../errors/domain-errors";
 import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 
+import type { TransactionRepository } from "../repositories/transaction.repository";
+import { Transaction } from "../aggregates/transaction";
+import { TransactionStatus } from "../value-objects/transaction-status";
+
 describe("UpdateWishlistItemUseCase", () => {
   let useCase: UpdateWishlistItemUseCase;
   let mockRepo: WishlistRepository;
+  let mockTransactionRepo: TransactionRepository;
   const WISHLIST_ID = "550e8400-e29b-41d4-a716-446655440000";
   const ITEM_ID = "660e8400-e29b-41d4-a716-446655441111";
 
@@ -24,7 +29,12 @@ describe("UpdateWishlistItemUseCase", () => {
       save: vi.fn(),
       delete: vi.fn(),
     };
-    useCase = new UpdateWishlistItemUseCase(mockRepo);
+    mockTransactionRepo = {
+      save: vi.fn(),
+      findById: vi.fn(),
+      findByItemId: vi.fn().mockResolvedValue([]),
+    };
+    useCase = new UpdateWishlistItemUseCase(mockRepo, mockTransactionRepo);
   });
 
   const createExistingWishlistWithItem = () => {
@@ -105,10 +115,60 @@ describe("UpdateWishlistItemUseCase", () => {
 
     // Assert
     const savedWishlist = vi.mocked(mockRepo.save).mock.calls[0][0];
-    const updatedItem = savedWishlist.items.find((i) => i.id === ITEM_ID);
+    const updatedItem = savedWishlist.items.find(
+      (i: WishlistItem) => i.id === ITEM_ID,
+    );
     expect(updatedItem?.totalQuantity).toBe(4);
     expect(updatedItem?.reservedQuantity).toBe(0); // Mass cancellation
     expect(updatedItem?.purchasedQuantity).toBe(3);
+  });
+
+  it("should cancel all RESERVED transactions when item is pruned (ADR 019)", async () => {
+    // Arrange
+    const existingWishlist = createExistingWishlistWithItem(); // reserved: 2
+    mockRepo.findById = vi.fn().mockResolvedValue(existingWishlist);
+
+    const reservation1 = Transaction.reconstitute({
+      id: "770e8400-e29b-41d4-a716-446655442222",
+      itemId: ITEM_ID,
+      userId: "user-1",
+      status: TransactionStatus.RESERVED,
+      quantity: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const reservation2 = Transaction.reconstitute({
+      id: "880e8400-e29b-41d4-a716-446655443333",
+      itemId: ITEM_ID,
+      userId: "user-2",
+      status: TransactionStatus.RESERVED,
+      quantity: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    mockTransactionRepo.findByItemId = vi
+      .fn()
+      .mockResolvedValue([reservation1, reservation2]);
+    mockTransactionRepo.save = vi.fn().mockResolvedValue(undefined);
+
+    const input: UpdateWishlistItemInput = {
+      wishlistId: WISHLIST_ID,
+      itemId: ITEM_ID,
+      totalQuantity: 3, // Causes pruning (original reserved 2 + purchased 3 = 5 > 3)
+    };
+
+    // Act
+    await useCase.execute(input);
+
+    // Assert
+    expect(mockTransactionRepo.findByItemId).toHaveBeenCalledWith(ITEM_ID);
+    expect(mockTransactionRepo.save).toHaveBeenCalledTimes(2);
+
+    const cancelled1 = vi.mocked(mockTransactionRepo.save).mock.calls[0][0];
+    const cancelled2 = vi.mocked(mockTransactionRepo.save).mock.calls[1][0];
+    expect(cancelled1.status).toBe(TransactionStatus.CANCELLED_BY_OWNER);
+    expect(cancelled2.status).toBe(TransactionStatus.CANCELLED_BY_OWNER);
   });
 
   it("should throw WishlistNotFoundError if the wishlist does not exist", async () => {

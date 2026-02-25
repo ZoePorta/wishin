@@ -3,7 +3,7 @@
 ## Status
 
 Amended by [ADR 018](./018-unified-identity-anonymous-sessions.md) (Allows anonymous users to cancel transactions).
-Amended by [ADR 019](./019-simplified-reservation-pruning-for-mvp.md) (Adds CANCELLED_BY_OWNER status).
+Amended by [ADR 019](./019-simplified-reservation-pruning-for-mvp.md) (Simplified Pruning Logic & Adds CANCELLED_BY_OWNER).
 
 ## Context
 
