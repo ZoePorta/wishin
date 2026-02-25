@@ -193,7 +193,7 @@ const schema: CollectionSchema[] = [
         onDelete: RelationMutate.Cascade,
       },
       { key: "name", type: "string", required: true, size: 100 },
-      { key: "description", type: "string", required: false, size: 500 },
+      { key: "description", type: "string", required: false, size: 200 },
       { key: "priority", type: "integer", required: true },
       { key: "price", type: "double", required: false },
       { key: "currency", type: "string", required: false, size: 3 },

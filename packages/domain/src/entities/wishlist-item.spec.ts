@@ -73,9 +73,9 @@ describe("WishlistItem Entity", () => {
       ).toThrow(InvalidAttributeError);
     });
 
-    it("should throw InvalidAttributeError if description exceeds 500 characters", () => {
+    it("should throw InvalidAttributeError if description exceeds 200 characters", () => {
       expect(() =>
-        WishlistItem.create({ ...validProps, description: "a".repeat(501) }),
+        WishlistItem.create({ ...validProps, description: "a".repeat(201) }),
       ).toThrow(InvalidAttributeError);
     });
 
