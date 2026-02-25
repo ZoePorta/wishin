@@ -94,6 +94,20 @@ export class WishlistNotFoundError extends NotFoundError {
     Object.setPrototypeOf(this, WishlistNotFoundError.prototype);
   }
 }
+
+/**
+ * Error thrown when a requested wishlist item is not found.
+ *
+ * @param {string} itemId - The ID of the missing item.
+ * @returns {WishlistItemNotFoundError} An instance of WishlistItemNotFoundError.
+ */
+export class WishlistItemNotFoundError extends NotFoundError {
+  constructor(itemId: string) {
+    super(`Wishlist item with ID ${itemId} not found`);
+    this.name = "WishlistItemNotFoundError";
+    Object.setPrototypeOf(this, WishlistItemNotFoundError.prototype);
+  }
+}
 /**
  * Error message used when a visibility value is invalid.
  * Invariant: Visibility must be one of the following:

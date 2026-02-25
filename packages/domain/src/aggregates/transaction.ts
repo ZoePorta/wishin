@@ -195,8 +195,11 @@ export class Transaction {
    * @throws {InvalidTransitionError} If already cancelled or if guest transaction.
    */
   public cancel(): Transaction {
-    if (this.status === TransactionStatus.CANCELLED) {
-      throw new InvalidTransitionError("Transaction is already cancelled");
+    if (
+      this.status === TransactionStatus.CANCELLED ||
+      this.status === TransactionStatus.CANCELLED_BY_OWNER
+    ) {
+      return this;
     }
 
     // Permission Rule (ADR 018): Universal creator check is enforced at the Application/Infrastructure layer.
@@ -206,6 +209,36 @@ export class Transaction {
       {
         ...this.toProps(),
         status: TransactionStatus.CANCELLED,
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRUCTURAL,
+    );
+  }
+
+  /**
+   * Marks the transaction as CANCELLED_BY_OWNER (e.g., due to item pruning).
+   *
+   * @returns {Transaction} New instance with updated status.
+   * @throws {InvalidTransitionError} If status is PURCHASED.
+   */
+  public cancelByOwner(): Transaction {
+    if (
+      this.status === TransactionStatus.CANCELLED ||
+      this.status === TransactionStatus.CANCELLED_BY_OWNER
+    ) {
+      return this;
+    }
+
+    if (this.status === TransactionStatus.PURCHASED) {
+      throw new InvalidTransitionError(
+        "Owner cannot cancel a transaction that has already been purchased",
+      );
+    }
+
+    return new Transaction(
+      {
+        ...this.toProps(),
+        status: TransactionStatus.CANCELLED_BY_OWNER,
         updatedAt: new Date(),
       },
       ValidationMode.STRUCTURAL,

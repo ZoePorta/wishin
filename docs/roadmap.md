@@ -47,9 +47,9 @@
 - [x] **TDD - AddWishlistItem:**
   - [x] Phase RED: Test retrieval -> add -> save cycle.
   - [x] Phase GREEN: Implementation of coordination logic.
-- [ ] **TDD - Update/Remove Item:**
-  - [ ] Phase RED: Test editing item metadata and removing items.
-  - [ ] Phase GREEN: Logic to update aggregate state and persist.
+- [x] **TDD - Update/Remove Item:**
+  - [x] Phase RED: Test editing item metadata and removing items.
+  - [x] Phase GREEN: Logic to update aggregate state and persist.
 
 ### 3.3 Infrastructure Layer (Appwrite)
 
@@ -109,3 +109,16 @@
 
 - [ ] User Profile & "My Gifting" Dashboard.
 - [ ] Final Polish: Theme system and micro-animations.
+
+---
+
+## Phase 6: Automated Notifications
+
+- [ ] **Pruning Alerts**: Implement Appwrite Function (DB Trigger) to notify users when a transaction status changes to `CANCELLED_BY_OWNER`.
+
+---
+
+## Post-MVP / Future Enhancements
+
+- [ ] **Selective Pruning**: Implement logic to preserve reservations when reducing total quantity (replaces ADR 019).
+- [ ] **Advanced Notifications**: Implement real-time alerts for reservation cancellations (pruning, expiration).

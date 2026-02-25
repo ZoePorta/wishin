@@ -215,10 +215,8 @@ export class WishlistItem {
    * Updates the mutable properties of the WishlistItem.
    *
    * **Side Effects**:
-   * - **Reservation Pruning**: If `totalQuantity` is reduced, `reservedQuantity` is automatically pruned
-   *   to fit within the new limit (minimizing over-commitment), prioritizing `purchasedQuantity`.
-   * - **Privacy Preservation**: Explicitly allows "over-commitment" (where `total < reserved + purchased`)
-   *   when the owner reduces the total quantity, to avoid leaking information about hidden purchases.
+   * - **Reservation Pruning**: If `totalQuantity` is reduced, all existing reservations are cancelled
+   *   (`reservedQuantity` set to 0) to avoid complex prioritization or over-commitment in the MVP.
    *
    * @param props - The properties to update.
    * @returns A new WishlistItem instance with updated properties.
@@ -263,12 +261,7 @@ export class WishlistItem {
       sanitizedUpdateProps.totalQuantity !== undefined &&
       sanitizedUpdateProps.totalQuantity < currentProps.totalQuantity
     ) {
-      const currentPurchased = currentProps.purchasedQuantity;
-      const maxAllowedReserved = Math.max(
-        0,
-        sanitizedUpdateProps.totalQuantity - currentPurchased,
-      );
-      newReservedQuantity = Math.min(newReservedQuantity, maxAllowedReserved);
+      newReservedQuantity = 0;
     }
 
     return WishlistItem._createWithMode(
@@ -354,9 +347,9 @@ export class WishlistItem {
 
   /**
    * Cancels a previously made reservation, releasing the stock back to available.
+   *
    * @param amount - The number of units to release (must be a positive integer).
-   * @returns A new WishlistItem instance with updated reserved quantity.
-   * @throws {InvalidTransitionError} If trying to cancel more than what is currently reserved.
+   * @returns A new WishlistItem instance with its `reservedQuantity` clamped to a minimum of 0 (over-cancellation is silently reduced to zero rather than throwing). If no change occurs, returns `this`.
    * @throws {InvalidAttributeError} If amount is not a positive integer.
    */
   public cancelReservation(amount: number): WishlistItem {
@@ -367,10 +360,10 @@ export class WishlistItem {
       throw new InvalidAttributeError("Amount must be positive");
     }
 
-    if (amount > this.reservedQuantity) {
-      throw new InvalidTransitionError(
-        `Cannot cancel more reservations than reserved. Requested: ${amount.toString()}, Reserved: ${this.reservedQuantity.toString()}`,
-      );
+    const newReservedQuantity = Math.max(0, this.reservedQuantity - amount);
+
+    if (newReservedQuantity === this.reservedQuantity) {
+      return this;
     }
 
     // Reducing reserved quantity reduces (or keeps same) the constraint sum.
@@ -379,7 +372,7 @@ export class WishlistItem {
     return WishlistItem._createWithMode(
       {
         ...this.toProps(),
-        reservedQuantity: this.reservedQuantity - amount,
+        reservedQuantity: newReservedQuantity,
       },
       ItemValidationMode.STRUCTURAL,
     );

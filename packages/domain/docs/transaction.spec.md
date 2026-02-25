@@ -18,7 +18,7 @@ Unlike other entities where business rules might evolve (e.g., username length),
   - `id`: Must be valid UUID v4.
   - `itemId`: Must be valid UUID v4 if present / nullable during reconstitution.
   - `quantity`: Must be a number.
-  - `status`: Must be a valid enum value (`RESERVED`, `PURCHASED`, `CANCELLED`).
+  - `status`: Must be a valid enum value (`RESERVED`, `PURCHASED`, `CANCELLED`, `CANCELLED_BY_OWNER`).
   - `createdAt`, `updatedAt`: Must be valid Date objects.
 
 - **Business**:
@@ -29,15 +29,15 @@ Unlike other entities where business rules might evolve (e.g., username length),
 
 ## Attributes
 
-| Attribute   | Type                         | Description                           | validation           |
-| :---------- | :--------------------------- | :------------------------------------ | :------------------- |
-| `id`        | `string` (UUID v4)           | Unique identifier                     | UUID v4              |
-| `itemId`    | `string` (UUID v4) \| `null` | The item being transacted             | UUID v4 if present   |
-| `userId`    | `string` \| `null`           | The user ID (Registered or Anonymous) | Non-empty if present |
-| `status`    | `TransactionStatus`          | RESERVED, PURCHASED, CANCELLED        | Valid enum           |
-| `quantity`  | `number`                     | Amount of items                       | Integer > 0          |
-| `createdAt` | `Date`                       | Timestamp of creation                 | Valid Date           |
-| `updatedAt` | `Date`                       | Timestamp of last update              | Valid Date           |
+| Attribute   | Type                         | Description                                        | validation           |
+| :---------- | :--------------------------- | :------------------------------------------------- | :------------------- |
+| `id`        | `string` (UUID v4)           | Unique identifier                                  | UUID v4              |
+| `itemId`    | `string` (UUID v4) \| `null` | The item being transacted                          | UUID v4 if present   |
+| `userId`    | `string` \| `null`           | The user ID (Registered or Anonymous)              | Non-empty if present |
+| `status`    | `TransactionStatus`          | RESERVED, PURCHASED, CANCELLED, CANCELLED_BY_OWNER | Valid enum           |
+| `quantity`  | `number`                     | Amount of items                                    | Integer > 0          |
+| `createdAt` | `Date`                       | Timestamp of creation                              | Valid Date           |
+| `updatedAt` | `Date`                       | Timestamp of last update                           | Valid Date           |
 
 ## Domain Invariants
 
@@ -82,13 +82,25 @@ Unlike other entities where business rules might evolve (e.g., username length),
 ### `cancel()`
 
 - **Effect:** Marks the transaction as cancelled.
-- **Validation:** checks that current status is NOT `CANCELLED`.
+- **Validation:** Idempotent for already-cancelled states.
 - **Behavior:**
-  - Transitions `status` to `CANCELLED`.
+  - Transitions `RESERVED` → `CANCELLED`.
+  - Transitions `PURCHASED` → `CANCELLED`.
   - Updates `updatedAt` to current date.
-  - Throws `InvalidTransitionError` if already cancelled.
-  - **Permission Rule**: A transaction can only be cancelled by the user (`userId`) who created it. This applies to both anonymous and registered sessions. **Note**: This rule is enforced by the application/use-case layer (e.g., the service or handler that invokes `Transaction.cancel()`), not by the aggregate itself.
-- **Returns:** New `Transaction` instance with updated status.
+  - **No Friction Rule**: returns same instance if status is `CANCELLED` or `CANCELLED_BY_OWNER`.
+  - **Permission Rule**: Enforced by the application layer (only the creator can cancel).
+- **Returns:** New `Transaction` instance with updated status or current instance if already cancelled.
+
+### `cancelByOwner()`
+
+- **Effect:** Marks the transaction as cancelled by the owner (e.g., due to item pruning).
+- **Validation:** Transitions `RESERVED` → `CANCELLED_BY_OWNER`; idempotent for already-cancelled states; throws for `PURCHASED`.
+- **Behavior:**
+  - Transitions `status` to `CANCELLED_BY_OWNER`.
+  - Updates `updatedAt` to current date.
+  - Throws `InvalidTransitionError` if current status is `PURCHASED` (owner cannot cancel purchases).
+  - If transaction is already in a cancelled state (`CANCELLED` or `CANCELLED_BY_OWNER`), it returns the same instance (No Friction/Idempotent).
+- **Returns:** New `Transaction` instance with updated status or current instance if already cancelled.
 
 ### `confirmPurchase()`
 
@@ -114,4 +126,4 @@ Unlike other entities where business rules might evolve (e.g., username length),
 ## Domain Errors
 
 - `InvalidAttributeError`: Thrown when validation rules are violated.
-- `InvalidTransitionError`: Thrown when attempting to cancel an already cancelled transaction.
+- `InvalidTransitionError`: Thrown when invalid state transitions are attempted (e.g., calling `cancelByOwner()` from `PURCHASED` or calling `confirmPurchase()` when the transaction is not in `RESERVED`). Note that `cancel()` and `cancelByOwner()` are idempotent when the transaction is already cancelled.

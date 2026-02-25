@@ -214,9 +214,10 @@ describe("WishlistItem Entity", () => {
       expect(newItem.reservedQuantity).toBe(1);
     });
 
-    it("should throw InvalidTransitionError if cancelling more than reserved", () => {
+    it("should cap at 0 if cancelling more than reserved (No Friction)", () => {
       const item = WishlistItem.create({ ...validProps, reservedQuantity: 1 });
-      expect(() => item.cancelReservation(2)).toThrow(InvalidTransitionError); // Or generic Error depending on implementation, spec implies logic violation
+      const newItem = item.cancelReservation(2);
+      expect(newItem.reservedQuantity).toBe(0);
     });
 
     it("should throw InvalidAttributeError if amount is negative or zero", () => {
@@ -555,14 +556,13 @@ describe("WishlistItem Entity", () => {
       });
 
       // Update Total to 2.
-      // MaxAllowedReserved = max(0, 2 - 1) = 1.
-      // New Reserved should be min(3, 1) = 1.
+      // Unconditional Reset: New Reserved should be 0.
       const updatedItem = item.update({ totalQuantity: 2 });
 
       expect(updatedItem.totalQuantity).toBe(2);
       expect(updatedItem.purchasedQuantity).toBe(1); // Unchanged
-      expect(updatedItem.reservedQuantity).toBe(1); // Pruned from 3 to 1
-      expect(updatedItem.availableQuantity).toBe(0);
+      expect(updatedItem.reservedQuantity).toBe(0); // Pruned to 0
+      expect(updatedItem.availableQuantity).toBe(1); // T(2) - (0+1) = 1
     });
 
     it("should allow over-commitment if total drops below purchased even after pruning reserved", () => {
@@ -574,9 +574,7 @@ describe("WishlistItem Entity", () => {
         reservedQuantity: 2,
       });
 
-      // Update Total to 2. (Less than purchased 3).
-      // MaxAllowedReserved = max(0, 2 - 3) = 0.
-      // New Reserved should be min(2, 0) = 0.
+      // ADR 019: Reducing totalQuantity causes reservedQuantity to be unconditionally reset to 0.
       const updatedItem = item.update({ totalQuantity: 2 });
 
       expect(updatedItem.totalQuantity).toBe(2);
@@ -636,36 +634,36 @@ describe("WishlistItem Entity", () => {
       expect(() => item.purchase(1, 0)).toThrow(InsufficientStockError);
     });
 
-    it("should allow cancelling reservation on pruned item (valid state)", () => {
+    it("should allow cancelling reservation on pruned item (Success/No Friction)", () => {
       // Create valid item: T=5, R=3.
       const item = WishlistItem.create({
         ...validProps,
         totalQuantity: 5,
         reservedQuantity: 3,
       });
-      // Update Total to 2. Pruning happens: MaxR = 2.
-      // New Reserved = 2.
+      // Update Total to 2. Pruning happens: R = 0.
       const updatedItem = item.update({ totalQuantity: 2 });
 
-      // Cancel 1 reservation: T=2, R=2 -> R=1. Valid.
+      // Should stay at 0.
       const newItem = updatedItem.cancelReservation(1);
-      expect(newItem.reservedQuantity).toBe(1);
+      expect(newItem.reservedQuantity).toBe(0);
     });
 
-    it("should allow cancelling reservation on severely pruned item (pruned to valid)", () => {
+    it("should allow cancelling reservation on severely pruned item (Success/No Friction)", () => {
       // Total=1, Reserved=3.
       const item = WishlistItem.create({
         ...validProps,
         totalQuantity: 5,
         reservedQuantity: 3,
       });
-      // Update to 1. Pruning: MaxR = 1.
+      // Update to 1. Pruning: R = 0.
       const updatedItem = item.update({ totalQuantity: 1 });
-      expect(updatedItem.reservedQuantity).toBe(1);
+      expect(updatedItem.reservedQuantity).toBe(0);
 
-      // Cancel 1 -> T=1, R=0. Valid.
+      // Cancel 1 -> Should stay at 0.
       const newItem = updatedItem.cancelReservation(1);
       expect(newItem.reservedQuantity).toBe(0);
+      expect(newItem).toBe(updatedItem);
     });
 
     describe("Reconstitute (bypass validation)", () => {

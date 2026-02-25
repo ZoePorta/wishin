@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Amended by [ADR 019](./019-simplified-reservation-pruning-for-mvp.md).
 
 ## Context
 
