@@ -31,7 +31,7 @@ export class AddWishlistItemUseCase {
    *
    * @param input - The data for adding the item.
    * @returns A Promise that resolves to the updated WishlistOutput DTO.
-   * @throws {Error} If the wishlist is not found.
+   * @throws {WishlistNotFoundError} If the wishlist is not found.
    */
   async execute(input: AddWishlistItemInput): Promise<WishlistOutput> {
     const wishlist = await this.wishlistRepository.findById(input.wishlistId);
