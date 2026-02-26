@@ -3,27 +3,23 @@ import { View, Text, Image, Pressable, Linking, Alert } from "react-native";
 import { Priority } from "@wishin/domain";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { PRIORITY_LABELS } from "../utils/priority";
-
 import type { WishlistStyles } from "../hooks/useWishlistStyles";
 
-interface WishlistItemCardProps {
+interface PublicItemCardProps {
   item: WishlistItemOutput;
   styles: WishlistStyles["styles"];
   themedStyles: WishlistStyles["themedStyles"];
-  onRemove?: (id: string) => void;
 }
 
 /**
- * Component to display a single wishlist item as a card.
- *
- * @param props - Component properties.
- * @returns The WishlistItemCard component.
+ * Component to display a single wishlist item to VISITORS.
+ * - Includes overlays for completed/reserved items.
+ * - No management buttons (Remove).
  */
-export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
+export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   item,
   styles,
   themedStyles,
-  onRemove,
 }) => {
   const isCompleted =
     !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
@@ -129,30 +125,6 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
             >
               <Text style={[styles.linkText, themedStyles.secondaryText]}>
                 View Online
-              </Text>
-            </Pressable>
-          )}
-
-          {onRemove && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.linkButton, // Reuse linkButton for consistent hitSlop and layout
-                pressed && styles.pressed,
-                { paddingHorizontal: 12 },
-              ]}
-              onPress={() => {
-                onRemove(item.id);
-              }}
-              accessibilityLabel={`Remove ${item.name}`}
-              accessibilityRole="button"
-            >
-              <Text
-                style={[
-                  styles.linkText,
-                  { color: themedStyles.priorityHigh.backgroundColor },
-                ]}
-              >
-                Remove
               </Text>
             </Pressable>
           )}

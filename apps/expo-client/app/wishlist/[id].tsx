@@ -11,7 +11,7 @@ import { useWishlist } from "../../src/hooks/useWishlist";
 import type { UseWishlistReturn } from "../../src/hooks/useWishlist";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { useWishlistStyles } from "../../src/features/wishlist/hooks/useWishlistStyles";
-import { WishlistItemCard } from "../../src/features/wishlist/components/WishlistItemCard";
+import { PublicItemCard } from "../../src/features/wishlist/components/PublicItemCard";
 
 /**
  * Display the details of a specific wishlist.
@@ -44,11 +44,7 @@ export default function WishlistDetail() {
   // Hoisted renderItem
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => (
-      <WishlistItemCard
-        item={item}
-        styles={styles}
-        themedStyles={themedStyles}
-      />
+      <PublicItemCard item={item} styles={styles} themedStyles={themedStyles} />
     ),
     [styles, themedStyles],
   );

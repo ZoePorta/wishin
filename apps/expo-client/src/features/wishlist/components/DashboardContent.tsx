@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, FlatList } from "react-native";
-import { WishlistItemCard } from "./WishlistItemCard";
+import { DashboardItemCard } from "./DashboardItemCard";
 import { DashboardHeader } from "./DashboardHeader";
 import type { WishlistOutput, WishlistItemOutput } from "@wishin/domain";
 
@@ -43,7 +43,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       </View>
     }
     renderItem={({ item }: { item: WishlistItemOutput }) => (
-      <WishlistItemCard
+      <DashboardItemCard
         item={item}
         styles={styles}
         themedStyles={themedStyles}
