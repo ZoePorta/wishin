@@ -15,29 +15,45 @@ export function useWishlistByOwner(ownerId: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadWishlist = useCallback(async () => {
-    if (!ownerId) {
-      setLoading(false);
-      return;
-    }
+  const loadWishlist = useCallback(
+    async (isIgnored: () => boolean = () => false) => {
+      if (!ownerId) {
+        if (!isIgnored()) {
+          setWishlist(null);
+          setLoading(false);
+        }
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
-    try {
-      const useCase = new GetWishlistByOwnerUseCase(repository);
-      const result = await useCase.execute({ ownerId });
-      setWishlist(result);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "An error occurred";
-      setError(message);
-      console.error("Error fetching wishlist by owner:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [ownerId, repository]);
+      if (!isIgnored()) {
+        setLoading(true);
+        setError(null);
+      }
+
+      try {
+        const useCase = new GetWishlistByOwnerUseCase(repository);
+        const result = await useCase.execute({ ownerId });
+        if (!isIgnored()) setWishlist(result);
+      } catch (err) {
+        if (!isIgnored()) {
+          const message =
+            err instanceof Error ? err.message : "An error occurred";
+          setError(message);
+          console.error("Error fetching wishlist by owner:", err);
+        }
+      } finally {
+        if (!isIgnored()) setLoading(false);
+      }
+    },
+    [ownerId, repository],
+  );
 
   useEffect(() => {
-    void loadWishlist();
+    let ignore = false;
+    void loadWishlist(() => ignore);
+    return () => {
+      ignore = true;
+    };
   }, [loadWishlist]);
 
   return { wishlist, loading, error, refetch: loadWishlist };

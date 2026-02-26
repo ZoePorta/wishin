@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Text,
   TextInput,
@@ -32,6 +32,11 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
   const [description, setDescription] = useState(
     initialData?.description ?? "",
   );
+
+  useEffect(() => {
+    setTitle(initialData?.title ?? "");
+    setDescription(initialData?.description ?? "");
+  }, [initialData]);
 
   const handleSubmit = () => {
     if (!title.trim() || loading) return;

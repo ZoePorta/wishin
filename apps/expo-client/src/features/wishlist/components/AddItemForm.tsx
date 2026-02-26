@@ -116,13 +116,15 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             accessibilityState={{ checked: priceUnknown }}
             accessibilityLabel="Price unknown"
           >
-            <View
-              style={[
-                formStyles.checkbox,
-                priceUnknown && formStyles.checkboxChecked,
-              ]}
-            >
-              {priceUnknown && <View style={formStyles.checkmark} />}
+            <View style={formStyles.checkbox}>
+              <View
+                style={[
+                  formStyles.checkboxVisual,
+                  priceUnknown && formStyles.checkboxVisualChecked,
+                ]}
+              >
+                {priceUnknown && <View style={formStyles.checkmark} />}
+              </View>
             </View>
             <Text style={formStyles.checkboxLabel}>I don't know the price</Text>
           </Pressable>
@@ -147,13 +149,15 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             accessibilityState={{ checked: isUnlimited }}
             accessibilityLabel="Unlimited quantity"
           >
-            <View
-              style={[
-                formStyles.checkbox,
-                isUnlimited && formStyles.checkboxChecked,
-              ]}
-            >
-              {isUnlimited && <View style={formStyles.checkmark} />}
+            <View style={formStyles.checkbox}>
+              <View
+                style={[
+                  formStyles.checkboxVisual,
+                  isUnlimited && formStyles.checkboxVisualChecked,
+                ]}
+              >
+                {isUnlimited && <View style={formStyles.checkmark} />}
+              </View>
             </View>
             <Text style={formStyles.checkboxLabel}>Unlimited</Text>
           </Pressable>

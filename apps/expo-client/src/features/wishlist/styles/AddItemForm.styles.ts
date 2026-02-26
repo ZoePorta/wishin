@@ -89,10 +89,16 @@ export const createAddItemFormStyles = (theme: AppTheme) =>
     checkboxContainer: {
       flexDirection: "row",
       alignItems: "center",
-      marginTop: Spacing.sm,
-      gap: Spacing.sm,
+      marginTop: Spacing.xs, // Reduced from sm because checkbox container has internal padding
+      marginLeft: -12, // Offset the extra touch area to align visually with labels
     },
     checkbox: {
+      width: 44,
+      height: 44,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    checkboxVisual: {
       width: 20,
       height: 20,
       borderRadius: 4,
@@ -101,7 +107,7 @@ export const createAddItemFormStyles = (theme: AppTheme) =>
       justifyContent: "center",
       alignItems: "center",
     },
-    checkboxChecked: {
+    checkboxVisualChecked: {
       backgroundColor: theme.primary,
       borderColor: theme.primary,
     },

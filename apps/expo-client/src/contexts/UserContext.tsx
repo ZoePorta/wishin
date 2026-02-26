@@ -4,6 +4,7 @@ import React, {
   useState,
   useEffect,
   useMemo,
+  useCallback,
   type ReactNode,
 } from "react";
 import { useWishlistRepository } from "./WishlistRepositoryContext";
@@ -35,7 +36,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -49,11 +50,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [repository]);
 
   useEffect(() => {
     void fetchUser();
-  }, [repository]);
+  }, [fetchUser]);
 
   const value = useMemo(
     () => ({
@@ -62,7 +63,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       error,
       refetch: fetchUser,
     }),
-    [userId, loading, error],
+    [userId, loading, error, fetchUser],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
