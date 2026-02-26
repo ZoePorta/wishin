@@ -12,9 +12,9 @@ import { useWishlistStyles } from "../hooks/useWishlistStyles";
 import { createWishlistFormStyles } from "../styles/WishlistForm.styles";
 
 interface WishlistFormProps {
-  onSubmit: (data: CreateWishlistInput) => Promise<void>;
+  onSubmit: (data: CreateWishlistInput & { id?: string }) => Promise<void>;
   loading?: boolean;
-  initialData?: Partial<CreateWishlistInput>;
+  initialData?: Partial<CreateWishlistInput> & { id?: string };
   currentUserId: string;
 }
 
@@ -37,10 +37,11 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
     if (!title.trim() || loading) return;
 
     void onSubmit({
+      id: initialData?.id,
       title: title.trim(),
       description: description.trim() || undefined,
-      visibility: Visibility.LINK,
-      participation: Participation.ANYONE,
+      visibility: initialData?.visibility ?? Visibility.LINK,
+      participation: initialData?.participation ?? Participation.ANYONE,
       ownerId: currentUserId,
     });
   };

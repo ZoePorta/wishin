@@ -3,6 +3,7 @@ export * from "./repositories/transaction.repository";
 export * from "./use-cases/get-wishlist-by-uuid.use-case";
 export * from "./use-cases/get-wishlist-by-owner.use-case";
 export * from "./use-cases/create-wishlist.use-case";
+export * from "./use-cases/update-wishlist.use-case";
 export * from "./use-cases/add-wishlist-item.use-case";
 export * from "./use-cases/update-wishlist-item.use-case";
 export * from "./use-cases/remove-wishlist-item.use-case";

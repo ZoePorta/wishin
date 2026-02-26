@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, FlatList, Pressable } from "react-native";
 import { WishlistItemCard } from "./WishlistItemCard";
+import { DashboardHeader } from "./DashboardHeader";
 import type { WishlistOutput, WishlistItemOutput } from "@wishin/domain";
 
 import type { WishlistStyles } from "../hooks/useWishlistStyles";
@@ -14,6 +15,7 @@ interface DashboardContentProps {
   dashboardStyles: ReturnType<typeof createDashboardStyles>;
   renderAddItemForm: () => React.ReactNode;
   onRemoveItem: (id: string) => void;
+  onEditWishlist?: () => void;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -23,12 +25,19 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   dashboardStyles,
   renderAddItemForm,
   onRemoveItem,
+  onEditWishlist,
 }) => (
   <FlatList
     data={wishlist.items}
     keyExtractor={(item) => item.id}
     ListHeaderComponent={
       <View>
+        <DashboardHeader
+          wishlist={wishlist}
+          styles={styles}
+          themedStyles={themedStyles}
+          onEdit={onEditWishlist}
+        />
         {renderAddItemForm()}
         <Text style={dashboardStyles.sectionTitle}>Your Items</Text>
       </View>

@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { View, Text, ActivityIndicator, Pressable } from "react-native";
+import React, { useMemo, useState } from "react";
+import { View, Text, ActivityIndicator, Pressable, Modal } from "react-native";
 import { Stack } from "expo-router";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
 import { useWishlistStyles } from "../../src/features/wishlist/hooks/useWishlistStyles";
@@ -23,10 +23,13 @@ export default function OwnerDashboard() {
     creating,
     itemActionLoading,
     handleCreate,
+    handleUpdate,
     handleAddItem,
     handleRemoveItem,
     refetch,
   } = useOwnerDashboard();
+
+  const [isEditing, setIsEditing] = useState(false);
 
   const dashboardStyles = useMemo(() => createDashboardStyles(theme), [theme]);
 
@@ -70,6 +73,9 @@ export default function OwnerDashboard() {
             wishlist={wishlist}
             styles={styles}
             themedStyles={themedStyles}
+            onEdit={() => {
+              setIsEditing(true);
+            }}
           />
 
           <DashboardContent
@@ -78,6 +84,9 @@ export default function OwnerDashboard() {
             themedStyles={themedStyles}
             dashboardStyles={dashboardStyles}
             onRemoveItem={handleRemoveItem}
+            onEditWishlist={() => {
+              setIsEditing(true);
+            }}
             renderAddItemForm={() => (
               <AddItemForm
                 wishlistId={wishlist.id}
@@ -86,6 +95,60 @@ export default function OwnerDashboard() {
               />
             )}
           />
+
+          <Modal
+            visible={isEditing}
+            animationType="slide"
+            onRequestClose={() => {
+              setIsEditing(false);
+            }}
+          >
+            <View
+              style={[
+                themedStyles.background,
+                { flex: 1, padding: 20, paddingTop: 60 },
+              ]}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 20,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    color: themedStyles.text.color,
+                  }}
+                >
+                  Edit Wishlist
+                </Text>
+                <Pressable
+                  onPress={() => {
+                    setIsEditing(false);
+                  }}
+                >
+                  <Text style={{ color: theme.primary, fontWeight: "600" }}>
+                    Cancel
+                  </Text>
+                </Pressable>
+              </View>
+              <WishlistForm
+                initialData={wishlist}
+                onSubmit={async (data) => {
+                  const result = await handleUpdate(data);
+                  if (result) {
+                    setIsEditing(false);
+                  }
+                }}
+                loading={creating}
+                currentUserId={userId ?? ""}
+              />
+            </View>
+          </Modal>
         </View>
       )}
     </View>

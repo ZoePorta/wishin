@@ -2,8 +2,13 @@ import { Alert } from "react-native";
 import { useCurrentUserId } from "../../../hooks/useCurrentUserId";
 import { useWishlistByOwner } from "./useWishlistByOwner";
 import { useCreateWishlist } from "./useCreateWishlist";
+import { useUpdateWishlist } from "./useUpdateWishlist";
 import { useWishlistItemActions } from "./useWishlistItemActions";
-import type { CreateWishlistInput, AddWishlistItemInput } from "@wishin/domain";
+import type {
+  CreateWishlistInput,
+  AddWishlistItemInput,
+  UpdateWishlistInput,
+} from "@wishin/domain";
 
 /**
  * View Model hook for the Owner Dashboard.
@@ -19,6 +24,7 @@ export function useOwnerDashboard() {
   } = useWishlistByOwner(userId);
 
   const { createWishlist, loading: creating } = useCreateWishlist();
+  const { updateWishlist, loading: updating } = useUpdateWishlist();
   const {
     addItem,
     removeItem,
@@ -30,6 +36,14 @@ export function useOwnerDashboard() {
     if (result) {
       void refetch();
     }
+  };
+
+  const handleUpdate = async (data: UpdateWishlistInput) => {
+    const result = await updateWishlist(data);
+    if (result) {
+      void refetch();
+    }
+    return result;
   };
 
   const handleAddItem = async (data: AddWishlistItemInput) => {
@@ -64,9 +78,10 @@ export function useOwnerDashboard() {
     wishlist,
     loading: userLoading || (wishlistLoading && userId !== null),
     error: userError ?? wishlistError,
-    creating,
+    creating: creating || updating,
     itemActionLoading,
     handleCreate,
+    handleUpdate,
     handleAddItem,
     handleRemoveItem,
     refetch,
