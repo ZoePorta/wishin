@@ -1,10 +1,10 @@
 import { Link } from "expo-router";
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import { Colors } from "../src/constants/Colors";
-import { MOCK_WISHLIST_DATA } from "@wishin/infrastructure/mocks";
 
 export default function Index() {
-  const demoWishlistId = MOCK_WISHLIST_DATA.id;
+  // Demo wishlist ID created by the scripts/seed.ts script
+  const demoWishlistId = "550e8400-e29b-41d4-a716-446655440003";
 
   return (
     <View style={styles.container}>
