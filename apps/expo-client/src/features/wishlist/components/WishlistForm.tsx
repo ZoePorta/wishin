@@ -50,6 +50,7 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
 
   return (
     <ScrollView style={{ flex: 1 }}>
+      {/* TODO: UI Polish and Image Upload for Wishlist Header/Profile */}
       <Text style={formStyles.label}>Title*</Text>
       <TextInput
         style={formStyles.input}

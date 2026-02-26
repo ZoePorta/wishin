@@ -72,6 +72,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         {initialData ? "Edit Item" : "Add New Item"}
       </Text>
 
+      {/* TODO: Implement Image Upload integration for items */}
+
       <Text style={formStyles.label}>Name*</Text>
       <TextInput
         style={formStyles.input}
