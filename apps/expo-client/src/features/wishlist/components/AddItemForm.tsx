@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Priority } from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
+import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
 import { useWishlistStyles } from "../hooks/useWishlistStyles";
 import { createAddItemFormStyles } from "../styles/AddItemForm.styles";
 import { useMemo } from "react";
@@ -109,7 +110,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
       <Text style={formStyles.label}>Priority</Text>
       <View style={formStyles.priorityGroup}>
-        {Object.values(Priority).map((p) => (
+        {SORTED_PRIORITIES.map((p) => (
           <Pressable
             key={p}
             style={[
@@ -117,7 +118,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
               priority === p && formStyles.priorityActive,
             ]}
             onPress={() => {
-              setPriority(p as Priority);
+              setPriority(p);
             }}
           >
             <Text
@@ -126,7 +127,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
                 priority === p && formStyles.priorityTextActive,
               ]}
             >
-              {p}
+              {PRIORITY_LABELS[p]}
             </Text>
           </Pressable>
         ))}

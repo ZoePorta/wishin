@@ -2,13 +2,7 @@ import React, { useCallback } from "react";
 import { View, Text, Image, Pressable, Linking, Alert } from "react-native";
 import { Priority } from "@wishin/domain";
 import type { WishlistItemOutput } from "@wishin/domain";
-
-const PRIORITY_LABELS: Record<Priority, string> = {
-  [Priority.LOW]: "LOW",
-  [Priority.MEDIUM]: "MEDIUM",
-  [Priority.HIGH]: "HIGH",
-  [Priority.URGENT]: "URGENT",
-};
+import { PRIORITY_LABELS } from "../utils/priority";
 
 import type { WishlistStyles } from "../hooks/useWishlistStyles";
 
