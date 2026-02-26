@@ -100,13 +100,27 @@ export class AppwriteWishlistRepository
       });
 
       // 2. Fetch Wishlist Items
-      const itemsResponse = await this.tablesDb.listRows({
-        databaseId: this.databaseId,
-        tableId: this.wishlistItemsCollectionId,
-        queries: [Query.equal("wishlistId", id), Query.limit(100)],
-      });
+      const itemDocuments: Models.Document[] = [];
+      let itemsCursor: string | undefined = undefined;
+      do {
+        const queries = [Query.equal("wishlistId", id), Query.limit(100)];
+        if (itemsCursor) {
+          queries.push(Query.cursorAfter(itemsCursor));
+        }
+        const response = await this.tablesDb.listRows({
+          databaseId: this.databaseId,
+          tableId: this.wishlistItemsCollectionId,
+          queries,
+        });
+        const docs = toDocument<Models.Document[]>(response.rows);
+        itemDocuments.push(...docs);
+        if (response.rows.length < 100) {
+          itemsCursor = undefined;
+        } else {
+          itemsCursor = response.rows[response.rows.length - 1].$id;
+        }
+      } while (itemsCursor);
 
-      const itemDocuments = toDocument<Models.Document[]>(itemsResponse.rows);
       const itemIds = itemDocuments.map((doc) => doc.$id);
 
       // 3. Fetch Transactions for items (if any items exist)
@@ -193,25 +207,27 @@ export class AppwriteWishlistRepository
    */
   async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
     await this.ensureSession();
+
     // 1. Fetch all Wishlist Documents by ownerId
+    // Business Rule: Maximum 20 wishlists per owner (Post-MVP scaling limit)
     const response = await this.tablesDb.listRows({
       databaseId: this.databaseId,
       tableId: this.wishlistCollectionId,
-      queries: [Query.equal("ownerId", ownerId)],
+      queries: [Query.equal("ownerId", ownerId), Query.limit(20)],
     });
 
     if (response.rows.length === 0) {
       return [];
     }
 
+    const rows = toDocument<Models.Document[]>(response.rows);
+
     // 2. Map docs to aggregates by fetching details for each
     const wishlists = await Promise.all(
-      response.rows.map((row) =>
-        this.findById(toDocument<Models.Document>(row).$id),
-      ),
+      rows.map((row) => this.findById(row.$id)),
     );
 
-    // Filter out any nulls if findById could potentially return null (though in this repo it shouldn't for existing rows)
+    // Filter out any nulls if findById could potentially return null
     return wishlists.filter((w): w is Wishlist => w !== null);
   }
 
@@ -238,12 +254,29 @@ export class AppwriteWishlistRepository
 
     // 2. Sync Wishlist Items First (Atomicity step)
     // 2a. Get existing items IDs to identify removals
-    const existingItemsResponse = await this.tablesDb.listRows({
-      databaseId: this.databaseId,
-      tableId: this.wishlistItemsCollectionId,
-      queries: [Query.equal("wishlistId", wishlist.id), Query.limit(100)],
-    });
-    const existingItemIds = existingItemsResponse.rows.map((row) => row.$id);
+    const existingItemIds: string[] = [];
+    let existingCursor: string | undefined = undefined;
+    do {
+      const queries = [
+        Query.equal("wishlistId", wishlist.id),
+        Query.limit(100),
+      ];
+      if (existingCursor) {
+        queries.push(Query.cursorAfter(existingCursor));
+      }
+      const response = await this.tablesDb.listRows({
+        databaseId: this.databaseId,
+        tableId: this.wishlistItemsCollectionId,
+        queries,
+      });
+      existingItemIds.push(...response.rows.map((row) => row.$id));
+
+      if (response.rows.length < 100) {
+        existingCursor = undefined;
+      } else {
+        existingCursor = response.rows[response.rows.length - 1].$id;
+      }
+    } while (existingCursor);
 
     // 2b. Prepare upserts and deletes
     const currentItems = wishlist.items;

@@ -882,5 +882,30 @@ describe("WishlistItem Entity", () => {
         WishlistItem.reconstitute(invalidNameProps),
       ).toThrow(InvalidAttributeError);
     });
+    it("should NOT add default currency during reconstitution if missing (STRUCTURAL mode)", () => {
+      const item = WishlistItem.reconstitute({
+        ...legacyProps,
+        currency: undefined,
+      });
+      expect(item.currency).toBeUndefined();
+    });
+
+    it("should NOT add default currency during reserve on a legacy item (TRANSACTION mode)", () => {
+      const item = WishlistItem.reconstitute({
+        ...legacyProps,
+        currency: undefined,
+      });
+      const reservedItem = item.reserve(1);
+      expect(reservedItem.currency).toBeUndefined();
+    });
+
+    it("should STILL add default currency during update on a legacy item (EVOLUTIVE mode)", () => {
+      const item = WishlistItem.reconstitute({
+        ...legacyProps,
+        currency: undefined,
+      });
+      const updatedItem = item.update({ name: "PlayStation 5" });
+      expect(updatedItem.currency).toBe("€");
+    });
   });
 });

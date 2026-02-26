@@ -53,7 +53,7 @@ classDiagram
 
     note for Transaction "States: RESERVED, PURCHASED, CANCELLED"
 
-    Profile "1" -- "0..*" Wishlist : owns
+    Profile "1" -- "0..20" Wishlist : owns
     Wishlist "1" *-- "0..100" WishlistItem : contains
     Profile "0..1" -- "0..*" Transaction : performs
     Transaction "*" -- "1" WishlistItem : targets

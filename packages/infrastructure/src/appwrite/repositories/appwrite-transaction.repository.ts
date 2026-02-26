@@ -7,17 +7,11 @@ import {
 } from "appwrite";
 import type { TransactionRepository, Transaction } from "@wishin/domain";
 import { TransactionStatus } from "@wishin/domain";
+import {
+  TransactionMapper,
+  type TransactionDocument,
+} from "../mappers/transaction.mapper";
 import { toDocument } from "../utils/to-document";
-
-/**
- * Interface representing a Transaction document in Appwrite.
- */
-interface TransactionDocument extends Models.Document {
-  itemId: string;
-  userId: string;
-  status: TransactionStatus;
-  quantity: number;
-}
 
 /**
  * Appwrite implementation of the TransactionRepository.
@@ -46,18 +40,11 @@ export class AppwriteTransactionRepository implements TransactionRepository {
    * @param transaction - The transaction to save.
    */
   async save(transaction: Transaction): Promise<void> {
-    const data = {
-      itemId: transaction.itemId,
-      userId: transaction.userId,
-      status: transaction.status,
-      quantity: transaction.quantity,
-    };
-
     await this.tablesDb.upsertRow({
       databaseId: this.databaseId,
       tableId: this.transactionsCollectionId,
       rowId: transaction.id,
-      data,
+      data: TransactionMapper.toPersistence(transaction),
     });
   }
 
@@ -68,14 +55,13 @@ export class AppwriteTransactionRepository implements TransactionRepository {
    */
   async findById(id: string): Promise<Transaction | null> {
     try {
-      const _doc = await this.tablesDb.getRow({
+      const doc = await this.tablesDb.getRow({
         databaseId: this.databaseId,
         tableId: this.transactionsCollectionId,
         rowId: id,
       });
-      // mapping logic would go here, skipping for now as not strictly needed for Phase 3.4
-      // return TransactionMapper.toDomain(toDocument<Models.Document>(doc));
-      return null; // Placeholder
+
+      return TransactionMapper.toDomain(toDocument<Models.Document>(doc));
     } catch (error) {
       if (error instanceof AppwriteException && error.code === 404) {
         return null;
@@ -90,49 +76,74 @@ export class AppwriteTransactionRepository implements TransactionRepository {
    * @returns {Promise<Transaction[]>}
    */
   async findByItemId(itemId: string): Promise<Transaction[]> {
-    const _response = await this.tablesDb.listRows({
+    const response = await this.tablesDb.listRows({
       databaseId: this.databaseId,
       tableId: this.transactionsCollectionId,
-      queries: [Query.equal("itemId", itemId)],
+      queries: [Query.equal("itemId", itemId), Query.limit(100)],
     });
-    // return response.rows.map(doc => TransactionMapper.toDomain(toDocument<Models.Document>(doc)));
-    return []; // Placeholder
+
+    const documents = toDocument<Models.Document[]>(response.rows);
+    return documents.map((doc) => TransactionMapper.toDomain(doc));
   }
 
   /**
-   * Atomically transitions all RESERVED transactions for an item to CANCELLED_BY_OWNER.
+   * Atomically (relative to the client) transitions all RESERVED transactions for an item to CANCELLED_BY_OWNER.
+   *
+   * @remarks
+   * **Atomicity Limitation**: Appwrite does not support server-side transactions or conditional updates
+   * for bulk operations. This method implementation uses a paginated loop to fetch and update
+   * records. In the event of a partial failure, some transactions may remain in the RESERVED state.
+   * Concurrent reservations during execution may also result in a partial cancellation.
    *
    * @param itemId - The item UUID.
    * @returns {Promise<number>} The number of transactions cancelled.
    */
   async cancelByItemId(itemId: string): Promise<number> {
-    // 1. Fetch all RESERVED transactions for the item
-    const response = await this.tablesDb.listRows({
-      databaseId: this.databaseId,
-      tableId: this.transactionsCollectionId,
-      queries: [
-        Query.equal("itemId", itemId),
-        Query.equal("status", TransactionStatus.RESERVED),
-        Query.limit(100),
-      ],
-    });
+    let totalCancelled = 0;
+    let hasMore = true;
 
-    const docs = toDocument<TransactionDocument[]>(response.rows);
-
-    // 2. Transition each to CANCELLED_BY_OWNER
-    const updates = docs.map((doc) =>
-      this.tablesDb.updateRow({
+    while (hasMore) {
+      // 1. Fetch a page of RESERVED transactions for the item
+      const response = await this.tablesDb.listRows({
         databaseId: this.databaseId,
         tableId: this.transactionsCollectionId,
-        rowId: doc.$id,
-        data: {
-          status: TransactionStatus.CANCELLED_BY_OWNER,
-        },
-      }),
-    );
+        queries: [
+          Query.equal("itemId", itemId),
+          Query.equal("status", TransactionStatus.RESERVED),
+          Query.limit(100),
+        ],
+      });
 
-    await Promise.all(updates);
+      const docs = toDocument<TransactionDocument[]>(response.rows);
 
-    return docs.length;
+      if (docs.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      // 2. Transition this page to CANCELLED_BY_OWNER
+      const updates = docs.map((doc) =>
+        this.tablesDb.updateRow({
+          databaseId: this.databaseId,
+          tableId: this.transactionsCollectionId,
+          rowId: doc.$id,
+          data: {
+            status: TransactionStatus.CANCELLED_BY_OWNER,
+          },
+        }),
+      );
+
+      await Promise.all(updates);
+      totalCancelled += docs.length;
+
+      // If we got fewer than 100 docs, we know we've reached the end
+      // However, since we are changing the status, the next query for RESERVED
+      // will naturally return the next set of results or be empty.
+      if (docs.length < 100) {
+        hasMore = false;
+      }
+    }
+
+    return totalCancelled;
   }
 }

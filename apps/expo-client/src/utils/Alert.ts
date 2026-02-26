@@ -50,11 +50,9 @@ export const UniversalAlert = {
           return;
         }
 
-        // Just one button or simple list - alert and call the first non-cancel button
+        // Just one button or simple list - alert but DO NOT call onPress automatically
+        // as window.alert provides no choice to the user.
         window.alert(fullMessage);
-        const firstButton =
-          buttons.find((b) => b.style !== "cancel") ?? buttons[0];
-        firstButton.onPress?.();
       }
     } else {
       // Native Mobile implementation
