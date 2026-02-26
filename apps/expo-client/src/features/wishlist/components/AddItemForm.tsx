@@ -6,7 +6,7 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { Priority } from "@wishin/domain";
+import { Priority, type WishlistItemOutput } from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
 import { useWishlistStyles } from "../hooks/useWishlistStyles";
@@ -15,32 +15,42 @@ import { useMemo } from "react";
 
 interface AddItemFormProps {
   wishlistId: string;
+  initialData?: WishlistItemOutput;
   onSubmit: (data: AddWishlistItemInput) => Promise<void>;
   loading?: boolean;
 }
 
 /**
- * Form component to add new items to a wishlist.
+ * Form component to add or edit items in a wishlist.
  */
 export const AddItemForm: React.FC<AddItemFormProps> = ({
   wishlistId,
+  initialData,
   onSubmit,
   loading = false,
 }) => {
   const { theme } = useWishlistStyles();
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [url, setUrl] = useState("");
-  const [price, setPrice] = useState("0");
-  const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
-  const [totalQuantity, setTotalQuantity] = useState("1");
-  const [isUnlimited, setIsUnlimited] = useState(false);
-  const [priceUnknown, setPriceUnknown] = useState(false);
+  const [name, setName] = useState(initialData?.name ?? "");
+  const [description, setDescription] = useState(
+    initialData?.description ?? "",
+  );
+  const [url, setUrl] = useState(initialData?.url ?? "");
+  const [price, setPrice] = useState(initialData?.price?.toString() ?? "0");
+  const [priority, setPriority] = useState<Priority>(
+    initialData?.priority ?? Priority.MEDIUM,
+  );
+  const [totalQuantity, setTotalQuantity] = useState(
+    initialData?.totalQuantity.toString() ?? "1",
+  );
+  const [isUnlimited, setIsUnlimited] = useState(
+    initialData?.isUnlimited ?? false,
+  );
+  const [priceUnknown, setPriceUnknown] = useState(initialData?.price == null);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name.trim() || loading) return;
 
-    void onSubmit({
+    await onSubmit({
       wishlistId,
       name: name.trim(),
       description: description.trim() || undefined,
@@ -49,24 +59,18 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       priority,
       totalQuantity: isUnlimited ? 1 : parseInt(totalQuantity, 10) || 1,
       isUnlimited,
-    });
-
-    // Reset form after submit
-    setName("");
-    setDescription("");
-    setUrl("");
-    setPrice("0");
-    setPriority(Priority.MEDIUM);
-    setTotalQuantity("1");
-    setIsUnlimited(false);
-    setPriceUnknown(false);
+      imageUrl: initialData?.imageUrl,
+      ...(initialData?.id ? { id: initialData.id } : {}),
+    } as AddWishlistItemInput);
   };
 
   const formStyles = useMemo(() => createAddItemFormStyles(theme), [theme]);
 
   return (
     <View style={formStyles.container}>
-      <Text style={formStyles.title}>Add New Item</Text>
+      <Text style={formStyles.title}>
+        {initialData ? "Edit Item" : "Add New Item"}
+      </Text>
 
       <Text style={formStyles.label}>Name*</Text>
       <TextInput
@@ -74,6 +78,16 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         value={name}
         onChangeText={setName}
         placeholder="Product name..."
+        placeholderTextColor={theme.textMuted}
+      />
+
+      <Text style={formStyles.label}>Description</Text>
+      <TextInput
+        style={[formStyles.input, { height: 80, textAlignVertical: "top" }]}
+        value={description}
+        onChangeText={setDescription}
+        placeholder="Product description..."
+        multiline
         placeholderTextColor={theme.textMuted}
       />
 
@@ -175,13 +189,17 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           formStyles.submitButton,
           (!name.trim() || loading) && formStyles.submitButtonDisabled,
         ]}
-        onPress={handleSubmit}
+        onPress={() => {
+          void handleSubmit();
+        }}
         disabled={!name.trim() || loading}
       >
         {loading ? (
           <ActivityIndicator color={theme.card} />
         ) : (
-          <Text style={formStyles.submitButtonText}>Add to List</Text>
+          <Text style={formStyles.submitButtonText}>
+            {initialData ? "Save Changes" : "Add to List"}
+          </Text>
         )}
       </Pressable>
     </View>

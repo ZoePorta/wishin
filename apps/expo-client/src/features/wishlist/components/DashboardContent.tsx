@@ -13,9 +13,9 @@ interface DashboardContentProps {
   styles: WishlistStyles["styles"];
   themedStyles: WishlistStyles["themedStyles"];
   dashboardStyles: ReturnType<typeof createDashboardStyles>;
-  renderAddItemForm: () => React.ReactNode;
   onRemoveItem: (id: string) => void;
-  onEditWishlist?: () => void;
+  onEditItem: (item: WishlistItemOutput) => void;
+  onEditWishlist: () => void;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -23,39 +23,41 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   styles,
   themedStyles,
   dashboardStyles,
-  renderAddItemForm,
   onRemoveItem,
+  onEditItem,
   onEditWishlist,
-}) => (
-  <FlatList
-    data={wishlist.items}
-    keyExtractor={(item) => item.id}
-    ListHeaderComponent={
-      <View>
-        <DashboardHeader
-          wishlist={wishlist}
+}) => {
+  return (
+    <FlatList
+      data={wishlist.items}
+      keyExtractor={(item) => item.id}
+      ListHeaderComponent={
+        <View style={styles.header}>
+          <DashboardHeader
+            wishlist={wishlist}
+            styles={styles}
+            themedStyles={themedStyles}
+            onEdit={onEditWishlist}
+          />
+          <Text style={dashboardStyles.sectionTitle}>Your Items</Text>
+        </View>
+      }
+      renderItem={({ item }: { item: WishlistItemOutput }) => (
+        <DashboardItemCard
+          item={item}
           styles={styles}
           themedStyles={themedStyles}
-          onEdit={onEditWishlist}
+          onEdit={onEditItem}
+          onRemove={onRemoveItem}
         />
-        {renderAddItemForm()}
-        <Text style={dashboardStyles.sectionTitle}>Your Items</Text>
-      </View>
-    }
-    renderItem={({ item }: { item: WishlistItemOutput }) => (
-      <DashboardItemCard
-        item={item}
-        styles={styles}
-        themedStyles={themedStyles}
-        onRemove={onRemoveItem}
-      />
-    )}
-    ListEmptyComponent={
-      <View style={styles.emptyContainer}>
-        <Text style={[styles.emptyText, themedStyles.textMuted]}>
-          You haven't added any items yet.
-        </Text>
-      </View>
-    }
-  />
-);
+      )}
+      ListEmptyComponent={
+        <View style={styles.emptyContainer}>
+          <Text style={[styles.emptyText, themedStyles.textMuted]}>
+            You haven't added any items yet.
+          </Text>
+        </View>
+      }
+    />
+  );
+};

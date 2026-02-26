@@ -8,6 +8,7 @@ import type {
   CreateWishlistInput,
   AddWishlistItemInput,
   UpdateWishlistInput,
+  UpdateWishlistItemInput,
 } from "@wishin/domain";
 
 /**
@@ -27,6 +28,7 @@ export function useOwnerDashboard() {
   const { updateWishlist, loading: updating } = useUpdateWishlist();
   const {
     addItem,
+    updateItem,
     removeItem,
     loading: itemActionLoading,
   } = useWishlistItemActions();
@@ -48,6 +50,13 @@ export function useOwnerDashboard() {
 
   const handleAddItem = async (data: AddWishlistItemInput) => {
     const result = await addItem(data);
+    if (result) {
+      void refetch();
+    }
+  };
+
+  const handleUpdateItem = async (data: UpdateWishlistItemInput) => {
+    const result = await updateItem(data);
     if (result) {
       void refetch();
     }
@@ -92,6 +101,7 @@ export function useOwnerDashboard() {
     handleCreate,
     handleUpdate,
     handleAddItem,
+    handleUpdateItem,
     handleRemoveItem,
     refetch,
   };
