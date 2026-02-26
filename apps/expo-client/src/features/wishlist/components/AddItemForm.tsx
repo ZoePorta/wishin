@@ -31,9 +31,11 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [url, setUrl] = useState("");
-  const [price, setPrice] = useState("");
+  const [price, setPrice] = useState("0");
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
   const [totalQuantity, setTotalQuantity] = useState("1");
+  const [isUnlimited, setIsUnlimited] = useState(false);
+  const [priceUnknown, setPriceUnknown] = useState(false);
 
   const handleSubmit = () => {
     if (!name.trim() || loading) return;
@@ -43,19 +45,21 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       name: name.trim(),
       description: description.trim() || undefined,
       url: url.trim() || undefined,
-      price: price ? parseFloat(price) : undefined,
+      price: priceUnknown ? undefined : parseFloat(price) || 0,
       priority,
-      totalQuantity: parseInt(totalQuantity, 10) || 1,
-      isUnlimited: false,
+      totalQuantity: isUnlimited ? 1 : parseInt(totalQuantity, 10) || 1,
+      isUnlimited,
     });
 
     // Reset form after submit
     setName("");
     setDescription("");
     setUrl("");
-    setPrice("");
+    setPrice("0");
     setPriority(Priority.MEDIUM);
     setTotalQuantity("1");
+    setIsUnlimited(false);
+    setPriceUnknown(false);
   };
 
   const formStyles = useMemo(() => createAddItemFormStyles(theme), [theme]);
@@ -77,23 +81,56 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         <View style={formStyles.flex1}>
           <Text style={formStyles.label}>Price</Text>
           <TextInput
-            style={formStyles.input}
+            style={[formStyles.input, priceUnknown && formStyles.inputDisabled]}
             value={price}
             onChangeText={setPrice}
-            placeholder="0.00"
             keyboardType="decimal-pad"
+            editable={!priceUnknown}
             placeholderTextColor={theme.textMuted}
           />
+          <Pressable
+            style={formStyles.checkboxContainer}
+            onPress={() => {
+              setPriceUnknown(!priceUnknown);
+            }}
+          >
+            <View
+              style={[
+                formStyles.checkbox,
+                priceUnknown && formStyles.checkboxChecked,
+              ]}
+            >
+              {priceUnknown && <View style={formStyles.checkmark} />}
+            </View>
+            <Text style={formStyles.checkboxLabel}>I don't know the price</Text>
+          </Pressable>
         </View>
         <View style={formStyles.flex1}>
           <Text style={formStyles.label}>Quantity</Text>
           <TextInput
-            style={formStyles.input}
+            style={[formStyles.input, isUnlimited && formStyles.inputDisabled]}
             value={totalQuantity}
             onChangeText={setTotalQuantity}
             keyboardType="number-pad"
+            editable={!isUnlimited}
             placeholderTextColor={theme.textMuted}
           />
+          <Pressable
+            style={formStyles.checkboxContainer}
+            onPress={() => {
+              setIsUnlimited(!isUnlimited);
+            }}
+          >
+            <View
+              style={[
+                formStyles.checkbox,
+                isUnlimited && formStyles.checkboxChecked,
+              ]}
+            >
+              {isUnlimited && <View style={formStyles.checkmark} />}
+            </View>
+            <Text style={formStyles.checkboxLabel}>Unlimited</Text>
+          </Pressable>
         </View>
       </View>
 

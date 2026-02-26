@@ -35,6 +35,10 @@ export const createAddItemFormStyles = (theme: AppTheme) =>
       color: theme.text,
       backgroundColor: theme.background,
     },
+    inputDisabled: {
+      backgroundColor: theme.surfaceMuted,
+      color: theme.textMuted,
+    },
     row: {
       flexDirection: "row",
       gap: Spacing.md,
@@ -81,5 +85,34 @@ export const createAddItemFormStyles = (theme: AppTheme) =>
       color: theme.card,
       fontSize: Typography.size.md,
       fontWeight: Typography.weight.bold,
+    },
+    checkboxContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: Spacing.sm,
+      gap: Spacing.sm,
+    },
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderRadius: 4,
+      borderWidth: 2,
+      borderColor: theme.surfaceMuted,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    checkboxChecked: {
+      backgroundColor: theme.primary,
+      borderColor: theme.primary,
+    },
+    checkboxLabel: {
+      fontSize: Typography.size.base,
+      color: theme.text,
+    },
+    checkmark: {
+      width: 10,
+      height: 10,
+      backgroundColor: theme.card,
+      borderRadius: 2,
     },
   });
