@@ -47,7 +47,10 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
       <View style={styles.cardContent}>
         <View style={styles.cardHeader}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.itemTitle, themedStyles.text]}>
+            <Text
+              accessibilityRole="header"
+              style={[styles.itemTitle, themedStyles.text]}
+            >
               {item.name}
             </Text>
             <Text style={[themedStyles.textMuted, { fontSize: 12 }]}>

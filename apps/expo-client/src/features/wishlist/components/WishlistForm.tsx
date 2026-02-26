@@ -57,6 +57,7 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
         onChangeText={setTitle}
         placeholder="Birthday 2026, Wedding Registry..."
         placeholderTextColor={theme.textMuted}
+        accessibilityLabel="Wishlist title"
       />
 
       <Text style={formStyles.label}>Description (Optional)</Text>
@@ -68,6 +69,7 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
         placeholderTextColor={theme.textMuted}
         multiline
         numberOfLines={4}
+        accessibilityLabel="Wishlist description"
       />
 
       <Pressable
@@ -77,6 +79,8 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
         ]}
         onPress={handleSubmit}
         disabled={!title.trim() || loading}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !title.trim() || loading }}
       >
         {loading ? (
           <ActivityIndicator color={theme.card} />

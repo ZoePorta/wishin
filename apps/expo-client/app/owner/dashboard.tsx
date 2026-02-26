@@ -98,6 +98,8 @@ export default function OwnerDashboard() {
 
           {/* Floating Action Button (FAB) for adding items */}
           <Pressable
+            accessibilityLabel="Add item to wishlist"
+            accessibilityRole="button"
             style={({ pressed }) => [
               {
                 position: "absolute",
@@ -151,6 +153,7 @@ export default function OwnerDashboard() {
                 }}
               >
                 <Text
+                  accessibilityRole="header"
                   style={{
                     fontSize: 24,
                     fontWeight: "bold",
@@ -160,6 +163,8 @@ export default function OwnerDashboard() {
                   {editingItem ? "Edit Item" : "Add Item"}
                 </Text>
                 <Pressable
+                  accessibilityLabel="Cancel"
+                  accessibilityRole="button"
                   onPress={() => {
                     setIsItemModalVisible(false);
                     setEditingItem(undefined);
@@ -214,6 +219,7 @@ export default function OwnerDashboard() {
                 }}
               >
                 <Text
+                  accessibilityRole="header"
                   style={{
                     fontSize: 24,
                     fontWeight: "bold",
@@ -223,6 +229,8 @@ export default function OwnerDashboard() {
                   Edit Wishlist
                 </Text>
                 <Pressable
+                  accessibilityLabel="Cancel editing wishlist"
+                  accessibilityRole="button"
                   onPress={() => {
                     setIsEditing(false);
                   }}
@@ -235,9 +243,13 @@ export default function OwnerDashboard() {
               <WishlistForm
                 initialData={wishlist}
                 onSubmit={async (data) => {
-                  const result = await handleUpdate(data);
-                  if (result) {
-                    setIsEditing(false);
+                  if (data.id) {
+                    const result = await handleUpdate(
+                      data as Required<Pick<typeof data, "id">> & typeof data,
+                    );
+                    if (result) {
+                      setIsEditing(false);
+                    }
                   }
                 }}
                 loading={creating}

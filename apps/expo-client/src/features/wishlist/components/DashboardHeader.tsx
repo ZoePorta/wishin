@@ -25,12 +25,17 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         alignItems: "center",
       }}
     >
-      <Text style={[styles.wishlistTitle, themedStyles.text]}>
+      <Text
+        accessibilityRole="header"
+        style={[styles.wishlistTitle, themedStyles.text]}
+      >
         {wishlist.title}
       </Text>
       {onEdit && (
         <Pressable
           onPress={onEdit}
+          accessibilityLabel="Edit wishlist"
+          accessibilityRole="button"
           style={{
             backgroundColor: themedStyles.surfaceMuted.backgroundColor,
             paddingHorizontal: 12,

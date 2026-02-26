@@ -30,7 +30,9 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <View style={styles.header}>
-          <Text style={dashboardStyles.sectionTitle}>Your Items</Text>
+          <Text accessibilityRole="header" style={dashboardStyles.sectionTitle}>
+            Your Items
+          </Text>
         </View>
       }
       renderItem={({ item }: { item: WishlistItemOutput }) => (

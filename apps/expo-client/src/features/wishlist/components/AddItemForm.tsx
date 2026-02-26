@@ -79,6 +79,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         onChangeText={setName}
         placeholder="Product name..."
         placeholderTextColor={theme.textMuted}
+        accessibilityLabel="Item name"
       />
 
       <Text style={formStyles.label}>Description</Text>
@@ -89,6 +90,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         placeholder="Product description..."
         multiline
         placeholderTextColor={theme.textMuted}
+        accessibilityLabel="Item description"
       />
 
       <View style={formStyles.row}>
@@ -101,12 +103,16 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             keyboardType="decimal-pad"
             editable={!priceUnknown}
             placeholderTextColor={theme.textMuted}
+            accessibilityLabel="Item price"
           />
           <Pressable
             style={formStyles.checkboxContainer}
             onPress={() => {
               setPriceUnknown(!priceUnknown);
             }}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: priceUnknown }}
+            accessibilityLabel="Price unknown"
           >
             <View
               style={[
@@ -128,12 +134,16 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             keyboardType="number-pad"
             editable={!isUnlimited}
             placeholderTextColor={theme.textMuted}
+            accessibilityLabel="Item quantity"
           />
           <Pressable
             style={formStyles.checkboxContainer}
             onPress={() => {
               setIsUnlimited(!isUnlimited);
             }}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: isUnlimited }}
+            accessibilityLabel="Unlimited quantity"
           >
             <View
               style={[
@@ -157,6 +167,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         keyboardType="url"
         autoCapitalize="none"
         placeholderTextColor={theme.textMuted}
+        accessibilityLabel="Item link URL"
       />
 
       <Text style={formStyles.label}>Priority</Text>
@@ -171,6 +182,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             onPress={() => {
               setPriority(p);
             }}
+            accessibilityRole="button"
+            accessibilityState={{ selected: priority === p }}
+            accessibilityLabel={`${PRIORITY_LABELS[p]} priority`}
           >
             <Text
               style={[
@@ -193,6 +207,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           void handleSubmit();
         }}
         disabled={!name.trim() || loading}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !name.trim() || loading }}
       >
         {loading ? (
           <ActivityIndicator color={theme.card} />
