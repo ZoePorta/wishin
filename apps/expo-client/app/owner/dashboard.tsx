@@ -94,9 +94,6 @@ export default function OwnerDashboard() {
               setEditingItem(item);
               setIsItemModalVisible(true);
             }}
-            onEditWishlist={() => {
-              setIsEditing(true);
-            }}
           />
 
           {/* Floating Action Button (FAB) for adding items */}
