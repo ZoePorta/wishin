@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, FlatList, Pressable } from "react-native";
+import { View, Text, FlatList } from "react-native";
 import { WishlistItemCard } from "./WishlistItemCard";
 import { DashboardHeader } from "./DashboardHeader";
 import type { WishlistOutput, WishlistItemOutput } from "@wishin/domain";
@@ -43,31 +43,12 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       </View>
     }
     renderItem={({ item }: { item: WishlistItemOutput }) => (
-      <View>
-        <WishlistItemCard
-          item={item}
-          styles={styles}
-          themedStyles={themedStyles}
-        />
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "flex-end",
-            marginTop: -12,
-            marginBottom: 16,
-            paddingRight: 8,
-          }}
-        >
-          <Pressable
-            onPress={() => {
-              onRemoveItem(item.id);
-            }}
-            style={dashboardStyles.removeButton}
-          >
-            <Text style={dashboardStyles.removeButtonText}>Remove</Text>
-          </Pressable>
-        </View>
-      </View>
+      <WishlistItemCard
+        item={item}
+        styles={styles}
+        themedStyles={themedStyles}
+        onRemove={onRemoveItem}
+      />
     )}
     ListEmptyComponent={
       <View style={styles.emptyContainer}>

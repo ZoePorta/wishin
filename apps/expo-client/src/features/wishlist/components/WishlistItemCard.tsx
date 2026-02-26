@@ -10,6 +10,7 @@ interface WishlistItemCardProps {
   item: WishlistItemOutput;
   styles: WishlistStyles["styles"];
   themedStyles: WishlistStyles["themedStyles"];
+  onRemove?: (id: string) => void;
 }
 
 /**
@@ -22,6 +23,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
   item,
   styles,
   themedStyles,
+  onRemove,
 }) => {
   const isCompleted =
     !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
@@ -119,12 +121,38 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                 pressed && styles.pressed,
               ]}
               hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
-              onPress={() => void handleOpenUrl(item.url)}
+              onPress={() => {
+                void handleOpenUrl(item.url);
+              }}
               accessibilityLabel={`View Online, ${item.name}`}
               accessibilityRole="link"
             >
               <Text style={[styles.linkText, themedStyles.secondaryText]}>
                 View Online
+              </Text>
+            </Pressable>
+          )}
+
+          {onRemove && (
+            <Pressable
+              style={({ pressed }) => [
+                styles.linkButton, // Reuse linkButton for consistent hitSlop and layout
+                pressed && styles.pressed,
+                { paddingHorizontal: 12 },
+              ]}
+              onPress={() => {
+                onRemove(item.id);
+              }}
+              accessibilityLabel={`Remove ${item.name}`}
+              accessibilityRole="button"
+            >
+              <Text
+                style={[
+                  styles.linkText,
+                  { color: themedStyles.priorityHigh.backgroundColor },
+                ]}
+              >
+                Remove
               </Text>
             </Pressable>
           )}

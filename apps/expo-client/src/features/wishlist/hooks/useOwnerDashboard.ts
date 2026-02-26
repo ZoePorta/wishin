@@ -1,4 +1,4 @@
-import { Alert } from "react-native";
+import { UniversalAlert } from "../../../utils/Alert";
 import { useCurrentUserId } from "../../../hooks/useCurrentUserId";
 import { useWishlistByOwner } from "./useWishlistByOwner";
 import { useCreateWishlist } from "./useCreateWishlist";
@@ -54,23 +54,32 @@ export function useOwnerDashboard() {
   };
 
   const handleRemoveItem = (itemId: string) => {
-    Alert.alert("Remove Item", "Are you sure you want to remove this item?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: () => {
-          if (!wishlist) return;
-          void removeItem({ wishlistId: wishlist.id, itemId }).then(
-            (result) => {
-              if (result) {
-                void refetch();
-              }
-            },
-          );
+    UniversalAlert.alert(
+      "Remove Item",
+      "Are you sure you want to remove this item?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            if (!wishlist) return;
+            void removeItem({ wishlistId: wishlist.id, itemId }).then(
+              (result) => {
+                if (result) {
+                  void refetch();
+                } else {
+                  UniversalAlert.alert(
+                    "Error",
+                    "Failed to remove the item. Please try again.",
+                  );
+                }
+              },
+            );
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   return {
