@@ -1,5 +1,5 @@
-import React, { useState, useEffect, type ReactNode } from "react";
-import { View, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useMemo, type ReactNode } from "react";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { WishlistRepositoryProvider } from "../contexts/WishlistRepositoryContext";
 import { UserProvider } from "../contexts/UserContext";
 import {
@@ -10,18 +10,12 @@ import {
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
 
-// cached instances for singleton pattern
-let cachedWishlistRepository: AppwriteWishlistRepository | null = null;
-let cachedTransactionRepository: AppwriteTransactionRepository | null = null;
-
-function getRepositories() {
-  if (cachedWishlistRepository && cachedTransactionRepository) {
-    return {
-      wishlistRepository: cachedWishlistRepository,
-      transactionRepository: cachedTransactionRepository,
-    };
-  }
-
+/**
+ * Factory function to create new repository instances.
+ * This is now a pure function that does not maintain its own cache,
+ * allowing the React component to manage the lifecycle.
+ */
+function createRepositories() {
   ensureAppwriteConfig();
 
   const client = createAppwriteClient(
@@ -29,7 +23,7 @@ function getRepositories() {
     Config.appwrite.projectId,
   );
 
-  cachedWishlistRepository = new AppwriteWishlistRepository(
+  const wishlistRepository = new AppwriteWishlistRepository(
     client,
     Config.appwrite.databaseId,
     Config.collections.wishlists,
@@ -37,15 +31,15 @@ function getRepositories() {
     Config.collections.transactions,
   );
 
-  cachedTransactionRepository = new AppwriteTransactionRepository(
+  const transactionRepository = new AppwriteTransactionRepository(
     client,
     Config.appwrite.databaseId,
     Config.collections.transactions,
   );
 
   return {
-    wishlistRepository: cachedWishlistRepository,
-    transactionRepository: cachedTransactionRepository,
+    wishlistRepository,
+    transactionRepository,
   };
 }
 
@@ -69,39 +63,37 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
   children,
   onConfigError,
 }) => {
-  const [repositories, setRepositories] = useState<{
-    wishlistRepository: AppwriteWishlistRepository;
-    transactionRepository: AppwriteTransactionRepository;
-  } | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // useMemo ensures repositories are created once per mount/HMR cycle
+  const repos = useMemo(() => createRepositories(), []);
 
   useEffect(() => {
-    try {
-      const repos = getRepositories();
-      const wishlistRepo = repos.wishlistRepository;
+    const init = async () => {
+      try {
+        const wishlistRepo = repos.wishlistRepository;
 
-      if (!isSessionAware(wishlistRepo)) {
-        throw new Error("Wishlist repository must be session aware");
+        if (!isSessionAware(wishlistRepo)) {
+          throw new Error("Wishlist repository must be session aware");
+        }
+
+        // establish or restore session before allowing app entry
+        await wishlistRepo.ensureSession();
+        setIsInitialized(true);
+      } catch (error) {
+        console.error("Failed to initialize core infrastructure:", error);
+        onConfigError(
+          error instanceof Error ? error : new Error(String(error)),
+        );
       }
+    };
 
-      wishlistRepo
-        .ensureSession()
-        .then(() => {
-          setRepositories(repos);
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to establish session:", error);
-          onConfigError(
-            error instanceof Error ? error : new Error(String(error)),
-          );
-        });
-    } catch (error) {
-      onConfigError(error instanceof Error ? error : new Error(String(error)));
-    }
-  }, [onConfigError]);
+    void init();
+  }, [onConfigError, repos]);
 
-  if (!repositories) {
+  if (!isInitialized) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -109,10 +101,19 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
 
   return (
     <WishlistRepositoryProvider
-      wishlistRepository={repositories.wishlistRepository}
-      transactionRepository={repositories.transactionRepository}
+      wishlistRepository={repos.wishlistRepository}
+      transactionRepository={repos.transactionRepository}
+      userRepository={repos.wishlistRepository}
     >
       <UserProvider>{children}</UserProvider>
     </WishlistRepositoryProvider>
   );
 };
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

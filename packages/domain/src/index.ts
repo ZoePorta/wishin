@@ -1,4 +1,5 @@
 export * from "./repositories/wishlist.repository";
+export * from "./repositories/user.repository";
 export * from "./repositories/transaction.repository";
 export * from "./use-cases/get-wishlist-by-uuid.use-case";
 export * from "./use-cases/get-wishlist-by-owner.use-case";

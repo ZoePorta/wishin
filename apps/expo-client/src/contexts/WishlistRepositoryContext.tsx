@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
-import type { WishlistRepository, TransactionRepository } from "@wishin/domain";
+import type {
+  WishlistRepository,
+  TransactionRepository,
+  UserRepository,
+} from "@wishin/domain";
 
 interface WishlistRepositoryContextProps {
   wishlistRepository: WishlistRepository;
   transactionRepository: TransactionRepository;
+  userRepository: UserRepository;
 }
 
 const WishlistRepositoryContext = createContext<
@@ -23,11 +28,17 @@ const WishlistRepositoryContext = createContext<
 export const WishlistRepositoryProvider: React.FC<{
   wishlistRepository: WishlistRepository;
   transactionRepository: TransactionRepository;
+  userRepository: UserRepository;
   children: ReactNode;
-}> = ({ wishlistRepository, transactionRepository, children }) => {
+}> = ({
+  wishlistRepository,
+  transactionRepository,
+  userRepository,
+  children,
+}) => {
   const value = useMemo(
-    () => ({ wishlistRepository, transactionRepository }),
-    [wishlistRepository, transactionRepository],
+    () => ({ wishlistRepository, transactionRepository, userRepository }),
+    [wishlistRepository, transactionRepository, userRepository],
   );
 
   return (
@@ -55,6 +66,9 @@ export const useRepositories = (): WishlistRepositoryContextProps => {
 
 /**
  * Hook to consume only the WishlistRepository from context (backwards compatibility).
+ *
+ * @returns The wishlist repository instance.
+ * @throws {Error} If useRepositories fails (e.g. used outside of provider).
  */
 export const useWishlistRepository = (): WishlistRepository => {
   return useRepositories().wishlistRepository;
@@ -62,7 +76,20 @@ export const useWishlistRepository = (): WishlistRepository => {
 
 /**
  * Hook to consume only the TransactionRepository from context.
+ *
+ * @returns The transaction repository instance.
+ * @throws {Error} If useRepositories fails (e.g. used outside of provider).
  */
 export const useTransactionRepository = (): TransactionRepository => {
   return useRepositories().transactionRepository;
+};
+
+/**
+ * Hook to consume only the UserRepository from context.
+ *
+ * @returns The user repository instance.
+ * @throws {Error} If useRepositories fails (e.g. used outside of provider).
+ */
+export const useUserRepository = (): UserRepository => {
+  return useRepositories().userRepository;
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,12 +11,17 @@ import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
 import { useWishlistStyles } from "../hooks/useWishlistStyles";
 import { createAddItemFormStyles } from "../styles/AddItemForm.styles";
-import { useMemo } from "react";
+
+/**
+ * Input format for the onSubmit callback.
+ * Combines AddWishlistItemInput with an optional id for edit scenarios.
+ */
+export type AddItemFormSubmission = AddWishlistItemInput & { id?: string };
 
 interface AddItemFormProps {
   wishlistId: string;
   initialData?: WishlistItemOutput;
-  onSubmit: (data: AddWishlistItemInput) => Promise<void>;
+  onSubmit: (data: AddItemFormSubmission) => Promise<void>;
   loading?: boolean;
 }
 
@@ -50,7 +55,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   const handleSubmit = async () => {
     if (!name.trim() || loading) return;
 
-    await onSubmit({
+    const payload: AddItemFormSubmission = {
       wishlistId,
       name: name.trim(),
       description: description.trim() || undefined,
@@ -60,8 +65,10 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       totalQuantity: isUnlimited ? 1 : parseInt(totalQuantity, 10) || 1,
       isUnlimited,
       imageUrl: initialData?.imageUrl,
-      ...(initialData?.id ? { id: initialData.id } : {}),
-    } as AddWishlistItemInput);
+      id: initialData?.id,
+    };
+
+    await onSubmit(payload);
   };
 
   const formStyles = useMemo(() => createAddItemFormStyles(theme), [theme]);
@@ -86,7 +93,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
       <Text style={formStyles.label}>Description</Text>
       <TextInput
-        style={[formStyles.input, { height: 80, textAlignVertical: "top" }]}
+        style={[formStyles.input, formStyles.multilineInput]}
         value={description}
         onChangeText={setDescription}
         placeholder="Product description..."

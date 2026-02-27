@@ -6,7 +6,7 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import type { WishlistRepository } from "@wishin/domain";
+import type { WishlistRepository, UserRepository } from "@wishin/domain";
 import { Wishlist, TransactionStatus } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
@@ -24,10 +24,10 @@ interface TransactionDocument extends Models.Document {
 }
 
 /**
- * Appwrite implementation of the WishlistRepository.
+ * Appwrite implementation of the WishlistRepository and UserRepository.
  */
 export class AppwriteWishlistRepository
-  implements WishlistRepository, SessionAwareRepository
+  implements WishlistRepository, UserRepository, SessionAwareRepository
 {
   private readonly tablesDb: TablesDB;
   private readonly account: Account;

@@ -31,9 +31,4 @@ export interface WishlistRepository {
    * @returns A Promise that resolves when the wishlist is deleted.
    */
   delete(id: string): Promise<void>;
-  /**
-   * Retrieves the current user's unique identifier.
-   * @returns A Promise that resolves to the current user ID.
-   */
-  getCurrentUserId(): Promise<string>;
 }

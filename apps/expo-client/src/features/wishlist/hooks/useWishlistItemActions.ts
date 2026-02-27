@@ -1,4 +1,6 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
+import { useAsyncAction } from "../../../hooks/useAsyncAction";
+
 import {
   useWishlistRepository,
   useTransactionRepository,
@@ -12,7 +14,6 @@ import type {
   AddWishlistItemInput,
   UpdateWishlistItemInput,
   RemoveWishlistItemInput,
-  WishlistOutput,
 } from "@wishin/domain";
 
 /**
@@ -23,73 +24,33 @@ import type {
 export function useWishlistItemActions() {
   const wishlistRepository = useWishlistRepository();
   const transactionRepository = useTransactionRepository();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { loading, error, wrapAsyncAction } = useAsyncAction();
 
   const addItem = useCallback(
-    async (input: AddWishlistItemInput): Promise<WishlistOutput | null> => {
-      setLoading(true);
-      setError(null);
-      try {
-        const useCase = new AddWishlistItemUseCase(wishlistRepository);
-        const result = await useCase.execute(input);
-        return result;
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "An error occurred";
-        setError(message);
-        console.error("Error adding item:", err);
-        return null;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [wishlistRepository],
+    wrapAsyncAction("addItem", async (input: AddWishlistItemInput) => {
+      const useCase = new AddWishlistItemUseCase(wishlistRepository);
+      return await useCase.execute(input);
+    }),
+    [wishlistRepository, wrapAsyncAction],
   );
 
   const updateItem = useCallback(
-    async (input: UpdateWishlistItemInput): Promise<WishlistOutput | null> => {
-      setLoading(true);
-      setError(null);
-      try {
-        const useCase = new UpdateWishlistItemUseCase(
-          wishlistRepository,
-          transactionRepository,
-        );
-        const result = await useCase.execute(input);
-        return result;
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "An error occurred";
-        setError(message);
-        console.error("Error updating item:", err);
-        return null;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [wishlistRepository, transactionRepository],
+    wrapAsyncAction("updateItem", async (input: UpdateWishlistItemInput) => {
+      const useCase = new UpdateWishlistItemUseCase(
+        wishlistRepository,
+        transactionRepository,
+      );
+      return await useCase.execute(input);
+    }),
+    [wishlistRepository, transactionRepository, wrapAsyncAction],
   );
 
   const removeItem = useCallback(
-    async (input: RemoveWishlistItemInput): Promise<WishlistOutput | null> => {
-      setLoading(true);
-      setError(null);
-      try {
-        const useCase = new RemoveWishlistItemUseCase(wishlistRepository);
-        const result = await useCase.execute(input);
-        return result;
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "An error occurred";
-        setError(message);
-        console.error("Error removing item:", err);
-        return null;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [wishlistRepository],
+    wrapAsyncAction("removeItem", async (input: RemoveWishlistItemInput) => {
+      const useCase = new RemoveWishlistItemUseCase(wishlistRepository);
+      return await useCase.execute(input);
+    }),
+    [wishlistRepository, wrapAsyncAction],
   );
 
   return {

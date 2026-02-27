@@ -1,12 +1,20 @@
 import React, { useCallback } from "react";
-import { View, Text, Image, Pressable, Linking, Alert } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  Linking,
+  Alert,
+  StyleSheet,
+} from "react-native";
 import { Priority, type WishlistItemOutput } from "@wishin/domain";
 import type { WishlistStyles } from "../hooks/useWishlistStyles";
 import { PRIORITY_LABELS } from "../utils/priority";
 
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
-  styles: WishlistStyles["styles"];
+  commonStyles: WishlistStyles["styles"];
   themedStyles: WishlistStyles["themedStyles"];
   onEdit: (item: WishlistItemOutput) => void;
   onRemove: (id: string) => void;
@@ -19,7 +27,7 @@ interface DashboardItemCardProps {
  */
 export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
   item,
-  styles,
+  commonStyles,
   themedStyles,
   onEdit,
   onRemove,
@@ -34,31 +42,31 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
   }, []);
 
   return (
-    <View style={[styles.card, themedStyles.card]}>
+    <View style={[commonStyles.card, themedStyles.card]}>
       {item.imageUrl && (
         <Image
           source={{ uri: item.imageUrl }}
-          style={styles.itemImage}
+          style={commonStyles.itemImage}
           resizeMode="cover"
           accessibilityLabel={item.name}
         />
       )}
 
-      <View style={styles.cardContent}>
-        <View style={styles.cardHeader}>
-          <View style={{ flex: 1 }}>
+      <View style={commonStyles.cardContent}>
+        <View style={commonStyles.cardHeader}>
+          <View style={styles.titleContainer}>
             <Text
               accessibilityRole="header"
-              style={[styles.itemTitle, themedStyles.text]}
+              style={[commonStyles.itemTitle, themedStyles.text]}
             >
               {item.name}
             </Text>
-            <Text style={[themedStyles.textMuted, { fontSize: 12 }]}>
+            <Text style={[themedStyles.textMuted, styles.qtyText]}>
               Qty: {item.isUnlimited ? "∞" : item.totalQuantity}
             </Text>
           </View>
           {item.price != null && item.currency != null && (
-            <Text style={[styles.itemPrice, themedStyles.primaryText]}>
+            <Text style={[commonStyles.itemPrice, themedStyles.primaryText]}>
               {item.currency} {item.price.toFixed(2)}
             </Text>
           )}
@@ -66,17 +74,17 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
 
         {item.description && (
           <Text
-            style={[styles.itemDescription, themedStyles.textMuted]}
+            style={[commonStyles.itemDescription, themedStyles.textMuted]}
             numberOfLines={2}
           >
             {item.description}
           </Text>
         )}
 
-        <View style={styles.cardFooter}>
+        <View style={commonStyles.cardFooter}>
           <View
             style={[
-              styles.priorityBadge,
+              commonStyles.priorityBadge,
               item.priority === Priority.HIGH ||
               item.priority === Priority.URGENT
                 ? themedStyles.priorityHigh
@@ -85,40 +93,42 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
                   : themedStyles.priorityLow,
             ]}
           >
-            <Text style={[styles.priorityText, themedStyles.text]}>
+            <Text style={[commonStyles.priorityText, themedStyles.text]}>
               {PRIORITY_LABELS[item.priority]}
             </Text>
           </View>
 
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={styles.row}>
             {item.url && (
               <Pressable
-                style={styles.linkButton}
+                style={commonStyles.linkButton}
                 onPress={() => {
                   void handleOpenUrl(item.url);
                 }}
               >
-                <Text style={[styles.linkText, themedStyles.secondaryText]}>
+                <Text
+                  style={[commonStyles.linkText, themedStyles.secondaryText]}
+                >
                   Link
                 </Text>
               </Pressable>
             )}
 
             <Pressable
-              style={[styles.linkButton, { marginLeft: 8 }]}
+              style={[commonStyles.linkButton, styles.buttonSpacing]}
               onPress={() => {
                 onEdit(item);
               }}
               accessibilityLabel={`Edit ${item.name}`}
               accessibilityRole="button"
             >
-              <Text style={[styles.linkText, themedStyles.primaryText]}>
+              <Text style={[commonStyles.linkText, themedStyles.primaryText]}>
                 Edit
               </Text>
             </Pressable>
 
             <Pressable
-              style={[styles.linkButton, { marginLeft: 8 }]}
+              style={[commonStyles.linkButton, styles.buttonSpacing]}
               onPress={() => {
                 onRemove(item.id);
               }}
@@ -127,7 +137,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
             >
               <Text
                 style={[
-                  styles.linkText,
+                  commonStyles.linkText,
                   { color: themedStyles.priorityHigh.backgroundColor },
                 ]}
               >
@@ -140,3 +150,19 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  titleContainer: {
+    flex: 1,
+  },
+  qtyText: {
+    fontSize: 12,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  buttonSpacing: {
+    marginLeft: 8,
+  },
+});

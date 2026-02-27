@@ -1,12 +1,15 @@
 import type { Wishlist } from "@wishin/domain/aggregates/wishlist";
 import type { WishlistRepository } from "@wishin/domain/repositories/wishlist.repository";
+import type { UserRepository } from "@wishin/domain/repositories/user.repository";
 import { MOCK_WISHLIST_DATA, reconstituteMockWishlist } from "./wishlist.data";
 
 /**
  * Repository to provide mock wishlist data for development and testing.
- * Implements WishlistRepository to allow easy swapping with a real repository.
+ * Implements WishlistRepository and UserRepository to allow easy swapping with a real repository.
  */
-export class MockWishlistRepository implements WishlistRepository {
+export class MockWishlistRepository
+  implements WishlistRepository, UserRepository
+{
   private readonly delayMs: number;
 
   /**
@@ -33,6 +36,31 @@ export class MockWishlistRepository implements WishlistRepository {
       return reconstituteMockWishlist();
     }
     return null;
+  }
+
+  /**
+   * Retrieves a wishlist by its owner's identifier.
+   *
+   * @param ownerId - The identifier of the owner.
+   * @returns A promise that resolves to an array of Wishlists.
+   */
+  async findByOwnerId(_ownerId: string): Promise<Wishlist[]> {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+
+    // For mock purposes, we return our one mock wishlist
+    return [reconstituteMockWishlist()];
+  }
+
+  /**
+   * Retrieves the current user's unique identifier.
+   *
+   * @returns A promise that resolves to the current user ID.
+   */
+  async getCurrentUserId(): Promise<string> {
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    return "user-123";
   }
 
   /**

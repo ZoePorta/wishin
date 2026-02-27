@@ -45,6 +45,10 @@ export const createAddItemFormStyles = (theme: AppTheme) =>
       backgroundColor: theme.surfaceMuted,
       color: theme.textMuted,
     },
+    multilineInput: {
+      height: 80,
+      textAlignVertical: "top",
+    },
     row: {
       flexDirection: "row",
       gap: Spacing.md,

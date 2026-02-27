@@ -50,8 +50,12 @@ export class AppwriteTransactionRepository implements TransactionRepository {
 
   /**
    * Finds a transaction by its unique ID.
+   *
+   * @todo Mapping to domain is intentionally deferred (Phase 3.4). Currently returns null or partial.
+   * References: {@link TransactionMapper.toDomain}, {@link transactionsCollectionId}.
+   *
    * @param id - The transaction UUID.
-   * @returns {Promise<Transaction | null>}
+   * @returns {Promise<Transaction | null>} Resolves to Transaction context once implemented, currently returns result of partial mapper.
    */
   async findById(id: string): Promise<Transaction | null> {
     try {
@@ -61,10 +65,11 @@ export class AppwriteTransactionRepository implements TransactionRepository {
         rowId: id,
       });
 
+      // NOTE: Mapper implementation is currently a placeholder or partial
       return TransactionMapper.toDomain(toDocument<Models.Document>(doc));
     } catch (error) {
       if (error instanceof AppwriteException && error.code === 404) {
-        return null;
+        return null; // Not found
       }
       throw error;
     }

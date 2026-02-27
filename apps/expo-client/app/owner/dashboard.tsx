@@ -33,6 +33,7 @@ export default function OwnerDashboard() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isItemModalVisible, setIsItemModalVisible] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const [editingItem, setEditingItem] = useState<
     WishlistItemOutput | undefined
   >();
@@ -77,7 +78,7 @@ export default function OwnerDashboard() {
         <View style={{ flex: 1 }}>
           <DashboardHeader
             wishlist={wishlist}
-            styles={styles}
+            commonStyles={styles}
             themedStyles={themedStyles}
             onEdit={() => {
               setIsEditing(true);
@@ -101,32 +102,16 @@ export default function OwnerDashboard() {
             accessibilityLabel="Add item to wishlist"
             accessibilityRole="button"
             style={({ pressed }) => [
-              {
-                position: "absolute",
-                bottom: 24,
-                right: 24,
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: theme.primary,
-                justifyContent: "center",
-                alignItems: "center",
-                elevation: 4,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.25,
-                shadowRadius: 3.84,
-              },
-              pressed && { opacity: 0.8 },
+              dashboardStyles.fab,
+              { backgroundColor: theme.primary },
+              pressed && dashboardStyles.fabPressed,
             ]}
             onPress={() => {
               setEditingItem(undefined);
               setIsItemModalVisible(true);
             }}
           >
-            <Text style={{ color: "white", fontSize: 24, fontWeight: "bold" }}>
-              +
-            </Text>
+            <Text style={dashboardStyles.fabText}>+</Text>
           </Pressable>
 
           {/* Item Add/Edit Modal */}
@@ -244,15 +229,20 @@ export default function OwnerDashboard() {
                 initialData={wishlist}
                 onSubmit={async (data) => {
                   if (data.id) {
-                    const result = await handleUpdate(
-                      data as Required<Pick<typeof data, "id">> & typeof data,
-                    );
-                    if (result) {
-                      setIsEditing(false);
+                    setUpdating(true);
+                    try {
+                      const result = await handleUpdate(
+                        data as Required<Pick<typeof data, "id">> & typeof data,
+                      );
+                      if (result) {
+                        setIsEditing(false);
+                      }
+                    } finally {
+                      setUpdating(false);
                     }
                   }
                 }}
-                loading={creating}
+                loading={updating}
                 currentUserId={userId ?? ""}
               />
             </View>

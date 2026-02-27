@@ -73,6 +73,39 @@ describe("WishlistItem Entity", () => {
       });
       expect(item.currency).toBe("USD");
     });
+    it("should NOT default currency in reconstitute (STRUCTURAL mode) even if price is present", () => {
+      const item = WishlistItem.reconstitute({
+        ...validProps,
+        price: 100,
+        currency: undefined,
+        priority: Priority.MEDIUM,
+      });
+      expect(item.currency).toBeUndefined();
+    });
+    it("should NOT default currency in TRANSACTION mode (e.g. via reserve) even if price is present", () => {
+      // 1. Reconstitute an item without currency (allowed in STRUCTURAL mode)
+      const item = WishlistItem.reconstitute({
+        ...validProps,
+        price: 100,
+        currency: undefined,
+        priority: Priority.MEDIUM,
+      });
+      expect(item.currency).toBeUndefined();
+
+      // 2. Perform a transaction (reserve) which uses TRANSACTION mode
+      const newItem = item.reserve(1);
+      expect(newItem.currency).toBeUndefined(); // Should still be undefined in TRANSACTION mode
+
+      // 3. Ensure custom currencies are preserved in TRANSACTION mode
+      const usdItem = WishlistItem.create({
+        ...validProps,
+        price: 100,
+        currency: "USD",
+      });
+      expect(usdItem.currency).toBe("USD");
+      const reservedUsdItem = usdItem.reserve(1);
+      expect(reservedUsdItem.currency).toBe("USD");
+    });
     it("should allow price with decimals", () => {
       const item = WishlistItem.create({ ...validProps, price: 49.99 });
       expect(item.price).toBe(49.99);

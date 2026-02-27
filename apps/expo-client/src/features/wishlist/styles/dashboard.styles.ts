@@ -38,4 +38,27 @@ export const createDashboardStyles = (theme: AppTheme) =>
       fontWeight: Typography.weight.semibold,
       fontSize: Typography.size.sm,
     },
+    fab: {
+      position: "absolute",
+      bottom: Spacing.xxl,
+      right: Spacing.xxl,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: "center",
+      alignItems: "center",
+      elevation: 4,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    fabPressed: {
+      opacity: 0.8,
+    },
+    fabText: {
+      color: "white",
+      fontSize: 24,
+      fontWeight: Typography.weight.bold,
+    },
   });

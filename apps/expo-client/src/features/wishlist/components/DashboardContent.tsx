@@ -50,7 +50,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       renderItem={({ item }: { item: WishlistItemOutput }) => (
         <DashboardItemCard
           item={item}
-          styles={styles}
+          commonStyles={styles}
           themedStyles={themedStyles}
           onEdit={onEditItem}
           onRemove={onRemoveItem}

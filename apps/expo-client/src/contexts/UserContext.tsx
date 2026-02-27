@@ -7,7 +7,7 @@ import React, {
   useCallback,
   type ReactNode,
 } from "react";
-import { useWishlistRepository } from "./WishlistRepositoryContext";
+import { useUserRepository } from "./WishlistRepositoryContext";
 
 interface UserContextValue {
   /** The unique identifier of the current user, or null if not loaded yet. */
@@ -31,7 +31,7 @@ interface UserProviderProps {
  * This should be wrapped around the app after the repository context is available.
  */
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
-  const repository = useWishlistRepository();
+  const repository = useUserRepository();
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

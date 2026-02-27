@@ -17,7 +17,7 @@ export default function Index() {
         </Pressable>
       </Link>
 
-      <View style={{ height: 16 }} />
+      <View style={styles.spacer} />
 
       <Link href="/owner/dashboard" asChild>
         <Pressable style={styles.secondaryButton}>
@@ -76,5 +76,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     textAlign: "center",
+  },
+  spacer: {
+    height: 16,
   },
 });

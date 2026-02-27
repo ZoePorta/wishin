@@ -45,8 +45,8 @@ describe("TransactionMapper", () => {
         $createdAt: now.toISOString(),
         $updatedAt: now.toISOString(),
         $permissions: [],
-        itemId,
-        userId,
+        itemId: itemId,
+        userId: userId,
         status: TransactionStatus.RESERVED,
         quantity: 1,
       };
