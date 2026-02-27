@@ -16,6 +16,18 @@ interface DashboardContentProps {
   onEditItem: (item: WishlistItemOutput) => void;
 }
 
+/**
+ * Renders the core content of the owner dashboard, including the list of wishlist items.
+ *
+ * @param {DashboardContentProps} props - The component props.
+ * @param {WishlistOutput} props.wishlist - The wishlist aggregate data.
+ * @param {WishlistStyles["styles"]} props.styles - Shared wishlist styles.
+ * @param {WishlistStyles["themedStyles"]} props.themedStyles - Themed styles for the wishlist.
+ * @param {ReturnType<typeof createDashboardStyles>} props.dashboardStyles - Specific styles for the dashboard layout.
+ * @param {(id: string) => void} props.onRemoveItem - Callback function to remove an item.
+ * @param {(item: WishlistItemOutput) => void} props.onEditItem - Callback function to edit an item.
+ * @returns {JSX.Element} The rendered dashboard content.
+ */
 export const DashboardContent: React.FC<DashboardContentProps> = ({
   wishlist,
   styles,

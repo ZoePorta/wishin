@@ -58,6 +58,13 @@ interface CoreProviderProps {
  * High-level provider that orchestrates infrastructure initialization.
  * Decouples the UI routing from the repository lifecycle.
  */
+function isSessionAware(repo: unknown): repo is SessionAwareRepository {
+  return (
+    !!repo &&
+    typeof (repo as SessionAwareRepository).ensureSession === "function"
+  );
+}
+
 export const CoreProvider: React.FC<CoreProviderProps> = ({
   children,
   onConfigError,
@@ -70,10 +77,13 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
   useEffect(() => {
     try {
       const repos = getRepositories();
-      const sessionAwareRepo =
-        repos.wishlistRepository as unknown as SessionAwareRepository;
+      const wishlistRepo = repos.wishlistRepository;
 
-      sessionAwareRepo
+      if (!isSessionAware(wishlistRepo)) {
+        throw new Error("Wishlist repository must be session aware");
+      }
+
+      wishlistRepo
         .ensureSession()
         .then(() => {
           setRepositories(repos);

@@ -3,6 +3,12 @@ import type { AppTheme } from "../../../constants/Colors";
 import { Spacing } from "../../../constants/Spacing";
 import { Typography } from "../../../constants/Typography";
 
+/**
+ * Creates the styles for the AddItemForm component using the provided theme.
+ *
+ * @param {AppTheme} theme - The application theme object containing color definitions.
+ * @returns {ReturnType<typeof StyleSheet.create>} A StyleSheet object containing all styles for the AddItemForm.
+ */
 export const createAddItemFormStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {

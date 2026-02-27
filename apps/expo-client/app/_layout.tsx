@@ -12,6 +12,8 @@ import { CoreProvider } from "../src/providers/CoreProvider";
 /**
  * Root orchestrator component that manages dependencies and routing.
  * Wrapped in a general AppErrorBoundary to catch any unexpected runtime errors.
+ *
+ * @returns {JSX.Element} The app root layout wrapped in AppErrorBoundary and any providers.
  */
 export default function Root() {
   const [initError, setInitError] = useState<Error | null>(null);

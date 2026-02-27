@@ -3,6 +3,12 @@ import type { AppTheme } from "../../../constants/Colors";
 import { Spacing } from "../../../constants/Spacing";
 import { Typography } from "../../../constants/Typography";
 
+/**
+ * Returns a themed StyleSheet for the wishlist dashboard.
+ *
+ * @param {AppTheme} theme - The application theme object containing color tokens.
+ * @returns {ReturnType<typeof StyleSheet.create>} A StyleSheet object containing all dashboard styles.
+ */
 export const createDashboardStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {

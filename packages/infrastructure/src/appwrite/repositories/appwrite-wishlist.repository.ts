@@ -203,7 +203,7 @@ export class AppwriteWishlistRepository
    * Finds a wishlist by its owner's identifier.
    *
    * @param ownerId - The identifier of the owner (UUID or Appwrite ID).
-   * @returns A Promise that resolves to the Wishlist aggregate or null if not found.
+   * @returns A Promise that resolves to an array of Wishlist aggregates for the owner (empty array if none).
    */
   async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
     await this.ensureSession();

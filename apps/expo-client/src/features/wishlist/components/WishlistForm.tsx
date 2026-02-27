@@ -19,7 +19,14 @@ interface WishlistFormProps {
 }
 
 /**
- * Form component for creating and editing wishlist details.
+ * Component for creating and editing wishlist details.
+ *
+ * @param {WishlistFormProps} props - The component props.
+ * @param {(data: CreateWishlistInput & { id?: string }) => Promise<void>} props.onSubmit - Function called when the form is submitted.
+ * @param {boolean} [props.loading=false] - Whether the form is currently submitting.
+ * @param {Partial<CreateWishlistInput> & { id?: string }} [props.initialData] - Initial data for editing an existing wishlist.
+ * @param {string} props.currentUserId - The ID of the current user.
+ * @returns {JSX.Element} The rendered WishlistForm component.
  */
 export const WishlistForm: React.FC<WishlistFormProps> = ({
   onSubmit,
@@ -54,7 +61,7 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
   const formStyles = useMemo(() => createWishlistFormStyles(theme), [theme]);
 
   return (
-    <ScrollView style={{ flex: 1 }}>
+    <ScrollView style={formStyles.container}>
       {/* TODO: UI Polish and Image Upload for Wishlist Header/Profile */}
       <Text style={formStyles.label}>Title*</Text>
       <TextInput

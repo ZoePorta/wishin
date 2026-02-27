@@ -3,8 +3,17 @@ import type { AppTheme } from "../../../constants/Colors";
 import { Spacing } from "../../../constants/Spacing";
 import { Typography } from "../../../constants/Typography";
 
+/**
+ * Creates the styles for the WishlistForm component using the provided theme.
+ *
+ * @param {AppTheme} theme - The application theme object containing color definitions.
+ * @returns {ReturnType<typeof StyleSheet.create>} A StyleSheet object containing all styles for the WishlistForm.
+ */
 export const createWishlistFormStyles = (theme: AppTheme) =>
   StyleSheet.create({
+    container: {
+      flex: 1,
+    },
     label: {
       fontSize: Typography.size.md,
       fontWeight: Typography.weight.semibold,
