@@ -12,7 +12,11 @@ export default function Index() {
       <Text style={styles.subtitle}>Share your wishes with the world.</Text>
 
       <Link href={`/wishlist/${demoWishlistId}`} asChild>
-        <Pressable style={styles.button}>
+        <Pressable
+          style={styles.button}
+          accessibilityRole="button"
+          accessibilityLabel="View demo wishlist"
+        >
           <Text style={styles.buttonText}>View Demo Wishlist</Text>
         </Pressable>
       </Link>
@@ -20,7 +24,11 @@ export default function Index() {
       <View style={styles.spacer} />
 
       <Link href="/owner/dashboard" asChild>
-        <Pressable style={styles.secondaryButton}>
+        <Pressable
+          style={styles.secondaryButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go to owner dashboard"
+        >
           <Text style={styles.secondaryButtonText}>Go to Owner Dashboard</Text>
         </Pressable>
       </Link>

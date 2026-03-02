@@ -87,10 +87,13 @@ export class AppwriteWishlistRepository
    * Finds a wishlist by its unique identifier.
    *
    * @param id - The UUID of the wishlist.
+   * @param ensureSession - Whether to ensure an active session before querying (default: true).
    * @returns A Promise that resolves to the Wishlist aggregate or null if not found.
    */
-  async findById(id: string): Promise<Wishlist | null> {
-    await this.ensureSession();
+  async findById(id: string, ensureSession = true): Promise<Wishlist | null> {
+    if (ensureSession) {
+      await this.ensureSession();
+    }
     try {
       // 1. Fetch Wishlist Document
       const wishlistDoc = await this.tablesDb.getRow({
@@ -224,7 +227,7 @@ export class AppwriteWishlistRepository
 
     // 2. Map docs to aggregates by fetching details for each
     const wishlists = await Promise.all(
-      rows.map((row) => this.findById(row.$id)),
+      rows.map((row) => this.findById(row.$id, false)),
     );
 
     // Filter out any nulls if findById could potentially return null

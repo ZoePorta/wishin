@@ -239,4 +239,58 @@ describe("AppwriteWishlistRepository", () => {
       });
     });
   });
+  describe("findById", () => {
+    const validId = "550e8400-e29b-41d4-a716-446655440003";
+    const mockDoc = {
+      $id: validId,
+      ownerId: "owner-id",
+      title: "My Wishlist",
+      $createdAt: new Date().toISOString(),
+      $updatedAt: new Date().toISOString(),
+    };
+    it("should call ensureSession by default", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({} as any);
+      vi.mocked(mockTablesDb.getRow).mockResolvedValue(mockDoc as any);
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({ rows: [] } as any);
+
+      await repository.findById(validId);
+
+      expect(mockAccount.get).toHaveBeenCalledTimes(1);
+    });
+
+    it("should NOT call ensureSession when ensureSession is false", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({} as any);
+      vi.mocked(mockTablesDb.getRow).mockResolvedValue(mockDoc as any);
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({ rows: [] } as any);
+
+      await repository.findById(validId, false);
+
+      expect(mockAccount.get).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("findByOwnerId", () => {
+    const validId = "550e8400-e29b-41d4-a716-446655440003";
+    const mockDoc = {
+      $id: validId,
+      ownerId: "owner-id",
+      title: "My Wishlist",
+      $createdAt: new Date().toISOString(),
+      $updatedAt: new Date().toISOString(),
+    };
+    it("should call ensureSession only once and findById with ensureSession=false", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({} as any);
+      vi.mocked(mockTablesDb.listRows)
+        .mockResolvedValueOnce({ rows: [mockDoc] } as any) // for findByOwnerId
+        .mockResolvedValue({ rows: [] } as any); // for findById internal calls
+
+      vi.mocked(mockTablesDb.getRow).mockResolvedValue(mockDoc as any);
+
+      await repository.findByOwnerId("owner-id");
+
+      expect(mockAccount.get).toHaveBeenCalledTimes(1);
+      // The first call to listRows is in findByOwnerId, subsequent are in findById
+      expect(mockTablesDb.listRows).toHaveBeenCalled();
+    });
+  });
 });
