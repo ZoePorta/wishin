@@ -36,7 +36,11 @@ export function useOwnerDashboard() {
     <T, R>(mutate: (data: T) => Promise<R>) => {
       return async (data: T) => {
         const result = await mutate(data);
-        if ((result as unknown) !== null && (result as unknown) !== undefined) {
+        const res = result as unknown;
+        const success =
+          typeof res === "boolean" ? res : res !== null && res !== undefined;
+
+        if (success) {
           void refetch();
         }
         return result;

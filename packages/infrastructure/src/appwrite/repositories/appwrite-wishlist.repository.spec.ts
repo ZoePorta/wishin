@@ -24,6 +24,10 @@ interface MockRowList {
   total: number;
 }
 
+function isUpsertCall(arg: unknown): arg is { tableId: string } {
+  return typeof arg === "object" && arg !== null && "tableId" in arg;
+}
+
 // Mock Appwrite SDK
 vi.mock("appwrite", () => {
   const Account = vi.fn();
@@ -214,12 +218,12 @@ describe("AppwriteWishlistRepository", () => {
       expect(mockAccount.get).toHaveBeenCalled();
       // Ensure items are synced before the wishlist itself
       const upsertCalls = vi.mocked(mockTablesDb.upsertRow).mock.calls;
-      expect(
-        (upsertCalls[0][0] as unknown as { tableId: string }).tableId,
-      ).toBe(config.wishlistItemsCollectionId);
-      expect(
-        (upsertCalls[1][0] as unknown as { tableId: string }).tableId,
-      ).toBe(config.wishlistCollectionId);
+      expect(upsertCalls[0][0]).toEqual(
+        expect.objectContaining({ tableId: config.wishlistItemsCollectionId }),
+      );
+      expect(upsertCalls[1][0]).toEqual(
+        expect.objectContaining({ tableId: config.wishlistCollectionId }),
+      );
     });
 
     it("should retry item sync on failure", async () => {
@@ -244,8 +248,8 @@ describe("AppwriteWishlistRepository", () => {
         .mocked(mockTablesDb.upsertRow)
         .mock.calls.filter(
           (c) =>
-            (c[0] as unknown as { tableId: string }).tableId ===
-            config.wishlistItemsCollectionId,
+            isUpsertCall(c[0]) &&
+            c[0].tableId === config.wishlistItemsCollectionId,
         );
       expect(itemUpserts.length).toBe(3);
     });
