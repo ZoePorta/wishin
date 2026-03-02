@@ -64,10 +64,12 @@ export const createAddItemFormStyles = (theme: AppTheme) =>
     priorityButton: {
       flex: 1,
       paddingVertical: Spacing.sm,
+      minHeight: 44,
       borderRadius: 6,
       borderWidth: 1,
       borderColor: theme.surfaceMuted,
       alignItems: "center",
+      justifyContent: "center",
     },
     priorityActive: {
       borderColor: theme.primary,
@@ -85,7 +87,9 @@ export const createAddItemFormStyles = (theme: AppTheme) =>
       backgroundColor: theme.primary,
       borderRadius: 8,
       padding: Spacing.md,
+      minHeight: 44,
       alignItems: "center",
+      justifyContent: "center",
       marginTop: Spacing.xl,
     },
     submitButtonDisabled: {
@@ -142,6 +146,7 @@ export const createAddItemFormStyles = (theme: AppTheme) =>
       borderColor: theme.surfaceMuted,
       borderRadius: 8,
       padding: Spacing.md,
+      minHeight: 44,
       backgroundColor: theme.background,
       minWidth: 60,
       alignItems: "center",
@@ -169,6 +174,7 @@ export const createAddItemFormStyles = (theme: AppTheme) =>
     currencyOption: {
       paddingVertical: Spacing.md,
       paddingHorizontal: Spacing.lg,
+      minHeight: 44,
       borderBottomWidth: 1,
       borderBottomColor: theme.surfaceMuted,
       flexDirection: "row",

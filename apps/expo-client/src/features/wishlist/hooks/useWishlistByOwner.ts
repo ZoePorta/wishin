@@ -15,53 +15,52 @@ export function useWishlistByOwner(ownerId: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadWishlist = useCallback(
-    async (isIgnored: () => boolean = () => false) => {
-      if (!ownerId) {
-        if (!isIgnored()) {
-          setWishlist(null);
-          setLoading(false);
-        }
-        return;
-      }
+  const lastRequestId = useRef(0);
+  const isMounted = useRef(true);
 
-      if (!isIgnored()) {
-        setLoading(true);
-        setError(null);
-      }
+  const loadWishlist = useCallback(async () => {
+    const requestId = ++lastRequestId.current;
+    const isCurrent = () =>
+      isMounted.current && requestId === lastRequestId.current;
 
-      try {
-        const useCase = new GetWishlistByOwnerUseCase(repository);
-        const result = await useCase.execute({ ownerId });
-        if (!isIgnored()) setWishlist(result);
-      } catch (err) {
-        if (!isIgnored()) {
-          const message =
-            err instanceof Error ? err.message : "An error occurred";
-          setError(message);
-          console.error("Error fetching wishlist by owner:", err);
-        }
-      } finally {
-        if (!isIgnored()) setLoading(false);
+    if (!ownerId) {
+      if (isCurrent()) {
+        setWishlist(null);
+        setLoading(false);
       }
-    },
-    [ownerId, repository],
-  );
+      return;
+    }
 
-  const isIgnoredRef = useRef(false);
+    if (isCurrent()) {
+      setLoading(true);
+      setError(null);
+    }
+
+    try {
+      const useCase = new GetWishlistByOwnerUseCase(repository);
+      const result = await useCase.execute({ ownerId });
+      if (isCurrent()) setWishlist(result);
+    } catch (err) {
+      if (isCurrent()) {
+        const message =
+          err instanceof Error ? err.message : "An error occurred";
+        setError(message);
+        console.error("Error fetching wishlist by owner:", err);
+      }
+    } finally {
+      if (isCurrent()) setLoading(false);
+    }
+  }, [ownerId, repository]);
 
   useEffect(() => {
-    isIgnoredRef.current = false;
-    void loadWishlist(() => isIgnoredRef.current);
+    isMounted.current = true;
+    void loadWishlist();
     return () => {
-      isIgnoredRef.current = true;
+      isMounted.current = false;
     };
   }, [loadWishlist]);
 
-  const refetch = useCallback(
-    () => loadWishlist(() => isIgnoredRef.current),
-    [loadWishlist],
-  );
+  const refetch = useCallback(() => loadWishlist(), [loadWishlist]);
 
   return { wishlist, loading, error, refetch };
 }

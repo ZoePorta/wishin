@@ -15,6 +15,9 @@ import type {
 /**
  * View Model hook for the Owner Dashboard.
  * Encapsulates data fetching and business logic orchestration.
+ *
+ * @returns An object containing the current user's ID, wishlist state, loading/error states,
+ *          and handlers for CRUD operations on wishlist and items.
  */
 export function useOwnerDashboard() {
   const { userId, loading: userLoading, error: userError } = useUser();

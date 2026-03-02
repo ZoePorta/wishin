@@ -19,6 +19,7 @@ export const UniversalAlert = {
    * @param message - The message body of the alert.
    * @param buttons - An array of buttons to display.
    * @param options - Additional options (mobile only).
+   * @returns {void} No return value.
    */
   alert: (
     title: string,
@@ -36,7 +37,8 @@ export const UniversalAlert = {
       }
 
       // Handle simple confirmation (Cancel/OK pattern)
-      if (buttons.length > 0) {
+      // Exactly two buttons required for window.confirm mapping
+      if (buttons.length === 2) {
         const confirmButton = buttons.find((b) => b.style !== "cancel");
         const cancelButton = buttons.find((b) => b.style === "cancel");
 
@@ -49,17 +51,13 @@ export const UniversalAlert = {
           }
           return;
         }
+      }
 
-        // Just one button or simple list - alert and call onPress if it's the only one
-        window.alert(fullMessage);
+      // Fallback for 1 button or multi-button (3+) or 2 buttons that aren't confirm/cancel
+      window.alert(fullMessage);
 
-        // Single acknowledgement exception (ADR-resembling logic):
-        // If there's exactly one button and it's not explicitly styled as 'cancel',
-        // we invoke its onPress after the alert is dismissed to maintain consistency
-        // with mobile behavior for simple acknowledgements.
-        if (buttons.length === 1 && buttons[0].style !== "cancel") {
-          buttons[0].onPress?.();
-        }
+      if (buttons.length === 1 && buttons[0].style !== "cancel") {
+        buttons[0].onPress?.();
       }
     } else {
       // Native Mobile implementation
