@@ -23,6 +23,14 @@ export class MockWishlistRepository
   }
 
   /**
+   * Helper to simulate network delay.
+   * Centralizes the delay logic for easy control.
+   */
+  private async delay(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+  }
+
+  /**
    * Retrieves a wishlist by its ID.
    *
    * @param id - The unique identifier of the wishlist to retrieve.
@@ -30,7 +38,7 @@ export class MockWishlistRepository
    */
   async findById(id: string): Promise<Wishlist | null> {
     // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    await this.delay();
 
     if (id === MOCK_WISHLIST_DATA.id) {
       return reconstituteMockWishlist();
@@ -46,7 +54,7 @@ export class MockWishlistRepository
    */
   async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
     // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    await this.delay();
 
     // For mock purposes, we return our one mock wishlist only if ownerId matches
     if (ownerId === MOCK_WISHLIST_DATA.ownerId) {
@@ -62,7 +70,7 @@ export class MockWishlistRepository
    */
   async getCurrentUserId(): Promise<string> {
     // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    await this.delay();
     return MOCK_WISHLIST_DATA.ownerId;
   }
 
@@ -74,7 +82,7 @@ export class MockWishlistRepository
    */
   async save(wishlist: Wishlist): Promise<void> {
     // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    await this.delay();
     console.warn(`[MockWishlistRepository] Saved wishlist: ${wishlist.id}`);
   }
 
@@ -86,7 +94,7 @@ export class MockWishlistRepository
    */
   async delete(id: string): Promise<void> {
     // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    await this.delay();
     console.warn(`[MockWishlistRepository] Deleted wishlist: ${id}`);
   }
 }

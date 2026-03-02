@@ -89,18 +89,26 @@ export function useOwnerDashboard() {
             text: "Remove",
             style: "destructive",
             onPress: () => {
-              const wishlistId = wishlist?.id;
-              if (!wishlistId) return;
-              void removeItem({ wishlistId, itemId }).then((result) => {
-                if (result) {
-                  void refetch();
-                } else {
+              void (async () => {
+                const wishlistId = wishlist?.id;
+                if (!wishlistId) return;
+                try {
+                  const result = await removeItem({ wishlistId, itemId });
+                  if (result) {
+                    void refetch();
+                  } else {
+                    UniversalAlert.alert(
+                      "Error",
+                      "Failed to remove the item. Please try again.",
+                    );
+                  }
+                } catch (_) {
                   UniversalAlert.alert(
                     "Error",
                     "Failed to remove the item. Please try again.",
                   );
                 }
-              });
+              })();
             },
           },
         ],

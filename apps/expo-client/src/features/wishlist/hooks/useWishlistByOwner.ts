@@ -27,6 +27,7 @@ export function useWishlistByOwner(ownerId: string | null) {
       if (isCurrent()) {
         setWishlist(null);
         setLoading(false);
+        setError(null);
       }
       return;
     }
