@@ -15,7 +15,6 @@ describe("GetWishlistByOwnerUseCase", () => {
       findByOwnerId: vi.fn(),
       save: vi.fn(),
       delete: vi.fn(),
-      getCurrentUserId: vi.fn(),
     };
     useCase = new GetWishlistByOwnerUseCase(mockRepo);
   });

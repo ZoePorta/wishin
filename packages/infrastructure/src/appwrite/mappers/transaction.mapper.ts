@@ -37,6 +37,12 @@ export const TransactionMapper = {
    */
   toDomain(doc: Models.Document): Transaction {
     const data = doc as TransactionDocument;
+
+    // Validate TransactionStatus
+    if (!Object.values(TransactionStatus).includes(data.status)) {
+      throw new Error(`Invalid transaction status: ${data.status}`);
+    }
+
     return Transaction.reconstitute({
       id: doc.$id,
       itemId: data.itemId,

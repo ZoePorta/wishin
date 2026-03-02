@@ -6,8 +6,12 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import type { WishlistRepository, UserRepository } from "@wishin/domain";
-import { Wishlist, TransactionStatus } from "@wishin/domain";
+import type {
+  WishlistRepository,
+  UserRepository,
+  Wishlist,
+} from "@wishin/domain";
+import { TransactionStatus } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
 import { toDocument } from "../utils/to-document";

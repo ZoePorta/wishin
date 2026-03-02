@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useWishlistRepository } from "../../../contexts/WishlistRepositoryContext";
 import { GetWishlistByOwnerUseCase } from "@wishin/domain";
 import type { WishlistOutput } from "@wishin/domain";
@@ -48,13 +48,20 @@ export function useWishlistByOwner(ownerId: string | null) {
     [ownerId, repository],
   );
 
+  const isIgnoredRef = useRef(false);
+
   useEffect(() => {
-    let ignore = false;
-    void loadWishlist(() => ignore);
+    isIgnoredRef.current = false;
+    void loadWishlist(() => isIgnoredRef.current);
     return () => {
-      ignore = true;
+      isIgnoredRef.current = true;
     };
   }, [loadWishlist]);
 
-  return { wishlist, loading, error, refetch: loadWishlist };
+  const refetch = useCallback(
+    () => loadWishlist(() => isIgnoredRef.current),
+    [loadWishlist],
+  );
+
+  return { wishlist, loading, error, refetch };
 }

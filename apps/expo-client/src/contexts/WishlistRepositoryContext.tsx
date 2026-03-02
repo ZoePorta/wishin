@@ -22,6 +22,7 @@ const WishlistRepositoryContext = createContext<
  * @param props - The component props.
  * @param props.wishlistRepository - The wishlist repository instance.
  * @param props.transactionRepository - The transaction repository instance.
+ * @param props.userRepository - The user repository instance.
  * @param props.children - The child components.
  * @returns The React elements for the provider.
  */

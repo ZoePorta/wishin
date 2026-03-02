@@ -5,8 +5,15 @@ import { useState, useCallback } from "react";
  * @returns An object containing the loading state, error state, and a wrapper for async actions.
  */
 export function useAsyncAction() {
-  const [loading, setLoading] = useState(false);
+  const [loadingCount, setLoadingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  const increment = useCallback(() => {
+    setLoadingCount((prev) => prev + 1);
+  }, []);
+  const decrement = useCallback(() => {
+    setLoadingCount((prev) => Math.max(0, prev - 1));
+  }, []);
 
   /**
    * Wraps an asynchronous action with loading and error handling.
@@ -20,7 +27,7 @@ export function useAsyncAction() {
       action: (...args: TArgs) => Promise<TResult>,
     ) => {
       return async (...args: TArgs): Promise<TResult | null> => {
-        setLoading(true);
+        increment();
         setError(null);
         try {
           const result = await action(...args);
@@ -32,15 +39,15 @@ export function useAsyncAction() {
           console.error(`Error in ${actionName}:`, err);
           return null;
         } finally {
-          setLoading(false);
+          decrement();
         }
       };
     },
-    [],
+    [increment, decrement],
   );
 
   return {
-    loading,
+    loading: loadingCount > 0,
     error,
     wrapAsyncAction,
   };
