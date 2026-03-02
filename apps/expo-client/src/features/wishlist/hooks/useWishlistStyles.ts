@@ -1,63 +1,65 @@
-import { StyleSheet, useColorScheme } from "react-native";
-import { Colors } from "../../../constants/Colors";
+import { StyleSheet } from "react-native";
+import { useTheme } from "react-native-paper";
 import { useMemo } from "react";
 
 /**
  * Custom hook to manage wishlist-specific styles and themed style generation.
+ * Uses Material Design 3 theme via react-native-paper.
  *
  * @returns An object containing the current theme and the themed styles.
  */
 export function useWishlistStyles() {
-  const colorScheme = useColorScheme();
-  const theme = colorScheme === "dark" ? Colors.dark : Colors.light;
+  const theme = useTheme();
 
   const themedStyles = useMemo(() => {
     return StyleSheet.create({
       text: {
-        color: theme.text,
+        color: theme.colors.onSurface,
       },
       textMuted: {
-        color: theme.textMuted,
+        color: theme.colors.onSurfaceVariant,
       },
       secondaryText: {
-        color: theme.secondary,
+        color: theme.colors.secondary,
       },
       primaryText: {
-        color: theme.primary,
+        color: theme.colors.primary,
       },
       surfaceMuted: {
-        backgroundColor: theme.surfaceMuted,
+        backgroundColor: theme.colors.surfaceVariant,
       },
       background: {
-        backgroundColor: theme.background,
+        backgroundColor: theme.colors.background,
       },
       card: {
-        backgroundColor: theme.card,
-        borderColor: theme.surfaceSubtle,
+        backgroundColor: theme.colors.surface,
+        borderColor: theme.colors.outlineVariant,
       },
       overlay: {
-        backgroundColor: theme.overlay,
+        backgroundColor: theme.dark
+          ? "rgba(0, 0, 0, 0.7)"
+          : "rgba(255, 255, 255, 0.7)",
       },
       completedBadge: {
-        borderColor: theme.text,
-        backgroundColor: theme.card,
+        borderColor: theme.colors.onSurface,
+        backgroundColor: theme.colors.surface,
       },
       reservedBadge: {
-        borderColor: theme.text,
+        borderColor: theme.colors.onSurface,
         borderStyle: "dashed",
-        backgroundColor: theme.card,
+        backgroundColor: theme.colors.surface,
       },
       badgeText: {
-        color: theme.text,
+        color: theme.colors.onSurface,
       },
       priorityHigh: {
-        backgroundColor: theme.red100,
+        backgroundColor: theme.colors.errorContainer,
       },
       priorityMedium: {
-        backgroundColor: theme.amber100,
+        backgroundColor: theme.colors.tertiaryContainer,
       },
       priorityLow: {
-        backgroundColor: theme.sky100,
+        backgroundColor: theme.colors.secondaryContainer,
       },
     });
   }, [theme]);

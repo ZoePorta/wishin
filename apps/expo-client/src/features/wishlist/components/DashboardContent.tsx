@@ -1,10 +1,10 @@
 import React from "react";
-import { View, Text, FlatList } from "react-native";
+import { View, FlatList } from "react-native";
+import { Text } from "react-native-paper";
 import { DashboardItemCard } from "./DashboardItemCard";
 import type { WishlistOutput, WishlistItemOutput } from "@wishin/domain";
 
 import type { WishlistStyles } from "../hooks/useWishlistStyles";
-
 import type { createDashboardStyles } from "../styles/dashboard.styles";
 
 interface DashboardContentProps {
@@ -40,9 +40,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
     <FlatList
       data={wishlist.items}
       keyExtractor={(item) => item.id}
+      contentContainerStyle={dashboardStyles.container}
       ListHeaderComponent={
         <View style={styles.header}>
-          <Text accessibilityRole="header" style={dashboardStyles.sectionTitle}>
+          <Text variant="headlineMedium" style={dashboardStyles.sectionTitle}>
             Your Items
           </Text>
         </View>
@@ -58,7 +59,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       )}
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, themedStyles.textMuted]}>
+          <Text variant="bodyMedium" style={styles.emptyText}>
             You haven't added any items yet.
           </Text>
         </View>

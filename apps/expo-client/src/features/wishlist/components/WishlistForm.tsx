@@ -1,15 +1,8 @@
-import React, { useState, useMemo, useEffect } from "react";
-import {
-  Text,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-  ScrollView,
-} from "react-native";
+import React, { useState, useEffect } from "react";
+import { ScrollView, StyleSheet } from "react-native";
+import { TextInput, Button, HelperText } from "react-native-paper";
 import { Visibility, Participation } from "@wishin/domain";
 import type { CreateWishlistInput } from "@wishin/domain";
-import { useWishlistStyles } from "../hooks/useWishlistStyles";
-import { createWishlistFormStyles } from "../styles/WishlistForm.styles";
 
 interface WishlistFormProps {
   onSubmit: (data: CreateWishlistInput & { id?: string }) => Promise<void>;
@@ -20,13 +13,7 @@ interface WishlistFormProps {
 
 /**
  * Component for creating and editing wishlist details.
- *
- * @param {WishlistFormProps} props - The component props.
- * @param {(data: CreateWishlistInput & { id?: string }) => Promise<void>} props.onSubmit - Function called when the form is submitted.
- * @param {boolean} [props.loading=false] - Whether the form is currently submitting.
- * @param {Partial<CreateWishlistInput> & { id?: string }} [props.initialData] - Initial data for editing an existing wishlist.
- * @param {string} props.currentUserId - The ID of the current user.
- * @returns {JSX.Element} The rendered WishlistForm component.
+ * Uses Material Design 3 components.
  */
 export const WishlistForm: React.FC<WishlistFormProps> = ({
   onSubmit,
@@ -34,7 +21,6 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
   initialData,
   currentUserId,
 }) => {
-  const { theme } = useWishlistStyles();
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [description, setDescription] = useState(
     initialData?.description ?? "",
@@ -58,51 +44,57 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
     });
   };
 
-  const formStyles = useMemo(() => createWishlistFormStyles(theme), [theme]);
-
   return (
-    <ScrollView style={formStyles.container}>
-      {/* TODO: UI Polish and Image Upload for Wishlist Header/Profile */}
-      <Text style={formStyles.label}>Title*</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <TextInput
-        style={formStyles.input}
+        label="Title*"
         value={title}
         onChangeText={setTitle}
-        placeholder="Birthday 2026, Wedding Registry..."
-        placeholderTextColor={theme.textMuted}
-        accessibilityLabel="Wishlist title"
+        mode="outlined"
+        placeholder="e.g. Birthday 2026"
+        error={!title.trim() && title.length > 0}
+        disabled={loading}
       />
+      <HelperText type="error" visible={!title.trim() && title.length > 0}>
+        Title is required
+      </HelperText>
 
-      <Text style={formStyles.label}>Description (Optional)</Text>
       <TextInput
-        style={[formStyles.input, formStyles.textArea]}
+        label="Description (Optional)"
         value={description}
         onChangeText={setDescription}
-        placeholder="Tell people what this list is about..."
-        placeholderTextColor={theme.textMuted}
+        mode="outlined"
         multiline
         numberOfLines={4}
-        accessibilityLabel="Wishlist description"
+        placeholder="Tell people what this list is about..."
+        disabled={loading}
+        style={styles.description}
       />
 
-      <Pressable
-        style={[
-          formStyles.submitButton,
-          (!title.trim() || loading) && formStyles.submitButtonDisabled,
-        ]}
+      <Button
+        mode="contained"
         onPress={handleSubmit}
+        loading={loading}
         disabled={!title.trim() || loading}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !title.trim() || loading }}
+        style={styles.submitButton}
       >
-        {loading ? (
-          <ActivityIndicator color={theme.card} />
-        ) : (
-          <Text style={formStyles.submitButtonText}>
-            {initialData ? "Update Wishlist" : "Create Wishlist"}
-          </Text>
-        )}
-      </Pressable>
+        {initialData ? "Update Wishlist" : "Create Wishlist"}
+      </Button>
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+  },
+  description: {
+    marginTop: 8,
+  },
+  submitButton: {
+    marginTop: 24,
+  },
+});

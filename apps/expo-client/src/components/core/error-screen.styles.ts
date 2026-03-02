@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 import type { ViewStyle, TextStyle } from "react-native";
-import { type AppTheme } from "../constants/Colors";
+import { type AppTheme } from "../../theme/legacy-colors";
 
 /**
  * Shared style definitions for error screens.

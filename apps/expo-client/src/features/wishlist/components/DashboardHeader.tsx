@@ -1,7 +1,7 @@
 import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View } from "react-native";
+import { Text, Button, Divider } from "react-native-paper";
 import type { WishlistOutput } from "@wishin/domain";
-
 import type { WishlistStyles } from "../hooks/useWishlistStyles";
 
 interface DashboardHeaderProps {
@@ -11,60 +11,43 @@ interface DashboardHeaderProps {
   onEdit?: () => void;
 }
 
+/**
+ * Renders the header for the owner dashboard.
+ * Uses Material Design 3 components.
+ */
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   wishlist,
   commonStyles,
-  themedStyles,
   onEdit,
 }) => {
-  const styles = StyleSheet.create({
-    containerRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-    leftBlock: {
-      ...commonStyles.wishlistTitle,
-      color: themedStyles.text.color,
-    },
-    rightBlock: {
-      backgroundColor: themedStyles.surfaceMuted.backgroundColor,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 6,
-    },
-    editButtonText: {
-      color: themedStyles.text.color,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-  });
-
   return (
     <View style={commonStyles.header}>
-      <View style={styles.containerRow}>
-        <Text accessibilityRole="header" style={styles.leftBlock}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Text variant="headlineLarge" style={{ flex: 1 }}>
           {wishlist.title}
         </Text>
         {onEdit && (
-          <Pressable
+          <Button
+            mode="outlined"
             onPress={onEdit}
             accessibilityLabel="Edit wishlist"
-            accessibilityRole="button"
-            style={styles.rightBlock}
           >
-            <Text style={styles.editButtonText}>Edit</Text>
-          </Pressable>
+            Edit
+          </Button>
         )}
       </View>
       {wishlist.description && (
-        <Text
-          style={[commonStyles.wishlistDescription, themedStyles.textMuted]}
-        >
+        <Text variant="bodyMedium" style={{ marginTop: 8 }}>
           {wishlist.description}
         </Text>
       )}
-      <View style={[commonStyles.divider, themedStyles.surfaceMuted]} />
+      <Divider style={{ marginTop: 16 }} />
     </View>
   );
 };

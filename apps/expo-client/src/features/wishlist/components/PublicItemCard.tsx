@@ -1,5 +1,6 @@
 import React, { useCallback } from "react";
-import { View, Text, Image, Pressable, Linking, Alert } from "react-native";
+import { View, Linking, Alert, StyleSheet } from "react-native";
+import { Card, Text, Button, Badge, Surface } from "react-native-paper";
 import { Priority } from "@wishin/domain";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { PRIORITY_LABELS } from "../utils/priority";
@@ -13,13 +14,11 @@ interface PublicItemCardProps {
 
 /**
  * Component to display a single wishlist item to VISITORS.
- * - Includes overlays for completed/reserved items.
- * - No management buttons (Remove).
+ * Uses Material Design 3 components.
  */
 export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   item,
   styles,
-  themedStyles,
 }) => {
   const isCompleted =
     !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
@@ -30,106 +29,108 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
 
   const handleOpenUrl = useCallback(async (url?: string) => {
     if (!url) return;
-
     try {
       await Linking.openURL(url);
-    } catch (err: unknown) {
-      Alert.alert(
-        "Error",
-        "An unexpected error occurred while trying to open the link.",
-      );
-      console.error("Failed to open URL:", err);
+    } catch {
+      Alert.alert("Error", "Could not open link.");
     }
   }, []);
 
   return (
-    <View style={[styles.card, themedStyles.card]}>
+    <Card style={styles.card} mode="elevated">
       {item.imageUrl && (
-        <Image
+        <Card.Cover
           source={{ uri: item.imageUrl }}
-          style={styles.itemImage}
-          resizeMode="cover"
           accessibilityLabel={item.name}
         />
       )}
 
-      {/* Overlays */}
-      {isCompleted && (
-        <View style={[styles.overlay, themedStyles.overlay]}>
-          <View style={[styles.badge, themedStyles.completedBadge]}>
-            <Text style={[styles.badgeText, themedStyles.badgeText]}>
-              COMPLETED
+      {(isCompleted || isReserved) && (
+        <View style={localStyles.overlayContainer}>
+          <Surface style={localStyles.overlayBadge} elevation={2}>
+            <Text variant="labelLarge" style={localStyles.badgeText}>
+              {isCompleted ? "COMPLETED" : "RESERVED"}
             </Text>
-          </View>
+          </Surface>
         </View>
       )}
 
-      {isReserved && (
-        <View style={[styles.overlay, themedStyles.overlay]}>
-          <View style={[styles.badge, themedStyles.reservedBadge]}>
-            <Text style={[styles.badgeText, themedStyles.badgeText]}>
-              RESERVED
-            </Text>
-          </View>
-        </View>
-      )}
-
-      <View style={styles.cardContent}>
+      <Card.Content style={styles.cardContent}>
         <View style={styles.cardHeader}>
-          <Text style={[styles.itemTitle, themedStyles.text]}>{item.name}</Text>
+          <Text variant="titleLarge" style={{ flex: 1 }}>
+            {item.name}
+          </Text>
           {item.price != null && item.currency != null && (
-            <Text style={[styles.itemPrice, themedStyles.primaryText]}>
+            <Text variant="titleMedium">
               {item.currency} {item.price.toFixed(2)}
             </Text>
           )}
         </View>
 
         {item.description && (
-          <Text
-            style={[styles.itemDescription, themedStyles.textMuted]}
-            numberOfLines={2}
-          >
+          <Text variant="bodyMedium" numberOfLines={2} style={{ marginTop: 8 }}>
             {item.description}
           </Text>
         )}
 
-        <View style={styles.cardFooter}>
-          <View
+        <View style={localStyles.footer}>
+          <Badge
+            size={20}
             style={[
-              styles.priorityBadge,
-              item.priority === Priority.HIGH ||
-              item.priority === Priority.URGENT
-                ? themedStyles.priorityHigh
-                : item.priority === Priority.MEDIUM
-                  ? themedStyles.priorityMedium
-                  : themedStyles.priorityLow,
+              localStyles.badge,
+              {
+                backgroundColor:
+                  item.priority === Priority.HIGH ||
+                  item.priority === Priority.URGENT
+                    ? "red"
+                    : undefined,
+              },
             ]}
           >
-            <Text style={[styles.priorityText, themedStyles.text]}>
-              {PRIORITY_LABELS[item.priority]}
-            </Text>
-          </View>
+            {PRIORITY_LABELS[item.priority]}
+          </Badge>
 
           {item.url && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.linkButton,
-                pressed && styles.pressed,
-              ]}
-              hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
-              onPress={() => {
-                void handleOpenUrl(item.url);
-              }}
+            <Button
+              mode="text"
+              onPress={() => void handleOpenUrl(item.url)}
               accessibilityLabel={`View Online, ${item.name}`}
-              accessibilityRole="link"
             >
-              <Text style={[styles.linkText, themedStyles.secondaryText]}>
-                View Online
-              </Text>
-            </Pressable>
+              View Online
+            </Button>
           )}
         </View>
-      </View>
-    </View>
+      </Card.Content>
+    </Card>
   );
 };
+
+const localStyles = StyleSheet.create({
+  overlayContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+    borderRadius: 12,
+  },
+  overlayBadge: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "white",
+  },
+  badgeText: {
+    fontWeight: "bold",
+    color: "black",
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  badge: {
+    alignSelf: "flex-start",
+  },
+});
