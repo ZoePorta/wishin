@@ -1,104 +1,39 @@
 import { Stack } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { View, StyleSheet, useColorScheme } from "react-native";
 import { Colors } from "../src/constants/Colors";
-import { WishlistRepositoryProvider } from "../src/contexts/WishlistRepositoryContext";
-import {
-  AppwriteWishlistRepository,
-  createAppwriteClient,
-  type SessionAwareRepository,
-} from "@wishin/infrastructure";
 import { AppErrorBoundary } from "../src/components/AppErrorBoundary";
 import { ConfigErrorScreen } from "../src/components/ConfigErrorScreen";
 import { GeneralErrorScreen } from "../src/components/GeneralErrorScreen";
-import { Config, ensureAppwriteConfig } from "../src/constants/Config";
 
-// cached AppwriteWishlistRepository singleton
-let cachedRepository: AppwriteWishlistRepository | null = null;
+import { CoreProvider } from "../src/providers/CoreProvider";
 
 /**
- * Lazy singleton factory that creates and caches the AppwriteWishlistRepository.
- * This ensures that the Appwrite client and repository are only created once
- * and not during the render phase of any component.
- *
- * @returns {AppwriteWishlistRepository} The initialized Appwrite repository.
- * @throws {Error} if the Appwrite configuration is invalid or missing.
- */
-function getAppwriteRepository(): AppwriteWishlistRepository {
-  if (cachedRepository) {
-    return cachedRepository;
-  }
-
-  ensureAppwriteConfig();
-
-  const client = createAppwriteClient(
-    Config.appwrite.endpoint,
-    Config.appwrite.projectId,
-  );
-
-  cachedRepository = new AppwriteWishlistRepository(
-    client,
-    Config.appwrite.databaseId,
-    Config.collections.wishlists,
-    Config.collections.wishlistItems,
-    Config.collections.transactions,
-  );
-
-  return cachedRepository;
-}
-
-/**
- * Root orchestrator component that manages dependencies.
- * This keeps the UI layout clean and focused on navigation.
+ * Root orchestrator component that manages dependencies and routing.
  * Wrapped in a general AppErrorBoundary to catch any unexpected runtime errors.
+ *
+ * @returns {JSX.Element} The app root layout wrapped in AppErrorBoundary and any providers.
  */
 export default function Root() {
-  return (
-    <AppErrorBoundary fallback={<GeneralErrorScreen />}>
-      <RootContent />
-    </AppErrorBoundary>
-  );
-}
+  const [initError, setInitError] = useState<Error | null>(null);
 
-/**
- * Inner root component that narrows the boundary for configuration-related errors.
- */
-function RootContent() {
-  return (
-    <AppErrorBoundary fallback={<ConfigErrorScreen />}>
-      <AuthenticatedApp />
-    </AppErrorBoundary>
-  );
-}
-
-/**
- * Component that initializes the repository and provides it to the app.
- * This can throw if configuration is missing (via getAppwriteRepository).
- */
-function AuthenticatedApp() {
-  const repository = getAppwriteRepository();
-  const sessionAwareRepo = repository as SessionAwareRepository;
-  const [sessionError, setSessionError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    // Establish anonymous session on boot for MVP testing
-    sessionAwareRepo.ensureSession().catch((error: unknown) => {
-      console.error("Failed to establish session:", error);
-      setSessionError(
-        error instanceof Error ? error : new Error(String(error)),
-      );
-    });
-  }, [sessionAwareRepo]);
-
-  if (sessionError) {
-    throw sessionError;
+  if (initError) {
+    return (
+      <ConfigErrorScreen
+        onRetry={() => {
+          setInitError(null);
+        }}
+      />
+    );
   }
 
   return (
-    <WishlistRepositoryProvider repository={repository}>
-      <RootLayout />
-    </WishlistRepositoryProvider>
+    <AppErrorBoundary fallback={<GeneralErrorScreen />}>
+      <CoreProvider onConfigError={setInitError}>
+        <RootLayout />
+      </CoreProvider>
+    </AppErrorBoundary>
   );
 }
 

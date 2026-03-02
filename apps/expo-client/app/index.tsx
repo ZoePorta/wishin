@@ -1,10 +1,16 @@
 import { Link } from "expo-router";
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import { Colors } from "../src/constants/Colors";
-import { MOCK_WISHLIST_DATA } from "@wishin/infrastructure/mocks";
 
+/**
+ * Root screen for the Expo client.
+ * Displays the main entry point for the application.
+ *
+ * @returns {React.ReactElement} The rendered index screen.
+ */
 export default function Index() {
-  const demoWishlistId = MOCK_WISHLIST_DATA.id;
+  // Demo wishlist ID created by the scripts/seed.ts script
+  const demoWishlistId = "550e8400-e29b-41d4-a716-446655440003";
 
   return (
     <View style={styles.container}>
@@ -12,8 +18,24 @@ export default function Index() {
       <Text style={styles.subtitle}>Share your wishes with the world.</Text>
 
       <Link href={`/wishlist/${demoWishlistId}`} asChild>
-        <Pressable style={styles.button}>
+        <Pressable
+          style={styles.button}
+          accessibilityRole="button"
+          accessibilityLabel="View demo wishlist"
+        >
           <Text style={styles.buttonText}>View Demo Wishlist</Text>
+        </Pressable>
+      </Link>
+
+      <View style={styles.spacer} />
+
+      <Link href="/owner/dashboard" asChild>
+        <Pressable
+          style={styles.secondaryButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go to owner dashboard"
+        >
+          <Text style={styles.secondaryButtonText}>Go to Owner Dashboard</Text>
         </Pressable>
       </Link>
     </View>
@@ -44,17 +66,32 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     minHeight: 48,
     justifyContent: "center",
   },
   buttonText: {
-    color: Colors.light.card, // Using generic white/card color for text on primary
+    color: Colors.light.buttonText,
     fontSize: 16,
     fontWeight: "600",
+    textAlign: "center",
+  },
+  secondaryButton: {
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: Colors.light.primary,
+    paddingVertical: 10, // Adjust for border width
+    paddingHorizontal: 22,
+    borderRadius: 8,
+    minHeight: 48,
+    justifyContent: "center",
+  },
+  secondaryButtonText: {
+    color: Colors.light.primary,
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  spacer: {
+    height: 16,
   },
 });

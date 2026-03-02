@@ -12,6 +12,13 @@ export interface WishlistRepository {
   findById(id: string): Promise<Wishlist | null>;
 
   /**
+   * Finds a wishlist by its owner's identifier.
+   * @param ownerId The identifier of the owner (UUID or Appwrite ID).
+   * @returns A list of wishlists owned by the user.
+   */
+  findByOwnerId(ownerId: string): Promise<Wishlist[]>;
+
+  /**
    * Persists a wishlist aggregate.
    * @param wishlist The wishlist to save.
    * @returns A Promise that resolves when the wishlist is saved.

@@ -22,6 +22,8 @@ export const ItemValidationMode = {
 export type ItemValidationMode =
   (typeof ItemValidationMode)[keyof typeof ItemValidationMode];
 
+const DEFAULT_CURRENCY = "€";
+
 /**
  * Properties for a WishlistItem.
  * @interface WishlistItemProps
@@ -207,6 +209,12 @@ export class WishlistItem {
       name: typeof props.name === "string" ? props.name.trim() : props.name,
       priority,
       isUnlimited,
+      currency:
+        props.currency ??
+        (mode === ItemValidationMode.STRICT ||
+        mode === ItemValidationMode.EVOLUTIVE
+          ? DEFAULT_CURRENCY
+          : undefined),
     };
     return new WishlistItem(sanitizedProps, mode);
   }

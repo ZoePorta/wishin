@@ -1,12 +1,15 @@
 import type { Wishlist } from "@wishin/domain/aggregates/wishlist";
 import type { WishlistRepository } from "@wishin/domain/repositories/wishlist.repository";
+import type { UserRepository } from "@wishin/domain/repositories/user.repository";
 import { MOCK_WISHLIST_DATA, reconstituteMockWishlist } from "./wishlist.data";
 
 /**
  * Repository to provide mock wishlist data for development and testing.
- * Implements WishlistRepository to allow easy swapping with a real repository.
+ * Implements WishlistRepository and UserRepository to allow easy swapping with a real repository.
  */
-export class MockWishlistRepository implements WishlistRepository {
+export class MockWishlistRepository
+  implements WishlistRepository, UserRepository
+{
   private readonly delayMs: number;
 
   /**
@@ -20,6 +23,14 @@ export class MockWishlistRepository implements WishlistRepository {
   }
 
   /**
+   * Helper to simulate network delay.
+   * Centralizes the delay logic for easy control.
+   */
+  private async delay(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+  }
+
+  /**
    * Retrieves a wishlist by its ID.
    *
    * @param id - The unique identifier of the wishlist to retrieve.
@@ -27,12 +38,40 @@ export class MockWishlistRepository implements WishlistRepository {
    */
   async findById(id: string): Promise<Wishlist | null> {
     // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    await this.delay();
 
     if (id === MOCK_WISHLIST_DATA.id) {
       return reconstituteMockWishlist();
     }
     return null;
+  }
+
+  /**
+   * Retrieves a wishlist by its owner's identifier.
+   *
+   * @param ownerId - The identifier of the owner.
+   * @returns A promise that resolves to an array of Wishlists.
+   */
+  async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
+    // Simulate network delay
+    await this.delay();
+
+    // For mock purposes, we return our one mock wishlist only if ownerId matches
+    if (ownerId === MOCK_WISHLIST_DATA.ownerId) {
+      return [reconstituteMockWishlist()];
+    }
+    return [];
+  }
+
+  /**
+   * Retrieves the current user's unique identifier.
+   *
+   * @returns A promise that resolves to the current user ID.
+   */
+  async getCurrentUserId(): Promise<string> {
+    // Simulate network delay
+    await this.delay();
+    return MOCK_WISHLIST_DATA.ownerId;
   }
 
   /**
@@ -43,7 +82,7 @@ export class MockWishlistRepository implements WishlistRepository {
    */
   async save(wishlist: Wishlist): Promise<void> {
     // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    await this.delay();
     console.warn(`[MockWishlistRepository] Saved wishlist: ${wishlist.id}`);
   }
 
@@ -55,7 +94,7 @@ export class MockWishlistRepository implements WishlistRepository {
    */
   async delete(id: string): Promise<void> {
     // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, this.delayMs));
+    await this.delay();
     console.warn(`[MockWishlistRepository] Deleted wishlist: ${id}`);
   }
 }

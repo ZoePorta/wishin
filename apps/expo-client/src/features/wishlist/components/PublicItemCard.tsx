@@ -2,29 +2,21 @@ import React, { useCallback } from "react";
 import { View, Text, Image, Pressable, Linking, Alert } from "react-native";
 import { Priority } from "@wishin/domain";
 import type { WishlistItemOutput } from "@wishin/domain";
+import { PRIORITY_LABELS } from "../utils/priority";
+import type { WishlistStyles } from "../hooks/useWishlistStyles";
 
-const PRIORITY_LABELS: Record<Priority, string> = {
-  [Priority.LOW]: "LOW",
-  [Priority.MEDIUM]: "MEDIUM",
-  [Priority.HIGH]: "HIGH",
-  [Priority.URGENT]: "URGENT",
-};
-
-import type { WishlistStyles } from "../../hooks/useWishlistStyles";
-
-interface WishlistItemCardProps {
+interface PublicItemCardProps {
   item: WishlistItemOutput;
   styles: WishlistStyles["styles"];
   themedStyles: WishlistStyles["themedStyles"];
 }
 
 /**
- * Component to display a single wishlist item as a card.
- *
- * @param props - Component properties.
- * @returns The WishlistItemCard component.
+ * Component to display a single wishlist item to VISITORS.
+ * - Includes overlays for completed/reserved items.
+ * - No management buttons (Remove).
  */
-export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
+export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   item,
   styles,
   themedStyles,
@@ -125,7 +117,9 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
                 pressed && styles.pressed,
               ]}
               hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
-              onPress={() => void handleOpenUrl(item.url)}
+              onPress={() => {
+                void handleOpenUrl(item.url);
+              }}
               accessibilityLabel={`View Online, ${item.name}`}
               accessibilityRole="link"
             >

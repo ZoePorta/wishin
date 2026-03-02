@@ -6,8 +6,12 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import type { WishlistRepository } from "@wishin/domain";
-import { Wishlist, TransactionStatus } from "@wishin/domain";
+import type {
+  WishlistRepository,
+  UserRepository,
+  Wishlist,
+} from "@wishin/domain";
+import { TransactionStatus } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
 import { toDocument } from "../utils/to-document";
@@ -24,10 +28,10 @@ interface TransactionDocument extends Models.Document {
 }
 
 /**
- * Appwrite implementation of the WishlistRepository.
+ * Appwrite implementation of the WishlistRepository and UserRepository.
  */
 export class AppwriteWishlistRepository
-  implements WishlistRepository, SessionAwareRepository
+  implements WishlistRepository, UserRepository, SessionAwareRepository
 {
   private readonly tablesDb: TablesDB;
   private readonly account: Account;
@@ -87,10 +91,13 @@ export class AppwriteWishlistRepository
    * Finds a wishlist by its unique identifier.
    *
    * @param id - The UUID of the wishlist.
+   * @param ensureSession - Whether to ensure an active session before querying (default: true).
    * @returns A Promise that resolves to the Wishlist aggregate or null if not found.
    */
-  async findById(id: string): Promise<Wishlist | null> {
-    await this.ensureSession();
+  async findById(id: string, ensureSession = true): Promise<Wishlist | null> {
+    if (ensureSession) {
+      await this.ensureSession();
+    }
     try {
       // 1. Fetch Wishlist Document
       const wishlistDoc = await this.tablesDb.getRow({
@@ -100,13 +107,27 @@ export class AppwriteWishlistRepository
       });
 
       // 2. Fetch Wishlist Items
-      const itemsResponse = await this.tablesDb.listRows({
-        databaseId: this.databaseId,
-        tableId: this.wishlistItemsCollectionId,
-        queries: [Query.equal("wishlistId", id), Query.limit(100)],
-      });
+      const itemDocuments: Models.Document[] = [];
+      let itemsCursor: string | undefined = undefined;
+      do {
+        const queries = [Query.equal("wishlistId", id), Query.limit(100)];
+        if (itemsCursor) {
+          queries.push(Query.cursorAfter(itemsCursor));
+        }
+        const response = await this.tablesDb.listRows({
+          databaseId: this.databaseId,
+          tableId: this.wishlistItemsCollectionId,
+          queries,
+        });
+        const docs = toDocument<Models.Document[]>(response.rows);
+        itemDocuments.push(...docs);
+        if (response.rows.length < 100) {
+          itemsCursor = undefined;
+        } else {
+          itemsCursor = response.rows[response.rows.length - 1].$id;
+        }
+      } while (itemsCursor);
 
-      const itemDocuments = toDocument<Models.Document[]>(itemsResponse.rows);
       const itemIds = itemDocuments.map((doc) => doc.$id);
 
       // 3. Fetch Transactions for items (if any items exist)
@@ -186,6 +207,49 @@ export class AppwriteWishlistRepository
   }
 
   /**
+   * Finds a wishlist by its owner's identifier.
+   *
+   * @param ownerId - The identifier of the owner (UUID or Appwrite ID).
+   * @returns A Promise that resolves to an array of Wishlist aggregates for the owner (empty array if none).
+   */
+  async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
+    await this.ensureSession();
+
+    // 1. Fetch all Wishlist Documents by ownerId
+    // Business Rule: Maximum 20 wishlists per owner (Post-MVP scaling limit)
+    const response = await this.tablesDb.listRows({
+      databaseId: this.databaseId,
+      tableId: this.wishlistCollectionId,
+      queries: [Query.equal("ownerId", ownerId), Query.limit(20)],
+    });
+
+    if (response.rows.length === 0) {
+      return [];
+    }
+
+    const rows = toDocument<Models.Document[]>(response.rows);
+
+    // 2. Map docs to aggregates by fetching details for each
+    const wishlists = await Promise.all(
+      rows.map((row) => this.findById(row.$id, false)),
+    );
+
+    // Filter out any nulls if findById could potentially return null
+    return wishlists.filter((w): w is Wishlist => w !== null);
+  }
+
+  /**
+   * Retrieves the current user's unique identifier.
+   *
+   * @returns A Promise that resolves to the current user ID.
+   */
+  async getCurrentUserId(): Promise<string> {
+    await this.ensureSession();
+    const user = await this.account.get();
+    return user.$id;
+  }
+
+  /**
    * Persists a wishlist aggregate.
    * Synchronizes the main wishlist document and all its items.
    *
@@ -197,12 +261,29 @@ export class AppwriteWishlistRepository
 
     // 2. Sync Wishlist Items First (Atomicity step)
     // 2a. Get existing items IDs to identify removals
-    const existingItemsResponse = await this.tablesDb.listRows({
-      databaseId: this.databaseId,
-      tableId: this.wishlistItemsCollectionId,
-      queries: [Query.equal("wishlistId", wishlist.id), Query.limit(100)],
-    });
-    const existingItemIds = existingItemsResponse.rows.map((row) => row.$id);
+    const existingItemIds: string[] = [];
+    let existingCursor: string | undefined = undefined;
+    do {
+      const queries = [
+        Query.equal("wishlistId", wishlist.id),
+        Query.limit(100),
+      ];
+      if (existingCursor) {
+        queries.push(Query.cursorAfter(existingCursor));
+      }
+      const response = await this.tablesDb.listRows({
+        databaseId: this.databaseId,
+        tableId: this.wishlistItemsCollectionId,
+        queries,
+      });
+      existingItemIds.push(...response.rows.map((row) => row.$id));
+
+      if (response.rows.length < 100) {
+        existingCursor = undefined;
+      } else {
+        existingCursor = response.rows[response.rows.length - 1].$id;
+      }
+    } while (existingCursor);
 
     // 2b. Prepare upserts and deletes
     const currentItems = wishlist.items;

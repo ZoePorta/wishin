@@ -57,10 +57,54 @@ describe("WishlistItem Entity", () => {
       );
     });
 
-    it("should throw InvalidAttributeError if price is set but currency is missing", () => {
-      expect(() =>
-        WishlistItem.create({ ...validProps, price: 100, currency: "" }),
-      ).toThrow(InvalidAttributeError);
+    it("should default currency to '€' if price is set but currency is missing", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        price: 100,
+        currency: undefined,
+      });
+      expect(item.currency).toBe("€");
+    });
+    it("should allow setting a custom currency", () => {
+      const item = WishlistItem.create({
+        ...validProps,
+        price: 100,
+        currency: "USD",
+      });
+      expect(item.currency).toBe("USD");
+    });
+    it("should NOT default currency in reconstitute (STRUCTURAL mode) even if price is present", () => {
+      const item = WishlistItem.reconstitute({
+        ...validProps,
+        price: 100,
+        currency: undefined,
+        priority: Priority.MEDIUM,
+      });
+      expect(item.currency).toBeUndefined();
+    });
+    it("should NOT default currency in TRANSACTION mode (e.g. via reserve) even if price is present", () => {
+      // 1. Reconstitute an item without currency (allowed in STRUCTURAL mode)
+      const item = WishlistItem.reconstitute({
+        ...validProps,
+        price: 100,
+        currency: undefined,
+        priority: Priority.MEDIUM,
+      });
+      expect(item.currency).toBeUndefined();
+
+      // 2. Perform a transaction (reserve) which uses TRANSACTION mode
+      const newItem = item.reserve(1);
+      expect(newItem.currency).toBeUndefined(); // Should still be undefined in TRANSACTION mode
+
+      // 3. Ensure custom currencies are preserved in TRANSACTION mode
+      const usdItem = WishlistItem.create({
+        ...validProps,
+        price: 100,
+        currency: "USD",
+      });
+      expect(usdItem.currency).toBe("USD");
+      const reservedUsdItem = usdItem.reserve(1);
+      expect(reservedUsdItem.currency).toBe("USD");
     });
     it("should allow price with decimals", () => {
       const item = WishlistItem.create({ ...validProps, price: 49.99 });
@@ -870,6 +914,31 @@ describe("WishlistItem Entity", () => {
         // @ts-expect-error - Testing runtime safety for invalid type
         WishlistItem.reconstitute(invalidNameProps),
       ).toThrow(InvalidAttributeError);
+    });
+    it("should NOT add default currency during reconstitution if missing (STRUCTURAL mode)", () => {
+      const item = WishlistItem.reconstitute({
+        ...legacyProps,
+        currency: undefined,
+      });
+      expect(item.currency).toBeUndefined();
+    });
+
+    it("should NOT add default currency during reserve on a legacy item (TRANSACTION mode)", () => {
+      const item = WishlistItem.reconstitute({
+        ...legacyProps,
+        currency: undefined,
+      });
+      const reservedItem = item.reserve(1);
+      expect(reservedItem.currency).toBeUndefined();
+    });
+
+    it("should STILL add default currency during update on a legacy item (EVOLUTIVE mode)", () => {
+      const item = WishlistItem.reconstitute({
+        ...legacyProps,
+        currency: undefined,
+      });
+      const updatedItem = item.update({ name: "PlayStation 5" });
+      expect(updatedItem.currency).toBe("€");
     });
   });
 });
