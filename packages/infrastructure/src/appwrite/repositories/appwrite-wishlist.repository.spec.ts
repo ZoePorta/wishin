@@ -12,7 +12,7 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import type { Wishlist } from "@wishin/domain";
+import { Wishlist, Visibility, Participation, Priority } from "@wishin/domain";
 
 // TablesDB specific types from Appwrite SDK
 interface MockRow extends Models.Document {
@@ -170,24 +170,34 @@ describe("AppwriteWishlistRepository", () => {
       const error = new AppwriteException("Internal Server Error", 500);
       vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(error);
 
-      await expect(repository.delete("wishlist-id")).rejects.toThrow(error);
+      await expect(
+        repository.delete("550e8400-e29b-41d4-a716-446655440001"),
+      ).rejects.toThrow(error);
     });
   });
 
   describe("save", () => {
-    const mockWishlist = {
-      id: "wishlist-id",
+    const mockWishlist = Wishlist.reconstitute({
+      id: "550e8400-e29b-41d4-a716-446655440001",
+      ownerId: "owner-id",
       title: "My Wishlist",
-      toProps: () => ({
-        id: "wishlist-id",
-        title: "My Wishlist",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }),
+      visibility: Visibility.PRIVATE,
+      participation: Participation.REGISTERED,
+      createdAt: new Date(),
+      updatedAt: new Date(),
       items: [
-        { id: "item-1", toProps: () => ({ id: "item-1", name: "Item 1" }) },
+        {
+          id: "550e8400-e29b-41d4-a716-446655440002",
+          wishlistId: "550e8400-e29b-41d4-a716-446655440001",
+          name: "Item 1",
+          priority: Priority.MEDIUM,
+          totalQuantity: 1,
+          reservedQuantity: 0,
+          purchasedQuantity: 0,
+          isUnlimited: false,
+        },
       ],
-    } as unknown as Wishlist;
+    });
 
     it("should call ensureSession and sync items before saving the wishlist document", async () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
@@ -247,9 +257,9 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [
           {
-            $id: "orphaned-item",
+            $id: "550e8400-e29b-41d4-a716-446655440003",
             $tableId: config.wishlistItemsCollectionId,
-          } as MockRow,
+          } satisfies MockRow,
         ],
         total: 1,
       } as MockRowList);
@@ -263,7 +273,7 @@ describe("AppwriteWishlistRepository", () => {
       expect(mockTablesDb.deleteRow).toHaveBeenCalledWith({
         databaseId: config.databaseId,
         tableId: config.wishlistItemsCollectionId,
-        rowId: "orphaned-item",
+        rowId: "550e8400-e29b-41d4-a716-446655440003",
       });
     });
 
@@ -274,9 +284,9 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [
           {
-            $id: "already-deleted-item",
+            $id: "550e8400-e29b-41d4-a716-446655440004",
             $tableId: config.wishlistItemsCollectionId,
-          } as MockRow,
+          } satisfies MockRow,
         ],
         total: 1,
       } as MockRowList);
@@ -290,7 +300,7 @@ describe("AppwriteWishlistRepository", () => {
       expect(mockTablesDb.deleteRow).toHaveBeenCalledWith({
         databaseId: config.databaseId,
         tableId: config.wishlistItemsCollectionId,
-        rowId: "already-deleted-item",
+        rowId: "550e8400-e29b-41d4-a716-446655440004",
       });
     });
   });
@@ -306,7 +316,7 @@ describe("AppwriteWishlistRepository", () => {
       $collectionId: config.wishlistCollectionId,
       $permissions: [],
       $tableId: config.wishlistCollectionId,
-    } as unknown as MockRow;
+    } satisfies MockRow;
     it("should call ensureSession by default", async () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,
@@ -350,7 +360,7 @@ describe("AppwriteWishlistRepository", () => {
       $collectionId: config.wishlistCollectionId,
       $permissions: [],
       $tableId: config.wishlistCollectionId,
-    } as unknown as MockRow;
+    } satisfies MockRow;
     it("should call ensureSession only once and findById with ensureSession=false", async () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,

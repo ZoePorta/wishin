@@ -12,6 +12,7 @@ import { useWishlistItemActions } from "./useWishlistItemActions";
  *
  * @returns An object containing the current user's ID, wishlist state, loading/error states,
  *          and handlers for CRUD operations on wishlist and items.
+ * @throws {Error} If called outside of a UserProvider.
  */
 export function useOwnerDashboard() {
   const { userId, loading: userLoading, error: userError } = useUser();
