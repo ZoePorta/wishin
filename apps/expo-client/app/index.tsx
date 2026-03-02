@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   buttonText: {
-    color: Colors.light.card,
+    color: Colors.light.buttonText,
     fontSize: 16,
     fontWeight: "600",
     textAlign: "center",

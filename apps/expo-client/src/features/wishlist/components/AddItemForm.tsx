@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -59,7 +59,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   const [priceUnknown, setPriceUnknown] = useState(initialData?.price == null);
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!name.trim() || loading) return;
 
     const payload: AddItemFormSubmission = {
@@ -77,7 +77,22 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     };
 
     await onSubmit(payload);
-  };
+  }, [
+    name,
+    loading,
+    wishlistId,
+    description,
+    url,
+    priceUnknown,
+    price,
+    currency,
+    priority,
+    isUnlimited,
+    totalQuantity,
+    initialData?.imageUrl,
+    initialData?.id,
+    onSubmit,
+  ]);
 
   const formStyles = useMemo(() => createAddItemFormStyles(theme), [theme]);
 

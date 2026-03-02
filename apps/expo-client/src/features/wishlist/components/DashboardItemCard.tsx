@@ -105,6 +105,8 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
                 onPress={() => {
                   void handleOpenUrl(item.url);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel="Open item link"
               >
                 <Text
                   style={[commonStyles.linkText, themedStyles.secondaryText]}

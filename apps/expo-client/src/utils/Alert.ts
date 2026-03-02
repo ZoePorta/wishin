@@ -50,9 +50,16 @@ export const UniversalAlert = {
           return;
         }
 
-        // Just one button or simple list - alert but DO NOT call onPress automatically
-        // as window.alert provides no choice to the user.
+        // Just one button or simple list - alert and call onPress if it's the only one
         window.alert(fullMessage);
+
+        // Single acknowledgement exception (ADR-resembling logic):
+        // If there's exactly one button and it's not explicitly styled as 'cancel',
+        // we invoke its onPress after the alert is dismissed to maintain consistency
+        // with mobile behavior for simple acknowledgements.
+        if (buttons.length === 1 && buttons[0].style !== "cancel") {
+          buttons[0].onPress?.();
+        }
       }
     } else {
       // Native Mobile implementation

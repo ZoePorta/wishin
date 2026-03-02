@@ -40,6 +40,7 @@ export function useOwnerDashboard() {
       if (result) {
         void refetch();
       }
+      return result;
     },
     [createWishlist, refetch],
   );
@@ -59,6 +60,7 @@ export function useOwnerDashboard() {
       if (result) {
         void refetch();
       }
+      return result;
     },
     [addItem, refetch],
   );
@@ -68,6 +70,7 @@ export function useOwnerDashboard() {
       if (result) {
         void refetch();
       }
+      return result;
     },
     [updateItem, refetch],
   );

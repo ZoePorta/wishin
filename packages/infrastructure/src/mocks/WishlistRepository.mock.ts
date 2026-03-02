@@ -44,12 +44,15 @@ export class MockWishlistRepository
    * @param ownerId - The identifier of the owner.
    * @returns A promise that resolves to an array of Wishlists.
    */
-  async findByOwnerId(_ownerId: string): Promise<Wishlist[]> {
+  async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, this.delayMs));
 
-    // For mock purposes, we return our one mock wishlist
-    return [reconstituteMockWishlist()];
+    // For mock purposes, we return our one mock wishlist only if ownerId matches
+    if (ownerId === MOCK_WISHLIST_DATA.ownerId) {
+      return [reconstituteMockWishlist()];
+    }
+    return [];
   }
 
   /**

@@ -38,7 +38,7 @@ describe("TransactionMapper", () => {
 
   describe("toDomain", () => {
     it("should map Appwrite document to Transaction aggregate", () => {
-      const doc: Models.Document = {
+      const doc = {
         $id: transactionId,
         $collectionId: "transactions",
         $databaseId: "default",
@@ -49,7 +49,7 @@ describe("TransactionMapper", () => {
         userId: userId,
         status: TransactionStatus.RESERVED,
         quantity: 1,
-      };
+      } as unknown as Models.Document;
 
       const result = TransactionMapper.toDomain(doc);
 
@@ -62,6 +62,25 @@ describe("TransactionMapper", () => {
       // Verify timestamps are correctly mapped from $ fields
       expect(result.createdAt.toISOString()).toBe(now.toISOString());
       expect(result.updatedAt.toISOString()).toBe(now.toISOString());
+    });
+
+    it("should throw on invalid document status", () => {
+      const doc = {
+        $id: transactionId,
+        $collectionId: "transactions",
+        $databaseId: "default",
+        $createdAt: now.toISOString(),
+        $updatedAt: now.toISOString(),
+        $permissions: [],
+        itemId: itemId,
+        userId: userId,
+        status: "INVALID_STATUS",
+        quantity: 1,
+      } as unknown as Models.Document;
+
+      expect(() => TransactionMapper.toDomain(doc)).toThrow(
+        "Invalid transaction status: INVALID_STATUS",
+      );
     });
   });
 });
