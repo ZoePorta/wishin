@@ -131,4 +131,55 @@ export const createAddItemFormStyles = (theme: AppTheme) =>
       backgroundColor: theme.card,
       borderRadius: 2,
     },
+    // Currency Selector Styles
+    priceRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: Spacing.sm,
+    },
+    currencyPicker: {
+      borderWidth: 1,
+      borderColor: theme.surfaceMuted,
+      borderRadius: 8,
+      padding: Spacing.md,
+      backgroundColor: theme.background,
+      minWidth: 60,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    currencyText: {
+      fontSize: Typography.size.base,
+      fontWeight: Typography.weight.bold,
+      color: theme.text,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: Spacing.xl,
+    },
+    modalContent: {
+      width: "80%",
+      backgroundColor: theme.card,
+      borderRadius: 12,
+      padding: Spacing.md,
+      maxHeight: "50%",
+    },
+    currencyOption: {
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.surfaceMuted,
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    currencyOptionText: {
+      fontSize: Typography.size.md,
+      color: theme.text,
+    },
+    currencyOptionSelected: {
+      backgroundColor: theme.sky100,
+    },
   });

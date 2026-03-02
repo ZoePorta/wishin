@@ -5,12 +5,15 @@ import {
   TextInput,
   Pressable,
   ActivityIndicator,
+  Modal,
+  FlatList,
 } from "react-native";
 import { Priority, type WishlistItemOutput } from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
 import { useWishlistStyles } from "../hooks/useWishlistStyles";
 import { createAddItemFormStyles } from "../styles/AddItemForm.styles";
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from "../utils/currencies";
 
 /**
  * Input format for the onSubmit callback.
@@ -41,6 +44,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   );
   const [url, setUrl] = useState(initialData?.url ?? "");
   const [price, setPrice] = useState(initialData?.price?.toString() ?? "0");
+  const [currency, setCurrency] = useState(
+    initialData?.currency ?? DEFAULT_CURRENCY,
+  );
   const [priority, setPriority] = useState<Priority>(
     initialData?.priority ?? Priority.MEDIUM,
   );
@@ -51,6 +57,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     initialData?.isUnlimited ?? false,
   );
   const [priceUnknown, setPriceUnknown] = useState(initialData?.price == null);
+  const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
 
   const handleSubmit = async () => {
     if (!name.trim() || loading) return;
@@ -61,6 +68,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       description: description.trim() || undefined,
       url: url.trim() || undefined,
       price: priceUnknown ? undefined : parseFloat(price) || 0,
+      currency: priceUnknown ? undefined : currency,
       priority,
       totalQuantity: isUnlimited ? 1 : parseInt(totalQuantity, 10) || 1,
       isUnlimited,
@@ -73,6 +81,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
   const formStyles = useMemo(() => createAddItemFormStyles(theme), [theme]);
 
+  // TODO: Set default currency based on user location or preferences
   return (
     <View style={formStyles.container}>
       <Text style={formStyles.title}>
@@ -105,15 +114,36 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       <View style={formStyles.row}>
         <View style={formStyles.flex1}>
           <Text style={formStyles.label}>Price</Text>
-          <TextInput
-            style={[formStyles.input, priceUnknown && formStyles.inputDisabled]}
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="decimal-pad"
-            editable={!priceUnknown}
-            placeholderTextColor={theme.textMuted}
-            accessibilityLabel="Item price"
-          />
+          <View style={formStyles.priceRow}>
+            <TextInput
+              style={[
+                formStyles.input,
+                formStyles.flex1,
+                priceUnknown && formStyles.inputDisabled,
+              ]}
+              value={price}
+              onChangeText={setPrice}
+              keyboardType="decimal-pad"
+              editable={!priceUnknown}
+              placeholderTextColor={theme.textMuted}
+              accessibilityLabel="Item price"
+            />
+            <Pressable
+              disabled={priceUnknown}
+              style={[
+                formStyles.currencyPicker,
+                priceUnknown && formStyles.inputDisabled,
+              ]}
+              onPress={() => {
+                setIsCurrencyModalVisible(true);
+              }}
+              accessibilityLabel="Select currency"
+              accessibilityRole="combobox"
+            >
+              <Text style={formStyles.currencyText}>{currency}</Text>
+            </Pressable>
+          </View>
+
           <Pressable
             style={formStyles.checkboxContainer}
             onPress={() => {
@@ -136,6 +166,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             <Text style={formStyles.checkboxLabel}>I don't know the price</Text>
           </Pressable>
         </View>
+
         <View style={formStyles.flex1}>
           <Text style={formStyles.label}>Quantity</Text>
           <TextInput
@@ -231,6 +262,49 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           </Text>
         )}
       </Pressable>
+
+      {/* Currency Selection Modal */}
+      <Modal
+        visible={isCurrencyModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setIsCurrencyModalVisible(false);
+        }}
+      >
+        <Pressable
+          style={formStyles.modalOverlay}
+          onPress={() => {
+            setIsCurrencyModalVisible(false);
+          }}
+        >
+          <View style={formStyles.modalContent}>
+            <FlatList
+              data={SUPPORTED_CURRENCIES}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[
+                    formStyles.currencyOption,
+                    currency === item.code && formStyles.currencyOptionSelected,
+                  ]}
+                  onPress={() => {
+                    setCurrency(item.code);
+                    setIsCurrencyModalVisible(false);
+                  }}
+                >
+                  <Text style={formStyles.currencyOptionText}>
+                    {item.name} ({item.code})
+                  </Text>
+                  {currency === item.code && (
+                    <Text style={formStyles.currencyOptionText}>✓</Text>
+                  )}
+                </Pressable>
+              )}
+            />
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 };
