@@ -63,7 +63,7 @@ export class MockWishlistRepository
   async getCurrentUserId(): Promise<string> {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, this.delayMs));
-    return "user-123";
+    return MOCK_WISHLIST_DATA.ownerId;
   }
 
   /**

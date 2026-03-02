@@ -291,6 +291,14 @@ describe("AppwriteWishlistRepository", () => {
       expect(mockAccount.get).toHaveBeenCalledTimes(1);
       // The first call to listRows is in findByOwnerId, subsequent are in findById
       expect(mockTablesDb.listRows).toHaveBeenCalled();
+      // Assert hydration via internal findById calls by checking getRow
+      expect(mockTablesDb.getRow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          databaseId: config.databaseId,
+          tableId: config.wishlistCollectionId,
+          rowId: mockDoc.$id,
+        }),
+      );
     });
   });
 });
