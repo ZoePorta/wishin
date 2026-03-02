@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 /* eslint-disable @typescript-eslint/no-deprecated */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
@@ -139,7 +138,9 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,
       );
-      vi.mocked(mockTablesDb.deleteRow).mockResolvedValue({} as any); // deleteRow returns {} in Appwrite SDK mock
+      vi.mocked(mockTablesDb.deleteRow).mockResolvedValue(
+        {} as Models.Document,
+      ); // deleteRow returns a document in Appwrite SDK mock
 
       await repository.delete("wishlist-id");
 
@@ -203,12 +204,12 @@ describe("AppwriteWishlistRepository", () => {
       expect(mockAccount.get).toHaveBeenCalled();
       // Ensure items are synced before the wishlist itself
       const upsertCalls = vi.mocked(mockTablesDb.upsertRow).mock.calls;
-      expect((upsertCalls[0][0] as any).tableId).toBe(
-        config.wishlistItemsCollectionId,
-      );
-      expect((upsertCalls[1][0] as any).tableId).toBe(
-        config.wishlistCollectionId,
-      );
+      expect(
+        (upsertCalls[0][0] as unknown as { tableId: string }).tableId,
+      ).toBe(config.wishlistItemsCollectionId);
+      expect(
+        (upsertCalls[1][0] as unknown as { tableId: string }).tableId,
+      ).toBe(config.wishlistCollectionId);
     });
 
     it("should retry item sync on failure", async () => {
@@ -232,7 +233,9 @@ describe("AppwriteWishlistRepository", () => {
       const itemUpserts = vi
         .mocked(mockTablesDb.upsertRow)
         .mock.calls.filter(
-          (c) => (c[0] as any).tableId === config.wishlistItemsCollectionId,
+          (c) =>
+            (c[0] as unknown as { tableId: string }).tableId ===
+            config.wishlistItemsCollectionId,
         );
       expect(itemUpserts.length).toBe(3);
     });
@@ -251,7 +254,9 @@ describe("AppwriteWishlistRepository", () => {
         total: 1,
       } as MockRowList);
       vi.mocked(mockTablesDb.upsertRow).mockResolvedValue({} as MockRow);
-      vi.mocked(mockTablesDb.deleteRow).mockResolvedValue({} as any);
+      vi.mocked(mockTablesDb.deleteRow).mockResolvedValue(
+        {} as Models.Document,
+      );
 
       await repository.save(mockWishlist);
 

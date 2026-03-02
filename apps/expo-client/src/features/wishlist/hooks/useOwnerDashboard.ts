@@ -5,12 +5,6 @@ import { useWishlistByOwner } from "./useWishlistByOwner";
 import { useCreateWishlist } from "./useCreateWishlist";
 import { useUpdateWishlist } from "./useUpdateWishlist";
 import { useWishlistItemActions } from "./useWishlistItemActions";
-import type {
-  CreateWishlistInput,
-  AddWishlistItemInput,
-  UpdateWishlistInput,
-  UpdateWishlistItemInput,
-} from "@wishin/domain";
 
 /**
  * View Model hook for the Owner Dashboard.
@@ -37,46 +31,35 @@ export function useOwnerDashboard() {
     loading: itemActionLoading,
   } = useWishlistItemActions();
 
-  const handleCreate = useCallback(
-    async (data: CreateWishlistInput) => {
-      const result = await createWishlist(data);
-      if (result) {
-        void refetch();
-      }
-      return result;
+  const wrapMutateWithRefetch = useCallback(
+    <T, R>(mutate: (data: T) => Promise<R>) => {
+      return async (data: T) => {
+        const result = await mutate(data);
+        if ((result as unknown) !== null && (result as unknown) !== undefined) {
+          void refetch();
+        }
+        return result;
+      };
     },
-    [createWishlist, refetch],
+    [refetch],
   );
-  const handleUpdate = useCallback(
-    async (data: UpdateWishlistInput) => {
-      const result = await updateWishlist(data);
-      if (result) {
-        void refetch();
-      }
-      return result;
-    },
-    [updateWishlist, refetch],
-  );
-  const handleAddItem = useCallback(
-    async (data: AddWishlistItemInput) => {
-      const result = await addItem(data);
-      if (result) {
-        void refetch();
-      }
-      return result;
-    },
-    [addItem, refetch],
-  );
-  const handleUpdateItem = useCallback(
-    async (data: UpdateWishlistItemInput) => {
-      const result = await updateItem(data);
-      if (result) {
-        void refetch();
-      }
-      return result;
-    },
-    [updateItem, refetch],
-  );
+
+  const handleCreate = useCallback(wrapMutateWithRefetch(createWishlist), [
+    wrapMutateWithRefetch,
+    createWishlist,
+  ]);
+  const handleUpdate = useCallback(wrapMutateWithRefetch(updateWishlist), [
+    wrapMutateWithRefetch,
+    updateWishlist,
+  ]);
+  const handleAddItem = useCallback(wrapMutateWithRefetch(addItem), [
+    wrapMutateWithRefetch,
+    addItem,
+  ]);
+  const handleUpdateItem = useCallback(wrapMutateWithRefetch(updateItem), [
+    wrapMutateWithRefetch,
+    updateItem,
+  ]);
 
   const handleRemoveItem = useCallback(
     (itemId: string) => {
@@ -91,7 +74,13 @@ export function useOwnerDashboard() {
             onPress: () => {
               void (async () => {
                 const wishlistId = wishlist?.id;
-                if (!wishlistId) return;
+                if (!wishlistId) {
+                  UniversalAlert.alert(
+                    "Error",
+                    "Unable to delete: wishlist not found",
+                  );
+                  return;
+                }
                 try {
                   const result = await removeItem({ wishlistId, itemId });
                   if (result) {
