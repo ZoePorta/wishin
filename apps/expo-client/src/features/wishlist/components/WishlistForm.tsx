@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet } from "react-native";
 import { TextInput, Button, HelperText } from "react-native-paper";
 import { Visibility, Participation } from "@wishin/domain";
 import type { CreateWishlistInput } from "@wishin/domain";
+import { commonStyles } from "../../../theme/common-styles";
 
 interface WishlistFormProps {
   onSubmit: (data: CreateWishlistInput & { id?: string }) => Promise<void>;
@@ -84,7 +85,7 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
         loading={loading}
         disabled={!title.trim() || loading}
         style={styles.submitButton}
-        contentStyle={{ minHeight: 44, minWidth: 44 }}
+        contentStyle={commonStyles.minimumTouchTarget}
       >
         {initialData?.id ? "Update Wishlist" : "Create Wishlist"}
       </Button>

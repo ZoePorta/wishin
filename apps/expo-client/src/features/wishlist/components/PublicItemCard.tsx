@@ -10,6 +10,7 @@ import {
 } from "react-native-paper";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
+import { commonStyles } from "../../../theme/common-styles";
 
 interface PublicItemCardProps {
   item: WishlistItemOutput;
@@ -35,24 +36,26 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
   const handleOpenUrl = useCallback(async (url?: string) => {
     if (!url) return;
 
+    const trimmedUrl = url.trim();
+
     try {
       // Validate scheme
-      const lowerUrl = url.toLowerCase();
+      const lowerUrl = trimmedUrl.toLowerCase();
       if (!lowerUrl.startsWith("http://") && !lowerUrl.startsWith("https://")) {
         Alert.alert("Error", "Only web links (http/https) are supported.");
         return;
       }
 
-      const supported = await Linking.canOpenURL(url);
+      const supported = await Linking.canOpenURL(trimmedUrl);
       if (supported) {
-        await Linking.openURL(url);
+        await Linking.openURL(trimmedUrl);
       } else {
-        Alert.alert("Error", `Cannot open this link: ${url}`);
+        Alert.alert("Error", `Cannot open this link: ${trimmedUrl}`);
       }
     } catch (error) {
       Alert.alert(
         "Error",
-        `Could not open link: ${url}. ${error instanceof Error ? error.message : ""}`,
+        `Could not open link: ${trimmedUrl}. ${error instanceof Error ? error.message : ""}`,
       );
     }
   }, []);
@@ -122,7 +125,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
               mode="text"
               onPress={() => void handleOpenUrl(item.url)}
               accessibilityLabel={`View Online, ${item.name}`}
-              contentStyle={{ minWidth: 44, minHeight: 44 }}
+              contentStyle={commonStyles.minimumTouchTarget}
             >
               View Online
             </Button>

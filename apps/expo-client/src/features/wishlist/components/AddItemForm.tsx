@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { View, ScrollView, StyleSheet, FlatList } from "react-native";
 import {
   TextInput,
@@ -15,6 +15,7 @@ import { Priority, type WishlistItemOutput } from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from "../utils/currencies";
+import { commonStyles } from "../../../theme/common-styles";
 
 /**
  * Input format for the onSubmit callback.
@@ -66,6 +67,18 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   );
   const [priceUnknown, setPriceUnknown] = useState(initialData?.price == null);
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
+
+  useEffect(() => {
+    setName(initialData?.name ?? "");
+    setDescription(initialData?.description ?? "");
+    setUrl(initialData?.url ?? "");
+    setPrice(initialData?.price?.toString() ?? "0");
+    setCurrency(initialData?.currency ?? DEFAULT_CURRENCY);
+    setPriority(String(initialData?.priority ?? Priority.MEDIUM));
+    setTotalQuantity(initialData?.totalQuantity.toString() ?? "1");
+    setIsUnlimited(initialData?.isUnlimited ?? false);
+    setPriceUnknown(initialData?.price == null);
+  }, [initialData]);
 
   const handleSubmit = useCallback(async () => {
     if (!name.trim() || loading) return;
@@ -220,6 +233,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         loading={loading}
         disabled={!name.trim() || loading}
         style={styles.submitButton}
+        contentStyle={commonStyles.minimumTouchTarget}
       >
         {initialData ? "Save Changes" : "Add to List"}
       </Button>

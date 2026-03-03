@@ -13,6 +13,7 @@ import {
   Surface,
 } from "react-native-paper";
 import { type WishlistItemOutput } from "@wishin/domain";
+import { commonStyles } from "../../src/theme/common-styles";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
 import { WishlistForm } from "../../src/features/wishlist/components/WishlistForm";
 import { AddItemForm } from "../../src/features/wishlist/components/AddItemForm";
@@ -69,7 +70,7 @@ export default function OwnerDashboard() {
         <Button
           mode="contained"
           onPress={() => void refetch()}
-          contentStyle={{ minHeight: 44, minWidth: 44 }}
+          contentStyle={commonStyles.minimumTouchTarget}
         >
           Retry
         </Button>
@@ -146,6 +147,7 @@ export default function OwnerDashboard() {
                       setIsItemModalVisible(false);
                       setEditingItem(undefined);
                     }}
+                    accessibilityLabel="Close item modal"
                   />
                 </View>
                 <AddItemForm
@@ -190,6 +192,7 @@ export default function OwnerDashboard() {
                     onPress={() => {
                       setIsEditing(false);
                     }}
+                    accessibilityLabel="Close edit wishlist modal"
                   />
                 </View>
                 <WishlistForm
