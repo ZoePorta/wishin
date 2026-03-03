@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, ActivityIndicator, Pressable } from "react-native";
+import { View } from "react-native";
 import { Stack } from "expo-router";
 import {
   Portal,
@@ -7,6 +7,8 @@ import {
   FAB,
   IconButton,
   Text as PaperText,
+  ActivityIndicator,
+  Button,
 } from "react-native-paper";
 import { type WishlistItemOutput } from "@wishin/domain";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
@@ -65,11 +67,14 @@ export default function OwnerDashboard() {
         >
           {error}
         </PaperText>
-        <Pressable onPress={() => void refetch()} style={styles.retryButton}>
-          <PaperText style={[styles.retryText, themedStyles.primaryText]}>
-            Retry
-          </PaperText>
-        </Pressable>
+        <Button
+          mode="contained"
+          onPress={() => void refetch()}
+          style={styles.retryButton}
+          labelStyle={themedStyles.primaryText}
+        >
+          Retry
+        </Button>
       </View>
     );
   }
@@ -100,7 +105,6 @@ export default function OwnerDashboard() {
             <DashboardHeader
               wishlist={wishlist}
               commonStyles={styles}
-              themedStyles={themedStyles}
               onEdit={() => {
                 setIsEditing(true);
               }}
@@ -109,7 +113,6 @@ export default function OwnerDashboard() {
             <DashboardContent
               wishlist={wishlist}
               styles={styles}
-              themedStyles={themedStyles}
               dashboardStyles={dashboardStyles}
               onRemoveItem={handleRemoveItem}
               onEditItem={(item) => {
@@ -125,12 +128,7 @@ export default function OwnerDashboard() {
                 setEditingItem(undefined);
                 setIsItemModalVisible(true);
               }}
-              style={{
-                position: "absolute",
-                margin: Spacing.lg,
-                right: 0,
-                bottom: 0,
-              }}
+              style={dashboardStyles.fabPosition}
               accessibilityLabel="Add item to wishlist"
             />
 
@@ -143,10 +141,8 @@ export default function OwnerDashboard() {
                 }}
                 contentContainerStyle={[
                   themedStyles.background,
+                  dashboardStyles.modalContent,
                   {
-                    margin: Spacing.lg,
-                    padding: Spacing.xl,
-                    borderRadius: 28,
                     maxHeight: "80%",
                   },
                 ]}
@@ -200,11 +196,7 @@ export default function OwnerDashboard() {
                 }}
                 contentContainerStyle={[
                   themedStyles.background,
-                  {
-                    margin: Spacing.lg,
-                    padding: Spacing.xl,
-                    borderRadius: 28,
-                  },
+                  dashboardStyles.modalContent,
                 ]}
               >
                 <View

@@ -1,9 +1,9 @@
 import React, { useCallback } from "react";
 import { View, Linking, Alert, StyleSheet } from "react-native";
 import { Card, Text, Button, Badge, useTheme } from "react-native-paper";
-import { Priority, type WishlistItemOutput } from "@wishin/domain";
+import { type WishlistItemOutput } from "@wishin/domain";
 import type { WishlistStyles } from "../hooks/useWishlistStyles";
-import { PRIORITY_LABELS } from "../utils/priority";
+import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
 
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
@@ -32,17 +32,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
     }
   }, []);
 
-  const getPriorityColor = () => {
-    switch (item.priority) {
-      case Priority.URGENT:
-      case Priority.HIGH:
-        return theme.colors.error;
-      case Priority.MEDIUM:
-        return theme.colors.tertiary;
-      default:
-        return theme.colors.secondary;
-    }
-  };
+  const priorityColor = getPriorityColor(item.priority, theme);
 
   return (
     <Card style={commonStyles.card} mode="elevated">
@@ -83,7 +73,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
             style={[
               styles.badge,
               {
-                backgroundColor: getPriorityColor(),
+                backgroundColor: priorityColor,
               },
             ]}
           >

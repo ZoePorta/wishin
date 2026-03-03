@@ -25,4 +25,15 @@ export const createDashboardStyles = (theme: MD3Theme) =>
       alignItems: "center",
       width: "100%",
     },
+    modalContent: {
+      margin: Spacing.lg,
+      padding: Spacing.xl,
+      borderRadius: 28,
+    },
+    fabPosition: {
+      position: "absolute",
+      margin: Spacing.lg,
+      right: 0,
+      bottom: 0,
+    },
   });

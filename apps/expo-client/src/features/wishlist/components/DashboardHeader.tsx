@@ -7,7 +7,6 @@ import type { WishlistStyles } from "../hooks/useWishlistStyles";
 interface DashboardHeaderProps {
   wishlist: WishlistOutput;
   commonStyles: WishlistStyles["styles"];
-  themedStyles: WishlistStyles["themedStyles"];
   onEdit?: () => void;
 }
 
@@ -18,7 +17,6 @@ interface DashboardHeaderProps {
  * @param {DashboardHeaderProps} props - The component props.
  * @param {WishlistOutput} props.wishlist - The wishlist data to display.
  * @param {WishlistStyles["styles"]} props.commonStyles - Shared styles used across the dashboard.
- * @param {WishlistStyles["themedStyles"]} props.themedStyles - Theme-specific styles.
  * @param {() => void} [props.onEdit] - Optional callback for when the edit button is pressed.
  * @returns {JSX.Element} The rendered header.
  */

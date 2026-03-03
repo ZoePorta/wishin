@@ -8,9 +8,9 @@ import {
   Surface,
   useTheme,
 } from "react-native-paper";
-import { Priority } from "@wishin/domain";
 import type { WishlistItemOutput } from "@wishin/domain";
-import { PRIORITY_LABELS } from "../utils/priority";
+import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
+import { useMemo } from "react";
 import type { WishlistStyles } from "../hooks/useWishlistStyles";
 
 interface PublicItemCardProps {
@@ -33,6 +33,38 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     !item.isUnlimited &&
     !isCompleted &&
     item.purchasedQuantity + item.reservedQuantity >= item.totalQuantity;
+
+  const localStyles = useMemo(() => {
+    return StyleSheet.create({
+      overlayContainer: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(0,0,0,0.4)",
+        justifyContent: "center",
+        alignItems: "center",
+        zIndex: 1,
+        borderRadius: 12,
+      },
+      overlayBadge: {
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+        backgroundColor: theme.colors.surface,
+      },
+      badgeText: {
+        fontWeight: "bold",
+        color: theme.colors.onSurface,
+      },
+      footer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginTop: 12,
+      },
+      badge: {
+        alignSelf: "flex-start",
+      },
+    });
+  }, [theme]);
 
   const handleOpenUrl = useCallback(async (url?: string) => {
     if (!url) return;
@@ -86,11 +118,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
             style={[
               localStyles.badge,
               {
-                backgroundColor:
-                  item.priority === Priority.HIGH ||
-                  item.priority === Priority.URGENT
-                    ? theme.colors.error
-                    : theme.colors.secondary,
+                backgroundColor: getPriorityColor(item.priority, theme),
               },
             ]}
           >
@@ -111,33 +139,3 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     </Card>
   );
 };
-
-const localStyles = StyleSheet.create({
-  overlayContainer: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1,
-    borderRadius: 12,
-  },
-  overlayBadge: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: "white",
-  },
-  badgeText: {
-    fontWeight: "bold",
-    color: "black",
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 12,
-  },
-  badge: {
-    alignSelf: "flex-start",
-  },
-});
