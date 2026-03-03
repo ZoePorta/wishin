@@ -29,7 +29,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           alignItems: "center",
         }}
       >
-        <Text variant="headlineLarge" style={{ flex: 1 }}>
+        <Text variant="headlineMedium" style={{ flex: 1 }}>
           {wishlist.title}
         </Text>
         {onEdit && (
