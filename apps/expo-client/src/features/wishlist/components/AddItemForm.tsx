@@ -70,7 +70,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       url: url.trim() || undefined,
       price: priceUnknown ? undefined : parseFloat(price) || 0,
       currency: priceUnknown ? undefined : currency,
-      priority: priority as unknown as Priority,
+      priority: parseInt(priority, 10) as Priority,
       totalQuantity: isUnlimited ? 1 : parseInt(totalQuantity, 10) || 1,
       isUnlimited,
       imageUrl: initialData?.imageUrl,
@@ -196,7 +196,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         value={priority}
         onValueChange={setPriority}
         buttons={SORTED_PRIORITIES.map((p) => ({
-          value: p as unknown as string,
+          value: String(p),
           label: PRIORITY_LABELS[p],
           disabled: loading,
         }))}
