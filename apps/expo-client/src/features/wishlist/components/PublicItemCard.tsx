@@ -34,10 +34,26 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
 
   const handleOpenUrl = useCallback(async (url?: string) => {
     if (!url) return;
+
     try {
-      await Linking.openURL(url);
-    } catch {
-      Alert.alert("Error", "Could not open link.");
+      // Validate scheme
+      const lowerUrl = url.toLowerCase();
+      if (!lowerUrl.startsWith("http://") && !lowerUrl.startsWith("https://")) {
+        Alert.alert("Error", "Only web links (http/https) are supported.");
+        return;
+      }
+
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert("Error", `Cannot open this link: ${url}`);
+      }
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        `Could not open link: ${url}. ${error instanceof Error ? error.message : ""}`,
+      );
     }
   }, []);
 
@@ -106,6 +122,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
               mode="text"
               onPress={() => void handleOpenUrl(item.url)}
               accessibilityLabel={`View Online, ${item.name}`}
+              contentStyle={{ minWidth: 44, minHeight: 44 }}
             >
               View Online
             </Button>

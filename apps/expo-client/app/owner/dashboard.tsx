@@ -66,7 +66,11 @@ export default function OwnerDashboard() {
         >
           {error}
         </PaperText>
-        <Button mode="contained" onPress={() => void refetch()}>
+        <Button
+          mode="contained"
+          onPress={() => void refetch()}
+          contentStyle={{ minHeight: 44, minWidth: 44 }}
+        >
           Retry
         </Button>
       </Surface>

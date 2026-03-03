@@ -84,6 +84,7 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
         loading={loading}
         disabled={!title.trim() || loading}
         style={styles.submitButton}
+        contentStyle={{ minHeight: 44, minWidth: 44 }}
       >
         {initialData?.id ? "Update Wishlist" : "Create Wishlist"}
       </Button>

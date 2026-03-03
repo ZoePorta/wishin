@@ -38,6 +38,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           icon="pencil"
           mode="contained-tonal"
           onPress={onEdit}
+          size={32}
           accessibilityLabel="Edit wishlist details"
         />
       )}

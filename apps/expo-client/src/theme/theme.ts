@@ -82,6 +82,12 @@ function mergeAndValidateTheme(
   return merged;
 }
 
+/**
+ * Provides merged light and dark theme objects for the app.
+ * Combines MD3LightTheme/MD3DarkTheme with navigation themes
+ * and specific material design schemes.
+ * Validation occurs in mergeAndValidateTheme.
+ */
 export const combinedTheme = {
   light: mergeAndValidateTheme(
     MD3LightTheme,

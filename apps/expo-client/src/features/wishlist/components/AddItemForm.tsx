@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { View, ScrollView, StyleSheet, FlatList } from "react-native";
 import {
   TextInput,
   Button,
@@ -236,10 +236,12 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             <Text variant="titleMedium" style={styles.modalTitle}>
               Select Currency
             </Text>
-            <ScrollView style={styles.currencyList}>
-              {SUPPORTED_CURRENCIES.map((item) => (
+            <FlatList
+              style={styles.currencyList}
+              data={SUPPORTED_CURRENCIES}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
                 <List.Item
-                  key={item.code}
                   title={`${item.name} (${item.code})`}
                   onPress={() => {
                     setCurrency(item.code);
@@ -251,8 +253,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
                     ) : null
                   }
                 />
-              ))}
-            </ScrollView>
+              )}
+            />
           </Surface>
         </Modal>
       </Portal>
@@ -301,7 +303,6 @@ const styles = StyleSheet.create({
   },
   surface: {
     padding: 8,
-    borderRadius: 8,
   },
   modalTitle: {
     padding: 16,
