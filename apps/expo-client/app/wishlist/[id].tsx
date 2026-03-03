@@ -1,108 +1,150 @@
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useMemo, useCallback } from "react";
+import { View, FlatList, StyleSheet } from "react-native";
 import {
   Text,
-  View,
-  FlatList,
   ActivityIndicator,
-  Pressable,
-} from "react-native";
+  Button,
+  useTheme,
+  Divider,
+  Surface,
+} from "react-native-paper";
 import { useWishlist } from "../../src/hooks/useWishlist";
 import type { UseWishlistReturn } from "../../src/hooks/useWishlist";
 import type { WishlistItemOutput } from "@wishin/domain";
-import { useWishlistStyles } from "../../src/features/wishlist/hooks/useWishlistStyles";
 import { PublicItemCard } from "../../src/features/wishlist/components/PublicItemCard";
 
 /**
  * Display the details of a specific wishlist.
+ * Uses Material Design 3 components.
  *
- * @returns The WishlistDetail component.
+ * @returns {JSX.Element} The rendered wishlist details screen.
  */
 export default function WishlistDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { wishlist, loading, error, refetch }: UseWishlistReturn =
     useWishlist(id);
-  const { theme, styles, themedStyles } = useWishlistStyles();
+  const theme = useTheme();
 
   const ListHeader = useMemo(() => {
     if (!wishlist) return null;
     return (
       <View style={styles.header}>
-        <Text style={[styles.wishlistTitle, themedStyles.text]}>
+        <Text variant="headlineMedium" style={styles.headerTitle}>
           {wishlist.title}
         </Text>
         {wishlist.description && (
-          <Text style={[styles.wishlistDescription, themedStyles.textMuted]}>
+          <Text variant="bodyMedium" style={styles.description}>
             {wishlist.description}
           </Text>
         )}
-        <View style={[styles.divider, themedStyles.surfaceMuted]} />
+        <Divider style={styles.divider} />
       </View>
     );
-  }, [wishlist, styles, themedStyles]);
+  }, [wishlist]);
 
-  // Hoisted renderItem
   const renderItem = useCallback(
-    ({ item }: { item: WishlistItemOutput }) => (
-      <PublicItemCard item={item} styles={styles} themedStyles={themedStyles} />
-    ),
-    [styles, themedStyles],
+    ({ item }: { item: WishlistItemOutput }) => <PublicItemCard item={item} />,
+    [],
   );
 
   if (loading) {
     return (
-      <View style={[styles.centerContainer, themedStyles.background]}>
-        <ActivityIndicator size="large" color={theme.primary} />
-      </View>
+      <Surface style={styles.centerContainer}>
+        <ActivityIndicator size="large" />
+      </Surface>
     );
   }
 
   if (error) {
     return (
-      <View style={[styles.centerContainer, themedStyles.background]}>
-        <Text style={[styles.errorText, themedStyles.textMuted]}>{error}</Text>
-        <Pressable
-          onPress={() => void refetch()}
-          style={styles.retryButton}
-          accessibilityRole="button"
-          accessibilityLabel="Retry loading wishlist"
+      <Surface style={styles.centerContainer}>
+        <Text
+          variant="bodyLarge"
+          style={[styles.errorText, { color: theme.colors.error }]}
         >
-          <Text style={[styles.retryText, themedStyles.primaryText]}>
-            Tap to Retry
-          </Text>
-        </Pressable>
-      </View>
+          {error}
+        </Text>
+        <Button
+          mode="contained"
+          onPress={() => void refetch()}
+          contentStyle={styles.buttonContent}
+        >
+          Tap to Retry
+        </Button>
+      </Surface>
     );
   }
 
   if (!wishlist) {
     return (
-      <View style={[styles.centerContainer, themedStyles.background]}>
-        <Text style={[styles.errorText, themedStyles.textMuted]}>
-          Wishlist not found.
-        </Text>
-      </View>
+      <Surface style={styles.centerContainer}>
+        <Text variant="bodyLarge">Wishlist not found.</Text>
+      </Surface>
     );
   }
 
   return (
-    <>
+    <Surface style={styles.container}>
       <Stack.Screen options={{ title: wishlist.title }} />
       <FlatList
-        contentContainerStyle={[styles.listContent, themedStyles.background]}
+        contentContainerStyle={styles.listContent}
         data={wishlist.items}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, themedStyles.textMuted]}>
+            <Text variant="bodyMedium" style={styles.emptyText}>
               No items in this wishlist.
             </Text>
           </View>
         }
-        style={themedStyles.background}
       />
-    </>
+    </Surface>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  listContent: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  header: {
+    marginBottom: 24,
+  },
+  headerTitle: {
+    marginBottom: 4,
+  },
+  description: {
+    opacity: 0.7,
+  },
+  divider: {
+    marginTop: 16,
+  },
+  errorText: {
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontStyle: "italic",
+    opacity: 0.5,
+  },
+  buttonContent: {
+    minHeight: 44,
+    minWidth: 44,
+  },
+});

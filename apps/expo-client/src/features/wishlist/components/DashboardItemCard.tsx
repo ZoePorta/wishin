@@ -1,37 +1,32 @@
 import React, { useCallback } from "react";
-import {
-  View,
-  Text,
-  Image,
-  Pressable,
-  Linking,
-  Alert,
-  StyleSheet,
-} from "react-native";
-import { Priority, type WishlistItemOutput } from "@wishin/domain";
-import type { WishlistStyles } from "../hooks/useWishlistStyles";
-import { PRIORITY_LABELS } from "../utils/priority";
+import { View, Linking, Alert, StyleSheet } from "react-native";
+import { Card, Text, Button, Badge, useTheme } from "react-native-paper";
+import { type WishlistItemOutput } from "@wishin/domain";
+import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
 
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
-  commonStyles: WishlistStyles["styles"];
-  themedStyles: WishlistStyles["themedStyles"];
   onEdit: (item: WishlistItemOutput) => void;
   onRemove: (id: string) => void;
 }
 
 /**
  * Component to display a single wishlist item in the OWNER's dashboard.
- * - No spoilers (overlays for reserved/purchased status).
- * - Includes Edit and Remove buttons.
+ * Uses Material Design 3 components.
+ *
+ * @param {DashboardItemCardProps} props - The component props.
+ * @param {WishlistItemOutput} props.item - The wishlist item object to display.
+ * @param {function} props.onEdit - Callback to handle editing the item.
+ * @param {function} props.onRemove - Callback to handle removing the item.
+ * @returns {JSX.Element} The rendered dashboard item card.
  */
 export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
   item,
-  commonStyles,
-  themedStyles,
   onEdit,
   onRemove,
 }) => {
+  const theme = useTheme();
+
   const handleOpenUrl = useCallback(async (url?: string) => {
     if (!url) return;
     try {
@@ -41,32 +36,26 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
     }
   }, []);
 
+  const priorityColor = getPriorityColor(item.priority, theme);
+
   return (
-    <View style={[commonStyles.card, themedStyles.card]}>
+    <Card style={styles.card} mode="elevated">
       {item.imageUrl && (
-        <Image
+        <Card.Cover
           source={{ uri: item.imageUrl }}
-          style={commonStyles.itemImage}
-          resizeMode="cover"
           accessibilityLabel={item.name}
         />
       )}
-
-      <View style={commonStyles.cardContent}>
-        <View style={commonStyles.cardHeader}>
+      <Card.Content style={styles.cardContent}>
+        <View style={styles.cardHeader}>
           <View style={styles.titleContainer}>
-            <Text
-              accessibilityRole="header"
-              style={[commonStyles.itemTitle, themedStyles.text]}
-            >
-              {item.name}
-            </Text>
-            <Text style={[themedStyles.textMuted, styles.qtyText]}>
+            <Text variant="titleLarge">{item.name}</Text>
+            <Text variant="bodySmall">
               Qty: {item.isUnlimited ? "∞" : item.totalQuantity}
             </Text>
           </View>
           {item.price != null && item.currency != null && (
-            <Text style={[commonStyles.itemPrice, themedStyles.primaryText]}>
+            <Text variant="titleMedium">
               {item.currency} {item.price.toFixed(2)}
             </Text>
           )}
@@ -74,97 +63,85 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
 
         {item.description && (
           <Text
-            style={[commonStyles.itemDescription, themedStyles.textMuted]}
+            variant="bodyMedium"
             numberOfLines={2}
+            style={styles.description}
           >
             {item.description}
           </Text>
         )}
 
-        <View style={commonStyles.cardFooter}>
-          <View
+        <View style={styles.badgeContainer}>
+          <Badge
+            size={20}
             style={[
-              commonStyles.priorityBadge,
-              item.priority === Priority.HIGH ||
-              item.priority === Priority.URGENT
-                ? themedStyles.priorityHigh
-                : item.priority === Priority.MEDIUM
-                  ? themedStyles.priorityMedium
-                  : themedStyles.priorityLow,
+              styles.badge,
+              {
+                backgroundColor: priorityColor,
+              },
             ]}
           >
-            <Text style={[commonStyles.priorityText, themedStyles.text]}>
-              {PRIORITY_LABELS[item.priority]}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            {item.url && (
-              <Pressable
-                style={commonStyles.linkButton}
-                onPress={() => {
-                  void handleOpenUrl(item.url);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Open item link"
-              >
-                <Text
-                  style={[commonStyles.linkText, themedStyles.secondaryText]}
-                >
-                  Link
-                </Text>
-              </Pressable>
-            )}
-
-            <Pressable
-              style={[commonStyles.linkButton, styles.buttonSpacing]}
-              onPress={() => {
-                onEdit(item);
-              }}
-              accessibilityLabel={`Edit ${item.name}`}
-              accessibilityRole="button"
-            >
-              <Text style={[commonStyles.linkText, themedStyles.primaryText]}>
-                Edit
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={[commonStyles.linkButton, styles.buttonSpacing]}
-              onPress={() => {
-                onRemove(item.id);
-              }}
-              accessibilityLabel={`Delete ${item.name}`}
-              accessibilityRole="button"
-            >
-              <Text
-                style={[
-                  commonStyles.linkText,
-                  { color: themedStyles.priorityHigh.backgroundColor },
-                ]}
-              >
-                Delete
-              </Text>
-            </Pressable>
-          </View>
+            {PRIORITY_LABELS[item.priority]}
+          </Badge>
         </View>
-      </View>
-    </View>
+      </Card.Content>
+      <Card.Actions>
+        {item.url && (
+          <Button
+            mode="text"
+            onPress={() => {
+              void handleOpenUrl(item.url);
+            }}
+          >
+            Link
+          </Button>
+        )}
+        <Button
+          mode="text"
+          onPress={() => {
+            onEdit(item);
+          }}
+        >
+          Edit
+        </Button>
+        <Button
+          mode="text"
+          onPress={() => {
+            onRemove(item.id);
+          }}
+          textColor={theme.colors.error}
+        >
+          Delete
+        </Button>
+      </Card.Actions>
+    </Card>
   );
 };
 
 const styles = StyleSheet.create({
+  card: {
+    marginBottom: 16,
+    borderRadius: 12,
+  },
+  cardContent: {
+    paddingTop: 16,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
   titleContainer: {
     flex: 1,
   },
-  qtyText: {
-    fontSize: 12,
+  description: {
+    marginTop: 8,
   },
-  row: {
+  badgeContainer: {
     flexDirection: "row",
-    alignItems: "center",
+    marginTop: 12,
   },
-  buttonSpacing: {
-    marginLeft: 8,
+  badge: {
+    alignSelf: "flex-start",
   },
 });

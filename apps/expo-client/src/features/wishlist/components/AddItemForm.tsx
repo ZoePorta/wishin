@@ -1,19 +1,21 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { View, ScrollView, StyleSheet, FlatList } from "react-native";
 import {
-  View,
-  Text,
   TextInput,
-  Pressable,
-  ActivityIndicator,
+  Button,
+  Text,
+  Checkbox,
+  SegmentedButtons,
+  Portal,
   Modal,
-  FlatList,
-} from "react-native";
+  List,
+  Surface,
+} from "react-native-paper";
 import { Priority, type WishlistItemOutput } from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
-import { useWishlistStyles } from "../hooks/useWishlistStyles";
-import { createAddItemFormStyles } from "../styles/AddItemForm.styles";
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from "../utils/currencies";
+import { commonStyles } from "../../../theme/common-styles";
 
 /**
  * Input format for the onSubmit callback.
@@ -30,6 +32,14 @@ interface AddItemFormProps {
 
 /**
  * Form component to add or edit items in a wishlist.
+ * Uses Material Design 3 components.
+ *
+ * @param {AddItemFormProps} props - The component props.
+ * @param {string} props.wishlistId - The ID of the wishlist the item belongs to.
+ * @param {WishlistItemOutput} [props.initialData] - Optional initial data for editing an existing item.
+ * @param {function} props.onSubmit - Callback function invoked on form submission.
+ * @param {boolean} [props.loading=false] - Optional loading state for the submit button.
+ * @returns {JSX.Element} The rendered add/edit item form.
  */
 export const AddItemForm: React.FC<AddItemFormProps> = ({
   wishlistId,
@@ -37,7 +47,6 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   onSubmit,
   loading = false,
 }) => {
-  const { theme } = useWishlistStyles();
   const [name, setName] = useState(initialData?.name ?? "");
   const [description, setDescription] = useState(
     initialData?.description ?? "",
@@ -47,8 +56,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   const [currency, setCurrency] = useState(
     initialData?.currency ?? DEFAULT_CURRENCY,
   );
-  const [priority, setPriority] = useState<Priority>(
-    initialData?.priority ?? Priority.MEDIUM,
+  const [priority, setPriority] = useState<string>(
+    String(initialData?.priority ?? Priority.MEDIUM),
   );
   const [totalQuantity, setTotalQuantity] = useState(
     initialData?.totalQuantity.toString() ?? "1",
@@ -58,6 +67,18 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   );
   const [priceUnknown, setPriceUnknown] = useState(initialData?.price == null);
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
+
+  useEffect(() => {
+    setName(initialData?.name ?? "");
+    setDescription(initialData?.description ?? "");
+    setUrl(initialData?.url ?? "");
+    setPrice(initialData?.price?.toString() ?? "0");
+    setCurrency(initialData?.currency ?? DEFAULT_CURRENCY);
+    setPriority(String(initialData?.priority ?? Priority.MEDIUM));
+    setTotalQuantity(initialData?.totalQuantity.toString() ?? "1");
+    setIsUnlimited(initialData?.isUnlimited ?? false);
+    setPriceUnknown(initialData?.price == null);
+  }, [initialData]);
 
   const handleSubmit = useCallback(async () => {
     if (!name.trim() || loading) return;
@@ -69,8 +90,10 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       url: url.trim() || undefined,
       price: priceUnknown ? undefined : parseFloat(price) || 0,
       currency: priceUnknown ? undefined : currency,
-      priority,
-      totalQuantity: isUnlimited ? 1 : parseInt(totalQuantity, 10) || 1,
+      priority: parseInt(priority, 10) as Priority,
+      totalQuantity: isUnlimited
+        ? 1
+        : Math.max(1, parseInt(totalQuantity, 10) || 1),
       isUnlimited,
       imageUrl: initialData?.imageUrl,
       id: initialData?.id,
@@ -94,232 +117,215 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     onSubmit,
   ]);
 
-  const formStyles = useMemo(() => createAddItemFormStyles(theme), [theme]);
-
-  // TODO: Set default currency based on user location or preferences
   return (
-    <View style={formStyles.container}>
-      <Text style={formStyles.title}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <Text variant="headlineSmall" style={styles.title}>
         {initialData ? "Edit Item" : "Add New Item"}
       </Text>
 
-      {/* TODO: Implement Image Upload integration for items */}
-
-      <Text style={formStyles.label}>Name*</Text>
       <TextInput
-        style={formStyles.input}
+        label="Name*"
         value={name}
         onChangeText={setName}
+        mode="outlined"
         placeholder="Product name..."
-        placeholderTextColor={theme.textMuted}
-        accessibilityLabel="Item name"
+        disabled={loading}
+        style={styles.input}
       />
 
-      <Text style={formStyles.label}>Description</Text>
       <TextInput
-        style={[formStyles.input, formStyles.multilineInput]}
+        label="Description"
         value={description}
         onChangeText={setDescription}
-        placeholder="Product description..."
+        mode="outlined"
         multiline
-        placeholderTextColor={theme.textMuted}
-        accessibilityLabel="Item description"
+        numberOfLines={3}
+        placeholder="Product description..."
+        disabled={loading}
+        style={styles.input}
       />
 
-      <View style={formStyles.row}>
-        <View style={formStyles.flex1}>
-          <Text style={formStyles.label}>Price</Text>
-          <View style={formStyles.priceRow}>
-            <TextInput
-              style={[
-                formStyles.input,
-                formStyles.flex1,
-                priceUnknown && formStyles.inputDisabled,
-              ]}
-              value={price}
-              onChangeText={setPrice}
-              keyboardType="decimal-pad"
-              editable={!priceUnknown}
-              placeholderTextColor={theme.textMuted}
-              accessibilityLabel="Item price"
-            />
-            <Pressable
-              disabled={priceUnknown}
-              style={[
-                formStyles.currencyPicker,
-                priceUnknown && formStyles.inputDisabled,
-              ]}
-              onPress={() => {
-                setIsCurrencyModalVisible(true);
-              }}
-              accessibilityLabel="Select currency"
-              accessibilityRole="combobox"
-            >
-              <Text style={formStyles.currencyText}>{currency}</Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            style={formStyles.checkboxContainer}
+      <View style={styles.row}>
+        <View style={styles.flex1}>
+          <TextInput
+            label="Price"
+            value={price}
+            onChangeText={setPrice}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            disabled={priceUnknown || loading}
+            right={
+              <TextInput.Icon
+                icon="chevron-down"
+                onPress={() => {
+                  if (!priceUnknown && !loading)
+                    setIsCurrencyModalVisible(true);
+                }}
+              />
+            }
+            left={<TextInput.Affix text={currency} />}
+          />
+          <Checkbox.Item
+            label="I don't know the price"
+            status={priceUnknown ? "checked" : "unchecked"}
             onPress={() => {
               setPriceUnknown(!priceUnknown);
             }}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: priceUnknown }}
-            accessibilityLabel="Price unknown"
-          >
-            <View style={formStyles.checkbox}>
-              <View
-                style={[
-                  formStyles.checkboxVisual,
-                  priceUnknown && formStyles.checkboxVisualChecked,
-                ]}
-              >
-                {priceUnknown && <View style={formStyles.checkmark} />}
-              </View>
-            </View>
-            <Text style={formStyles.checkboxLabel}>I don't know the price</Text>
-          </Pressable>
+            disabled={loading}
+            position="leading"
+            labelStyle={styles.checkboxLabel}
+          />
         </View>
 
-        <View style={formStyles.flex1}>
-          <Text style={formStyles.label}>Quantity</Text>
+        <View style={styles.quantityContainer}>
           <TextInput
-            style={[formStyles.input, isUnlimited && formStyles.inputDisabled]}
+            label="Quantity"
             value={totalQuantity}
             onChangeText={setTotalQuantity}
+            mode="outlined"
             keyboardType="number-pad"
-            editable={!isUnlimited}
-            placeholderTextColor={theme.textMuted}
-            accessibilityLabel="Item quantity"
+            disabled={isUnlimited || loading}
           />
-          <Pressable
-            style={formStyles.checkboxContainer}
+          <Checkbox.Item
+            label="Unlimited"
+            status={isUnlimited ? "checked" : "unchecked"}
             onPress={() => {
               setIsUnlimited(!isUnlimited);
             }}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: isUnlimited }}
-            accessibilityLabel="Unlimited quantity"
-          >
-            <View style={formStyles.checkbox}>
-              <View
-                style={[
-                  formStyles.checkboxVisual,
-                  isUnlimited && formStyles.checkboxVisualChecked,
-                ]}
-              >
-                {isUnlimited && <View style={formStyles.checkmark} />}
-              </View>
-            </View>
-            <Text style={formStyles.checkboxLabel}>Unlimited</Text>
-          </Pressable>
+            disabled={loading}
+            position="leading"
+            labelStyle={styles.checkboxLabel}
+          />
         </View>
       </View>
 
-      <Text style={formStyles.label}>Link (URL)</Text>
       <TextInput
-        style={formStyles.input}
+        label="Link (URL)"
         value={url}
         onChangeText={setUrl}
+        mode="outlined"
         placeholder="https://..."
         keyboardType="url"
         autoCapitalize="none"
-        placeholderTextColor={theme.textMuted}
-        accessibilityLabel="Item link URL"
+        disabled={loading}
+        style={styles.input}
       />
 
-      <Text style={formStyles.label}>Priority</Text>
-      <View style={formStyles.priorityGroup}>
-        {SORTED_PRIORITIES.map((p) => (
-          <Pressable
-            key={p}
-            style={[
-              formStyles.priorityButton,
-              priority === p && formStyles.priorityActive,
-            ]}
-            onPress={() => {
-              setPriority(p);
-            }}
-            accessibilityRole="button"
-            accessibilityState={{ selected: priority === p }}
-            accessibilityLabel={`${PRIORITY_LABELS[p]} priority`}
-          >
-            <Text
-              style={[
-                formStyles.priorityText,
-                priority === p && formStyles.priorityTextActive,
-              ]}
-            >
-              {PRIORITY_LABELS[p]}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <Text variant="labelLarge" style={styles.label}>
+        Priority
+      </Text>
+      <SegmentedButtons
+        value={priority}
+        onValueChange={setPriority}
+        buttons={SORTED_PRIORITIES.map((p) => ({
+          value: String(p),
+          label: PRIORITY_LABELS[p],
+          disabled: loading,
+        }))}
+        style={styles.segmentedButtons}
+      />
 
-      <Pressable
-        style={[
-          formStyles.submitButton,
-          (!name.trim() || loading) && formStyles.submitButtonDisabled,
-        ]}
+      <Button
+        mode="contained"
         onPress={() => {
           void handleSubmit();
         }}
+        loading={loading}
         disabled={!name.trim() || loading}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !name.trim() || loading }}
+        style={styles.submitButton}
+        contentStyle={commonStyles.minimumTouchTarget}
       >
-        {loading ? (
-          <ActivityIndicator color={theme.card} />
-        ) : (
-          <Text style={formStyles.submitButtonText}>
-            {initialData ? "Save Changes" : "Add to List"}
-          </Text>
-        )}
-      </Pressable>
+        {initialData ? "Save Changes" : "Add to List"}
+      </Button>
 
-      {/* Currency Selection Modal */}
-      <Modal
-        visible={isCurrencyModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => {
-          setIsCurrencyModalVisible(false);
-        }}
-      >
-        <Pressable
-          style={formStyles.modalOverlay}
-          onPress={() => {
+      <Portal>
+        <Modal
+          visible={isCurrencyModalVisible}
+          onDismiss={() => {
             setIsCurrencyModalVisible(false);
           }}
+          contentContainerStyle={styles.modalContent}
         >
-          <View style={formStyles.modalContent}>
+          <Surface style={styles.surface} elevation={5}>
+            <Text variant="titleMedium" style={styles.modalTitle}>
+              Select Currency
+            </Text>
             <FlatList
+              style={styles.currencyList}
               data={SUPPORTED_CURRENCIES}
               keyExtractor={(item) => item.code}
               renderItem={({ item }) => (
-                <Pressable
-                  style={[
-                    formStyles.currencyOption,
-                    currency === item.code && formStyles.currencyOptionSelected,
-                  ]}
+                <List.Item
+                  title={`${item.name} (${item.code})`}
                   onPress={() => {
                     setCurrency(item.code);
                     setIsCurrencyModalVisible(false);
                   }}
-                >
-                  <Text style={formStyles.currencyOptionText}>
-                    {item.name} ({item.code})
-                  </Text>
-                  {currency === item.code && (
-                    <Text style={formStyles.currencyOptionText}>✓</Text>
-                  )}
-                </Pressable>
+                  right={(props) =>
+                    currency === item.code ? (
+                      <List.Icon {...props} icon="check" />
+                    ) : null
+                  }
+                />
               )}
             />
-          </View>
-        </Pressable>
-      </Modal>
-    </View>
+          </Surface>
+        </Modal>
+      </Portal>
+    </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  title: {
+    marginBottom: 24,
+  },
+  input: {
+    marginBottom: 16,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  flex1: {
+    flex: 1,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    textAlign: "left",
+  },
+  label: {
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  segmentedButtons: {
+    marginBottom: 24,
+  },
+  submitButton: {
+    marginTop: 8,
+  },
+  modalContent: {
+    padding: 20,
+  },
+  surface: {
+    padding: 8,
+  },
+  modalTitle: {
+    padding: 16,
+  },
+  quantityContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  currencyList: {
+    maxHeight: 300,
+  },
+});

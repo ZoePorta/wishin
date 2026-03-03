@@ -1,26 +1,31 @@
 import React, { useCallback } from "react";
-import { View, Text, Image, Pressable, Linking, Alert } from "react-native";
-import { Priority } from "@wishin/domain";
+import { View, Linking, Alert, StyleSheet } from "react-native";
+import {
+  Card,
+  Text,
+  Button,
+  Badge,
+  Surface,
+  useTheme,
+} from "react-native-paper";
 import type { WishlistItemOutput } from "@wishin/domain";
-import { PRIORITY_LABELS } from "../utils/priority";
-import type { WishlistStyles } from "../hooks/useWishlistStyles";
+import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
+import { commonStyles } from "../../../theme/common-styles";
 
 interface PublicItemCardProps {
   item: WishlistItemOutput;
-  styles: WishlistStyles["styles"];
-  themedStyles: WishlistStyles["themedStyles"];
 }
 
 /**
  * Component to display a single wishlist item to VISITORS.
- * - Includes overlays for completed/reserved items.
- * - No management buttons (Remove).
+ * Uses Material Design 3 components.
+ *
+ * @param {PublicItemCardProps} props - The component props.
+ * @param {WishlistItemOutput} props.item - The wishlist item object to display.
+ * @returns {JSX.Element} The rendered public item card.
  */
-export const PublicItemCard: React.FC<PublicItemCardProps> = ({
-  item,
-  styles,
-  themedStyles,
-}) => {
+export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
+  const theme = useTheme();
   const isCompleted =
     !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
   const isReserved =
@@ -31,54 +36,62 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   const handleOpenUrl = useCallback(async (url?: string) => {
     if (!url) return;
 
+    const trimmedUrl = url.trim();
+
     try {
-      await Linking.openURL(url);
-    } catch (err: unknown) {
+      // Validate scheme
+      const lowerUrl = trimmedUrl.toLowerCase();
+      if (!lowerUrl.startsWith("http://") && !lowerUrl.startsWith("https://")) {
+        Alert.alert("Error", "Only web links (http/https) are supported.");
+        return;
+      }
+
+      const supported = await Linking.canOpenURL(trimmedUrl);
+      if (supported) {
+        await Linking.openURL(trimmedUrl);
+      } else {
+        Alert.alert("Error", `Cannot open this link: ${trimmedUrl}`);
+      }
+    } catch (error) {
       Alert.alert(
         "Error",
-        "An unexpected error occurred while trying to open the link.",
+        `Could not open link: ${trimmedUrl}. ${error instanceof Error ? error.message : ""}`,
       );
-      console.error("Failed to open URL:", err);
     }
   }, []);
 
   return (
-    <View style={[styles.card, themedStyles.card]}>
+    <Card style={styles.card} mode="elevated">
       {item.imageUrl && (
-        <Image
+        <Card.Cover
           source={{ uri: item.imageUrl }}
-          style={styles.itemImage}
-          resizeMode="cover"
           accessibilityLabel={item.name}
         />
       )}
 
-      {/* Overlays */}
-      {isCompleted && (
-        <View style={[styles.overlay, themedStyles.overlay]}>
-          <View style={[styles.badge, themedStyles.completedBadge]}>
-            <Text style={[styles.badgeText, themedStyles.badgeText]}>
-              COMPLETED
+      {(isCompleted || isReserved) && (
+        <View style={styles.overlayContainer}>
+          <Surface
+            style={[
+              styles.overlayBadge,
+              { backgroundColor: theme.colors.surfaceVariant },
+            ]}
+            elevation={2}
+          >
+            <Text variant="labelLarge" style={styles.overlayLabel}>
+              {isCompleted ? "COMPLETED" : "RESERVED"}
             </Text>
-          </View>
+          </Surface>
         </View>
       )}
 
-      {isReserved && (
-        <View style={[styles.overlay, themedStyles.overlay]}>
-          <View style={[styles.badge, themedStyles.reservedBadge]}>
-            <Text style={[styles.badgeText, themedStyles.badgeText]}>
-              RESERVED
-            </Text>
-          </View>
-        </View>
-      )}
-
-      <View style={styles.cardContent}>
+      <Card.Content style={styles.cardContent}>
         <View style={styles.cardHeader}>
-          <Text style={[styles.itemTitle, themedStyles.text]}>{item.name}</Text>
+          <Text variant="titleLarge" style={styles.titleText}>
+            {item.name}
+          </Text>
           {item.price != null && item.currency != null && (
-            <Text style={[styles.itemPrice, themedStyles.primaryText]}>
+            <Text variant="titleMedium">
               {item.currency} {item.price.toFixed(2)}
             </Text>
           )}
@@ -86,50 +99,85 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
 
         {item.description && (
           <Text
-            style={[styles.itemDescription, themedStyles.textMuted]}
+            variant="bodyMedium"
             numberOfLines={2}
+            style={styles.description}
           >
             {item.description}
           </Text>
         )}
 
-        <View style={styles.cardFooter}>
-          <View
+        <View style={styles.footer}>
+          <Badge
+            size={20}
             style={[
-              styles.priorityBadge,
-              item.priority === Priority.HIGH ||
-              item.priority === Priority.URGENT
-                ? themedStyles.priorityHigh
-                : item.priority === Priority.MEDIUM
-                  ? themedStyles.priorityMedium
-                  : themedStyles.priorityLow,
+              styles.badge,
+              {
+                backgroundColor: getPriorityColor(item.priority, theme),
+              },
             ]}
           >
-            <Text style={[styles.priorityText, themedStyles.text]}>
-              {PRIORITY_LABELS[item.priority]}
-            </Text>
-          </View>
+            {PRIORITY_LABELS[item.priority]}
+          </Badge>
 
           {item.url && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.linkButton,
-                pressed && styles.pressed,
-              ]}
-              hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
-              onPress={() => {
-                void handleOpenUrl(item.url);
-              }}
+            <Button
+              mode="text"
+              onPress={() => void handleOpenUrl(item.url)}
               accessibilityLabel={`View Online, ${item.name}`}
-              accessibilityRole="link"
+              contentStyle={commonStyles.minimumTouchTarget}
             >
-              <Text style={[styles.linkText, themedStyles.secondaryText]}>
-                View Online
-              </Text>
-            </Pressable>
+              View Online
+            </Button>
           )}
         </View>
-      </View>
-    </View>
+      </Card.Content>
+    </Card>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    marginBottom: 16,
+    borderRadius: 12,
+  },
+  cardContent: {
+    paddingTop: 16,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  description: {
+    marginTop: 8,
+  },
+  overlayContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+    borderRadius: 12,
+  },
+  overlayBadge: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 12,
+  },
+  badge: {
+    alignSelf: "flex-start",
+  },
+  overlayLabel: {
+    fontWeight: "bold",
+  },
+  titleText: {
+    flex: 1,
+  },
+});
