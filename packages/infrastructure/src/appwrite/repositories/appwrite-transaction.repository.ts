@@ -1,5 +1,6 @@
 import {
   Client,
+  Account,
   TablesDB,
   Query,
   AppwriteException,
@@ -12,12 +13,16 @@ import {
   type TransactionDocument,
 } from "../mappers/transaction.mapper";
 import { toDocument } from "../utils/to-document";
+import type { SessionAwareRepository } from "./session-aware-repository.interface";
 
 /**
  * Appwrite implementation of the TransactionRepository.
  */
-export class AppwriteTransactionRepository implements TransactionRepository {
+export class AppwriteTransactionRepository
+  implements TransactionRepository, SessionAwareRepository
+{
   private readonly tablesDb: TablesDB;
+  private readonly account: Account;
 
   /**
    * Initializes the repository.
@@ -32,6 +37,33 @@ export class AppwriteTransactionRepository implements TransactionRepository {
     private readonly transactionsCollectionId: string,
   ) {
     this.tablesDb = new TablesDB(this.client);
+    this.account = new Account(this.client);
+  }
+
+  /**
+   * Ensuring an active session exists.
+   * Creates an anonymous session if no session is active.
+   */
+  async ensureSession(): Promise<void> {
+    try {
+      await this.account.get();
+    } catch (error) {
+      if (error instanceof AppwriteException && error.code === 401) {
+        await this.account.createAnonymousSession();
+        return;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves the current user's unique identifier.
+   * @returns A Promise that resolves to the current user ID.
+   */
+  async getCurrentUserId(): Promise<string> {
+    await this.ensureSession();
+    const user = await this.account.get();
+    return user.$id;
   }
 
   /**
@@ -40,6 +72,7 @@ export class AppwriteTransactionRepository implements TransactionRepository {
    * @param transaction - The transaction to save.
    */
   async save(transaction: Transaction): Promise<void> {
+    await this.ensureSession();
     await this.tablesDb.upsertRow({
       databaseId: this.databaseId,
       tableId: this.transactionsCollectionId,
@@ -51,13 +84,11 @@ export class AppwriteTransactionRepository implements TransactionRepository {
   /**
    * Finds a transaction by its unique ID.
    *
-   * @todo Mapping to domain is intentionally deferred (Phase 3.4). Currently returns null or partial.
-   * References: {@link TransactionMapper.toDomain}, {@link transactionsCollectionId}.
-   *
    * @param id - The transaction UUID.
-   * @returns {Promise<Transaction | null>} Resolves to Transaction context once implemented, currently returns result of partial mapper.
+   * @returns {Promise<Transaction | null>}
    */
   async findById(id: string): Promise<Transaction | null> {
+    await this.ensureSession();
     try {
       const doc = await this.tablesDb.getRow({
         databaseId: this.databaseId,
@@ -81,6 +112,7 @@ export class AppwriteTransactionRepository implements TransactionRepository {
    * @returns {Promise<Transaction[]>}
    */
   async findByItemId(itemId: string): Promise<Transaction[]> {
+    await this.ensureSession();
     const response = await this.tablesDb.listRows({
       databaseId: this.databaseId,
       tableId: this.transactionsCollectionId,
@@ -104,6 +136,7 @@ export class AppwriteTransactionRepository implements TransactionRepository {
    * @returns {Promise<number>} The number of transactions cancelled.
    */
   async cancelByItemId(itemId: string): Promise<number> {
+    await this.ensureSession();
     let totalCancelled = 0;
     let hasMore = true;
 
