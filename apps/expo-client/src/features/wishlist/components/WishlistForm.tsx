@@ -78,7 +78,7 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
         disabled={!title.trim() || loading}
         style={styles.submitButton}
       >
-        {initialData ? "Update Wishlist" : "Create Wishlist"}
+        {initialData?.id ? "Update Wishlist" : "Create Wishlist"}
       </Button>
     </ScrollView>
   );

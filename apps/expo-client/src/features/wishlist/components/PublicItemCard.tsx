@@ -1,6 +1,13 @@
 import React, { useCallback } from "react";
 import { View, Linking, Alert, StyleSheet } from "react-native";
-import { Card, Text, Button, Badge, Surface } from "react-native-paper";
+import {
+  Card,
+  Text,
+  Button,
+  Badge,
+  Surface,
+  useTheme,
+} from "react-native-paper";
 import { Priority } from "@wishin/domain";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { PRIORITY_LABELS } from "../utils/priority";
@@ -9,7 +16,6 @@ import type { WishlistStyles } from "../hooks/useWishlistStyles";
 interface PublicItemCardProps {
   item: WishlistItemOutput;
   styles: WishlistStyles["styles"];
-  themedStyles: WishlistStyles["themedStyles"];
 }
 
 /**
@@ -20,6 +26,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   item,
   styles,
 }) => {
+  const theme = useTheme();
   const isCompleted =
     !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
   const isReserved =
@@ -82,8 +89,8 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
                 backgroundColor:
                   item.priority === Priority.HIGH ||
                   item.priority === Priority.URGENT
-                    ? "red"
-                    : undefined,
+                    ? theme.colors.error
+                    : theme.colors.secondary,
               },
             ]}
           >

@@ -17,7 +17,7 @@ export default function WishlistDetail() {
   const { wishlist, loading, error, refetch }: UseWishlistReturn =
     useWishlist(id);
   const theme = useTheme();
-  const { styles, themedStyles } = useWishlistStyles();
+  const { styles } = useWishlistStyles();
 
   const ListHeader = useMemo(() => {
     if (!wishlist) return null;
@@ -41,9 +41,9 @@ export default function WishlistDetail() {
 
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => (
-      <PublicItemCard item={item} styles={styles} themedStyles={themedStyles} />
+      <PublicItemCard item={item} styles={styles} />
     ),
-    [styles, themedStyles],
+    [styles],
   );
 
   if (loading) {

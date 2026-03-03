@@ -10,7 +10,6 @@ import type { createDashboardStyles } from "../styles/dashboard.styles";
 interface DashboardContentProps {
   wishlist: WishlistOutput;
   styles: WishlistStyles["styles"];
-  themedStyles: WishlistStyles["themedStyles"];
   dashboardStyles: ReturnType<typeof createDashboardStyles>;
   onRemoveItem: (id: string) => void;
   onEditItem: (item: WishlistItemOutput) => void;
@@ -31,7 +30,6 @@ interface DashboardContentProps {
 export const DashboardContent: React.FC<DashboardContentProps> = ({
   wishlist,
   styles,
-  themedStyles,
   dashboardStyles,
   onRemoveItem,
   onEditItem,
@@ -52,7 +50,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         <DashboardItemCard
           item={item}
           commonStyles={styles}
-          themedStyles={themedStyles}
           onEdit={onEditItem}
           onRemove={onRemoveItem}
         />

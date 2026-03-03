@@ -38,27 +38,59 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationDark: NavigationDarkTheme,
 });
 
+/**
+ * Type guard to check if an object satisfies the MD3Theme interface.
+ */
+function isMD3Theme(obj: unknown): obj is MD3Theme {
+  if (typeof obj !== "object" || obj === null) return false;
+  const theme = obj as Record<string, unknown>;
+  return (
+    "colors" in theme &&
+    "fonts" in theme &&
+    "roundness" in theme &&
+    "version" in theme &&
+    "animation" in theme
+  );
+}
+
+/**
+ * Merges Paper and Navigation themes with custom material schemes.
+ */
+function mergeAndValidateTheme(
+  paperTheme: MD3Theme,
+  navigationTheme: typeof LightTheme,
+  materialScheme: Record<string, string>,
+): MD3Theme {
+  const merged = {
+    ...paperTheme,
+    ...navigationTheme,
+    colors: {
+      ...paperTheme.colors,
+      ...materialScheme,
+      ...navigationTheme.colors,
+    },
+    // Ensure MD3 specific properties are preserved
+    fonts: paperTheme.fonts,
+    animation: paperTheme.animation,
+    roundness: paperTheme.roundness,
+  };
+
+  if (!isMD3Theme(merged)) {
+    throw new Error("Invalid MD3Theme generated during merge");
+  }
+
+  return merged;
+}
+
 export const combinedTheme = {
-  light: {
-    ...MD3LightTheme,
-    ...LightTheme,
-    colors: {
-      ...MD3LightTheme.colors,
-      ...materialTheme.schemes.light,
-      ...LightTheme.colors,
-    },
-    // Ensure MD3 typescale is preserved to satisfy MD3Theme interface
-    fonts: MD3LightTheme.fonts,
-  } as unknown as MD3Theme,
-  dark: {
-    ...MD3DarkTheme,
-    ...DarkTheme,
-    colors: {
-      ...MD3DarkTheme.colors,
-      ...materialTheme.schemes.dark,
-      ...DarkTheme.colors,
-    },
-    // Ensure MD3 typescale is preserved to satisfy MD3Theme interface
-    fonts: MD3DarkTheme.fonts,
-  } as unknown as MD3Theme,
+  light: mergeAndValidateTheme(
+    MD3LightTheme,
+    LightTheme,
+    materialTheme.schemes.light,
+  ),
+  dark: mergeAndValidateTheme(
+    MD3DarkTheme,
+    DarkTheme,
+    materialTheme.schemes.dark,
+  ),
 };

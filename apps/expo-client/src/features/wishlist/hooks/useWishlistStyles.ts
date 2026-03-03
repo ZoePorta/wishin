@@ -55,6 +55,9 @@ export function useWishlistStyles() {
       priorityHigh: {
         backgroundColor: theme.colors.errorContainer,
       },
+      priorityUrgent: {
+        backgroundColor: theme.colors.errorContainer,
+      },
       priorityMedium: {
         backgroundColor: theme.colors.tertiaryContainer,
       },

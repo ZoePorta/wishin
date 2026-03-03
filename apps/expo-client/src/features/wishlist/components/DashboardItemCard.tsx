@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { View, Linking, Alert, StyleSheet } from "react-native";
-import { Card, Text, Button, Badge } from "react-native-paper";
+import { Card, Text, Button, Badge, useTheme } from "react-native-paper";
 import { Priority, type WishlistItemOutput } from "@wishin/domain";
 import type { WishlistStyles } from "../hooks/useWishlistStyles";
 import { PRIORITY_LABELS } from "../utils/priority";
@@ -8,7 +8,6 @@ import { PRIORITY_LABELS } from "../utils/priority";
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
   commonStyles: WishlistStyles["styles"];
-  themedStyles: WishlistStyles["themedStyles"];
   onEdit: (item: WishlistItemOutput) => void;
   onRemove: (id: string) => void;
 }
@@ -23,6 +22,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
   onEdit,
   onRemove,
 }) => {
+  const theme = useTheme();
   const handleOpenUrl = useCallback(async (url?: string) => {
     if (!url) return;
     try {
@@ -36,13 +36,11 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
     switch (item.priority) {
       case Priority.URGENT:
       case Priority.HIGH:
-        return "error";
+        return theme.colors.error;
       case Priority.MEDIUM:
-        // Material 3 caution/warning is often tertiary or a custom color,
-        // using 'tertiary' as a fallback for 'warning' if not defined in standard MD3 colors.
-        return "tertiary";
+        return theme.colors.tertiary;
       default:
-        return "secondary";
+        return theme.colors.secondary;
     }
   };
 
@@ -85,8 +83,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
             style={[
               styles.badge,
               {
-                backgroundColor:
-                  getPriorityColor() === "error" ? "red" : undefined,
+                backgroundColor: getPriorityColor(),
               },
             ]}
           >
@@ -118,7 +115,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
           onPress={() => {
             onRemove(item.id);
           }}
-          textColor="red"
+          textColor={theme.colors.error}
         >
           Delete
         </Button>
