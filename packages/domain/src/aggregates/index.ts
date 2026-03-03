@@ -1,3 +1,3 @@
 export * from "./wishlist";
-export * from "./user";
+export * from "./profile";
 export * from "./transaction";
