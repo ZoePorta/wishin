@@ -13,6 +13,12 @@ interface DashboardItemCardProps {
 /**
  * Component to display a single wishlist item in the OWNER's dashboard.
  * Uses Material Design 3 components.
+ *
+ * @param {DashboardItemCardProps} props - The component props.
+ * @param {WishlistItemOutput} props.item - The wishlist item object to display.
+ * @param {function} props.onEdit - Callback to handle editing the item.
+ * @param {function} props.onRemove - Callback to handle removing the item.
+ * @returns {JSX.Element} The rendered dashboard item card.
  */
 export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
   item,

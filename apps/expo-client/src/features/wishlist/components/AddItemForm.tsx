@@ -32,6 +32,13 @@ interface AddItemFormProps {
 /**
  * Form component to add or edit items in a wishlist.
  * Uses Material Design 3 components.
+ *
+ * @param {AddItemFormProps} props - The component props.
+ * @param {string} props.wishlistId - The ID of the wishlist the item belongs to.
+ * @param {WishlistItemOutput} [props.initialData] - Optional initial data for editing an existing item.
+ * @param {function} props.onSubmit - Callback function invoked on form submission.
+ * @param {boolean} [props.loading=false] - Optional loading state for the submit button.
+ * @returns {JSX.Element} The rendered add/edit item form.
  */
 export const AddItemForm: React.FC<AddItemFormProps> = ({
   wishlistId,
@@ -71,7 +78,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       price: priceUnknown ? undefined : parseFloat(price) || 0,
       currency: priceUnknown ? undefined : currency,
       priority: parseInt(priority, 10) as Priority,
-      totalQuantity: isUnlimited ? 1 : parseInt(totalQuantity, 10) || 1,
+      totalQuantity: isUnlimited
+        ? 1
+        : Math.max(1, parseInt(totalQuantity, 10) || 1),
       isUnlimited,
       imageUrl: initialData?.imageUrl,
       id: initialData?.id,

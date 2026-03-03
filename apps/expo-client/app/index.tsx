@@ -26,6 +26,7 @@ export default function Index() {
         <Button
           mode="contained"
           style={styles.button}
+          contentStyle={styles.buttonContent}
           accessibilityLabel="View demo wishlist"
         >
           View Demo Wishlist
@@ -36,6 +37,7 @@ export default function Index() {
         <Button
           mode="outlined"
           style={styles.secondaryButton}
+          contentStyle={styles.buttonContent}
           accessibilityLabel="Go to owner dashboard"
         >
           Go to Owner Dashboard
@@ -62,9 +64,17 @@ const styles = StyleSheet.create({
   },
   button: {
     width: "100%",
+    maxWidth: 360,
+    alignSelf: "center",
     marginBottom: 16,
   },
   secondaryButton: {
     width: "100%",
+    maxWidth: 360,
+    alignSelf: "center",
+  },
+  buttonContent: {
+    minHeight: 44,
+    justifyContent: "center",
   },
 });

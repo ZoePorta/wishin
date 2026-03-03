@@ -18,6 +18,10 @@ interface PublicItemCardProps {
 /**
  * Component to display a single wishlist item to VISITORS.
  * Uses Material Design 3 components.
+ *
+ * @param {PublicItemCardProps} props - The component props.
+ * @param {WishlistItemOutput} props.item - The wishlist item object to display.
+ * @returns {JSX.Element} The rendered public item card.
  */
 export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
   const theme = useTheme();
@@ -55,7 +59,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
             ]}
             elevation={2}
           >
-            <Text variant="labelLarge" style={{ fontWeight: "bold" }}>
+            <Text variant="labelLarge" style={styles.overlayLabel}>
               {isCompleted ? "COMPLETED" : "RESERVED"}
             </Text>
           </Surface>
@@ -64,7 +68,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
 
       <Card.Content style={styles.cardContent}>
         <View style={styles.cardHeader}>
-          <Text variant="titleLarge" style={{ flex: 1 }}>
+          <Text variant="titleLarge" style={styles.titleText}>
             {item.name}
           </Text>
           {item.price != null && item.currency != null && (
@@ -149,5 +153,11 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: "flex-start",
+  },
+  overlayLabel: {
+    fontWeight: "bold",
+  },
+  titleText: {
+    flex: 1,
   },
 });

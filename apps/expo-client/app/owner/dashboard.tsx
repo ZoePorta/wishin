@@ -22,6 +22,8 @@ import { DashboardContent } from "../../src/features/wishlist/components/Dashboa
 /**
  * Dashboard screen for wishlist owners.
  * Orchestrates the creation and management of wishlists.
+ *
+ * @returns {JSX.Element} The rendered owner dashboard screen.
  */
 export default function OwnerDashboard() {
   const theme = useTheme();
@@ -90,7 +92,7 @@ export default function OwnerDashboard() {
             />
           </View>
         ) : (
-          <View style={{ flex: 1 }}>
+          <View style={styles.mainContent}>
             <DashboardHeader
               wishlist={wishlist}
               onEdit={() => {
@@ -254,5 +256,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+  },
+  mainContent: {
+    flex: 1,
   },
 });

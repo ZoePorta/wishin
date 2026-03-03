@@ -14,6 +14,13 @@ interface WishlistFormProps {
 /**
  * Component for creating and editing wishlist details.
  * Uses Material Design 3 components.
+ *
+ * @param {WishlistFormProps} props - The component props.
+ * @param {function} props.onSubmit - Callback function invoked on form submission.
+ * @param {boolean} [props.loading=false] - Optional loading state for the submit button.
+ * @param {Partial<CreateWishlistInput> & { id?: string }} [props.initialData] - Optional initial data for editing.
+ * @param {string} props.currentUserId - The ID of the current authenticated user.
+ * @returns {JSX.Element} The rendered wishlist form.
  */
 export const WishlistForm: React.FC<WishlistFormProps> = ({
   onSubmit,

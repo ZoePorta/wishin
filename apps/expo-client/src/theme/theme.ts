@@ -66,8 +66,8 @@ function mergeAndValidateTheme(
     ...navigationTheme,
     colors: {
       ...paperTheme.colors,
-      ...materialScheme,
       ...navigationTheme.colors,
+      ...materialScheme,
     },
     // Ensure MD3 specific properties are preserved
     fonts: paperTheme.fonts,

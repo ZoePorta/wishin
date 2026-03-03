@@ -17,6 +17,8 @@ import { PublicItemCard } from "../../src/features/wishlist/components/PublicIte
 /**
  * Display the details of a specific wishlist.
  * Uses Material Design 3 components.
+ *
+ * @returns {JSX.Element} The rendered wishlist details screen.
  */
 export default function WishlistDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -63,7 +65,11 @@ export default function WishlistDetail() {
         >
           {error}
         </Text>
-        <Button mode="contained" onPress={() => void refetch()}>
+        <Button
+          mode="contained"
+          onPress={() => void refetch()}
+          contentStyle={styles.buttonContent}
+        >
           Tap to Retry
         </Button>
       </Surface>
@@ -136,5 +142,9 @@ const styles = StyleSheet.create({
   emptyText: {
     fontStyle: "italic",
     opacity: 0.5,
+  },
+  buttonContent: {
+    minHeight: 44,
+    minWidth: 44,
   },
 });

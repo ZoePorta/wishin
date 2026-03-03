@@ -13,6 +13,12 @@ interface DashboardContentProps {
 /**
  * Main content area for the owner dashboard.
  * Displays the list of wishlist items or an empty state.
+ *
+ * @param {DashboardContentProps} props - The component props.
+ * @param {WishlistOutput} props.wishlist - The wishlist object containing items to display.
+ * @param {function} props.onRemoveItem - Callback to handle item removal.
+ * @param {function} props.onEditItem - Callback to handle item editing.
+ * @returns {JSX.Element} The rendered dashboard content.
  */
 export const DashboardContent: React.FC<DashboardContentProps> = ({
   wishlist,
