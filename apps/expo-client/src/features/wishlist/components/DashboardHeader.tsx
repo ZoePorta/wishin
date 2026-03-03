@@ -1,73 +1,62 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Text, Button, Divider } from "react-native-paper";
-import type { WishlistOutput } from "@wishin/domain";
-import type { WishlistStyles } from "../hooks/useWishlistStyles";
+import { Text, IconButton, Surface } from "react-native-paper";
+import { type WishlistOutput } from "@wishin/domain";
 
 interface DashboardHeaderProps {
   wishlist: WishlistOutput;
-  commonStyles: WishlistStyles["styles"];
   onEdit?: () => void;
 }
 
 /**
  * Renders the header for the owner dashboard.
  * Uses Material Design 3 components.
- *
- * @param {DashboardHeaderProps} props - The component props.
- * @param {WishlistOutput} props.wishlist - The wishlist data to display.
- * @param {WishlistStyles["styles"]} props.commonStyles - Shared styles used across the dashboard.
- * @param {() => void} [props.onEdit] - Optional callback for when the edit button is pressed.
- * @returns {JSX.Element} The rendered header.
  */
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   wishlist,
-  commonStyles,
   onEdit,
 }) => {
   return (
-    <View style={commonStyles.header}>
-      <View style={styles.headerRow}>
+    <Surface style={styles.container}>
+      <View style={styles.leftBlock}>
         <Text variant="headlineMedium" style={styles.title}>
           {wishlist.title}
         </Text>
-        {onEdit && (
-          <Button
-            mode="outlined"
-            onPress={onEdit}
-            accessibilityLabel="Edit wishlist"
-            style={styles.button}
-          >
-            Edit
-          </Button>
+        {wishlist.description && (
+          <Text variant="bodyMedium" style={styles.description}>
+            {wishlist.description}
+          </Text>
         )}
       </View>
-      {wishlist.description && (
-        <Text variant="bodyMedium" style={styles.description}>
-          {wishlist.description}
-        </Text>
+      {onEdit && (
+        <IconButton
+          icon="pencil"
+          mode="contained-tonal"
+          onPress={onEdit}
+          accessibilityLabel="Edit wishlist details"
+        />
       )}
-      <Divider style={styles.divider} />
-    </View>
+    </Surface>
   );
 };
 
 const styles = StyleSheet.create({
-  headerRow: {
+  container: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
+    padding: 16,
+    paddingBottom: 8,
+  },
+  leftBlock: {
+    flex: 1,
+    marginRight: 16,
   },
   title: {
-    flex: 1,
+    fontWeight: "bold",
   },
   description: {
-    marginTop: 8,
-  },
-  divider: {
-    marginTop: 16,
-  },
-  button: {
-    marginLeft: 8,
+    marginTop: 4,
+    opacity: 0.7,
   },
 });

@@ -1,11 +1,17 @@
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useMemo, useCallback } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
-import { Text, ActivityIndicator, Button, useTheme } from "react-native-paper";
+import {
+  Text,
+  ActivityIndicator,
+  Button,
+  useTheme,
+  Divider,
+  Surface,
+} from "react-native-paper";
 import { useWishlist } from "../../src/hooks/useWishlist";
 import type { UseWishlistReturn } from "../../src/hooks/useWishlist";
 import type { WishlistItemOutput } from "@wishin/domain";
-import { useWishlistStyles } from "../../src/features/wishlist/hooks/useWishlistStyles";
 import { PublicItemCard } from "../../src/features/wishlist/components/PublicItemCard";
 
 /**
@@ -17,106 +23,118 @@ export default function WishlistDetail() {
   const { wishlist, loading, error, refetch }: UseWishlistReturn =
     useWishlist(id);
   const theme = useTheme();
-  const { styles } = useWishlistStyles();
-  const localStyles = useMemo(() => {
-    return StyleSheet.create({
-      headerTitle: {
-        marginBottom: 8,
-      },
-      dividerVariant: {
-        backgroundColor: theme.colors.outlineVariant,
-        marginTop: 16,
-      },
-      screenBackground: {
-        backgroundColor: theme.colors.background,
-      },
-      errorTextContainer: {
-        color: theme.colors.error,
-        marginBottom: 20,
-      },
-      emptyText: {
-        fontStyle: "italic",
-      },
-    });
-  }, [theme]);
 
   const ListHeader = useMemo(() => {
     if (!wishlist) return null;
     return (
       <View style={styles.header}>
-        <Text variant="headlineMedium" style={localStyles.headerTitle}>
+        <Text variant="headlineMedium" style={styles.headerTitle}>
           {wishlist.title}
         </Text>
         {wishlist.description && (
-          <Text variant="bodyMedium">{wishlist.description}</Text>
+          <Text variant="bodyMedium" style={styles.description}>
+            {wishlist.description}
+          </Text>
         )}
-        <View style={[styles.divider, localStyles.dividerVariant]} />
+        <Divider style={styles.divider} />
       </View>
     );
-  }, [wishlist, styles, theme]);
+  }, [wishlist]);
 
   const renderItem = useCallback(
-    ({ item }: { item: WishlistItemOutput }) => (
-      <PublicItemCard item={item} styles={styles} />
-    ),
-    [styles],
+    ({ item }: { item: WishlistItemOutput }) => <PublicItemCard item={item} />,
+    [],
   );
 
   if (loading) {
     return (
-      <View style={[styles.centerContainer, localStyles.screenBackground]}>
+      <Surface style={styles.centerContainer}>
         <ActivityIndicator size="large" />
-      </View>
+      </Surface>
     );
   }
 
   if (error) {
     return (
-      <View style={[styles.centerContainer, localStyles.screenBackground]}>
-        <Text variant="bodyLarge" style={localStyles.errorTextContainer}>
+      <Surface style={styles.centerContainer}>
+        <Text
+          variant="bodyLarge"
+          style={[styles.errorText, { color: theme.colors.error }]}
+        >
           {error}
         </Text>
-        <Button
-          mode="contained"
-          onPress={() => {
-            void refetch();
-          }}
-        >
+        <Button mode="contained" onPress={() => void refetch()}>
           Tap to Retry
         </Button>
-      </View>
+      </Surface>
     );
   }
 
   if (!wishlist) {
     return (
-      <View style={[styles.centerContainer, localStyles.screenBackground]}>
+      <Surface style={styles.centerContainer}>
         <Text variant="bodyLarge">Wishlist not found.</Text>
-      </View>
+      </Surface>
     );
   }
 
   return (
-    <>
+    <Surface style={styles.container}>
       <Stack.Screen options={{ title: wishlist.title }} />
       <FlatList
-        contentContainerStyle={[
-          styles.listContent,
-          localStyles.screenBackground,
-        ]}
+        contentContainerStyle={styles.listContent}
         data={wishlist.items}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text variant="bodyMedium" style={localStyles.emptyText}>
+            <Text variant="bodyMedium" style={styles.emptyText}>
               No items in this wishlist.
             </Text>
           </View>
         }
-        style={localStyles.screenBackground}
       />
-    </>
+    </Surface>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  listContent: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  header: {
+    marginBottom: 24,
+  },
+  headerTitle: {
+    marginBottom: 4,
+  },
+  description: {
+    opacity: 0.7,
+  },
+  divider: {
+    marginTop: 16,
+  },
+  errorText: {
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontStyle: "italic",
+    opacity: 0.5,
+  },
+});

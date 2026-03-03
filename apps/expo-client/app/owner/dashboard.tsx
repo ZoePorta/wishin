@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { View } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet } from "react-native";
 import { Stack } from "expo-router";
 import {
   Portal,
@@ -9,23 +9,22 @@ import {
   Text as PaperText,
   ActivityIndicator,
   Button,
+  useTheme,
+  Surface,
 } from "react-native-paper";
 import { type WishlistItemOutput } from "@wishin/domain";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
-import { useWishlistStyles } from "../../src/features/wishlist/hooks/useWishlistStyles";
 import { WishlistForm } from "../../src/features/wishlist/components/WishlistForm";
 import { AddItemForm } from "../../src/features/wishlist/components/AddItemForm";
 import { DashboardHeader } from "../../src/features/wishlist/components/DashboardHeader";
 import { DashboardContent } from "../../src/features/wishlist/components/DashboardContent";
-import { createDashboardStyles } from "../../src/features/wishlist/styles/dashboard.styles";
-import { Spacing } from "../../src/theme/spacing";
 
 /**
  * Dashboard screen for wishlist owners.
- * Orchestrates the creation and management of wishlists using a decoupled View Model approach.
+ * Orchestrates the creation and management of wishlists.
  */
 export default function OwnerDashboard() {
-  const { theme, styles, themedStyles } = useWishlistStyles();
+  const theme = useTheme();
   const {
     userId,
     wishlist,
@@ -48,48 +47,38 @@ export default function OwnerDashboard() {
     WishlistItemOutput | undefined
   >();
 
-  const dashboardStyles = useMemo(() => createDashboardStyles(theme), [theme]);
-
   if (loading) {
     return (
-      <View style={[styles.centerContainer, themedStyles.background]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
+      <Surface style={styles.centerContainer}>
+        <ActivityIndicator size="large" />
+      </Surface>
     );
   }
 
   if (error) {
     return (
-      <View style={[styles.centerContainer, themedStyles.background]}>
+      <Surface style={styles.centerContainer}>
         <PaperText
           variant="bodyLarge"
-          style={[styles.errorText, themedStyles.text]}
+          style={[styles.errorText, { color: theme.colors.error }]}
         >
           {error}
         </PaperText>
-        <Button
-          mode="contained"
-          onPress={() => void refetch()}
-          style={styles.retryButton}
-          labelStyle={themedStyles.primaryText}
-        >
+        <Button mode="contained" onPress={() => void refetch()}>
           Retry
         </Button>
-      </View>
+      </Surface>
     );
   }
 
   return (
     <Portal.Host>
-      <View style={[dashboardStyles.container, themedStyles.background]}>
+      <Surface style={styles.container}>
         <Stack.Screen options={{ title: "My Dashboard" }} />
 
         {!wishlist ? (
-          <View style={{ flex: 1 }}>
-            <PaperText
-              variant="titleLarge"
-              style={dashboardStyles.sectionTitle}
-            >
+          <View style={styles.formContainer}>
+            <PaperText variant="headlineSmall" style={styles.sectionTitle}>
               Create Your Wishlist
             </PaperText>
             <WishlistForm
@@ -104,7 +93,6 @@ export default function OwnerDashboard() {
           <View style={{ flex: 1 }}>
             <DashboardHeader
               wishlist={wishlist}
-              commonStyles={styles}
               onEdit={() => {
                 setIsEditing(true);
               }}
@@ -112,8 +100,6 @@ export default function OwnerDashboard() {
 
             <DashboardContent
               wishlist={wishlist}
-              styles={styles}
-              dashboardStyles={dashboardStyles}
               onRemoveItem={handleRemoveItem}
               onEditItem={(item) => {
                 setEditingItem(item);
@@ -128,7 +114,7 @@ export default function OwnerDashboard() {
                 setEditingItem(undefined);
                 setIsItemModalVisible(true);
               }}
-              style={dashboardStyles.fabPosition}
+              style={styles.fab}
               accessibilityLabel="Add item to wishlist"
             />
 
@@ -140,21 +126,11 @@ export default function OwnerDashboard() {
                   setEditingItem(undefined);
                 }}
                 contentContainerStyle={[
-                  themedStyles.background,
-                  dashboardStyles.modalContent,
-                  {
-                    maxHeight: "80%",
-                  },
+                  styles.modalContent,
+                  { backgroundColor: theme.colors.surface },
                 ]}
               >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: Spacing.lg,
-                  }}
-                >
+                <View style={styles.modalHeader}>
                   <PaperText variant="headlineSmall" accessibilityRole="header">
                     {editingItem ? "Edit Item" : "Add Item"}
                   </PaperText>
@@ -195,18 +171,11 @@ export default function OwnerDashboard() {
                   setIsEditing(false);
                 }}
                 contentContainerStyle={[
-                  themedStyles.background,
-                  dashboardStyles.modalContent,
+                  styles.modalContent,
+                  { backgroundColor: theme.colors.surface },
                 ]}
               >
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: Spacing.lg,
-                  }}
-                >
+                <View style={styles.modalHeader}>
                   <PaperText variant="headlineSmall" accessibilityRole="header">
                     Edit Wishlist
                   </PaperText>
@@ -242,7 +211,48 @@ export default function OwnerDashboard() {
             </Portal>
           </View>
         )}
-      </View>
+      </Surface>
     </Portal.Host>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  errorText: {
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  formContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  sectionTitle: {
+    marginVertical: 16,
+  },
+  fab: {
+    position: "absolute",
+    margin: 16,
+    right: 0,
+    bottom: 0,
+  },
+  modalContent: {
+    margin: 20,
+    padding: 20,
+    borderRadius: 28,
+    maxHeight: "80%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+});

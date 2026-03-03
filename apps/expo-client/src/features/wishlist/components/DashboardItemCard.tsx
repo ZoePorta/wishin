@@ -2,12 +2,10 @@ import React, { useCallback } from "react";
 import { View, Linking, Alert, StyleSheet } from "react-native";
 import { Card, Text, Button, Badge, useTheme } from "react-native-paper";
 import { type WishlistItemOutput } from "@wishin/domain";
-import type { WishlistStyles } from "../hooks/useWishlistStyles";
 import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
 
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
-  commonStyles: WishlistStyles["styles"];
   onEdit: (item: WishlistItemOutput) => void;
   onRemove: (id: string) => void;
 }
@@ -18,11 +16,11 @@ interface DashboardItemCardProps {
  */
 export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
   item,
-  commonStyles,
   onEdit,
   onRemove,
 }) => {
   const theme = useTheme();
+
   const handleOpenUrl = useCallback(async (url?: string) => {
     if (!url) return;
     try {
@@ -35,15 +33,15 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
   const priorityColor = getPriorityColor(item.priority, theme);
 
   return (
-    <Card style={commonStyles.card} mode="elevated">
+    <Card style={styles.card} mode="elevated">
       {item.imageUrl && (
         <Card.Cover
           source={{ uri: item.imageUrl }}
           accessibilityLabel={item.name}
         />
       )}
-      <Card.Content style={commonStyles.cardContent}>
-        <View style={commonStyles.cardHeader}>
+      <Card.Content style={styles.cardContent}>
+        <View style={styles.cardHeader}>
           <View style={styles.titleContainer}>
             <Text variant="titleLarge">{item.name}</Text>
             <Text variant="bodySmall">
@@ -115,6 +113,18 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
 };
 
 const styles = StyleSheet.create({
+  card: {
+    marginBottom: 16,
+    borderRadius: 12,
+  },
+  cardContent: {
+    paddingTop: 16,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
   titleContainer: {
     flex: 1,
   },
