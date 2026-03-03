@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 import type { ViewStyle, TextStyle } from "react-native";
-import { type AppTheme } from "../../theme/legacy-colors";
+import { type MD3Theme } from "react-native-paper";
 
 /**
  * Shared style definitions for error screens.
@@ -17,17 +17,17 @@ export interface ErrorScreenStyles {
 /**
  * Creates a shared style factory for error screens.
  *
- * @param {AppTheme} theme - The current theme.
+ * @param {MD3Theme} theme - The current theme.
  * @returns {ErrorScreenStyles} The shared styles.
  */
-export function createSharedErrorStyles(theme: AppTheme): ErrorScreenStyles {
+export function createSharedErrorStyles(theme: MD3Theme): ErrorScreenStyles {
   return StyleSheet.create({
     container: {
       flex: 1,
       justifyContent: "center",
       alignItems: "center",
       padding: 24,
-      backgroundColor: theme.background,
+      backgroundColor: theme.colors.background,
     },
     card: {
       padding: 32,
@@ -35,7 +35,7 @@ export function createSharedErrorStyles(theme: AppTheme): ErrorScreenStyles {
       width: "100%",
       maxWidth: 400,
       alignItems: "center",
-      backgroundColor: theme.card,
+      backgroundColor: theme.colors.surface,
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.1,
@@ -58,13 +58,13 @@ export function createSharedErrorStyles(theme: AppTheme): ErrorScreenStyles {
       fontWeight: "bold",
       marginBottom: 16,
       textAlign: "center",
-      color: theme.text,
+      color: theme.colors.onSurface,
     },
     message: {
       fontSize: 16,
       lineHeight: 24,
       textAlign: "center",
-      color: theme.textMuted,
+      color: theme.colors.onSurfaceVariant,
     },
   });
 }

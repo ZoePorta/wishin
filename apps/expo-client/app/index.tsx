@@ -1,6 +1,6 @@
 import { Link } from "expo-router";
-import { View, StyleSheet } from "react-native";
-import { Text, Button, useTheme } from "react-native-paper";
+import { StyleSheet } from "react-native";
+import { Text, Button, Surface } from "react-native-paper";
 
 /**
  * Root screen for the Expo client.
@@ -8,14 +8,11 @@ import { Text, Button, useTheme } from "react-native-paper";
  * Uses Material Design 3 components.
  */
 export default function Index() {
-  const theme = useTheme();
   // Demo wishlist ID created by the scripts/seed.ts script
   const demoWishlistId = "550e8400-e29b-41d4-a716-446655440003";
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
+    <Surface style={styles.container}>
       <Text variant="displayLarge" style={styles.title}>
         Wishin
       </Text>
@@ -42,7 +39,7 @@ export default function Index() {
           Go to Owner Dashboard
         </Button>
       </Link>
-    </View>
+    </Surface>
   );
 }
 
