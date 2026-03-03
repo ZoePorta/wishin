@@ -68,3 +68,9 @@
 - **Content:** It must describe the purpose, parameters (`@param`), return value (`@returns`), and any exceptions thrown (`@throws`).
 - **Context:** For Domain Entities, JSDoc must explicitly mention the business invariants or rules being validated (e.g., "Validates that $Q_{total} \ge Q_{reserved}$").
 - **Enforcement:** This is a non-negotiable requirement for every task.
+
+## 9. UI/UX Standards
+
+- **Material Design 3 (MD3):** Strictly prioritize MD3 principles and style rules for the `expo-client`.
+- **Component Usage:** Always use components from `react-native-paper` (MD3) instead of raw React Native components where a surfaced equivalent exists.
+- **Theming:** Exclusively use the `useTheme()` hook and MD3 design tokens (e.g., `theme.colors.surface`, `theme.colors.onPrimary`) for all styling. Hardcoded hex colors and legacy color palettes are strictly forbidden.
