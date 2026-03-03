@@ -155,7 +155,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           />
         </View>
 
-        <View style={[styles.flex1, { marginLeft: 16 }]}>
+        <View style={styles.quantityContainer}>
           <TextInput
             label="Quantity"
             value={totalQuantity}
@@ -227,7 +227,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             <Text variant="titleMedium" style={styles.modalTitle}>
               Select Currency
             </Text>
-            <ScrollView style={{ maxHeight: 300 }}>
+            <ScrollView style={styles.currencyList}>
               {SUPPORTED_CURRENCIES.map((item) => (
                 <List.Item
                   key={item.code}
@@ -296,5 +296,12 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     padding: 16,
+  },
+  quantityContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  currencyList: {
+    maxHeight: 300,
   },
 });

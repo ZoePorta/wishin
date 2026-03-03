@@ -1,6 +1,7 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { Text, Surface, useTheme } from "react-native-paper";
+import { createSharedErrorStyles } from "./error-screen.styles";
 
 /**
  * Generic fallback screen for uncaught runtime errors.
@@ -10,18 +11,12 @@ import { Text, Surface, useTheme } from "react-native-paper";
  */
 export function GeneralErrorScreen() {
   const theme = useTheme();
+  const styles = createSharedErrorStyles(theme);
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
+    <Surface style={styles.container}>
       <Surface style={styles.card} elevation={1}>
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: theme.colors.errorContainer },
-          ]}
-        >
+        <View style={[styles.iconContainer, styles.iconBackground]}>
           <Text style={styles.icon}>❌</Text>
         </View>
         <Text variant="headlineSmall" style={styles.title}>
@@ -31,41 +26,6 @@ export function GeneralErrorScreen() {
           An unexpected error occurred. Please try restarting the application.
         </Text>
       </Surface>
-    </View>
+    </Surface>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  card: {
-    padding: 32,
-    borderRadius: 16,
-    width: "100%",
-    maxWidth: 400,
-    alignItems: "center",
-  },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  icon: {
-    fontSize: 32,
-  },
-  title: {
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  message: {
-    textAlign: "center",
-    lineHeight: 20,
-  },
-});

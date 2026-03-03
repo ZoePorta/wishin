@@ -9,9 +9,11 @@ export interface ErrorScreenStyles {
   container: ViewStyle;
   card: ViewStyle;
   iconContainer: ViewStyle;
+  iconBackground: ViewStyle;
   icon: TextStyle;
   title: TextStyle;
   message: TextStyle;
+  button: ViewStyle;
 }
 
 /**
@@ -31,16 +33,11 @@ export function createSharedErrorStyles(theme: MD3Theme): ErrorScreenStyles {
     },
     card: {
       padding: 32,
-      borderRadius: 24,
+      borderRadius: 16, // MD3 standard for cards/surfaces
       width: "100%",
       maxWidth: 400,
       alignItems: "center",
       backgroundColor: theme.colors.surface,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 12,
-      elevation: 5,
     },
     iconContainer: {
       width: 64,
@@ -50,21 +47,28 @@ export function createSharedErrorStyles(theme: MD3Theme): ErrorScreenStyles {
       alignItems: "center",
       marginBottom: 24,
     },
+    iconBackground: {
+      backgroundColor: theme.colors.errorContainer,
+    },
     icon: {
       fontSize: 32,
     },
     title: {
       fontSize: 24,
       fontWeight: "bold",
-      marginBottom: 16,
+      marginBottom: 12,
       textAlign: "center",
       color: theme.colors.onSurface,
     },
     message: {
       fontSize: 16,
-      lineHeight: 24,
+      lineHeight: 20,
       textAlign: "center",
       color: theme.colors.onSurfaceVariant,
+      marginBottom: 32,
+    },
+    button: {
+      width: "100%",
     },
   });
 }

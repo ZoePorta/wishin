@@ -6,6 +6,8 @@ import { Text, Button, Surface } from "react-native-paper";
  * Root screen for the Expo client.
  * Displays the main entry point for the application.
  * Uses Material Design 3 components.
+ *
+ * @returns {JSX.Element} The root screen React element.
  */
 export default function Index() {
   // Demo wishlist ID created by the scripts/seed.ts script

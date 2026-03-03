@@ -1,8 +1,8 @@
 import { Stack } from "expo-router";
 import { useState } from "react";
 import { StatusBar } from "expo-status-bar";
-import { View, StyleSheet, useColorScheme } from "react-native";
-import { PaperProvider } from "react-native-paper";
+import { StyleSheet, useColorScheme } from "react-native";
+import { PaperProvider, Surface } from "react-native-paper";
 import { combinedTheme } from "../src/theme";
 import { AppErrorBoundary } from "../src/components/core/AppErrorBoundary";
 import { ConfigErrorScreen } from "../src/components/core/ConfigErrorScreen";
@@ -13,6 +13,8 @@ import { CoreProvider } from "../src/providers/CoreProvider";
 /**
  * Root orchestrator component that manages dependencies and routing.
  * Wrapped in a general AppErrorBoundary to catch any unexpected runtime errors.
+ *
+ * @returns {JSX.Element} The root app layout containing global providers and routing.
  */
 export default function Root() {
   const [initError, setInitError] = useState<Error | null>(null);
@@ -48,9 +50,7 @@ function RootLayout() {
     colorScheme === "dark" ? combinedTheme.dark : combinedTheme.light;
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
+    <Surface style={styles.container}>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <Stack
         screenOptions={{
@@ -70,7 +70,7 @@ function RootLayout() {
         <Stack.Screen name="index" options={{ title: "Welcome to Wishin" }} />
         <Stack.Screen name="wishlist/[id]" options={{ title: "Wishlist" }} />
       </Stack>
-    </View>
+    </Surface>
   );
 }
 
