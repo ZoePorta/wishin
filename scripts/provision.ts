@@ -544,8 +544,8 @@ async function waitForAttribute(
   console.log(`Waiting for attribute "${key}" to be ready...`);
   let isReady = false;
   let attempts = 0;
-  // Wait up to 10 seconds (20 attempts * 500ms)
-  while (!isReady && attempts < 20) {
+  // Increase timeout to 60 seconds (120 attempts * 500ms) for CI reliability
+  while (!isReady && attempts < 120) {
     try {
       const table = await tablesDb.getTable({
         databaseId,
@@ -568,8 +568,15 @@ async function waitForAttribute(
   }
 
   if (!isReady) {
+    const table = await tablesDb.getTable({
+      databaseId,
+      tableId: collectionId,
+    });
+    const column = (
+      table.columns as { key: string; status: string; error?: string }[]
+    ).find((c) => c.key === key);
     throw new Error(
-      `Attribute "${key}" in collection "${collectionId}" failed to become available.`,
+      `Attribute "${key}" in collection "${collectionId}" failed to become available after 60s. Current status: "${column?.status ?? "unknown"}". Error: ${column?.error ?? "None"}`,
     );
   }
 }
