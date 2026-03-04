@@ -52,7 +52,7 @@ export interface TransactionRepository {
    * This operation is idempotent; it returns success if the transaction doesn't exist.
    * @param id - The transaction UUID.
    * @returns {Promise<void>}
-   * @throws {RepositoryError} If the deletion fails due to an underlying infrastructure error.
+   * @throws {DatabaseError} If the deletion fails due to an underlying infrastructure error.
    */
   delete(id: string): Promise<void>;
 }

@@ -7,7 +7,7 @@ import {
   type Models,
 } from "appwrite";
 import type { TransactionRepository, Transaction } from "@wishin/domain";
-import { TransactionStatus } from "@wishin/domain";
+import { TransactionStatus, InvalidOperationError } from "@wishin/domain";
 import {
   TransactionMapper,
   type TransactionDocument,
@@ -74,7 +74,11 @@ export class AppwriteTransactionRepository
    */
   async getCurrentUserId(): Promise<string> {
     await this.ensureSession();
-    this._currentUser ??= await this.account.get();
+    if (!this._currentUser) {
+      throw new InvalidOperationError(
+        "Session established but user context is missing",
+      );
+    }
     return this._currentUser.$id;
   }
 

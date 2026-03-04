@@ -459,12 +459,12 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should respect the limit parameter", async () => {
-      vi.mocked(mockAccount.get)
-        .mockResolvedValueOnce({} as Models.User<Models.Preferences>)
-        .mockResolvedValueOnce({} as Models.User<Models.Preferences>);
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
 
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
-        rows: Array(20).fill({
+        rows: Array.from({ length: 20 }).map(() => ({
           $id: validId,
           itemId: validItemId,
           userId: validUserId,
@@ -472,14 +472,13 @@ describe("AppwriteTransactionRepository", () => {
           quantity: 1,
           $createdAt: new Date().toISOString(),
           $updatedAt: new Date().toISOString(),
-        }) as MockRow[],
+        })) as MockRow[],
         total: 20,
       } as MockRowList);
 
       const results = await repository.findByUserId(validUserId, undefined, 20);
 
-      expect(results).toHaveLength(20); // Mapping will still return all from first page if not sliced, but implementation should stop.
-      // Wait, my implementation stops AFTER a page is fetched.
+      expect(results).toHaveLength(20);
       expect(mockTablesDb.listRows).toHaveBeenCalledWith(
         expect.objectContaining({
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
