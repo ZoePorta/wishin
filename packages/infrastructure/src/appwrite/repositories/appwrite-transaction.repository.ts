@@ -6,8 +6,8 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
+import { TransactionStatus } from "@wishin/domain";
 import type { TransactionRepository, Transaction } from "@wishin/domain";
-import { TransactionStatus, InvalidOperationError } from "@wishin/domain";
 import {
   TransactionMapper,
   type TransactionDocument,
@@ -23,8 +23,6 @@ export class AppwriteTransactionRepository
 {
   private readonly tablesDb: TablesDB;
   private readonly account: Account;
-  private sessionEnsured = false;
-  private _currentUser: Models.User<Models.Preferences> | null = null;
 
   /**
    * Initializes the repository.
@@ -50,17 +48,11 @@ export class AppwriteTransactionRepository
    * @throws {AppwriteException} If a non-401 error occurs while fetching the account.
    */
   async ensureSession(): Promise<void> {
-    if (this.sessionEnsured) {
-      return;
-    }
     try {
-      this._currentUser = await this.account.get();
-      this.sessionEnsured = true;
+      await this.account.get();
     } catch (error) {
       if (error instanceof AppwriteException && error.code === 401) {
         await this.account.createAnonymousSession();
-        this._currentUser = await this.account.get();
-        this.sessionEnsured = true;
         return;
       }
       throw error;
@@ -74,12 +66,8 @@ export class AppwriteTransactionRepository
    */
   async getCurrentUserId(): Promise<string> {
     await this.ensureSession();
-    if (!this._currentUser) {
-      throw new InvalidOperationError(
-        "Session established but user context is missing",
-      );
-    }
-    return this._currentUser.$id;
+    const user = await this.account.get();
+    return user.$id;
   }
 
   /**

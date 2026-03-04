@@ -29,6 +29,9 @@ describe.skipIf(!shouldRun)(
     let repository: AppwriteTransactionRepository;
     let databaseId: string;
     let transactionsCollectionId: string;
+    let wishlistItemsCollectionId: string;
+    let wishlistsCollectionId: string;
+    let profilesCollectionId: string;
 
     beforeAll(() => {
       const endpoint = EXPO_PUBLIC_APPWRITE_ENDPOINT!;
@@ -48,6 +51,9 @@ describe.skipIf(!shouldRun)(
       client = createAppwriteClient(endpoint, projectId);
 
       transactionsCollectionId = `${prefix}_transactions`;
+      wishlistItemsCollectionId = `${prefix}_wishlist_items`;
+      wishlistsCollectionId = `${prefix}_wishlists`;
+      profilesCollectionId = `${prefix}_profiles`;
 
       repository = new AppwriteTransactionRepository(
         client,
@@ -55,6 +61,72 @@ describe.skipIf(!shouldRun)(
         transactionsCollectionId,
       );
     });
+
+    // Helper to seed required parent records
+    async function seedParentRecords(itemId: string) {
+      const profileId = randomUUID();
+      const wishlistId = randomUUID();
+
+      await tablesDb.createRow({
+        databaseId,
+        tableId: profilesCollectionId,
+        rowId: profileId,
+        data: { username: "testuser" },
+      });
+
+      await tablesDb.createRow({
+        databaseId,
+        tableId: wishlistsCollectionId,
+        rowId: wishlistId,
+        data: {
+          ownerId: profileId,
+          title: "Test Wishlist",
+          visibility: "LINK",
+          participation: "ANYONE",
+        },
+      });
+
+      await tablesDb.createRow({
+        databaseId,
+        tableId: wishlistItemsCollectionId,
+        rowId: itemId,
+        data: {
+          wishlistId,
+          name: "Test Item",
+          priority: 1,
+        },
+      });
+
+      return { profileId, wishlistId, itemId };
+    }
+
+    async function cleanupParentRecords(
+      itemId: string,
+      wishlistId: string,
+      profileId: string,
+    ) {
+      await tablesDb
+        .deleteRow({
+          databaseId,
+          tableId: wishlistItemsCollectionId,
+          rowId: itemId,
+        })
+        .catch(() => {});
+      await tablesDb
+        .deleteRow({
+          databaseId,
+          tableId: wishlistsCollectionId,
+          rowId: wishlistId,
+        })
+        .catch(() => {});
+      await tablesDb
+        .deleteRow({
+          databaseId,
+          tableId: profilesCollectionId,
+          rowId: profileId,
+        })
+        .catch(() => {});
+    }
 
     let transactionId: string;
     let itemId: string;
@@ -189,6 +261,7 @@ describe.skipIf(!shouldRun)(
       const res1Id = randomUUID();
       const res2Id = randomUUID();
       const localItemId = randomUUID();
+      const { profileId, wishlistId } = await seedParentRecords(localItemId);
       const localUserId = "user-" + randomUUID().substring(0, 8);
 
       const t1 = Transaction.reconstitute({
@@ -248,6 +321,7 @@ describe.skipIf(!shouldRun)(
             rowId: res2Id,
           })
           .catch(() => void 0);
+        await cleanupParentRecords(localItemId, wishlistId, profileId);
       }
     });
 

@@ -384,11 +384,18 @@ async function provision() {
         );
       } catch (error: unknown) {
         if (isAppwriteError(error) && error.code === 404) {
+          // TODO: Restrict permissions once user management is implemented.
+          // For now, allow all users (role: any) to perform all actions for ease of development.
           await tablesDb.createTable({
             databaseId,
             tableId: collectionId,
             name: coll.name,
-            permissions: ['read("any")'],
+            permissions: [
+              'create("any")',
+              'read("any")',
+              'update("any")',
+              'delete("any")',
+            ],
             enabled: true,
             rowSecurity: true,
           });
