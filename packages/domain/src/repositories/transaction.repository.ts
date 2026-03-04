@@ -39,7 +39,7 @@ export interface TransactionRepository {
    * @param status - Optional filter by transaction status.
    * @param limit - Optional maximum number of transactions to return.
    * @returns {Promise<Transaction[]>}
-   * @throws {DatabaseError} If there is an error accessing the data store.
+   * @throws {PersistenceError} If there is an error accessing the data store.
    */
   findByUserId(
     userId: string,
@@ -52,7 +52,7 @@ export interface TransactionRepository {
    * This operation is idempotent; it returns success if the transaction doesn't exist.
    * @param id - The transaction UUID.
    * @returns {Promise<void>}
-   * @throws {DatabaseError} If the deletion fails due to an underlying infrastructure error.
+   * @throws {PersistenceError} If the deletion fails due to an underlying infrastructure error.
    */
   delete(id: string): Promise<void>;
 }

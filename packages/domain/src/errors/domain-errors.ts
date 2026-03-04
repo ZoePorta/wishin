@@ -113,13 +113,13 @@ export class WishlistItemNotFoundError extends NotFoundError {
  * Error thrown when there is a failure in the underlying database or infrastructure.
  *
  * @param {string} message - The error message.
- * @returns {DatabaseError} An instance of DatabaseError.
+ * @returns {PersistenceError} An instance of PersistenceError.
  */
-export class DatabaseError extends Error {
+export class PersistenceError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "DatabaseError";
-    Object.setPrototypeOf(this, DatabaseError.prototype);
+    this.name = "PersistenceError";
+    Object.setPrototypeOf(this, PersistenceError.prototype);
   }
 }
 /**
