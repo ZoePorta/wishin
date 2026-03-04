@@ -70,7 +70,7 @@
 
 ### 4.1 Domain Refinement
 
-- [x] Define `TransactionRepository` interface with `save`, `findById`, and `findByItemId`.
+- [x] Define `TransactionRepository` interface with `save`, `findById`, `findByItemId`, `cancelByItemId`, `findByUserId` (with optional status and limit), and `delete`.
 - [ ] Refine `WishlistItem` invariants for atomic stock updates.
 
 ### 4.2 Application Layer (TDD)

@@ -15,6 +15,7 @@ const {
   EXPO_PUBLIC_APPWRITE_DATABASE_ID,
   EXPO_PUBLIC_DB_PREFIX,
   CLEANUP,
+  DEV_ALLOW_OPEN_PERMISSIONS,
 } = process.env;
 
 if (
@@ -34,6 +35,7 @@ const apiKey = APPWRITE_API_SECRET;
 const databaseId = EXPO_PUBLIC_APPWRITE_DATABASE_ID;
 const prefix = EXPO_PUBLIC_DB_PREFIX ?? "";
 const isCleanupEnabled = CLEANUP === "true";
+const isDevOpenPermissions = DEV_ALLOW_OPEN_PERMISSIONS === "true";
 
 const client = new Client()
   .setEndpoint(endpoint)
@@ -389,18 +391,24 @@ async function provision() {
         );
       } catch (error: unknown) {
         if (isAppwriteError(error) && error.code === 404) {
-          // TODO: Restrict permissions once user management is implemented.
-          // For now, allow all users (role: any) to perform all actions for ease of development.
+          // Permissions logic:
+          // 1. All collections allow public read ('read("any")').
+          // 2. Transactions collection allows public CRUD ('create("any")', 'read("any")', 'update("any")', 'delete("any")') to support guest transactions.
+          // 3. If DEV_ALLOW_OPEN_PERMISSIONS is true, all collections get full public CRUD.
+          const permissions = ['read("any")'];
+
+          if (isDevOpenPermissions || coll.id === "transactions") {
+            permissions.push('create("any")', 'update("any")', 'delete("any")');
+          } else if (!permissions.includes('read("any")')) {
+            // Ensure read("any") is always there if not already added by logic above
+            // (though it is already in the initial array)
+          }
+
           await tablesDb.createTable({
             databaseId,
             tableId: collectionId,
             name: coll.name,
-            permissions: [
-              'create("any")',
-              'read("any")',
-              'update("any")',
-              'delete("any")',
-            ],
+            permissions,
             enabled: true,
             rowSecurity: true,
           });
