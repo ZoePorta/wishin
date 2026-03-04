@@ -40,6 +40,9 @@ export class AppwriteTransactionRepository
     this.account = new Account(this.client);
   }
 
+  private sessionPromise: Promise<Models.User<Models.Preferences>> | null =
+    null;
+
   /**
    * Ensures an active session exists.
    * Creates an anonymous session if no session is active.
@@ -48,13 +51,37 @@ export class AppwriteTransactionRepository
    * @throws {AppwriteException} If a non-401 error occurs while fetching the account.
    */
   async ensureSession(): Promise<Models.User<Models.Preferences>> {
-    try {
-      return await this.account.get();
-    } catch (error) {
-      if (error instanceof AppwriteException && error.code === 401) {
-        await this.account.createAnonymousSession();
+    if (this.sessionPromise) {
+      return this.sessionPromise;
+    }
+
+    this.sessionPromise = (async () => {
+      try {
         return await this.account.get();
+      } catch (error: unknown) {
+        // More robust check for code 401 to handle monorepo instanceof issues
+        if (
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === 401
+        ) {
+          try {
+            await this.account.createAnonymousSession();
+            return await this.account.get();
+          } catch (sessionError: unknown) {
+            console.error("Failed to create anonymous session:", sessionError);
+            throw sessionError;
+          }
+        }
+        throw error;
       }
+    })();
+
+    try {
+      return await this.sessionPromise;
+    } catch (error) {
+      this.sessionPromise = null; // Clear on error to allow retry
       throw error;
     }
   }

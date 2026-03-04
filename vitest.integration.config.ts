@@ -8,5 +8,6 @@ export default defineConfig({
     ...baseConfig.test,
     include: ["packages/infrastructure/test/integration/**/*.test.ts"],
     exclude: [...defaultExclude],
+    setupFiles: ["packages/infrastructure/test/integration/setup.ts"],
   },
 });
