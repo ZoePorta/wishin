@@ -140,23 +140,29 @@ export class AppwriteTransactionRepository
    * Finds a transaction by its unique ID.
    *
    * @param id - The transaction UUID.
-   * @returns {Promise<Transaction | null>}
-   * @throws {PersistenceError} If the retrieval fails.
+   * @returns A Promise that resolves to the Transaction aggregate or null if not found.
+   * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findById(id: string): Promise<Transaction | null> {
     await this.ensureSession();
     try {
-      const doc = await this.tablesDb.getRow({
+      const response = await this.tablesDb.getRow({
         databaseId: this.databaseId,
         tableId: this.transactionsCollectionId,
         rowId: id,
       });
 
-      // NOTE: Mapper implementation is currently a placeholder or partial
-      return TransactionMapper.toDomain(toDocument<Models.Document>(doc));
+      return TransactionMapper.toDomain(
+        toDocument<TransactionDocument>(response),
+      );
     } catch (error) {
-      if (error instanceof AppwriteException && error.code === 404) {
-        return null; // Not found
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === 404
+      ) {
+        return null;
       }
       throw new PersistenceError("Failed to find transaction by ID", {
         cause: error,
@@ -165,10 +171,11 @@ export class AppwriteTransactionRepository
   }
 
   /**
-   * Finds all transactions associated with a specific wishlist item.
+   * Finds all transactions for a specific item.
+   *
    * @param itemId - The item UUID.
-   * @returns {Promise<Transaction[]>}
-   * @throws {PersistenceError} If the query fails.
+   * @returns A Promise that resolves to an array of Transaction aggregates.
+   * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findByItemId(itemId: string): Promise<Transaction[]> {
     await this.ensureSession();
@@ -176,11 +183,11 @@ export class AppwriteTransactionRepository
       const response = await this.tablesDb.listRows({
         databaseId: this.databaseId,
         tableId: this.transactionsCollectionId,
-        queries: [Query.equal("itemId", itemId), Query.limit(100)],
+        queries: [Query.equal("itemId", itemId)],
       });
 
-      const documents = toDocument<Models.Document[]>(response.rows);
-      return documents.map((doc) => TransactionMapper.toDomain(doc));
+      const docs = toDocument<TransactionDocument[]>(response.rows);
+      return docs.map((doc) => TransactionMapper.toDomain(doc));
     } catch (error) {
       throw new PersistenceError("Failed to find transactions by item ID", {
         cause: error,
@@ -261,7 +268,7 @@ export class AppwriteTransactionRepository
    * @param status - Optional filter by transaction status.
    * @param limit - Optional maximum number of transactions to return (default: no limit).
    * @returns {Promise<Transaction[]>}
-   * @throws {PersistenceError} If the query fails.
+   * @throws {PersistenceError} If the query fails or authorization is denied.
    */
   async findByUserId(
     userId?: string,
@@ -277,6 +284,17 @@ export class AppwriteTransactionRepository
       );
     }
 
+    if (limit === 0) {
+      return [];
+    }
+
+    const sanitizedLimit =
+      limit !== undefined ? Math.max(0, Math.floor(limit || 0)) : undefined;
+
+    if (sanitizedLimit === 0) {
+      return [];
+    }
+
     const allTransactions: Transaction[] = [];
     let hasMore = true;
     let offset = 0;
@@ -285,8 +303,8 @@ export class AppwriteTransactionRepository
       while (hasMore) {
         let fetchLimit = 100;
 
-        if (limit !== undefined) {
-          const remaining = limit - allTransactions.length;
+        if (sanitizedLimit !== undefined) {
+          const remaining = sanitizedLimit - allTransactions.length;
           if (remaining <= 0) {
             hasMore = false;
             break;
@@ -335,7 +353,7 @@ export class AppwriteTransactionRepository
    * Deletes a transaction by its ID (hard delete/undo).
    * @param id - The transaction UUID.
    * @returns {Promise<void>}
-   * @throws {PersistenceError} If the deletion fails.
+   * @throws {PersistenceError} If the deletion fails or session cannot be ensured.
    */
   async delete(id: string): Promise<void> {
     await this.ensureSession();

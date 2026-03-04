@@ -77,6 +77,8 @@ export class AppwriteWishlistRepository
    * Ensures an active session exists.
    * Creates an anonymous session if no session is active.
    * // TODO: Replace with authenticated sessions once Phase 5 is implemented
+   * @returns A Promise that resolves to the session/user object.
+   * @throws {PersistenceError} If the session cannot be ensured.
    */
   async ensureSession(): Promise<Models.User<Models.Preferences>> {
     if (this.sessionPromise) {
@@ -98,7 +100,7 @@ export class AppwriteWishlistRepository
             await this.account.createAnonymousSession();
             return await this.account.get();
           } catch (sessionError: unknown) {
-            console.error("Failed to create anonymous session:", sessionError);
+            console.error("Failed to create anonymous session");
             throw sessionError;
           }
         }
@@ -115,16 +117,15 @@ export class AppwriteWishlistRepository
   }
 
   /**
-   * Finds a wishlist by its unique identifier.
+   * Finds a wishlist by its unique ID.
    *
-   * @param id - The UUID of the wishlist.
-   * @param ensureSession - Whether to ensure an active session before querying (default: true).
+   * @param id - The wishlist UUID.
+   * @param includeItems - Whether to fetch and include children items (default: true).
    * @returns A Promise that resolves to the Wishlist aggregate or null if not found.
+   * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
-  async findById(id: string, ensureSession = true): Promise<Wishlist | null> {
-    if (ensureSession) {
-      await this.ensureSession();
-    }
+  async findById(id: string, includeItems = true): Promise<Wishlist | null> {
+    await this.ensureSession();
     try {
       // 1. Fetch Wishlist Document
       const wishlistDoc = await this.tablesDb.getRow({
@@ -135,25 +136,27 @@ export class AppwriteWishlistRepository
 
       // 2. Fetch Wishlist Items
       const itemDocuments: Models.Document[] = [];
-      let itemsCursor: string | undefined = undefined;
-      do {
-        const queries = [Query.equal("wishlistId", id), Query.limit(100)];
-        if (itemsCursor) {
-          queries.push(Query.cursorAfter(itemsCursor));
-        }
-        const response = await this.tablesDb.listRows({
-          databaseId: this.databaseId,
-          tableId: this.wishlistItemsCollectionId,
-          queries,
-        });
-        const docs = toDocument<Models.Document[]>(response.rows);
-        itemDocuments.push(...docs);
-        if (response.rows.length < 100) {
-          itemsCursor = undefined;
-        } else {
-          itemsCursor = response.rows[response.rows.length - 1].$id;
-        }
-      } while (itemsCursor);
+      if (includeItems) {
+        let itemsCursor: string | undefined = undefined;
+        do {
+          const queries = [Query.equal("wishlistId", id), Query.limit(100)];
+          if (itemsCursor) {
+            queries.push(Query.cursorAfter(itemsCursor));
+          }
+          const response = await this.tablesDb.listRows({
+            databaseId: this.databaseId,
+            tableId: this.wishlistItemsCollectionId,
+            queries,
+          });
+          const docs = toDocument<Models.Document[]>(response.rows);
+          itemDocuments.push(...docs);
+          if (response.rows.length < 100) {
+            itemsCursor = undefined;
+          } else {
+            itemsCursor = response.rows[response.rows.length - 1].$id;
+          }
+        } while (itemsCursor);
+      }
 
       const itemIds = itemDocuments.map((doc) => doc.$id);
 
@@ -234,10 +237,11 @@ export class AppwriteWishlistRepository
   }
 
   /**
-   * Finds a wishlist by its owner's identifier.
+   * Finds all wishlists owned by a specific profile.
    *
-   * @param ownerId - The identifier of the owner (UUID or Appwrite ID).
-   * @returns A Promise that resolves to an array of Wishlist aggregates for the owner (empty array if none).
+   * @param ownerId - The owner's profile UUID.
+   * @returns A Promise that resolves to an array of Wishlist aggregates.
+   * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
     await this.ensureSession();
@@ -269,6 +273,7 @@ export class AppwriteWishlistRepository
    * Retrieves the current user's unique identifier.
    *
    * @returns A Promise that resolves to the current user ID.
+   * @throws {PersistenceError} If the account cannot be retrieved.
    */
   async getCurrentUserId(): Promise<string> {
     const user = await this.ensureSession();
@@ -277,9 +282,10 @@ export class AppwriteWishlistRepository
 
   /**
    * Persists a wishlist aggregate.
-   * Synchronizes the main wishlist document and all its items.
    *
-   * @param wishlist - The wishlist to save.
+   * @param wishlist - The wishlist aggregate to save.
+   * @returns A Promise that resolves when the wishlist is saved.
+   * @throws {PersistenceError} If the save operation fails or session cannot be ensured.
    */
   async save(wishlist: Wishlist): Promise<void> {
     // 1. Ensure active session
@@ -371,10 +377,11 @@ export class AppwriteWishlistRepository
   }
 
   /**
-   * Deletes a wishlist by its unique identifier.
-   * Cascading deletion handles items and transactions.
+   * Deletes a wishlist and all its items (hard delete).
    *
-   * @param id - The UUID of the wishlist to delete.
+   * @param id - The wishlist UUID.
+   * @returns A Promise that resolves when the wishlist (and its items) is deleted.
+   * @throws {PersistenceError} If the deletion fails or session cannot be ensured.
    */
   async delete(id: string): Promise<void> {
     await this.ensureSession();

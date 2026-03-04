@@ -26,7 +26,7 @@ The `Transaction` entity will now include:
 - `itemDescription`: The description of the item.
 - `ownerUsername`: The username of the wishlist owner.
 
-#### Privacy and Security Considerations
+### Privacy and Security Considerations
 
 > [!IMPORTANT]
 > The inclusion of `ownerUsername` introduces potential privacy risks. To mitigate these:

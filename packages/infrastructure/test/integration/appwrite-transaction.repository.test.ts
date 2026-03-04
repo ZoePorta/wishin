@@ -362,11 +362,11 @@ describe.skipIf(!shouldRun)(
 
     it("should find transactions by userId", async () => {
       const currentUserId = await repository.getCurrentUserId();
-      const localTransactionId = randomUUID();
+      localId = randomUUID();
       const localItemId = randomUUID();
 
       const transaction = Transaction.reconstitute({
-        id: localTransactionId,
+        id: localId,
         itemId: localItemId,
         userId: currentUserId,
         itemName: "Test Item",
@@ -399,7 +399,7 @@ describe.skipIf(!shouldRun)(
           .deleteRow({
             databaseId,
             tableId: transactionsCollectionId,
-            rowId: localTransactionId,
+            rowId: localId,
           })
           .catch(() => void 0);
       }
@@ -407,11 +407,11 @@ describe.skipIf(!shouldRun)(
 
     it("should default to current userId when findByUserId is called without arguments", async () => {
       const currentUserId = await repository.getCurrentUserId();
-      const localTransactionId = randomUUID();
+      localId = randomUUID();
       const localItemId = randomUUID();
 
       const transaction = Transaction.reconstitute({
-        id: localTransactionId,
+        id: localId,
         itemId: localItemId,
         userId: currentUserId,
         itemName: "Test Item",
@@ -438,13 +438,13 @@ describe.skipIf(!shouldRun)(
 
         const results = await repository.findByUserId();
         expect(results.length).toBeGreaterThanOrEqual(1);
-        expect(results.some((r) => r.id === localTransactionId)).toBe(true);
+        expect(results.some((r) => r.id === localId)).toBe(true);
       } finally {
         await tablesDb
           .deleteRow({
             databaseId,
             tableId: transactionsCollectionId,
-            rowId: localTransactionId,
+            rowId: localId,
           })
           .catch(() => void 0);
       }
@@ -458,12 +458,12 @@ describe.skipIf(!shouldRun)(
     });
 
     it("should delete a transaction", async () => {
-      const localTransactionId = randomUUID();
+      localId = randomUUID();
       const localUserId = "user-" + randomUUID().substring(0, 8);
       const localItemId = randomUUID();
 
       const transaction = Transaction.reconstitute({
-        id: localTransactionId,
+        id: localId,
         itemId: localItemId,
         userId: localUserId,
         itemName: "Test Item",
@@ -482,18 +482,18 @@ describe.skipIf(!shouldRun)(
       // Verify it exists
       await vi.waitUntil(
         async () => {
-          const res = await repository.findById(localTransactionId);
+          const res = await repository.findById(localId);
           return res !== null;
         },
         { timeout: 5000, interval: 200 },
       );
 
-      const initial = await repository.findById(localTransactionId);
+      const initial = await repository.findById(localId);
       expect(initial).not.toBeNull();
 
-      await repository.delete(localTransactionId);
+      await repository.delete(localId);
 
-      const afterDelete = await repository.findById(localTransactionId);
+      const afterDelete = await repository.findById(localId);
       expect(afterDelete).toBeNull();
     });
   },

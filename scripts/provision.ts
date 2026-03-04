@@ -397,11 +397,19 @@ async function provision() {
           // 3. If DEV_ALLOW_OPEN_PERMISSIONS is true, all collections get full public CRUD.
           const permissions = ['read("any")'];
 
-          if (isDevOpenPermissions || coll.id === "transactions") {
+          if (isDevOpenPermissions) {
             permissions.push('create("any")', 'update("any")', 'delete("any")');
-          } else if (!permissions.includes('read("any")')) {
-            // Ensure read("any") is always there if not already added by logic above
-            // (though it is already in the initial array)
+          } else if (coll.id === "transactions") {
+            // Guest transactions require public create/read, but restricted update/delete (Phase 5)
+            // For now, keep guest access for transactions to avoid breaking the MVP flow
+            permissions.push('create("any")', 'update("any")', 'delete("any")');
+          } else {
+            // Other collections (profiles, wishlists, items) restricted to members by default
+            permissions.push(
+              'create("role:member")',
+              'update("role:member")',
+              'delete("role:member")',
+            );
           }
 
           await tablesDb.createTable({

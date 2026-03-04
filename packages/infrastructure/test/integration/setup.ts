@@ -23,6 +23,16 @@ global.localStorage = {
   key: (index: number) => Object.keys(storage)[index] || null,
 } as Storage;
 
-// Appwrite SDK environment checks
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-global.window = global as any;
+export {};
+
+// Restore type safety for global.window
+declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace NodeJS {
+    interface Global {
+      window: Window & typeof globalThis;
+    }
+  }
+}
+
+(global as unknown as { window: unknown }).window = global;

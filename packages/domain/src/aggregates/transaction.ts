@@ -213,6 +213,7 @@ export class Transaction {
    * @param {string|null} props.itemDescription - The item details.
    * @param {string} props.ownerUsername - The owner's username.
    * @returns {Transaction}
+   * @throws {InvalidAttributeError} If validation fails.
    */
   public static createReservation(
     props: TransactionCreateReservationProps & {
@@ -246,6 +247,7 @@ export class Transaction {
    * @param {string|null} props.itemDescription - The item details.
    * @param {string} props.ownerUsername - The owner's username.
    * @returns {Transaction}
+   * @throws {InvalidAttributeError} If validation fails.
    */
   public static createPurchase(
     props: TransactionCreatePurchaseProps & {
@@ -451,17 +453,17 @@ export class Transaction {
       }
 
       // Business Validations
-      if (this.itemName !== null && this.itemName.trim().length === 0) {
+      if (this.itemName === null || this.itemName.trim().length === 0) {
         throw new InvalidAttributeError(
-          "Invalid itemName: Cannot be empty or whitespace",
+          "Invalid itemName: Cannot be null, empty or whitespace",
         );
       }
       if (
-        this.ownerUsername !== null &&
+        this.ownerUsername === null ||
         this.ownerUsername.trim().length === 0
       ) {
         throw new InvalidAttributeError(
-          "Invalid ownerUsername: Cannot be empty or whitespace",
+          "Invalid ownerUsername: Cannot be null, empty or whitespace",
         );
       }
       if (this.itemPrice !== null && this.itemPrice < 0) {

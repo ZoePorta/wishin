@@ -9,6 +9,7 @@ export interface SessionAwareRepository {
    * Ensures an active session exists.
    * Creates an anonymous session if no session is active.
    * @returns A Promise that resolves to the session/user object when a session is ensured.
+   * @throws {PersistenceError} If the session cannot be ensured.
    */
   ensureSession(): Promise<Models.User<Models.Preferences>>;
 
