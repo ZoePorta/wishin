@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 /* eslint-disable @typescript-eslint/no-deprecated */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteTransactionRepository } from "./appwrite-transaction.repository";
@@ -32,14 +30,22 @@ interface MockRowList {
 // Mock Appwrite SDK
 vi.mock("appwrite", () => {
   const Account = vi.fn();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   Account.prototype.get = vi.fn();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   Account.prototype.createAnonymousSession = vi.fn();
 
   const TablesDB = vi.fn();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   TablesDB.prototype.getRow = vi.fn();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   TablesDB.prototype.listRows = vi.fn();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   TablesDB.prototype.upsertRow = vi.fn();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   TablesDB.prototype.updateRow = vi.fn();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  TablesDB.prototype.deleteRow = vi.fn();
 
   return {
     Client: class {
@@ -49,8 +55,13 @@ vi.mock("appwrite", () => {
     Account,
     TablesDB,
     Query: {
-      equal: vi.fn((field, value) => ({ field, value, type: "equal" })),
-      limit: vi.fn((value) => ({ value, type: "limit" })),
+      equal: vi.fn((field: string, value: unknown) => ({
+        field,
+        value,
+        type: "equal",
+      })),
+      limit: vi.fn((value: number) => ({ value, type: "limit" })),
+      offset: vi.fn((value: number) => ({ value, type: "offset" })),
     },
     AppwriteException: class extends Error {
       constructor(
@@ -78,7 +89,7 @@ describe("AppwriteTransactionRepository", () => {
 
   const validId = "550e8400-e29b-41d4-a716-446655440001";
   const validItemId = "550e8400-e29b-41d4-a716-446655440002";
-  const validUserId = "550e8400-e29b-41d4-a716-446655440003";
+  const validUserId = "user-123";
 
   class TestAppwriteTransactionRepository extends AppwriteTransactionRepository {
     public get accountAccess(): InstanceType<typeof Account> {
@@ -92,7 +103,7 @@ describe("AppwriteTransactionRepository", () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     mockClient = new Client();
     const testRepo = new TestAppwriteTransactionRepository(
       mockClient,
@@ -117,8 +128,11 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should create an anonymous session if account.get fails with 401", async () => {
-      vi.mocked(mockAccount.get).mockRejectedValue(
+      vi.mocked(mockAccount.get).mockRejectedValueOnce(
         new AppwriteException("Unauthorized", 401),
+      );
+      vi.mocked(mockAccount.get).mockResolvedValueOnce(
+        {} as Models.User<Models.Preferences>,
       );
       vi.mocked(mockAccount.createAnonymousSession).mockResolvedValue(
         {} as Models.Session,
@@ -126,7 +140,7 @@ describe("AppwriteTransactionRepository", () => {
 
       await repository.ensureSession();
 
-      expect(mockAccount.get).toHaveBeenCalledTimes(1);
+      expect(mockAccount.get).toHaveBeenCalledTimes(2);
       expect(mockAccount.createAnonymousSession).toHaveBeenCalledTimes(1);
     });
   });
@@ -155,6 +169,7 @@ describe("AppwriteTransactionRepository", () => {
         databaseId: config.databaseId,
         tableId: config.transactionsCollectionId,
         rowId: transaction.id,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         data: expect.objectContaining({
           itemId: transaction.itemId,
           userId: transaction.userId,
@@ -294,6 +309,227 @@ describe("AppwriteTransactionRepository", () => {
       expect(cancelledCount).toBe(2);
       expect(mockAccount.get).toHaveBeenCalled();
       expect(mockTablesDb.updateRow).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("findByUserId", () => {
+    const mockDocs: MockRow[] = [
+      {
+        $id: validId,
+        itemId: validItemId,
+        userId: validUserId,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        $createdAt: new Date().toISOString(),
+        $updatedAt: new Date().toISOString(),
+        $permissions: [],
+        $databaseId: config.databaseId,
+        $collectionId: config.transactionsCollectionId,
+        $tableId: config.transactionsCollectionId,
+        $sequence: 1,
+      },
+    ];
+
+    it("should return transactions for a user", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+        rows: mockDocs,
+        total: 1,
+      } as MockRowList);
+
+      const results = await repository.findByUserId(validUserId);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].userId).toBe(validUserId);
+      expect(mockAccount.get).toHaveBeenCalled();
+      expect(mockTablesDb.listRows).toHaveBeenCalledWith(
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          queries: expect.arrayContaining([
+            expect.objectContaining({ field: "userId", value: validUserId }),
+          ]),
+        }),
+      );
+    });
+
+    it("should allow filtering by status", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+        rows: [],
+        total: 0,
+      } as MockRowList);
+
+      await repository.findByUserId(validUserId, TransactionStatus.PURCHASED);
+
+      expect(mockTablesDb.listRows).toHaveBeenCalledWith(
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          queries: expect.arrayContaining([
+            expect.objectContaining({ field: "userId", value: validUserId }),
+            expect.objectContaining({
+              field: "status",
+              value: TransactionStatus.PURCHASED,
+            }),
+          ]),
+        }),
+      );
+    });
+
+    it("should aggregate all pages when there are more than 100 results", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
+
+      // Page 1: 100 docs
+      const page1Docs = Array(100)
+        .fill(null)
+        .map((_, i) => ({
+          $id: `550e8400-e29b-41d4-a716-44665544${i.toString().padStart(4, "0")}`,
+          itemId: validItemId,
+          userId: validUserId,
+          status: TransactionStatus.RESERVED,
+          quantity: 1,
+          $createdAt: new Date().toISOString(),
+          $updatedAt: new Date().toISOString(),
+          $permissions: [],
+          $databaseId: config.databaseId,
+          $collectionId: config.transactionsCollectionId,
+          $tableId: config.transactionsCollectionId,
+          $sequence: i + 1,
+        }));
+
+      // Page 2: 5 docs
+      const page2Docs = Array(5)
+        .fill(null)
+        .map((_, i) => ({
+          $id: `550e8400-e29b-41d4-a716-44665545${i.toString().padStart(4, "0")}`,
+          itemId: validItemId,
+          userId: validUserId,
+          status: TransactionStatus.RESERVED,
+          quantity: 1,
+          $createdAt: new Date().toISOString(),
+          $updatedAt: new Date().toISOString(),
+          $permissions: [],
+          $databaseId: config.databaseId,
+          $collectionId: config.transactionsCollectionId,
+          $tableId: config.transactionsCollectionId,
+          $sequence: 101 + i,
+        }));
+
+      vi.mocked(mockTablesDb.listRows)
+        .mockResolvedValueOnce({
+          rows: page1Docs,
+          total: 105,
+        } as MockRowList)
+        .mockResolvedValueOnce({
+          rows: page2Docs,
+          total: 105,
+        } as MockRowList);
+
+      const results = await repository.findByUserId(validUserId);
+
+      expect(results).toHaveLength(105);
+      expect(mockTablesDb.listRows).toHaveBeenCalledTimes(2);
+      expect(mockTablesDb.listRows).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          queries: expect.arrayContaining([
+            expect.objectContaining({ field: "userId", value: validUserId }),
+            expect.objectContaining({ value: 100, type: "limit" }),
+            expect.objectContaining({ value: 0, type: "offset" }),
+          ]),
+        }),
+      );
+      expect(mockTablesDb.listRows).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          queries: expect.arrayContaining([
+            expect.objectContaining({ field: "userId", value: validUserId }),
+            expect.objectContaining({ value: 100, type: "limit" }),
+            expect.objectContaining({ value: 100, type: "offset" }),
+          ]),
+        }),
+      );
+    });
+
+    it("should respect the limit parameter", async () => {
+      vi.mocked(mockAccount.get)
+        .mockResolvedValueOnce({} as Models.User<Models.Preferences>)
+        .mockResolvedValueOnce({} as Models.User<Models.Preferences>);
+
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+        rows: Array(20).fill({
+          $id: validId,
+          itemId: validItemId,
+          userId: validUserId,
+          status: TransactionStatus.RESERVED,
+          quantity: 1,
+          $createdAt: new Date().toISOString(),
+          $updatedAt: new Date().toISOString(),
+        }) as MockRow[],
+        total: 20,
+      } as MockRowList);
+
+      const results = await repository.findByUserId(validUserId, undefined, 20);
+
+      expect(results).toHaveLength(20); // Mapping will still return all from first page if not sliced, but implementation should stop.
+      // Wait, my implementation stops AFTER a page is fetched.
+      expect(mockTablesDb.listRows).toHaveBeenCalledWith(
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          queries: expect.arrayContaining([
+            expect.objectContaining({ value: 20, type: "limit" }),
+          ]),
+        }),
+      );
+    });
+  });
+
+  describe("delete", () => {
+    it("should call ensureSession and delete the transaction", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
+      vi.mocked(mockTablesDb.deleteRow).mockResolvedValue(
+        {} as Models.Document,
+      );
+
+      await repository.delete(validId);
+
+      expect(mockAccount.get).toHaveBeenCalled();
+      expect(mockTablesDb.deleteRow).toHaveBeenCalledWith({
+        databaseId: config.databaseId,
+        tableId: config.transactionsCollectionId,
+        rowId: validId,
+      });
+    });
+
+    it("should handle 404 (silent success)", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
+      vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(
+        new AppwriteException("Not found", 404),
+      );
+
+      await expect(repository.delete(validId)).resolves.not.toThrow();
+    });
+
+    it("should rethrow non-404 errors", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
+      vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(
+        new AppwriteException("Internal Server Error", 500),
+      );
+
+      await expect(repository.delete(validId)).rejects.toThrow();
     });
   });
 });

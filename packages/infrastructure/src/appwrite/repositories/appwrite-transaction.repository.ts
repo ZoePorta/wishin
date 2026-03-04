@@ -23,6 +23,8 @@ export class AppwriteTransactionRepository
 {
   private readonly tablesDb: TablesDB;
   private readonly account: Account;
+  private sessionEnsured = false;
+  private _currentUser: Models.User<Models.Preferences> | null = null;
 
   /**
    * Initializes the repository.
@@ -41,15 +43,24 @@ export class AppwriteTransactionRepository
   }
 
   /**
-   * Ensuring an active session exists.
+   * Ensures an active session exists.
    * Creates an anonymous session if no session is active.
+   *
+   * @returns {Promise<void>}
+   * @throws {AppwriteException} If a non-401 error occurs while fetching the account.
    */
   async ensureSession(): Promise<void> {
+    if (this.sessionEnsured) {
+      return;
+    }
     try {
-      await this.account.get();
+      this._currentUser = await this.account.get();
+      this.sessionEnsured = true;
     } catch (error) {
       if (error instanceof AppwriteException && error.code === 401) {
         await this.account.createAnonymousSession();
+        this._currentUser = await this.account.get();
+        this.sessionEnsured = true;
         return;
       }
       throw error;
@@ -59,26 +70,34 @@ export class AppwriteTransactionRepository
   /**
    * Retrieves the current user's unique identifier.
    * @returns A Promise that resolves to the current user ID.
+   * @throws {AppwriteException} If the account cannot be retrieved.
    */
   async getCurrentUserId(): Promise<string> {
     await this.ensureSession();
-    const user = await this.account.get();
-    return user.$id;
+    this._currentUser ??= await this.account.get();
+    return this._currentUser.$id;
   }
 
   /**
    * Persists a transaction aggregate.
    *
    * @param transaction - The transaction to save.
+   * @returns {Promise<void>}
+   * @throws {AppwriteException} If the upsert fails.
    */
   async save(transaction: Transaction): Promise<void> {
     await this.ensureSession();
-    await this.tablesDb.upsertRow({
-      databaseId: this.databaseId,
-      tableId: this.transactionsCollectionId,
-      rowId: transaction.id,
-      data: TransactionMapper.toPersistence(transaction),
-    });
+    try {
+      await this.tablesDb.upsertRow({
+        databaseId: this.databaseId,
+        tableId: this.transactionsCollectionId,
+        rowId: transaction.id,
+        data: TransactionMapper.toPersistence(transaction),
+      });
+    } catch (error) {
+      console.error("AppwriteTransactionRepository.save error:", error);
+      throw error;
+    }
   }
 
   /**
@@ -183,5 +202,83 @@ export class AppwriteTransactionRepository
     }
 
     return totalCancelled;
+  }
+
+  /**
+   * Finds all transactions for a specific user.
+   * @param userId - The user identity.
+   * @param status - Optional filter by transaction status.
+   * @param limit - Optional maximum number of transactions to return (default: no limit).
+   * @returns {Promise<Transaction[]>}
+   */
+  async findByUserId(
+    userId: string,
+    status?: TransactionStatus,
+    limit?: number,
+  ): Promise<Transaction[]> {
+    await this.ensureSession();
+
+    const allTransactions: Transaction[] = [];
+    let hasMore = true;
+    let offset = 0;
+
+    while (hasMore) {
+      const remaining = limit ? limit - allTransactions.length : 100;
+      if (limit && remaining <= 0) {
+        hasMore = false;
+        break;
+      }
+
+      const queries = [
+        Query.equal("userId", userId),
+        Query.limit(Math.min(100, remaining)),
+        Query.offset(offset),
+      ];
+
+      if (status) {
+        queries.push(Query.equal("status", status));
+      }
+
+      const response = await this.tablesDb.listRows({
+        databaseId: this.databaseId,
+        tableId: this.transactionsCollectionId,
+        queries,
+      });
+
+      const documents = toDocument<TransactionDocument[]>(response.rows);
+      allTransactions.push(
+        ...documents.map((doc) => TransactionMapper.toDomain(doc)),
+      );
+
+      if (documents.length < Math.min(100, remaining)) {
+        hasMore = false;
+      } else {
+        offset += documents.length;
+      }
+    }
+
+    return allTransactions;
+  }
+
+  /**
+   * Deletes a transaction by its ID (hard delete/undo).
+   * @param id - The transaction UUID.
+   * @returns {Promise<void>}
+   */
+  async delete(id: string): Promise<void> {
+    await this.ensureSession();
+    try {
+      await this.tablesDb.deleteRow({
+        databaseId: this.databaseId,
+        tableId: this.transactionsCollectionId,
+        rowId: id,
+      });
+    } catch (error) {
+      if (error instanceof AppwriteException && error.code === 404) {
+        return; // Already deleted
+      }
+      console.error("AppwriteTransactionRepository.delete error:", error);
+      throw error;
+    }
   }
 }

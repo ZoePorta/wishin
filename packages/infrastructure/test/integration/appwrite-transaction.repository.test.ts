@@ -56,21 +56,27 @@ describe.skipIf(!shouldRun)(
       );
     });
 
-    const transactionId = randomUUID();
-    const itemId = randomUUID();
-    const userId = randomUUID();
+    let transactionId: string;
+    let itemId: string;
+    let userId: string;
 
     afterEach(async () => {
-      await tablesDb
-        .deleteRow({
-          databaseId,
-          tableId: transactionsCollectionId,
-          rowId: transactionId,
-        })
-        .catch(() => void 0);
+      if (transactionId) {
+        await tablesDb
+          .deleteRow({
+            databaseId,
+            tableId: transactionsCollectionId,
+            rowId: transactionId,
+          })
+          .catch(() => void 0);
+      }
     });
 
     it("should save and find a transaction by id", async () => {
+      transactionId = randomUUID();
+      itemId = randomUUID();
+      userId = randomUUID();
+
       const transaction = Transaction.reconstitute({
         id: transactionId,
         itemId,
@@ -98,9 +104,44 @@ describe.skipIf(!shouldRun)(
       expect(found?.status).toBe(TransactionStatus.RESERVED);
     });
 
+    it("should find a transaction by id", async () => {
+      const localId = randomUUID();
+      const localItem = randomUUID();
+      const localUser = randomUUID();
+      const transaction = Transaction.reconstitute({
+        id: localId,
+        itemId: localItem,
+        userId: localUser,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      await repository.save(transaction);
+
+      const found = await repository.findById(localId);
+      expect(found).not.toBeNull();
+      expect(found?.id).toBe(localId);
+    });
+
     it("should find transactions by itemId", async () => {
-      // Seed another transaction for the same item
+      itemId = randomUUID();
+      const t1Id = randomUUID();
       const t2Id = randomUUID();
+
+      // Seed transactions for the same item
+      await tablesDb.createRow({
+        databaseId,
+        tableId: transactionsCollectionId,
+        rowId: t1Id,
+        data: {
+          itemId,
+          userId: randomUUID(),
+          status: TransactionStatus.RESERVED,
+          quantity: 1,
+        },
+      });
+
       await tablesDb.createRow({
         databaseId,
         tableId: transactionsCollectionId,
@@ -117,15 +158,22 @@ describe.skipIf(!shouldRun)(
         await vi.waitUntil(
           async () => {
             const results = await repository.findByItemId(itemId);
-            return results.length >= 1;
+            return results.length >= 2;
           },
           { timeout: 5000, interval: 200 },
         );
 
         const results = await repository.findByItemId(itemId);
-        expect(results.length).toBeGreaterThanOrEqual(1);
+        expect(results.length).toBeGreaterThanOrEqual(2);
         expect(results.some((r) => r.itemId === itemId)).toBe(true);
       } finally {
+        await tablesDb
+          .deleteRow({
+            databaseId,
+            tableId: transactionsCollectionId,
+            rowId: t1Id,
+          })
+          .catch(() => void 0);
         await tablesDb
           .deleteRow({
             databaseId,
@@ -137,35 +185,34 @@ describe.skipIf(!shouldRun)(
     });
 
     it("should cancel all RESERVED transactions for an item", async () => {
-      // Seed 2 RESERVED transactions
+      // Seed 2 RESERVED transactions using repository.save to ensure proper ownership/permissions
       const res1Id = randomUUID();
       const res2Id = randomUUID();
       const localItemId = randomUUID();
+      const localUserId = "user-" + randomUUID().substring(0, 8);
 
-      await Promise.all([
-        tablesDb.createRow({
-          databaseId,
-          tableId: transactionsCollectionId,
-          rowId: res1Id,
-          data: {
-            itemId: localItemId,
-            userId: userId,
-            status: TransactionStatus.RESERVED,
-            quantity: 1,
-          },
-        }),
-        tablesDb.createRow({
-          databaseId,
-          tableId: transactionsCollectionId,
-          rowId: res2Id,
-          data: {
-            itemId: localItemId,
-            userId: userId,
-            status: TransactionStatus.RESERVED,
-            quantity: 1,
-          },
-        }),
-      ]);
+      const t1 = Transaction.reconstitute({
+        id: res1Id,
+        itemId: localItemId,
+        userId: localUserId,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      const t2 = Transaction.reconstitute({
+        id: res2Id,
+        itemId: localItemId,
+        userId: localUserId,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await repository.save(t1);
+      await repository.save(t2);
 
       try {
         // Wait for indices
@@ -202,6 +249,81 @@ describe.skipIf(!shouldRun)(
           })
           .catch(() => void 0);
       }
+    });
+
+    it("should find transactions by userId", async () => {
+      const localTransactionId = randomUUID();
+      const localUserId = "user-" + randomUUID().substring(0, 8);
+      const localItemId = randomUUID();
+
+      const transaction = Transaction.reconstitute({
+        id: localTransactionId,
+        itemId: localItemId,
+        userId: localUserId,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await repository.save(transaction);
+
+      try {
+        await vi.waitUntil(
+          async () => {
+            const results = await repository.findByUserId(localUserId);
+            return results.length === 1;
+          },
+          { timeout: 5000, interval: 200 },
+        );
+
+        const results = await repository.findByUserId(localUserId);
+        expect(results).toHaveLength(1);
+        expect(results[0].userId).toBe(localUserId);
+      } finally {
+        await tablesDb
+          .deleteRow({
+            databaseId,
+            tableId: transactionsCollectionId,
+            rowId: localTransactionId,
+          })
+          .catch(() => void 0);
+      }
+    });
+
+    it("should delete a transaction", async () => {
+      const localTransactionId = randomUUID();
+      const localUserId = "user-" + randomUUID().substring(0, 8);
+      const localItemId = randomUUID();
+
+      const transaction = Transaction.reconstitute({
+        id: localTransactionId,
+        itemId: localItemId,
+        userId: localUserId,
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      await repository.save(transaction);
+
+      // Verify it exists
+      await vi.waitUntil(
+        async () => {
+          const res = await repository.findById(localTransactionId);
+          return res !== null;
+        },
+        { timeout: 5000, interval: 200 },
+      );
+
+      const initial = await repository.findById(localTransactionId);
+      expect(initial).not.toBeNull();
+
+      await repository.delete(localTransactionId);
+
+      const afterDelete = await repository.findById(localTransactionId);
+      expect(afterDelete).toBeNull();
     });
   },
 );
