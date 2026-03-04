@@ -75,13 +75,13 @@ export class AppwriteWishlistRepository
    * Creates an anonymous session if no session is active.
    * // TODO: Replace with authenticated sessions once Phase 5 is implemented
    */
-  async ensureSession(): Promise<void> {
+  async ensureSession(): Promise<Models.User<Models.Preferences>> {
     try {
-      await this.account.get();
+      return await this.account.get();
     } catch (error) {
       if (error instanceof AppwriteException && error.code === 401) {
         await this.account.createAnonymousSession();
-        return;
+        return await this.account.get();
       }
       throw error;
     }
@@ -244,8 +244,7 @@ export class AppwriteWishlistRepository
    * @returns A Promise that resolves to the current user ID.
    */
   async getCurrentUserId(): Promise<string> {
-    await this.ensureSession();
-    const user = await this.account.get();
+    const user = await this.ensureSession();
     return user.$id;
   }
 

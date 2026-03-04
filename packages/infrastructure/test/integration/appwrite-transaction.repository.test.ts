@@ -63,7 +63,9 @@ describe.skipIf(!shouldRun)(
     });
 
     // Helper to seed required parent records
-    async function seedParentRecords(itemId: string) {
+    async function seedParentRecords(
+      itemId: string,
+    ): Promise<{ profileId: string; wishlistId: string; itemId: string }> {
       const profileId = randomUUID();
       const wishlistId = randomUUID();
 
@@ -104,7 +106,7 @@ describe.skipIf(!shouldRun)(
       itemId: string,
       wishlistId: string,
       profileId: string,
-    ) {
+    ): Promise<void> {
       await tablesDb
         .deleteRow({
           databaseId,

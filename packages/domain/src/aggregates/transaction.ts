@@ -14,6 +14,11 @@ import { TransactionStatus } from "../value-objects/transaction-status";
  * @property {string} id - Unique identifier (UUID v4).
  * @property {string | null} itemId - The item being transacted (UUID v4) or null if deleted (ADR 017).
  * @property {string | null} [userId] - Unique identity (UUID or Appwrite ID) or null if deleted (ADR 017).
+ * @property {string | null} itemName - The item title at the time of transaction.
+ * @property {number | null} itemPrice - The item's price at the time of transaction.
+ * @property {string | null} itemCurrency - The currency code (e.g., "USD", "EUR").
+ * @property {string | null} itemDescription - The item details/metadata.
+ * @property {string | null} ownerUsername - The username of the wishlist owner.
  * @property {TransactionStatus} status - Lifecycle state (RESERVED, PURCHASED, CANCELLED).
  * @property {number} quantity - Positive integer.
  * @property {Date} createdAt - Creation timestamp.
@@ -171,6 +176,11 @@ export class Transaction {
   private constructor(props: TransactionProps, mode: ValidationMode) {
     this.props = {
       ...props,
+      itemName: props.itemName ?? null,
+      itemPrice: props.itemPrice ?? null,
+      itemCurrency: props.itemCurrency ?? null,
+      itemDescription: props.itemDescription ?? null,
+      ownerUsername: props.ownerUsername ?? null,
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),
     };
@@ -192,9 +202,16 @@ export class Transaction {
   /**
    * Factory for RESERVED transactions.
    *
+   * Sets status to RESERVED and initializes timestamps.
+   *
    * **Validation Mode:** STRICT
    *
-   * @param {TransactionCreateReservationProps} props
+   * @param {TransactionCreateReservationProps & { itemName: string; itemPrice: number | null; itemCurrency: string | null; itemDescription: string | null; ownerUsername: string; }} props
+   * @param {string} props.itemName - The item title.
+   * @param {number|null} props.itemPrice - The item price.
+   * @param {string|null} props.itemCurrency - The currency code.
+   * @param {string|null} props.itemDescription - The item details.
+   * @param {string} props.ownerUsername - The owner's username.
    * @returns {Transaction}
    */
   public static createReservation(
@@ -218,9 +235,16 @@ export class Transaction {
   /**
    * Factory for PURCHASED transactions.
    *
+   * Sets status to PURCHASED and initializes timestamps.
+   *
    * **Validation Mode:** STRICT
    *
-   * @param {TransactionCreatePurchaseProps} props
+   * @param {TransactionCreatePurchaseProps & { itemName: string; itemPrice: number | null; itemCurrency: string | null; itemDescription: string | null; ownerUsername: string; }} props
+   * @param {string} props.itemName - The item title.
+   * @param {number|null} props.itemPrice - The item price.
+   * @param {string|null} props.itemCurrency - The currency code.
+   * @param {string|null} props.itemDescription - The item details.
+   * @param {string} props.ownerUsername - The owner's username.
    * @returns {Transaction}
    */
   public static createPurchase(
@@ -423,6 +447,26 @@ export class Transaction {
       if (this.status === TransactionStatus.RESERVED && !this.userId) {
         throw new InvalidAttributeError(
           "Invalid state: Reserved transactions require a userId",
+        );
+      }
+
+      // Business Validations
+      if (this.itemName !== null && this.itemName.trim().length === 0) {
+        throw new InvalidAttributeError(
+          "Invalid itemName: Cannot be empty or whitespace",
+        );
+      }
+      if (
+        this.ownerUsername !== null &&
+        this.ownerUsername.trim().length === 0
+      ) {
+        throw new InvalidAttributeError(
+          "Invalid ownerUsername: Cannot be empty or whitespace",
+        );
+      }
+      if (this.itemPrice !== null && this.itemPrice < 0) {
+        throw new InvalidAttributeError(
+          "Invalid itemPrice: Cannot be negative",
         );
       }
     }

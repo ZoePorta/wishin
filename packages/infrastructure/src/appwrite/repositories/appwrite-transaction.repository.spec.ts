@@ -120,6 +120,29 @@ describe("AppwriteTransactionRepository", () => {
     mockTablesDb = testRepo.tablesDbAccess;
   });
 
+  function createMockRow(overrides: Partial<MockRow> = {}): MockRow {
+    return {
+      $id: validId,
+      itemId: validItemId,
+      userId: validUserId,
+      itemName: "Test Item",
+      itemPrice: 99.99,
+      itemCurrency: "EUR",
+      itemDescription: "A test item description",
+      ownerUsername: "testuser",
+      status: TransactionStatus.RESERVED,
+      quantity: 1,
+      $createdAt: new Date().toISOString(),
+      $updatedAt: new Date().toISOString(),
+      $permissions: [],
+      $databaseId: config.databaseId,
+      $collectionId: config.transactionsCollectionId,
+      $tableId: config.transactionsCollectionId,
+      $sequence: 1,
+      ...overrides,
+    } as MockRow;
+  }
+
   describe("ensureSession", () => {
     it("should do nothing if a session already exists (account.get succeeds)", async () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
@@ -136,13 +159,16 @@ describe("AppwriteTransactionRepository", () => {
       vi.mocked(mockAccount.get).mockRejectedValueOnce(
         new AppwriteException("Unauthorized", 401),
       );
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
       vi.mocked(mockAccount.createAnonymousSession).mockResolvedValue(
         {} as Models.Session,
       );
 
       await repository.ensureSession();
 
-      expect(mockAccount.get).toHaveBeenCalledTimes(1);
+      expect(mockAccount.get).toHaveBeenCalledTimes(2);
       expect(mockAccount.createAnonymousSession).toHaveBeenCalledTimes(1);
     });
   });
@@ -511,20 +537,9 @@ describe("AppwriteTransactionRepository", () => {
       );
 
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
-        rows: Array.from({ length: 20 }).map(() => ({
-          $id: validId,
-          itemId: validItemId,
-          userId: validUserId,
-          itemName: "Test Item",
-          itemPrice: 99.99,
-          itemCurrency: "EUR",
-          itemDescription: "A test item description",
-          ownerUsername: "testuser",
-          status: TransactionStatus.RESERVED,
-          quantity: 1,
-          $createdAt: new Date().toISOString(),
-          $updatedAt: new Date().toISOString(),
-        })) as MockRow[],
+        rows: Array.from({ length: 20 }).map((_, i) =>
+          createMockRow({ $sequence: i + 1 }),
+        ),
         total: 20,
       } as MockRowList);
 

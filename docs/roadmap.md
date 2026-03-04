@@ -125,4 +125,11 @@
 - [ ] **Selective Pruning**: Implement logic to preserve reservations when reducing total quantity (replaces ADR 019).
 - [ ] **Advanced Notifications**: Implement real-time alerts for reservation cancellations (pruning, expiration).
 - [ ] **Task: Server-side Counters Integration**: Implement Appwrite Functions triggered by transaction creations/deletions to update `WishlistItem` counters (`reservedQuantity`, `purchasedQuantity`) atomically on the server for improved consistency and performance.
-- [ ] **Transaction Data Sync**: Implement an Appwrite Function triggered by `WishlistItem` or `Profile` (username) updates to synchronize denormalized fields (`itemName`, `itemPrice`, `ownerUsername`, etc.) in all related transactions to resolve data staleness from denormalization (ADR 021).
+- [ ] **Transaction Data Sync**: Implement an Appwrite Function (DB Trigger) to synchronize denormalized fields and resolve data staleness (ADR 021).
+  - **Triggers**: `WishlistItem` metadata updates or `Profile` username changes.
+  - **Sync Rules**:
+    - `ownerUsername`: Always synchronized across all transactions (informative).
+    - `itemName`, `itemPrice`, `itemCurrency`, `itemDescription`:
+      - **Sync-able**: Only for transactions in `RESERVED` status.
+      - **Immutable**: Frozen for `PURCHASED` status to preserve audit/financial integrity of the purchase.
+  - **Operational Strategy**: Use paginated background processing with exponential backoff and idempotent retries to handle items with large transaction volumes (popular items).

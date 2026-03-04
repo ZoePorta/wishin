@@ -17,6 +17,15 @@ export interface TransactionDocument extends Models.Document {
 }
 
 /**
+ * Type representing the data object sent to Appwrite for persistence.
+ * This omits internal Appwrite document fields.
+ */
+export type TransactionPersistence = Omit<
+  TransactionDocument,
+  keyof Models.Document
+>;
+
+/**
  * Mapper to convert between Appwrite documents and Transaction aggregate roots.
  */
 export const TransactionMapper = {
@@ -25,7 +34,7 @@ export const TransactionMapper = {
    * @param transaction - The Transaction aggregate root.
    * @returns A plain object compatible with Appwrite's transactions collection.
    */
-  toPersistence(transaction: Transaction) {
+  toPersistence(transaction: Transaction): TransactionPersistence {
     const props = transaction.toProps();
     return {
       itemId: props.itemId,

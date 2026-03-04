@@ -27,6 +27,11 @@ describe("TransactionMapper", () => {
       expect(result).toEqual({
         itemId: validProps.itemId,
         userId: validProps.userId,
+        itemName: null,
+        itemPrice: null,
+        itemCurrency: null,
+        itemDescription: null,
+        ownerUsername: null,
         status: validProps.status,
         quantity: validProps.quantity,
       });

@@ -56,6 +56,8 @@ classDiagram
         +Date updatedAt
     }
 
+    note for Transaction "Privacy Note: ownerUsername is denormalized for buyer UX. It is not indexed to prevent global search. Access restricted via ACLs (Phase 5)."
+
     note for Transaction "States: RESERVED, PURCHASED, CANCELLED"
 
     Profile "1" -- "0..20" Wishlist : owns
@@ -153,6 +155,36 @@ To minimize friction while maintaining data integrity, anonymous actions are han
 
 - **Undo:** Available to everyone on Purchase. Deletes the transaction record. Only available immediately after the action.
 - **Cancellation:** Available to both **Registered** and **Anonymous** users (via ADR 018) via their "Gifting History", **restricted to their own transactions**. It transitions the transaction to a `CANCELLED` status (Soft Delete) for audit purposes.
+
+### 4.6 Transaction Snapshot Pattern
+
+To maintain high performance and auditability in a NoSQL environment (Appwrite), Wishin employs a **Snapshot Pattern** for transaction records.
+
+#### 4.6.1 Rationale & Capture Timing
+
+When a transaction is initiated (`createReservation` or `createPurchase`), the current state of the target `WishlistItem` and its owner is "snapshot" into the `Transaction` entity.
+
+| Field                | Timing of Capture             | Purpose                                                  |
+| :------------------- | :---------------------------- | :------------------------------------------------------- |
+| `itemName`           | Reservation/Purchase Creation | Identifies what was targeted at the time of the action   |
+| `itemPrice/Currency` | Reservation/Purchase Creation | Preserves the financial context of the gift              |
+| `itemDescription`    | Reservation/Purchase Creation | Provides additional item context for the history view    |
+| `ownerUsername`      | Reservation/Purchase Creation | Identifies the recipient for the Buyer's gifting history |
+
+#### 4.6.2 Immutability & Consistency
+
+- **Immutability**: Once a transaction is persisted, these denormalized fields are **immutable**. They represent a historical record of the event.
+- **Consistency**: Updates to the source `WishlistItem` (e.g., changing its name) **do not** propagate to existing transactions. This is intentional to preserve audit integrity.
+
+#### 4.6.3 Trade-offs
+
+- **Auditability vs. Staleness**: Transactions remain readable even if items are deleted, but metadata (like usernames) may become stale if changed globally.
+- **Performance vs. Storage**: One-shot reads for gifting history significantly outperform client-side joins, at the cost of minor storage duplication.
+
+#### 4.6.4 Alternatives
+
+- **Fully Normalized**: Rejected due to N+1 query overhead in Appwrite.
+- **Versioned Entities**: Rejected for MVP due to high implementation and migration complexity.
 
 ## 5. Domain Invariants & Lifecycle
 

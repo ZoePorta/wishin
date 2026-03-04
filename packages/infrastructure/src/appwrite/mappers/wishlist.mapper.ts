@@ -14,6 +14,12 @@ interface WishlistDocument extends Models.Document {
 }
 
 /**
+ * Type representing the data object sent to Appwrite for persistence.
+ * This omits internal Appwrite document fields.
+ */
+export type WishlistPersistence = Omit<WishlistDocument, keyof Models.Document>;
+
+/**
  * Mapper to convert between Appwrite documents and Wishlist aggregate roots.
  */
 export const WishlistMapper = {
@@ -23,7 +29,7 @@ export const WishlistMapper = {
    * @param wishlist - The Wishlist aggregate root.
    * @returns A plain object compatible with Appwrite's wishlists collection.
    */
-  toPersistence(wishlist: Wishlist) {
+  toPersistence(wishlist: Wishlist): WishlistPersistence {
     const props = wishlist.toProps();
     return {
       ownerId: props.ownerId,

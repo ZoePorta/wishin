@@ -16,7 +16,7 @@ Reading a list of transactions would require multiple joins or sequential reques
 
 ## Decision
 
-We will **denormalize** key item and owner metadata directly into the `Transaction` entity at the moment of creation.
+We will **denormalize** key item and owner metadata directly into the `Transaction` entity at the moment of creation. This follows the [Transaction Snapshot Pattern](file:///home/zoe/Documents/wishin/docs/architecture/domain-model.md#46-transaction-snapshot-pattern) described in the architecture documentation.
 
 The `Transaction` entity will now include:
 
@@ -25,6 +25,15 @@ The `Transaction` entity will now include:
 - `itemCurrency`: The currency of the item price.
 - `itemDescription`: The description of the item.
 - `ownerUsername`: The username of the wishlist owner.
+
+#### Privacy and Security Considerations
+
+> [!IMPORTANT]
+> The inclusion of `ownerUsername` introduces potential privacy risks. To mitigate these:
+>
+> 1. **No Indexing**: The `ownerUsername` field MUST NOT be indexed in the database. This prevents optimized global searching or enumeration of transactions by username.
+> 2. **Justification**: In a gift-giving application, the buyer needs to know the recipient's identity to manage their own "Gifts to Buy" or "Purchase History" views effectively.
+> 3. **Access Control**: Currently, the system uses loose permissions for development. In Phase 5 (Identity & Access), the `transactions` collection ACLs will be refined to ensure only participants (buyer and owner) can see sensitive details.
 
 ## Consequences
 

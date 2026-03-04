@@ -44,16 +44,16 @@ export class AppwriteTransactionRepository
    * Ensures an active session exists.
    * Creates an anonymous session if no session is active.
    *
-   * @returns {Promise<void>}
+   * @returns {Promise<Models.User<Models.Preferences>>} The current user model.
    * @throws {AppwriteException} If a non-401 error occurs while fetching the account.
    */
-  async ensureSession(): Promise<void> {
+  async ensureSession(): Promise<Models.User<Models.Preferences>> {
     try {
-      await this.account.get();
+      return await this.account.get();
     } catch (error) {
       if (error instanceof AppwriteException && error.code === 401) {
         await this.account.createAnonymousSession();
-        return;
+        return await this.account.get();
       }
       throw error;
     }
@@ -65,8 +65,7 @@ export class AppwriteTransactionRepository
    * @throws {AppwriteException} If the account cannot be retrieved.
    */
   async getCurrentUserId(): Promise<string> {
-    await this.ensureSession();
-    const user = await this.account.get();
+    const user = await this.ensureSession();
     return user.$id;
   }
 
