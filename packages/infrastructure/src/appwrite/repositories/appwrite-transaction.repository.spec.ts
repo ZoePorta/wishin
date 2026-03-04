@@ -18,6 +18,11 @@ interface MockRow extends Models.Document {
   $sequence: number;
   itemId?: string;
   userId?: string;
+  itemName?: string | null;
+  itemPrice?: number | null;
+  itemCurrency?: string | null;
+  itemDescription?: string | null;
+  ownerUsername?: string | null;
   status?: TransactionStatus;
   quantity?: number;
 }
@@ -131,16 +136,13 @@ describe("AppwriteTransactionRepository", () => {
       vi.mocked(mockAccount.get).mockRejectedValueOnce(
         new AppwriteException("Unauthorized", 401),
       );
-      vi.mocked(mockAccount.get).mockResolvedValueOnce(
-        {} as Models.User<Models.Preferences>,
-      );
       vi.mocked(mockAccount.createAnonymousSession).mockResolvedValue(
         {} as Models.Session,
       );
 
       await repository.ensureSession();
 
-      expect(mockAccount.get).toHaveBeenCalledTimes(2);
+      expect(mockAccount.get).toHaveBeenCalledTimes(1);
       expect(mockAccount.createAnonymousSession).toHaveBeenCalledTimes(1);
     });
   });
@@ -150,6 +152,11 @@ describe("AppwriteTransactionRepository", () => {
       id: validId,
       itemId: validItemId,
       userId: validUserId,
+      itemName: "Test Item",
+      itemPrice: 99.99,
+      itemCurrency: "EUR",
+      itemDescription: "A test item description",
+      ownerUsername: "testuser",
       status: TransactionStatus.RESERVED,
       quantity: 1,
       createdAt: new Date(),
@@ -173,6 +180,11 @@ describe("AppwriteTransactionRepository", () => {
         data: expect.objectContaining({
           itemId: transaction.itemId,
           userId: transaction.userId,
+          itemName: transaction.itemName,
+          itemPrice: transaction.itemPrice,
+          itemCurrency: transaction.itemCurrency,
+          itemDescription: transaction.itemDescription,
+          ownerUsername: transaction.ownerUsername,
           status: transaction.status,
           quantity: transaction.quantity,
         }),
@@ -185,6 +197,11 @@ describe("AppwriteTransactionRepository", () => {
       $id: validId,
       itemId: validItemId,
       userId: validUserId,
+      itemName: "Test Item",
+      itemPrice: 99.99,
+      itemCurrency: "EUR",
+      itemDescription: "A test item description",
+      ownerUsername: "testuser",
       status: TransactionStatus.RESERVED,
       quantity: 1,
       $createdAt: new Date().toISOString(),
@@ -229,6 +246,11 @@ describe("AppwriteTransactionRepository", () => {
         $id: validId,
         itemId: validItemId,
         userId: validUserId,
+        itemName: "Test Item",
+        itemPrice: 99.99,
+        itemCurrency: "EUR",
+        itemDescription: "A test item description",
+        ownerUsername: "testuser",
         status: TransactionStatus.RESERVED,
         quantity: 1,
         $createdAt: new Date().toISOString(),
@@ -271,6 +293,11 @@ describe("AppwriteTransactionRepository", () => {
               status: TransactionStatus.RESERVED,
               itemId: validItemId,
               userId: validUserId,
+              itemName: "Test Item 4",
+              itemPrice: 44.44,
+              itemCurrency: "EUR",
+              itemDescription: "Description 4",
+              ownerUsername: "testuser",
               quantity: 1,
               $createdAt: new Date().toISOString(),
               $updatedAt: new Date().toISOString(),
@@ -285,6 +312,11 @@ describe("AppwriteTransactionRepository", () => {
               status: TransactionStatus.RESERVED,
               itemId: validItemId,
               userId: validUserId,
+              itemName: "Test Item 5",
+              itemPrice: 55.55,
+              itemCurrency: "EUR",
+              itemDescription: "Description 5",
+              ownerUsername: "testuser",
               quantity: 1,
               $createdAt: new Date().toISOString(),
               $updatedAt: new Date().toISOString(),
@@ -318,6 +350,11 @@ describe("AppwriteTransactionRepository", () => {
         $id: validId,
         itemId: validItemId,
         userId: validUserId,
+        itemName: "Test Item",
+        itemPrice: 99.99,
+        itemCurrency: "EUR",
+        itemDescription: "A test item description",
+        ownerUsername: "testuser",
         status: TransactionStatus.RESERVED,
         quantity: 1,
         $createdAt: new Date().toISOString(),
@@ -388,9 +425,14 @@ describe("AppwriteTransactionRepository", () => {
       const page1Docs = Array(100)
         .fill(null)
         .map((_, i) => ({
-          $id: `550e8400-e29b-41d4-a716-44665544${i.toString().padStart(4, "0")}`,
+          $id: `550e8400-e29b-41d4-a716-44665544${String(i).padStart(4, "0")}`,
           itemId: validItemId,
           userId: validUserId,
+          itemName: `Item ${String(i)}`,
+          itemPrice: 10 + i,
+          itemCurrency: "EUR",
+          itemDescription: `Description ${String(i)}`,
+          ownerUsername: "testuser",
           status: TransactionStatus.RESERVED,
           quantity: 1,
           $createdAt: new Date().toISOString(),
@@ -406,9 +448,14 @@ describe("AppwriteTransactionRepository", () => {
       const page2Docs = Array(5)
         .fill(null)
         .map((_, i) => ({
-          $id: `550e8400-e29b-41d4-a716-44665545${i.toString().padStart(4, "0")}`,
+          $id: `550e8400-e29b-41d4-a716-44665545${String(i).padStart(4, "0")}`,
           itemId: validItemId,
           userId: validUserId,
+          itemName: `Item ${String(100 + i)}`,
+          itemPrice: 110 + i,
+          itemCurrency: "EUR",
+          itemDescription: `Description ${String(100 + i)}`,
+          ownerUsername: "testuser",
           status: TransactionStatus.RESERVED,
           quantity: 1,
           $createdAt: new Date().toISOString(),
@@ -468,6 +515,11 @@ describe("AppwriteTransactionRepository", () => {
           $id: validId,
           itemId: validItemId,
           userId: validUserId,
+          itemName: "Test Item",
+          itemPrice: 99.99,
+          itemCurrency: "EUR",
+          itemDescription: "A test item description",
+          ownerUsername: "testuser",
           status: TransactionStatus.RESERVED,
           quantity: 1,
           $createdAt: new Date().toISOString(),

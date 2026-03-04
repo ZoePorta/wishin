@@ -45,6 +45,11 @@ classDiagram
         +string id
         +string itemId
         +string userId
+        +string itemName
+        +number itemPrice
+        +string itemCurrency
+        +string itemDescription
+        +string ownerUsername
         +TransactionStatus status
         +number quantity
         +Date createdAt

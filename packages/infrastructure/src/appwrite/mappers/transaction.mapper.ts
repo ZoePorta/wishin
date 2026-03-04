@@ -7,6 +7,11 @@ import { Transaction, TransactionStatus } from "@wishin/domain";
 export interface TransactionDocument extends Models.Document {
   itemId: string;
   userId: string;
+  itemName: string | null;
+  itemPrice: number | null;
+  itemCurrency: string | null;
+  itemDescription: string | null;
+  ownerUsername: string | null;
   status: TransactionStatus;
   quantity: number;
 }
@@ -25,6 +30,11 @@ export const TransactionMapper = {
     return {
       itemId: props.itemId,
       userId: props.userId,
+      itemName: props.itemName,
+      itemPrice: props.itemPrice,
+      itemCurrency: props.itemCurrency,
+      itemDescription: props.itemDescription,
+      ownerUsername: props.ownerUsername,
       status: props.status,
       quantity: props.quantity,
     };
@@ -47,6 +57,11 @@ export const TransactionMapper = {
       id: doc.$id,
       itemId: data.itemId,
       userId: data.userId,
+      itemName: data.itemName,
+      itemPrice: data.itemPrice,
+      itemCurrency: data.itemCurrency,
+      itemDescription: data.itemDescription,
+      ownerUsername: data.ownerUsername,
       status: data.status,
       quantity: data.quantity,
       createdAt: new Date(doc.$createdAt),
