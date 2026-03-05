@@ -32,7 +32,9 @@ describe("UpdateWishlistItemUseCase", () => {
       save: vi.fn(),
       findById: vi.fn(),
       findByItemId: vi.fn().mockResolvedValue([]),
+      findByUserId: vi.fn().mockResolvedValue([]),
       cancelByItemId: vi.fn(),
+      delete: vi.fn(),
     };
     useCase = new UpdateWishlistItemUseCase(mockRepo, mockTransactionRepo);
   });
