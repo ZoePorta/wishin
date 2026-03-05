@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  Transaction,
-  type TransactionCreateReservationProps,
-} from "./transaction";
+import { Transaction } from "./transaction";
 import { TransactionStatus } from "../value-objects/transaction-status";
 import {
   InvalidAttributeError,
@@ -57,9 +54,9 @@ describe("Transaction Aggregate", () => {
       expect(() =>
         Transaction.createReservation({
           ...validProps,
-          userId: undefined,
+          userId: undefined as unknown as string,
           id: VALID_TRANSACTION_ID,
-        } as unknown as TransactionCreateReservationProps),
+        }),
       ).toThrow(InvalidAttributeError);
     });
 
@@ -155,6 +152,11 @@ describe("Transaction Aggregate", () => {
           userId: undefined as unknown as string,
           quantity: 1,
           id: VALID_TRANSACTION_ID,
+          itemName: DUMMY_ITEM_NAME,
+          itemPrice: DUMMY_ITEM_PRICE,
+          itemCurrency: DUMMY_ITEM_CURRENCY,
+          itemDescription: DUMMY_ITEM_DESCRIPTION,
+          ownerUsername: DUMMY_OWNER_USERNAME,
         }),
       ).toThrow(InvalidAttributeError);
     });
@@ -166,6 +168,11 @@ describe("Transaction Aggregate", () => {
           userId: VALID_USER_ID,
           quantity: 1,
           id: "invalid",
+          itemName: DUMMY_ITEM_NAME,
+          itemPrice: DUMMY_ITEM_PRICE,
+          itemCurrency: DUMMY_ITEM_CURRENCY,
+          itemDescription: DUMMY_ITEM_DESCRIPTION,
+          ownerUsername: DUMMY_OWNER_USERNAME,
         }),
       ).toThrow(InvalidAttributeError);
       expect(() =>
@@ -174,6 +181,11 @@ describe("Transaction Aggregate", () => {
           userId: VALID_USER_ID,
           quantity: 1,
           id: INVALID_UUID_V1,
+          itemName: DUMMY_ITEM_NAME,
+          itemPrice: DUMMY_ITEM_PRICE,
+          itemCurrency: DUMMY_ITEM_CURRENCY,
+          itemDescription: DUMMY_ITEM_DESCRIPTION,
+          ownerUsername: DUMMY_OWNER_USERNAME,
         }),
       ).toThrow(InvalidAttributeError);
     });
