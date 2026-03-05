@@ -145,9 +145,9 @@ describe("AppwriteTransactionRepository", () => {
 
   describe("ensureSession", () => {
     it("should do nothing if a session already exists (account.get succeeds)", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
 
       await repository.ensureSession();
 
@@ -159,9 +159,9 @@ describe("AppwriteTransactionRepository", () => {
       vi.mocked(mockAccount.get).mockRejectedValueOnce(
         new AppwriteException("Unauthorized", 401),
       );
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockAccount.createAnonymousSession).mockResolvedValue(
         {} as Models.Session,
       );
@@ -190,9 +190,9 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should call ensureSession and upsert the transaction document", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockTablesDb.upsertRow).mockResolvedValue({} as MockRow);
 
       await repository.save(transaction);
@@ -240,9 +240,9 @@ describe("AppwriteTransactionRepository", () => {
     } as MockRow;
 
     it("should return the transaction if found", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockTablesDb.getRow).mockResolvedValue(mockDoc);
 
       const result = await repository.findById(validId);
@@ -253,9 +253,9 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should return null if not found (404)", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockTablesDb.getRow).mockRejectedValue(
         new AppwriteException("Not found", 404),
       );
@@ -290,9 +290,9 @@ describe("AppwriteTransactionRepository", () => {
     ];
 
     it("should return list of transactions for an item", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: mockDocs,
         total: 1,
@@ -308,9 +308,9 @@ describe("AppwriteTransactionRepository", () => {
 
   describe("cancelByItemId", () => {
     it("should update all RESERVED transactions to CANCELLED_BY_OWNER", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockTablesDb.listRows)
         .mockResolvedValueOnce({
           rows: [
@@ -394,9 +394,9 @@ describe("AppwriteTransactionRepository", () => {
     ];
 
     it("should return transactions for a user", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: mockDocs,
         total: 1,
@@ -418,9 +418,9 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should allow filtering by status", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [],
         total: 0,
@@ -443,9 +443,9 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should aggregate all pages when there are more than 100 results", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
 
       // Page 1: 100 docs
       const page1Docs = Array(100)
@@ -532,9 +532,9 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should respect the limit parameter", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
 
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: Array.from({ length: 20 }).map((_, i) =>
@@ -559,9 +559,9 @@ describe("AppwriteTransactionRepository", () => {
 
   describe("delete", () => {
     it("should call ensureSession and delete the transaction", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockTablesDb.deleteRow).mockResolvedValue(
         {} as Models.Document,
       );
@@ -577,9 +577,9 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should handle 404 (silent success)", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(
         new AppwriteException("Not found", 404),
       );
@@ -588,9 +588,9 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should rethrow non-404 errors", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
       vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(
         new AppwriteException("Internal Server Error", 500),
       );
