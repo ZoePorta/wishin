@@ -19,3 +19,5 @@ export * from "./aggregates/transaction";
 export * from "./entities/wishlist-item";
 export * from "./value-objects";
 export * from "./common/validation-mode";
+export * from "./common/logger";
+export * from "./common/unit-of-work";

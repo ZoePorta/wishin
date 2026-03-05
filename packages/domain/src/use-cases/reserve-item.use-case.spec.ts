@@ -4,6 +4,7 @@ import { ReserveItemUseCase } from "./reserve-item.use-case";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
 import type { TransactionRepository } from "../repositories/transaction.repository";
+import type { UnitOfWork } from "../common/unit-of-work";
 import type { Logger } from "../common/logger";
 import { Wishlist } from "../aggregates/wishlist";
 import { Profile } from "../aggregates/profile";
@@ -20,6 +21,7 @@ describe("ReserveItemUseCase", () => {
   let wishlistRepo: Mocked<WishlistRepository>;
   let profileRepo: Mocked<ProfileRepository>;
   let transactionRepo: Mocked<TransactionRepository>;
+  let unitOfWork: Mocked<UnitOfWork>;
   let logger: Mocked<Logger>;
 
   const wishlistId = "00000000-0000-4000-8000-000000000001";
@@ -39,6 +41,11 @@ describe("ReserveItemUseCase", () => {
     transactionRepo = {
       save: vi.fn(),
     } as unknown as Mocked<TransactionRepository>;
+    unitOfWork = {
+      runInTransaction: vi
+        .fn()
+        .mockImplementation((work: () => Promise<unknown>) => work()),
+    } as unknown as Mocked<UnitOfWork>;
     logger = {
       debug: vi.fn(),
       info: vi.fn(),
@@ -50,6 +57,7 @@ describe("ReserveItemUseCase", () => {
       wishlistRepo,
       profileRepo,
       transactionRepo,
+      unitOfWork,
       logger,
       () => transactionId,
     );
@@ -71,6 +79,7 @@ describe("ReserveItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -96,6 +105,7 @@ describe("ReserveItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -138,6 +148,7 @@ describe("ReserveItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [item.toProps()],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -180,6 +191,7 @@ describe("ReserveItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [item.toProps()],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -203,6 +215,7 @@ describe("ReserveItemUseCase", () => {
       quantity: 2,
     });
 
+    expect(unitOfWork.runInTransaction).toHaveBeenCalled();
     expect(wishlistRepo.save).toHaveBeenCalled();
     expect(transactionRepo.save).toHaveBeenCalled();
     const savedTransaction = transactionRepo.save.mock.calls[0][0];
@@ -231,6 +244,7 @@ describe("ReserveItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [item.toProps()],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

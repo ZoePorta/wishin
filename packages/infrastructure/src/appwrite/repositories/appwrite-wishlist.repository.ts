@@ -301,17 +301,53 @@ export class AppwriteWishlistRepository
   }
 
   /**
-   * Persists a wishlist aggregate.
+   * Persists a wishlist aggregate with optimistic locking.
    *
    * @param wishlist - The wishlist aggregate to save.
    * @returns A Promise that resolves when the wishlist is saved.
-   * @throws {PersistenceError} If the save operation fails or session cannot be ensured.
+   * @throws {PersistenceError} If the save operation fails, session cannot be ensured, or a concurrency conflict occurs.
    */
   async save(wishlist: Wishlist): Promise<void> {
     // 1. Ensure active session
     await this.ensureSession();
 
-    // 2. Sync Wishlist Items First (Atomicity step)
+    // 2. Fetch current version for optimistic locking (ADR 022)
+    try {
+      const existingDoc = await this.tablesDb.getRow({
+        databaseId: this.databaseId,
+        tableId: this.wishlistCollectionId,
+        rowId: wishlist.id,
+      });
+
+      const data = existingDoc as unknown as { version?: number };
+      const currentVersion = data.version ?? 0;
+
+      // Note: wishlist.version is the NEW version (incremented in domain)
+      // So the expected version in DB should be wishlist.version - 1
+      if (currentVersion !== wishlist.version - 1) {
+        throw new Error(
+          `Concurrency conflict: Wishlist ${
+            wishlist.id
+          } version mismatch (DB: ${String(currentVersion)}, Expecting: ${String(
+            wishlist.version - 1,
+          )})`,
+        );
+      }
+    } catch (error: unknown) {
+      if (error instanceof AppwriteException && error.code === 404) {
+        // If 404, it's a new wishlist, proceed with save (version should be 0)
+        if (wishlist.version !== 0) {
+          throw new Error(
+            `Validation error: New wishlist ${wishlist.id} must have version 0 (got ${String(wishlist.version)})`,
+          );
+        }
+      } else {
+        throw error;
+      }
+    }
+
+    // 3. Sync Wishlist Items First (Atomicity step)
+    // ... rest of the existing sync logic ...
     // 2a. Get existing items IDs to identify removals
     const existingItemIds: string[] = [];
     let existingCursor: string | undefined = undefined;
@@ -388,6 +424,37 @@ export class AppwriteWishlistRepository
     }
 
     // 3. Upsert Wishlist Document AFTER successful item sync
+    // Double-check version immediately before write to prevent TOCTOU (ADR 023)
+    try {
+      const reFetchDoc = await this.tablesDb.getRow({
+        databaseId: this.databaseId,
+        tableId: this.wishlistCollectionId,
+        rowId: wishlist.id,
+      });
+      const data = reFetchDoc as unknown as { version?: number };
+      const currentVersion = data.version ?? 0;
+
+      if (currentVersion !== wishlist.version - 1) {
+        throw new Error(
+          `Concurrency conflict (TOCTOU): Wishlist ${
+            wishlist.id
+          } version mismatch (DB: ${String(currentVersion)}, Expecting: ${String(
+            wishlist.version - 1,
+          )})`,
+        );
+      }
+    } catch (error: unknown) {
+      if (error instanceof AppwriteException && error.code === 404) {
+        if (wishlist.version !== 0) {
+          throw new Error(
+            `Validation error (TOCTOU): New wishlist ${wishlist.id} must have version 0 (got ${String(wishlist.version)})`,
+          );
+        }
+      } else {
+        throw error;
+      }
+    }
+
     await this.tablesDb.upsertRow({
       databaseId: this.databaseId,
       tableId: this.wishlistCollectionId,

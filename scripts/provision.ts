@@ -167,6 +167,7 @@ const schema: CollectionSchema[] = [
       { key: "ownerId", type: "string", required: true, size: 255 },
       { key: "title", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
+      { key: "version", type: "integer", required: false, default: 0 },
       {
         key: "visibility",
         type: "string",
