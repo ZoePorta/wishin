@@ -5,8 +5,8 @@ import { Transaction, TransactionStatus } from "@wishin/domain";
  * Interface representing the Appwrite document structure for a Transaction.
  */
 export interface TransactionDocument extends Models.Document {
-  itemId: string;
-  userId: string;
+  itemId: string | null;
+  userId: string | null;
   itemName: string | null;
   itemPrice: number | null;
   itemCurrency: string | null;
@@ -38,7 +38,7 @@ export const TransactionMapper = {
     const props = transaction.toProps();
     return {
       itemId: props.itemId,
-      userId: props.userId,
+      userId: props.userId ?? null,
       itemName: props.itemName,
       itemPrice: props.itemPrice,
       itemCurrency: props.itemCurrency,
