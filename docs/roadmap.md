@@ -71,11 +71,11 @@
 ### 4.1 Domain Refinement
 
 - [x] Define `TransactionRepository` interface with `save`, `findById`, `findByItemId`, `cancelByItemId`, `findByUserId` (with optional status and limit), and `delete`.
-- [ ] Refine `WishlistItem` invariants for atomic stock updates.
+- [x] Refine `WishlistItem` invariants for atomic stock updates.
 
 ### 4.2 Application Layer (TDD)
 
-- [ ] **DTOs Definition:** `ReserveItemInput`, `PurchaseItemInput`, `ConfirmPurchaseInput`, `CancelTransactionInput`.
+- [x] **DTOs Definition:** `ReserveItemInput`, `PurchaseItemInput`, `ConfirmPurchaseInput`, `CancelTransactionInput`.
 - [ ] **TDD - Gifting Cycles:**
   - [ ] **ReserveItem:** RED (Registered only) -> GREEN (Coordination).
   - [ ] **DirectPurchase:** RED (Anonymous/Registered) -> GREEN (Immediate stock update).
