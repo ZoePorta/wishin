@@ -384,7 +384,7 @@ describe("AppwriteWishlistRepository", () => {
         total: 0,
       } as MockRowList);
 
-      await repository.findById(validId, false);
+      await repository.findById(validId, true, false);
 
       expect(mockAccount.get).not.toHaveBeenCalled();
     });
@@ -416,7 +416,7 @@ describe("AppwriteWishlistRepository", () => {
       await repository.findByOwnerId("owner-id");
 
       expect(mockAccount.get).toHaveBeenCalledTimes(1);
-      expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, false);
+      expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, false, false);
       // The first call to listRows is in findByOwnerId, subsequent are in findById
       expect(mockTablesDb.listRows).toHaveBeenCalled();
       // Assert hydration via internal findById calls by checking getRow

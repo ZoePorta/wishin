@@ -70,8 +70,9 @@ export class AppwriteWishlistRepository
     return this.tablesDb;
   }
 
-  private sessionPromise: Promise<Models.User<Models.Preferences>> | null =
-    null;
+  private ensureSessionInFlight: Promise<void> | null = null;
+  private sessionEnsured = false;
+  private _currentUser: Models.User<Models.Preferences> | null = null;
 
   /**
    * Ensures an active session exists.
@@ -81,13 +82,19 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the session cannot be ensured.
    */
   async ensureSession(): Promise<Models.User<Models.Preferences>> {
-    if (this.sessionPromise) {
-      return this.sessionPromise;
+    if (this.sessionEnsured && this._currentUser) {
+      return this._currentUser;
     }
 
-    this.sessionPromise = (async () => {
+    if (this.ensureSessionInFlight) {
+      await this.ensureSessionInFlight;
+      if (this._currentUser) return this._currentUser;
+    }
+
+    this.ensureSessionInFlight = (async () => {
       try {
-        return await this.account.get();
+        this._currentUser = await this.account.get();
+        this.sessionEnsured = true;
       } catch (error: unknown) {
         // More robust check for code 401 to handle monorepo instanceof issues
         if (
@@ -98,22 +105,29 @@ export class AppwriteWishlistRepository
         ) {
           try {
             await this.account.createAnonymousSession();
-            return await this.account.get();
+            this._currentUser = await this.account.get();
+            this.sessionEnsured = true;
           } catch (sessionError: unknown) {
             console.error("Failed to create anonymous session");
             throw sessionError;
           }
+        } else {
+          throw error;
         }
-        throw error;
       }
     })();
 
     try {
-      return await this.sessionPromise;
-    } catch (error) {
-      this.sessionPromise = null; // Clear on error to allow retry
-      throw error;
+      await this.ensureSessionInFlight;
+    } finally {
+      this.ensureSessionInFlight = null;
     }
+
+    if (!this._currentUser) {
+      throw new Error("Session initialization failed: user is null");
+    }
+
+    return this._currentUser;
   }
 
   /**
@@ -124,8 +138,14 @@ export class AppwriteWishlistRepository
    * @returns A Promise that resolves to the Wishlist aggregate or null if not found.
    * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
-  async findById(id: string, includeItems = true): Promise<Wishlist | null> {
-    await this.ensureSession();
+  async findById(
+    id: string,
+    includeItems = true,
+    shouldEnsureSession = true,
+  ): Promise<Wishlist | null> {
+    if (shouldEnsureSession) {
+      await this.ensureSession();
+    }
     try {
       // 1. Fetch Wishlist Document
       const wishlistDoc = await this.tablesDb.getRow({
@@ -262,7 +282,7 @@ export class AppwriteWishlistRepository
 
     // 2. Map docs to aggregates by fetching details for each
     const wishlists = await Promise.all(
-      rows.map((row) => this.findById(row.$id, false)),
+      rows.map((row) => this.findById(row.$id, false, false)),
     );
 
     // Filter out any nulls if findById could potentially return null

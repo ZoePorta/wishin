@@ -16,7 +16,7 @@ Reading a list of transactions would require multiple joins or sequential reques
 
 ## Decision
 
-We will **denormalize** key item and owner metadata directly into the `Transaction` entity at the moment of creation. This follows the [Transaction Snapshot Pattern](file:///home/zoe/Documents/wishin/docs/architecture/domain-model.md#46-transaction-snapshot-pattern) described in the architecture documentation.
+We will **denormalize** key item and owner metadata directly into the `Transaction` entity at the moment of creation. This follows the [Transaction Snapshot Pattern](../architecture/domain-model.md#46-transaction-snapshot-pattern) described in the architecture documentation.
 
 The `Transaction` entity will now include:
 
