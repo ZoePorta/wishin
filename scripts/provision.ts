@@ -406,9 +406,9 @@ async function provision() {
           } else {
             // Other collections (profiles, wishlists, items) restricted to members by default
             permissions.push(
-              'create("role:member")',
-              'update("role:member")',
-              'delete("role:member")',
+              'create("users")',
+              'update("users")',
+              'delete("users")',
             );
           }
 
