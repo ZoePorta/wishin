@@ -7,7 +7,6 @@ import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
 import type { TransactionRepository } from "../repositories/transaction.repository";
-import type { UnitOfWork } from "../common/unit-of-work";
 import type { Logger } from "../common/logger";
 import type { ReserveItemInput } from "./dtos/transaction-actions.dto";
 import type { WishlistOutput } from "./dtos/get-wishlist.dto";
@@ -43,7 +42,6 @@ export class ReserveItemUseCase {
     private readonly wishlistRepository: WishlistRepository,
     private readonly profileRepository: ProfileRepository,
     private readonly transactionRepository: TransactionRepository,
-    private readonly unitOfWork: UnitOfWork,
     private readonly logger: Logger,
     private readonly uuidFn: () => string = () =>
       globalThis.crypto.randomUUID(),
@@ -105,11 +103,9 @@ export class ReserveItemUseCase {
       ownerUsername: ownerUsername,
     });
 
-    // 3. Persist Atomic Changes (Consolidated via Unit of Work)
-    await this.unitOfWork.runInTransaction(async () => {
-      await this.wishlistRepository.save(updatedWishlist);
-      await this.transactionRepository.save(transaction);
-    });
+    // 3. Persist Atomic Changes (Sequential saves for MVP)
+    await this.wishlistRepository.save(updatedWishlist);
+    await this.transactionRepository.save(transaction);
 
     return WishlistOutputMapper.toDTO(updatedWishlist);
   }

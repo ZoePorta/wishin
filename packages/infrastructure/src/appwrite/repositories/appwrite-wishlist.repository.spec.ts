@@ -259,7 +259,7 @@ describe("AppwriteWishlistRepository", () => {
       expect(upsertCalls[0][0]).toEqual(
         expect.objectContaining({ tableId: config.wishlistItemsCollectionId }),
       );
-      expect(upsertCalls[1][0]).toEqual(
+      expect(upsertCalls[upsertCalls.length - 1][0]).toEqual(
         expect.objectContaining({ tableId: config.wishlistCollectionId }),
       );
     });
@@ -486,13 +486,10 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,
       );
-      vi.mocked(mockTablesDb.listRows)
-        .mockResolvedValueOnce({
-          rows: [mockDoc],
-          total: 1,
-        } as MockRowList) // for findByOwnerId
-        .mockResolvedValue({ rows: [], total: 0 } as MockRowList); // for findById internal calls
-
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+        rows: [mockDoc],
+        total: 1,
+      } as MockRowList);
       vi.mocked(mockTablesDb.getRow).mockResolvedValue(mockDoc);
 
       const findByIdSpy = vi.spyOn(repository, "findById");
@@ -501,8 +498,8 @@ describe("AppwriteWishlistRepository", () => {
 
       expect(mockAccount.get).toHaveBeenCalledTimes(1);
       expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, false, false);
-      // The first call to listRows is in findByOwnerId, subsequent are in findById
-      expect(mockTablesDb.listRows).toHaveBeenCalled();
+      // The first call to listRows is in findByOwnerId
+      expect(mockTablesDb.listRows).toHaveBeenCalledTimes(1);
       // Assert hydration via internal findById calls by checking getRow
       expect(mockTablesDb.getRow).toHaveBeenCalledWith(
         expect.objectContaining({

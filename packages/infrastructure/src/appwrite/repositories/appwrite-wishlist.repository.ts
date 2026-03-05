@@ -11,21 +11,10 @@ import type {
   UserRepository,
   Wishlist,
 } from "@wishin/domain";
-import { TransactionStatus } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
 import { toDocument } from "../utils/to-document";
 import type { SessionAwareRepository } from "./session-aware-repository.interface";
-
-/**
- * Interface representing a Transaction document in Appwrite.
- */
-interface TransactionDocument extends Models.Document {
-  itemId: string | Models.Document;
-  userId: string;
-  status: TransactionStatus;
-  quantity: number;
-}
 
 /**
  * Appwrite implementation of the WishlistRepository and UserRepository.
@@ -178,71 +167,9 @@ export class AppwriteWishlistRepository
         } while (itemsCursor);
       }
 
-      const itemIds = itemDocuments.map((doc) => doc.$id);
-
-      // 3. Fetch Transactions for items (if any items exist)
-      const transactions: TransactionDocument[] = [];
-      if (itemIds.length > 0) {
-        // Appwrite has a hard limit of 100 values for Query.equal
-        // We must batch the queries if we have more than 100 items
-        const CHUNK_SIZE = 100;
-        const chunks = [];
-        for (let i = 0; i < itemIds.length; i += CHUNK_SIZE) {
-          chunks.push(itemIds.slice(i, i + CHUNK_SIZE));
-        }
-
-        for (const chunk of chunks) {
-          let cursor: string | undefined = undefined;
-          do {
-            const queries = [Query.equal("itemId", chunk), Query.limit(100)];
-            if (cursor) {
-              queries.push(Query.cursorAfter(cursor));
-            }
-
-            const response = await this.tablesDb.listRows({
-              databaseId: this.databaseId,
-              tableId: this.transactionsCollectionId,
-              queries,
-            });
-
-            const docs = toDocument<TransactionDocument[]>(response.rows);
-            transactions.push(...docs);
-
-            if (response.rows.length < 100) {
-              cursor = undefined;
-            } else {
-              cursor = response.rows[response.rows.length - 1].$id;
-            }
-          } while (cursor);
-        }
-      }
-
-      // 4. Calculate Quantities & Map
-      // Group transactions by itemId using a Map for O(1) access
-      const transactionsByItem = new Map<string, TransactionDocument[]>();
-      for (const t of transactions) {
-        const tItemId = typeof t.itemId === "string" ? t.itemId : t.itemId.$id;
-        const currentTransactions = transactionsByItem.get(tItemId) ?? [];
-        currentTransactions.push(t);
-        transactionsByItem.set(tItemId, currentTransactions);
-      }
-
-      const items = itemDocuments.map((doc) => {
-        const itemTransactions = transactionsByItem.get(doc.$id) ?? [];
-
-        const reservedQuantity = itemTransactions
-          .filter((t) => t.status === TransactionStatus.RESERVED)
-          .reduce((sum, t) => sum + t.quantity, 0);
-
-        const purchasedQuantity = itemTransactions
-          .filter((t) => t.status === TransactionStatus.PURCHASED)
-          .reduce((sum, t) => sum + t.quantity, 0);
-
-        return WishlistItemMapper.toDomain(doc, {
-          reservedQuantity,
-          purchasedQuantity,
-        });
-      });
+      const items = itemDocuments.map((doc) =>
+        WishlistItemMapper.toDomain(doc),
+      );
 
       return WishlistMapper.toDomain(
         toDocument<Models.Document>(wishlistDoc),
