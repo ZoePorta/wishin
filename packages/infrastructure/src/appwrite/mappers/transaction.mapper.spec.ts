@@ -13,6 +13,11 @@ describe("TransactionMapper", () => {
     id: transactionId,
     itemId,
     userId,
+    itemName: "Test Item",
+    itemPrice: 100,
+    itemCurrency: "USD",
+    itemDescription: "Test description",
+    ownerUsername: "testuser",
     status: TransactionStatus.RESERVED,
     quantity: 1,
     createdAt: now,
@@ -27,11 +32,11 @@ describe("TransactionMapper", () => {
       expect(result).toEqual({
         itemId: validProps.itemId,
         userId: validProps.userId,
-        itemName: null,
-        itemPrice: null,
-        itemCurrency: null,
-        itemDescription: null,
-        ownerUsername: null,
+        itemName: validProps.itemName,
+        itemPrice: validProps.itemPrice,
+        itemCurrency: validProps.itemCurrency,
+        itemDescription: validProps.itemDescription,
+        ownerUsername: validProps.ownerUsername,
         status: validProps.status,
         quantity: validProps.quantity,
       });
@@ -52,6 +57,11 @@ describe("TransactionMapper", () => {
         $permissions: [],
         itemId: itemId,
         userId: userId,
+        itemName: "Test Item",
+        itemPrice: 100,
+        itemCurrency: "USD",
+        itemDescription: "Test description",
+        ownerUsername: "testuser",
         status: TransactionStatus.RESERVED,
         quantity: 1,
       } as unknown as Models.Document;
@@ -64,6 +74,11 @@ describe("TransactionMapper", () => {
       expect(result.userId).toBe(userId);
       expect(result.status).toBe(TransactionStatus.RESERVED);
       expect(result.quantity).toBe(1);
+      expect(result.itemName).toBe("Test Item");
+      expect(result.itemPrice).toBe(100);
+      expect(result.itemCurrency).toBe("USD");
+      expect(result.itemDescription).toBe("Test description");
+      expect(result.ownerUsername).toBe("testuser");
       // Verify timestamps are correctly mapped from $ fields
       expect(result.createdAt.toISOString()).toBe(now.toISOString());
       expect(result.updatedAt.toISOString()).toBe(now.toISOString());
