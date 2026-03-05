@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 /* eslint-disable @typescript-eslint/no-deprecated */
 
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteWishlistRepository } from "./appwrite-wishlist.repository";
 import {
@@ -17,6 +15,13 @@ import { Wishlist, Visibility, Participation, Priority } from "@wishin/domain";
 // TablesDB specific types from Appwrite SDK
 interface MockRow extends Models.Document {
   $tableId: string;
+  $sequence: number;
+  ownerId?: string;
+  title?: string;
+  itemId?: string | Models.Document;
+  userId?: string;
+  status?: string;
+  quantity?: number;
 }
 
 interface MockRowList {
@@ -30,23 +35,35 @@ function isUpsertCall(arg: unknown): arg is { tableId: string } {
 
 // Mock Appwrite SDK
 vi.mock("appwrite", () => {
-  const Account = vi.fn();
-  Account.prototype.get = vi.fn();
-  Account.prototype.createAnonymousSession = vi.fn();
+  const get = vi.fn();
+  const createAnonymousSession = vi.fn();
+  const AccountMock = vi.fn().mockImplementation(function () {
+    return {
+      get,
+      createAnonymousSession,
+    };
+  });
 
-  const TablesDB = vi.fn();
-  TablesDB.prototype.getRow = vi.fn();
-  TablesDB.prototype.listRows = vi.fn();
-  TablesDB.prototype.upsertRow = vi.fn();
-  TablesDB.prototype.deleteRow = vi.fn();
+  const getRow = vi.fn();
+  const listRows = vi.fn();
+  const upsertRow = vi.fn();
+  const deleteRow = vi.fn();
+  const TablesDBMock = vi.fn().mockImplementation(function () {
+    return {
+      getRow,
+      listRows,
+      upsertRow,
+      deleteRow,
+    };
+  });
 
   return {
     Client: class {
       setEndpoint = vi.fn().mockReturnThis();
       setProject = vi.fn().mockReturnThis();
     },
-    Account,
-    TablesDB,
+    Account: AccountMock,
+    TablesDB: TablesDBMock,
     Query: {
       equal: vi.fn(),
       limit: vi.fn(),
@@ -66,10 +83,10 @@ vi.mock("appwrite", () => {
 });
 
 describe("AppwriteWishlistRepository", () => {
-  let repository: AppwriteWishlistRepository;
+  let repository: TestAppwriteWishlistRepository;
   let mockClient: Client;
-  let mockAccount: InstanceType<typeof Account>;
-  let mockTablesDb: InstanceType<typeof TablesDB>;
+  let mockAccount: Account;
+  let mockTablesDb: TablesDB;
 
   const config = {
     databaseId: "db-id",
@@ -98,8 +115,19 @@ describe("AppwriteWishlistRepository", () => {
       config.transactionsCollectionId,
     );
 
-    mockAccount = (repository as TestAppwriteWishlistRepository).mockAccount;
-    mockTablesDb = (repository as TestAppwriteWishlistRepository).mockTablesDb;
+    mockAccount = repository.mockAccount;
+    mockTablesDb = repository.mockTablesDb;
+  });
+
+  const createMockBase = (id: string, tableId: string): MockRow => ({
+    $id: id,
+    $tableId: tableId,
+    $sequence: 1,
+    $collectionId: tableId,
+    $databaseId: config.databaseId,
+    $createdAt: new Date().toISOString(),
+    $updatedAt: new Date().toISOString(),
+    $permissions: [],
   });
 
   describe("ensureSession", () => {
@@ -115,8 +143,11 @@ describe("AppwriteWishlistRepository", () => {
     });
 
     it("should create an anonymous session if account.get fails with 401", async () => {
-      vi.mocked(mockAccount.get).mockRejectedValue(
+      vi.mocked(mockAccount.get).mockRejectedValueOnce(
         new AppwriteException("Unauthorized", 401),
+      );
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
       );
       vi.mocked(mockAccount.createAnonymousSession).mockResolvedValue(
         {} as Models.Session,
@@ -124,7 +155,7 @@ describe("AppwriteWishlistRepository", () => {
 
       await repository.ensureSession();
 
-      expect(mockAccount.get).toHaveBeenCalledTimes(1);
+      expect(mockAccount.get).toHaveBeenCalledTimes(2);
       expect(mockAccount.createAnonymousSession).toHaveBeenCalledTimes(1);
     });
 
@@ -211,7 +242,9 @@ describe("AppwriteWishlistRepository", () => {
         rows: [],
         total: 0,
       } as MockRowList);
-      vi.mocked(mockTablesDb.upsertRow).mockResolvedValue({} as MockRow);
+      vi.mocked(mockTablesDb.upsertRow).mockResolvedValue(
+        createMockBase("any", config.wishlistItemsCollectionId),
+      );
 
       await repository.save(mockWishlist);
 
@@ -239,7 +272,9 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockTablesDb.upsertRow)
         .mockRejectedValueOnce(new Error("Transient error"))
         .mockRejectedValueOnce(new Error("Transient error"))
-        .mockResolvedValue({} as MockRow);
+        .mockResolvedValue(
+          createMockBase("any", config.wishlistItemsCollectionId),
+        );
 
       await repository.save(mockWishlist);
 
@@ -261,13 +296,17 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [
           {
-            $id: "550e8400-e29b-41d4-a716-446655440003",
-            $tableId: config.wishlistItemsCollectionId,
-          } satisfies MockRow,
+            ...createMockBase(
+              "550e8400-e29b-41d4-a716-446655440003",
+              config.wishlistItemsCollectionId,
+            ),
+          },
         ],
         total: 1,
       } as MockRowList);
-      vi.mocked(mockTablesDb.upsertRow).mockResolvedValue({} as MockRow);
+      vi.mocked(mockTablesDb.upsertRow).mockResolvedValue(
+        createMockBase("any", config.wishlistItemsCollectionId),
+      );
       vi.mocked(mockTablesDb.deleteRow).mockResolvedValue(
         {} as Models.Document,
       );
@@ -288,13 +327,17 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [
           {
-            $id: "550e8400-e29b-41d4-a716-446655440004",
-            $tableId: config.wishlistItemsCollectionId,
-          } satisfies MockRow,
+            ...createMockBase(
+              "550e8400-e29b-41d4-a716-446655440004",
+              config.wishlistItemsCollectionId,
+            ),
+          },
         ],
         total: 1,
       } as MockRowList);
-      vi.mocked(mockTablesDb.upsertRow).mockResolvedValue({} as MockRow);
+      vi.mocked(mockTablesDb.upsertRow).mockResolvedValue(
+        createMockBase("any", config.wishlistItemsCollectionId),
+      );
       vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(
         new AppwriteException("Not found", 404),
       );
@@ -311,16 +354,11 @@ describe("AppwriteWishlistRepository", () => {
   describe("findById", () => {
     const validId = "550e8400-e29b-41d4-a716-446655440003";
     const mockDoc = {
-      $id: validId,
+      ...createMockBase(validId, config.wishlistCollectionId),
       ownerId: "owner-id",
       title: "My Wishlist",
-      $createdAt: new Date().toISOString(),
-      $updatedAt: new Date().toISOString(),
-      $databaseId: config.databaseId,
-      $collectionId: config.wishlistCollectionId,
-      $permissions: [],
-      $tableId: config.wishlistCollectionId,
     } satisfies MockRow;
+
     it("should call ensureSession by default", async () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,
@@ -346,7 +384,7 @@ describe("AppwriteWishlistRepository", () => {
         total: 0,
       } as MockRowList);
 
-      await repository.findById(validId, false);
+      await repository.findById(validId, true, false);
 
       expect(mockAccount.get).not.toHaveBeenCalled();
     });
@@ -355,16 +393,11 @@ describe("AppwriteWishlistRepository", () => {
   describe("findByOwnerId", () => {
     const validId = "550e8400-e29b-41d4-a716-446655440003";
     const mockDoc = {
-      $id: validId,
+      ...createMockBase(validId, config.wishlistCollectionId),
       ownerId: "owner-id",
       title: "My Wishlist",
-      $createdAt: new Date().toISOString(),
-      $updatedAt: new Date().toISOString(),
-      $databaseId: config.databaseId,
-      $collectionId: config.wishlistCollectionId,
-      $permissions: [],
-      $tableId: config.wishlistCollectionId,
     } satisfies MockRow;
+
     it("should call ensureSession only once and findById with ensureSession=false", async () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,
@@ -383,7 +416,7 @@ describe("AppwriteWishlistRepository", () => {
       await repository.findByOwnerId("owner-id");
 
       expect(mockAccount.get).toHaveBeenCalledTimes(1);
-      expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, false);
+      expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, false, false);
       // The first call to listRows is in findByOwnerId, subsequent are in findById
       expect(mockTablesDb.listRows).toHaveBeenCalled();
       // Assert hydration via internal findById calls by checking getRow

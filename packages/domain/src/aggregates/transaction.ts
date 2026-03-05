@@ -14,6 +14,11 @@ import { TransactionStatus } from "../value-objects/transaction-status";
  * @property {string} id - Unique identifier (UUID v4).
  * @property {string | null} itemId - The item being transacted (UUID v4) or null if deleted (ADR 017).
  * @property {string | null} [userId] - Unique identity (UUID or Appwrite ID) or null if deleted (ADR 017).
+ * @property {string | null} itemName - The item title at the time of transaction.
+ * @property {number | null} itemPrice - The item's price at the time of transaction.
+ * @property {string | null} itemCurrency - The currency code (e.g., "USD", "EUR").
+ * @property {string | null} itemDescription - The item details/metadata.
+ * @property {string | null} ownerUsername - The username of the wishlist owner.
  * @property {TransactionStatus} status - Lifecycle state (RESERVED, PURCHASED, CANCELLED).
  * @property {number} quantity - Positive integer.
  * @property {Date} createdAt - Creation timestamp.
@@ -23,6 +28,11 @@ export interface TransactionProps {
   id: string;
   itemId: string | null;
   userId?: string | null;
+  itemName: string | null;
+  itemPrice: number | null;
+  itemCurrency: string | null;
+  itemDescription: string | null;
+  ownerUsername: string | null;
   status: TransactionStatus;
   quantity: number;
   createdAt: Date;
@@ -90,6 +100,46 @@ export class Transaction {
   }
 
   /**
+   * The name of the item at the time of transaction.
+   * @returns {string | null}
+   */
+  public get itemName(): string | null {
+    return this.props.itemName;
+  }
+
+  /**
+   * The price of the item at the time of transaction.
+   * @returns {number | null}
+   */
+  public get itemPrice(): number | null {
+    return this.props.itemPrice;
+  }
+
+  /**
+   * The currency of the item price.
+   * @returns {string | null}
+   */
+  public get itemCurrency(): string | null {
+    return this.props.itemCurrency;
+  }
+
+  /**
+   * The description of the item.
+   * @returns {string | null}
+   */
+  public get itemDescription(): string | null {
+    return this.props.itemDescription;
+  }
+
+  /**
+   * The username of the wishlist owner.
+   * @returns {string | null}
+   */
+  public get ownerUsername(): string | null {
+    return this.props.ownerUsername;
+  }
+
+  /**
    * Lifecycle state (RESERVED, PURCHASED, CANCELLED).
    * @returns {TransactionStatus}
    */
@@ -126,6 +176,11 @@ export class Transaction {
   private constructor(props: TransactionProps, mode: ValidationMode) {
     this.props = {
       ...props,
+      itemName: props.itemName ?? null,
+      itemPrice: props.itemPrice ?? null,
+      itemCurrency: props.itemCurrency ?? null,
+      itemDescription: props.itemDescription ?? null,
+      ownerUsername: props.ownerUsername ?? null,
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),
     };
@@ -147,13 +202,27 @@ export class Transaction {
   /**
    * Factory for RESERVED transactions.
    *
+   * Sets status to RESERVED and initializes timestamps.
+   *
    * **Validation Mode:** STRICT
    *
-   * @param {TransactionCreateReservationProps} props
+   * @param {TransactionCreateReservationProps & { itemName: string; itemPrice: number | null; itemCurrency: string | null; itemDescription: string | null; ownerUsername: string; }} props
+   * @param {string} props.itemName - The item title.
+   * @param {number|null} props.itemPrice - The item price.
+   * @param {string|null} props.itemCurrency - The currency code.
+   * @param {string|null} props.itemDescription - The item details.
+   * @param {string} props.ownerUsername - The owner's username.
    * @returns {Transaction}
+   * @throws {InvalidAttributeError} If validation fails.
    */
   public static createReservation(
-    props: TransactionCreateReservationProps,
+    props: TransactionCreateReservationProps & {
+      itemName: string;
+      itemPrice: number | null;
+      itemCurrency: string | null;
+      itemDescription: string | null;
+      ownerUsername: string;
+    },
   ): Transaction {
     const now = new Date();
     return Transaction.create({
@@ -167,13 +236,27 @@ export class Transaction {
   /**
    * Factory for PURCHASED transactions.
    *
+   * Sets status to PURCHASED and initializes timestamps.
+   *
    * **Validation Mode:** STRICT
    *
-   * @param {TransactionCreatePurchaseProps} props
+   * @param {TransactionCreatePurchaseProps & { itemName: string; itemPrice: number | null; itemCurrency: string | null; itemDescription: string | null; ownerUsername: string; }} props
+   * @param {string} props.itemName - The item title.
+   * @param {number|null} props.itemPrice - The item price.
+   * @param {string|null} props.itemCurrency - The currency code.
+   * @param {string|null} props.itemDescription - The item details.
+   * @param {string} props.ownerUsername - The owner's username.
    * @returns {Transaction}
+   * @throws {InvalidAttributeError} If validation fails.
    */
   public static createPurchase(
-    props: TransactionCreatePurchaseProps,
+    props: TransactionCreatePurchaseProps & {
+      itemName: string;
+      itemPrice: number | null;
+      itemCurrency: string | null;
+      itemDescription: string | null;
+      ownerUsername: string;
+    },
   ): Transaction {
     const now = new Date();
     return Transaction.create({
@@ -314,6 +397,28 @@ export class Transaction {
         "Invalid userId: Must be a valid identity (UUID or Appwrite ID)",
       );
     }
+    if (this.itemName !== null && typeof this.itemName !== "string") {
+      throw new InvalidAttributeError("Invalid itemName: Must be a string");
+    }
+    if (this.itemPrice !== null && typeof this.itemPrice !== "number") {
+      throw new InvalidAttributeError("Invalid itemPrice: Must be a number");
+    }
+    if (this.itemCurrency !== null && typeof this.itemCurrency !== "string") {
+      throw new InvalidAttributeError("Invalid itemCurrency: Must be a string");
+    }
+    if (
+      this.itemDescription !== null &&
+      typeof this.itemDescription !== "string"
+    ) {
+      throw new InvalidAttributeError(
+        "Invalid itemDescription: Must be a string",
+      );
+    }
+    if (this.ownerUsername !== null && typeof this.ownerUsername !== "string") {
+      throw new InvalidAttributeError(
+        "Invalid ownerUsername: Must be a string",
+      );
+    }
     if (!(this.createdAt instanceof Date) || isNaN(this.createdAt.getTime())) {
       throw new InvalidAttributeError(
         "Invalid createdAt: Must be a valid Date",
@@ -344,6 +449,26 @@ export class Transaction {
       if (this.status === TransactionStatus.RESERVED && !this.userId) {
         throw new InvalidAttributeError(
           "Invalid state: Reserved transactions require a userId",
+        );
+      }
+
+      // Business Validations
+      if (this.itemName === null || this.itemName.trim().length === 0) {
+        throw new InvalidAttributeError(
+          "Invalid itemName: Cannot be null, empty or whitespace",
+        );
+      }
+      if (
+        this.ownerUsername === null ||
+        this.ownerUsername.trim().length === 0
+      ) {
+        throw new InvalidAttributeError(
+          "Invalid ownerUsername: Cannot be null, empty or whitespace",
+        );
+      }
+      if (this.itemPrice !== null && this.itemPrice < 0) {
+        throw new InvalidAttributeError(
+          "Invalid itemPrice: Cannot be negative",
         );
       }
     }

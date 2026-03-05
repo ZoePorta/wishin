@@ -15,6 +15,7 @@ const {
   EXPO_PUBLIC_APPWRITE_DATABASE_ID,
   EXPO_PUBLIC_DB_PREFIX,
   CLEANUP,
+  DEV_ALLOW_OPEN_PERMISSIONS,
 } = process.env;
 
 if (
@@ -34,6 +35,7 @@ const apiKey = APPWRITE_API_SECRET;
 const databaseId = EXPO_PUBLIC_APPWRITE_DATABASE_ID;
 const prefix = EXPO_PUBLIC_DB_PREFIX ?? "";
 const isCleanupEnabled = CLEANUP === "true";
+const isDevOpenPermissions = DEV_ALLOW_OPEN_PERMISSIONS === "true";
 
 const client = new Client()
   .setEndpoint(endpoint)
@@ -223,6 +225,11 @@ const schema: CollectionSchema[] = [
       },
       { key: "status", type: "string", required: true, size: 20 },
       { key: "quantity", type: "integer", required: false, default: 1 },
+      { key: "itemName", type: "string", required: false, size: 100 },
+      { key: "itemPrice", type: "double", required: false },
+      { key: "itemCurrency", type: "string", required: false, size: 3 },
+      { key: "itemDescription", type: "string", required: false, size: 200 },
+      { key: "ownerUsername", type: "string", required: false, size: 30 },
     ],
   },
 ];
@@ -384,11 +391,32 @@ async function provision() {
         );
       } catch (error: unknown) {
         if (isAppwriteError(error) && error.code === 404) {
+          // Permissions logic:
+          // 1. All collections allow public read ('read("any")').
+          // 2. Transactions collection allows public CRUD ('create("any")', 'read("any")', 'update("any")', 'delete("any")') to support guest transactions.
+          // 3. If DEV_ALLOW_OPEN_PERMISSIONS is true, all collections get full public CRUD.
+          const permissions = ['read("any")'];
+
+          if (isDevOpenPermissions) {
+            permissions.push('create("any")', 'update("any")', 'delete("any")');
+          } else if (coll.id === "transactions") {
+            // Guest transactions require public create/read, but restricted update/delete (Phase 5)
+            // For now, keep guest access for transactions to avoid breaking the MVP flow
+            permissions.push('create("any")', 'update("any")', 'delete("any")');
+          } else {
+            // Other collections (profiles, wishlists, items) restricted to members by default
+            permissions.push(
+              'create("users")',
+              'update("users")',
+              'delete("users")',
+            );
+          }
+
           await tablesDb.createTable({
             databaseId,
             tableId: collectionId,
             name: coll.name,
-            permissions: ['read("any")'],
+            permissions,
             enabled: true,
             rowSecurity: true,
           });
@@ -532,8 +560,8 @@ async function waitForAttribute(
   console.log(`Waiting for attribute "${key}" to be ready...`);
   let isReady = false;
   let attempts = 0;
-  // Wait up to 10 seconds (20 attempts * 500ms)
-  while (!isReady && attempts < 20) {
+  // Increase timeout to 60 seconds (120 attempts * 500ms) for CI reliability
+  while (!isReady && attempts < 120) {
     try {
       const table = await tablesDb.getTable({
         databaseId,
@@ -556,8 +584,15 @@ async function waitForAttribute(
   }
 
   if (!isReady) {
+    const table = await tablesDb.getTable({
+      databaseId,
+      tableId: collectionId,
+    });
+    const column = (
+      table.columns as { key: string; status: string; error?: string }[]
+    ).find((c) => c.key === key);
     throw new Error(
-      `Attribute "${key}" in collection "${collectionId}" failed to become available.`,
+      `Attribute "${key}" in collection "${collectionId}" failed to become available after 60s. Current status: "${column?.status ?? "unknown"}". Error: ${column?.error ?? "None"}`,
     );
   }
 }

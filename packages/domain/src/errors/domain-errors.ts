@@ -108,6 +108,20 @@ export class WishlistItemNotFoundError extends NotFoundError {
     Object.setPrototypeOf(this, WishlistItemNotFoundError.prototype);
   }
 }
+
+/**
+ * Error thrown when there is a failure in the underlying database or infrastructure.
+ *
+ * @param {string} message - The error message.
+ * @returns {PersistenceError} An instance of PersistenceError.
+ */
+export class PersistenceError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "PersistenceError";
+    Object.setPrototypeOf(this, PersistenceError.prototype);
+  }
+}
 /**
  * Error message used when a visibility value is invalid.
  * Invariant: Visibility must be one of the following:

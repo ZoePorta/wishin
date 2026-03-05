@@ -7,9 +7,23 @@ import { Transaction, TransactionStatus } from "@wishin/domain";
 export interface TransactionDocument extends Models.Document {
   itemId: string;
   userId: string;
+  itemName: string | null;
+  itemPrice: number | null;
+  itemCurrency: string | null;
+  itemDescription: string | null;
+  ownerUsername: string | null;
   status: TransactionStatus;
   quantity: number;
 }
+
+/**
+ * Type representing the data object sent to Appwrite for persistence.
+ * This omits internal Appwrite document fields.
+ */
+export type TransactionPersistence = Omit<
+  TransactionDocument,
+  keyof Models.Document
+>;
 
 /**
  * Mapper to convert between Appwrite documents and Transaction aggregate roots.
@@ -20,11 +34,16 @@ export const TransactionMapper = {
    * @param transaction - The Transaction aggregate root.
    * @returns A plain object compatible with Appwrite's transactions collection.
    */
-  toPersistence(transaction: Transaction) {
+  toPersistence(transaction: Transaction): TransactionPersistence {
     const props = transaction.toProps();
     return {
       itemId: props.itemId,
       userId: props.userId,
+      itemName: props.itemName,
+      itemPrice: props.itemPrice,
+      itemCurrency: props.itemCurrency,
+      itemDescription: props.itemDescription,
+      ownerUsername: props.ownerUsername,
       status: props.status,
       quantity: props.quantity,
     };
@@ -47,6 +66,11 @@ export const TransactionMapper = {
       id: doc.$id,
       itemId: data.itemId,
       userId: data.userId,
+      itemName: data.itemName,
+      itemPrice: data.itemPrice,
+      itemCurrency: data.itemCurrency,
+      itemDescription: data.itemDescription,
+      ownerUsername: data.ownerUsername,
       status: data.status,
       quantity: data.quantity,
       createdAt: new Date(doc.$createdAt),

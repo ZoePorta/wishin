@@ -70,7 +70,7 @@
 
 ### 4.1 Domain Refinement
 
-- [ ] Define `TransactionRepository` interface with `save`, `findById`, and `findByItemId`.
+- [x] Define `TransactionRepository` interface with `save`, `findById`, `findByItemId`, `cancelByItemId`, `findByUserId` (with optional status and limit), and `delete`.
 - [ ] Refine `WishlistItem` invariants for atomic stock updates.
 
 ### 4.2 Application Layer (TDD)
@@ -124,3 +124,12 @@
 
 - [ ] **Selective Pruning**: Implement logic to preserve reservations when reducing total quantity (replaces ADR 019).
 - [ ] **Advanced Notifications**: Implement real-time alerts for reservation cancellations (pruning, expiration).
+- [ ] **Task: Server-side Counters Integration**: Implement Appwrite Functions triggered by transaction creations/deletions to update `WishlistItem` counters (`reservedQuantity`, `purchasedQuantity`) atomically on the server for improved consistency and performance.
+- [ ] **Transaction Data Sync**: Implement an Appwrite Function (DB Trigger) to synchronize denormalized fields and resolve data staleness (ADR 021).
+  - **Triggers**: `WishlistItem` metadata updates or `Profile` username changes.
+  - **Sync Rules**:
+    - `ownerUsername`: Always synchronized across all transactions (informative).
+    - `itemName`, `itemPrice`, `itemCurrency`, `itemDescription`:
+      - **Sync-able**: Only for transactions in `RESERVED` status.
+      - **Immutable**: Frozen for `PURCHASED` status to preserve audit/financial integrity of the purchase.
+  - **Operational Strategy**: Use paginated background processing with exponential backoff and idempotent retries to handle items with large transaction volumes (popular items).
