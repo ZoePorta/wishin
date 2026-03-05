@@ -34,7 +34,7 @@ export const WishlistMapper = {
     return {
       ownerId: props.ownerId,
       title: props.title,
-      description: props.description,
+      description: props.description ?? null,
       visibility: props.visibility,
       participation: props.participation,
     };
