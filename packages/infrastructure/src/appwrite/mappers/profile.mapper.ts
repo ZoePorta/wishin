@@ -1,5 +1,5 @@
 import type { Models } from "appwrite";
-import { Profile } from "@wishin/domain";
+import { Profile, InvalidAttributeError } from "@wishin/domain";
 
 /**
  * Interface representing the Appwrite document structure for a Profile.
@@ -37,15 +37,26 @@ export const ProfileMapper = {
    * Converts an Appwrite document to a Profile domain entity.
    * @param doc - The Appwrite document from the profiles collection.
    * @returns A reconstituted Profile entity.
+   * @throws {InvalidAttributeError} If required fields are missing or invalid.
    */
   toDomain(doc: Models.Document): Profile {
-    const data = doc as ProfileDocument;
+    const data = doc as Record<string, unknown>;
+
+    if (!doc.$id) {
+      throw new InvalidAttributeError("Profile document missing $id");
+    }
+
+    if (typeof data.username !== "string" || !data.username) {
+      throw new InvalidAttributeError(
+        `Profile ${doc.$id} missing required field: username`,
+      );
+    }
 
     return Profile.reconstitute({
       id: doc.$id,
       username: data.username,
-      imageUrl: data.imageUrl,
-      bio: data.bio,
+      imageUrl: typeof data.imageUrl === "string" ? data.imageUrl : undefined,
+      bio: typeof data.bio === "string" ? data.bio : undefined,
     });
   },
 };

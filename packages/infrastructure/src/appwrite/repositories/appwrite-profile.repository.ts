@@ -29,6 +29,8 @@ export class AppwriteProfileRepository implements ProfileRepository {
    *
    * @param id - The user UUID.
    * @returns A Promise that resolves to the Profile entity or null if not found.
+   * @throws {AppwriteException} For non-404 Appwrite SDK errors.
+   * @throws {Error} For other unexpected errors, including mapping failures.
    */
   async findById(id: string): Promise<Profile | null> {
     try {
@@ -52,6 +54,8 @@ export class AppwriteProfileRepository implements ProfileRepository {
    *
    * @param profile - The profile entity to save.
    * @returns A Promise that resolves when the profile is saved.
+   * @throws {AppwriteException} For Appwrite SDK failures.
+   * @throws {Error} For other unexpected errors.
    */
   async save(profile: Profile): Promise<void> {
     await this.tablesDb.upsertRow({
