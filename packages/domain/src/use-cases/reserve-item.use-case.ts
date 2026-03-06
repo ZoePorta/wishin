@@ -1,7 +1,9 @@
 import {
   WishlistNotFoundError,
   InvalidOperationError,
+  InsufficientStockError,
 } from "../errors/domain-errors";
+import { Wishlist } from "../aggregates/wishlist";
 import { Transaction } from "../aggregates/transaction";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
@@ -27,7 +29,7 @@ import type { WishlistOutput } from "./dtos/get-wishlist.dto";
  *
  * @throws {WishlistNotFoundError} If the wishlist is not found.
  * @throws {InvalidOperationError} If the user is not registered or the item is missing.
- * @throws {ValidationError} For invalid input (if applicable).
+ * @throws {InsufficientStockError} If the requested quantity exceeds available stock.
  * @throws {Error} For unexpected failures.
  */
 export class ReserveItemUseCase {
@@ -55,7 +57,8 @@ export class ReserveItemUseCase {
    * @param input - Reservation details.
    * @returns {Promise<WishlistOutput>} The updated wishlist as a DTO.
    * @throws {WishlistNotFoundError} If the wishlist id does not exist.
-   * @throws {InvalidOperationError} If the user is not registered or the item is missing, or for business rule violations.
+   * @throws {InvalidOperationError} If the user is not registered or the item is missing.
+   * @throws {InsufficientStockError} If the requested quantity exceeds available stock.
    * @throws {Error} For unexpected failures.
    */
   async execute(input: ReserveItemInput): Promise<WishlistOutput> {
@@ -89,7 +92,19 @@ export class ReserveItemUseCase {
     }
 
     // 1. Update Wishlist state (Inventory check happens inside aggregate)
-    const updatedWishlist = wishlist.reserveItem(input.itemId, input.quantity);
+    let updatedWishlist: Wishlist;
+    try {
+      updatedWishlist = wishlist.reserveItem(input.itemId, input.quantity);
+    } catch (error: unknown) {
+      if (error instanceof InsufficientStockError) {
+        this.logger.warn("Insufficient stock for reservation", {
+          wishlistId: input.wishlistId,
+          itemId: input.itemId,
+          requested: input.quantity,
+        });
+      }
+      throw error;
+    }
 
     // 2. Create Transaction record (Snapshot Pattern)
     const transaction = Transaction.createReservation({
@@ -134,8 +149,11 @@ export class ReserveItemUseCase {
         }
       } catch (rollbackError: unknown) {
         this.logger.error("CRITICAL: Compensating rollback failed", {
-          originalError: error,
-          rollbackError,
+          originalError: error instanceof Error ? error.message : String(error),
+          rollbackError:
+            rollbackError instanceof Error
+              ? rollbackError.message
+              : String(rollbackError),
           wishlistId: wishlist.id,
         });
       }

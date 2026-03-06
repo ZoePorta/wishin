@@ -157,7 +157,7 @@ describe.skipIf(!shouldRun)(
         },
       });
 
-      // 3. Seed Transactions (Required for consistency, though repository reads counters directly)
+      // 3. Seed Transactions (Kept for compatibility with other integration tests/manual verification; not used by WishlistRepository which reads counters directly)
       await tablesDb.createRow({
         databaseId,
         tableId: transactionsCollectionId,

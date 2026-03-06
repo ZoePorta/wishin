@@ -93,7 +93,6 @@ describe("AppwriteWishlistRepository", () => {
     databaseId: "db-id",
     wishlistCollectionId: "wishlists-id",
     wishlistItemsCollectionId: "items-id",
-    transactionsCollectionId: "transactions-id",
   };
 
   class TestAppwriteWishlistRepository extends AppwriteWishlistRepository {
