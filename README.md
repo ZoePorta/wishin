@@ -101,6 +101,7 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 - [ADR 018: Unified Identity via Appwrite Anonymous Sessions](docs/adr/018-unified-identity-anonymous-sessions.md)
 - [ADR 019: Simplified Reservation Pruning for MVP](docs/adr/019-simplified-reservation-pruning-for-mvp.md)
 - [ADR 020: Adopt Material Design 3 and React Native Paper](docs/adr/020-adopt-material-design-3-and-react-native-paper.md)
+- [ADR 021: Transaction Denormalization](docs/adr/021-transaction-denormalization.md)
 - [ADR 022: Image Management via Appwrite Storage](docs/adr/022-image-management-via-appwrite-storage.md)
 
 ## [Project Roadmap](docs/roadmap.md)

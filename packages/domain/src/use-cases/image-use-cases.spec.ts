@@ -61,6 +61,7 @@ describe("Image Use Cases", () => {
       const oversizedFile: FileData = {
         ...validFileData,
         size: UploadImageUseCase.MAX_FILE_SIZE + 1,
+        buffer: new Uint8Array(UploadImageUseCase.MAX_FILE_SIZE + 1),
       };
 
       await expect(useCase.execute(oversizedFile)).rejects.toThrow(
@@ -72,11 +73,11 @@ describe("Image Use Cases", () => {
   });
 
   describe("GetImagePreviewUseCase", () => {
-    it("should return a preview URL for a file ID", () => {
+    it("should return a preview URL for a file ID", async () => {
       const useCase = new GetImagePreviewUseCase(mockStorageRepository);
-      getPreview.mockReturnValue("http://preview/file-123");
+      getPreview.mockResolvedValue("http://preview/file-123");
 
-      const result = useCase.execute("file-123");
+      const result = await useCase.execute("file-123");
 
       expect(result).toBe("http://preview/file-123");
 

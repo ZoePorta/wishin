@@ -9,9 +9,9 @@ export class GetImagePreviewUseCase {
   /**
    * Executes the use case to get an image preview.
    * @param fileId - The unique identifier of the image.
-   * @returns The preview URL or identifier.
+   * @returns A promise that resolves to the preview URL or identifier.
    */
-  execute(fileId: string): string {
+  async execute(fileId: string): Promise<string> {
     return this.storageRepository.getPreview(fileId);
   }
 }

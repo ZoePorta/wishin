@@ -125,7 +125,7 @@ describe("AppwriteStorageRepository", () => {
       expect(createFile).toHaveBeenCalledWith({
         bucketId,
         fileId: "unique-id",
-        file: expect.any(Blob) as unknown as Blob,
+        file: expect.any(File) as unknown as File,
       });
     });
   });
@@ -144,11 +144,11 @@ describe("AppwriteStorageRepository", () => {
   });
 
   describe("getPreview", () => {
-    it("should return preview URL string from string return", () => {
+    it("should return preview URL string from string return", async () => {
       const mockUrl = "http://preview/file-123";
       getFilePreview.mockReturnValue(mockUrl);
 
-      const result = repository.getPreview("file-123");
+      const result = await repository.getPreview("file-123");
 
       expect(result).toBe(mockUrl);
       expect(getFilePreview).toHaveBeenCalledWith({
@@ -157,7 +157,7 @@ describe("AppwriteStorageRepository", () => {
       });
     });
 
-    it("should return preview URL string from URL object return", () => {
+    it("should return preview URL string from URL object return", async () => {
       const mockUrl = "http://preview/file-123";
       const urlObject = {
         toString: () => mockUrl,
@@ -165,7 +165,7 @@ describe("AppwriteStorageRepository", () => {
       };
       getFilePreview.mockReturnValue(urlObject);
 
-      const result = repository.getPreview("file-123");
+      const result = await repository.getPreview("file-123");
 
       expect(result).toBe(mockUrl);
     });

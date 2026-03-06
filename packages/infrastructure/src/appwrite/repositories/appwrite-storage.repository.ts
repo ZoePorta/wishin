@@ -1,11 +1,4 @@
-import {
-  Client,
-  Storage,
-  Account,
-  AppwriteException,
-  type Models,
-  ID,
-} from "appwrite";
+import { Client, Storage, Account, type Models, ID } from "appwrite";
 import {
   type StorageRepository,
   type FileData,
@@ -106,15 +99,11 @@ export class AppwriteStorageRepository
   async upload(fileData: FileData): Promise<string> {
     await this.ensureSession();
     try {
-      // Platform-agnostic conversion to Blob for Appwrite SDK
-      // Using BlobPart to avoid strict issues with ArrayBuffer | Uint8Array across environments
-      const blob = new Blob([fileData.buffer as BlobPart], {
+      // Platform-agnostic conversion to File for Appwrite SDK
+      // This ensures we preserve the filename and MIME type.
+      const file = new File([fileData.buffer as BlobPart], fileData.filename, {
         type: fileData.mimeType,
       });
-
-      // We need to cast blob to any or File because Appwrite SDK expects a File in some environments,
-      // but Blob works in Web/Expo.
-      const file = blob as unknown as File;
 
       const result = await this.storage.createFile({
         bucketId: this.bucketId,
@@ -122,7 +111,7 @@ export class AppwriteStorageRepository
         file,
       });
       return result.$id;
-    } catch (error) {
+    } catch (error: unknown) {
       throw new PersistenceError("AppwriteStorageRepository.upload failed", {
         cause: error,
       });
@@ -141,8 +130,13 @@ export class AppwriteStorageRepository
         bucketId: this.bucketId,
         fileId,
       });
-    } catch (error) {
-      if (error instanceof AppwriteException && error.code === 404) {
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === 404
+      ) {
         return; // Already deleted
       }
       throw new PersistenceError("AppwriteStorageRepository.delete failed", {
@@ -162,9 +156,9 @@ export class AppwriteStorageRepository
   /**
    * Returns a preview URL for the image.
    * @param fileId - The unique identifier of the file.
-   * @returns The preview URL string.
+   * @returns A promise that resolves to the preview URL string.
    */
-  getPreview(fileId: string): string {
+  async getPreview(fileId: string): Promise<string> {
     const result = this.storage.getFilePreview({
       bucketId: this.bucketId,
       fileId,

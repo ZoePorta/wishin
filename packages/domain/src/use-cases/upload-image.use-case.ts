@@ -9,9 +9,10 @@ import { ValidationError } from "../errors/domain-errors";
  */
 export class UploadImageUseCase {
   /**
-   * Maximum allowed file size for image uploads (5MB).
+   * Maximum allowed file size for image uploads (20MB).
+   * Aligned with Appwrite's optimization limits.
    */
-  public static readonly MAX_FILE_SIZE = 5 * 1024 * 1024;
+  public static readonly MAX_FILE_SIZE = 20 * 1024 * 1024;
 
   constructor(private readonly storageRepository: StorageRepository) {}
 
@@ -31,7 +32,11 @@ export class UploadImageUseCase {
       throw new ValidationError("Invalid file type. Only images are allowed.");
     }
 
-    if (file.size > UploadImageUseCase.MAX_FILE_SIZE) {
+    const buffer =
+      file.buffer instanceof ArrayBuffer ? file.buffer : file.buffer.buffer;
+    const actualLength = buffer.byteLength;
+
+    if (actualLength > UploadImageUseCase.MAX_FILE_SIZE) {
       const maxMb = String(UploadImageUseCase.MAX_FILE_SIZE / 1024 / 1024);
       throw new ValidationError(
         `File size exceeds the maximum limit of ${maxMb}MB.`,

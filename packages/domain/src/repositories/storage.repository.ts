@@ -41,7 +41,7 @@ export interface StorageRepository {
   /**
    * Returns a URL or relative path for previewing the image.
    * @param fileId - The unique identifier of the file.
-   * @returns The preview string (URL or relative identifier).
+   * @returns A promise that resolves to the preview string (URL or relative identifier).
    */
-  getPreview(fileId: string): string;
+  getPreview(fileId: string): Promise<string>;
 }
