@@ -123,6 +123,20 @@ export class PersistenceError extends Error {
   }
 }
 /**
+ * Error thrown when a validation rule is violated at the use case or entity level.
+ *
+ * @param {string} message - The error message.
+ * @returns {ValidationError} An instance of ValidationError.
+ */
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ValidationError";
+    Object.setPrototypeOf(this, ValidationError.prototype);
+  }
+}
+
+/**
  * Error message used when a visibility value is invalid.
  * Invariant: Visibility must be one of the following:
  * - Visibility.LINK: Anyone with the link can view.

@@ -106,7 +106,12 @@ describe("AppwriteStorageRepository", () => {
 
   describe("upload", () => {
     it("should upload a file and return its ID", async () => {
-      const file = new File([""], "test.png");
+      const fileData = {
+        buffer: new Uint8Array([1, 2, 3]),
+        filename: "test.png",
+        mimeType: "image/png",
+        size: 3,
+      };
       get.mockResolvedValue({
         $id: "user-123",
       } as unknown as Models.User<Models.Preferences>);
@@ -114,13 +119,13 @@ describe("AppwriteStorageRepository", () => {
         $id: "file-123",
       } as unknown as Models.File);
 
-      const result = await repository.upload(file);
+      const result = await repository.upload(fileData);
 
       expect(result).toBe("file-123");
       expect(createFile).toHaveBeenCalledWith({
         bucketId,
         fileId: "unique-id",
-        file,
+        file: expect.any(Blob) as unknown as Blob,
       });
     });
   });
@@ -139,7 +144,7 @@ describe("AppwriteStorageRepository", () => {
   });
 
   describe("getPreview", () => {
-    it("should return preview URL", () => {
+    it("should return preview URL string from string return", () => {
       const mockUrl = "http://preview/file-123";
       getFilePreview.mockReturnValue(mockUrl);
 
@@ -150,6 +155,19 @@ describe("AppwriteStorageRepository", () => {
         bucketId,
         fileId: "file-123",
       });
+    });
+
+    it("should return preview URL string from URL object return", () => {
+      const mockUrl = "http://preview/file-123";
+      const urlObject = {
+        toString: () => mockUrl,
+        href: mockUrl,
+      };
+      getFilePreview.mockReturnValue(urlObject);
+
+      const result = repository.getPreview("file-123");
+
+      expect(result).toBe(mockUrl);
     });
   });
 });

@@ -6,7 +6,11 @@ import {
   type Models,
   ID,
 } from "appwrite";
-import type { StorageRepository } from "@wishin/domain";
+import {
+  type StorageRepository,
+  type FileData,
+  PersistenceError,
+} from "@wishin/domain";
 import type { SessionAwareRepository } from "./session-aware-repository.interface";
 
 /**
@@ -38,6 +42,9 @@ export class AppwriteStorageRepository
   /**
    * Ensures an active session exists.
    * Creates an anonymous session if no session is active.
+   *
+   * @returns {Promise<Models.User<Models.Preferences>>} The current user model.
+   * @throws {PersistenceError} If the session cannot be ensured.
    */
   async ensureSession(): Promise<Models.User<Models.Preferences>> {
     if (this.sessionEnsured && this._currentUser) {
@@ -65,11 +72,14 @@ export class AppwriteStorageRepository
             this._currentUser = await this.account.get();
             this.sessionEnsured = true;
           } catch (sessionError: unknown) {
-            console.error("Failed to create anonymous session");
-            throw sessionError;
+            throw new PersistenceError("Failed to create anonymous session", {
+              cause: sessionError,
+            });
           }
         } else {
-          throw error;
+          throw new PersistenceError("Failed to get current account", {
+            cause: error,
+          });
         }
       }
     })();
@@ -81,7 +91,7 @@ export class AppwriteStorageRepository
     }
 
     if (!this._currentUser) {
-      throw new Error("Session initialization failed: user is null");
+      throw new PersistenceError("Session initialization failed: user is null");
     }
 
     return this._currentUser;
@@ -89,12 +99,23 @@ export class AppwriteStorageRepository
 
   /**
    * Uploads a file to the Appwrite bucket.
-   * @param file - The file to upload.
+   * @param fileData - The file data to upload.
    * @returns A promise that resolves to the fileId.
+   * @throws {PersistenceError} If the upload fails.
    */
-  async upload(file: File): Promise<string> {
+  async upload(fileData: FileData): Promise<string> {
     await this.ensureSession();
     try {
+      // Platform-agnostic conversion to Blob for Appwrite SDK
+      // Using BlobPart to avoid strict issues with ArrayBuffer | Uint8Array across environments
+      const blob = new Blob([fileData.buffer as BlobPart], {
+        type: fileData.mimeType,
+      });
+
+      // We need to cast blob to any or File because Appwrite SDK expects a File in some environments,
+      // but Blob works in Web/Expo.
+      const file = blob as unknown as File;
+
       const result = await this.storage.createFile({
         bucketId: this.bucketId,
         fileId: ID.unique(),
@@ -102,14 +123,16 @@ export class AppwriteStorageRepository
       });
       return result.$id;
     } catch (error) {
-      console.error("AppwriteStorageRepository.upload failed:", error);
-      throw error;
+      throw new PersistenceError("AppwriteStorageRepository.upload failed", {
+        cause: error,
+      });
     }
   }
 
   /**
    * Deletes a file from the Appwrite bucket.
    * @param fileId - The unique identifier of the file.
+   * @throws {PersistenceError} If the deletion fails.
    */
   async delete(fileId: string): Promise<void> {
     await this.ensureSession();
@@ -122,8 +145,9 @@ export class AppwriteStorageRepository
       if (error instanceof AppwriteException && error.code === 404) {
         return; // Already deleted
       }
-      console.error("AppwriteStorageRepository.delete failed:", error);
-      throw error;
+      throw new PersistenceError("AppwriteStorageRepository.delete failed", {
+        cause: error,
+      });
     }
   }
 
@@ -137,16 +161,17 @@ export class AppwriteStorageRepository
 
   /**
    * Returns a preview URL for the image.
-   * Appwrite preview URLs are generated via the .getFilePreview() method.
    * @param fileId - The unique identifier of the file.
-   * @returns The preview URL.
+   * @returns The preview URL string.
    */
   getPreview(fileId: string): string {
-    // Note: getFilePreview returns a URL object or string depending on version,
-    // but in web SDK it returns a URL.
-    return this.storage.getFilePreview({
+    const result = this.storage.getFilePreview({
       bucketId: this.bucketId,
       fileId,
-    });
+    }) as string | { toString(): string };
+
+    // Appwrite SDK returns a URL object in web environments.
+    // Ensure we return a string as defined in StorageRepository.
+    return typeof result === "string" ? result : result.toString();
   }
 }

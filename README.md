@@ -64,8 +64,10 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 - `EXPO_PUBLIC_APPWRITE_ENDPOINT`: Your Appwrite API endpoint.
 - `EXPO_PUBLIC_APPWRITE_PROJECT_ID`: Your Appwrite project ID.
 - `EXPO_PUBLIC_APPWRITE_DATABASE_ID`: The ID of the database to use.
+- `EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_ID`: Appwrite storage bucket for file assets (Required for local runs using Appwrite).
 - `APPWRITE_API_SECRET`: Required for server-side management.
 - `EXPO_PUBLIC_DB_PREFIX`: Prefix for collections (e.g., `dev`, `test`).
+  - **Note**: For local integration tests, set `EXPO_PUBLIC_DB_PREFIX=test` and ensure `EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_ID` is correctly configured.
 
 ### Database Scripts
 
@@ -99,6 +101,7 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 - [ADR 018: Unified Identity via Appwrite Anonymous Sessions](docs/adr/018-unified-identity-anonymous-sessions.md)
 - [ADR 019: Simplified Reservation Pruning for MVP](docs/adr/019-simplified-reservation-pruning-for-mvp.md)
 - [ADR 020: Adopt Material Design 3 and React Native Paper](docs/adr/020-adopt-material-design-3-and-react-native-paper.md)
+- [ADR 022: Image Management via Appwrite Storage](docs/adr/022-image-management-via-appwrite-storage.md)
 
 ## [Project Roadmap](docs/roadmap.md)
 
