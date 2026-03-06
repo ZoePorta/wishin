@@ -395,11 +395,11 @@ describe("AppwriteWishlistRepository", () => {
       });
 
       await expect(repository.save(invalidNewWishlist)).rejects.toThrow(
-        /Validation error: New wishlist.*must have version 0/,
+        /Validation error \(TOCTOU\): New wishlist.*must have version 0/,
       );
     });
 
-    it("should throw TOCTOU error if version changes between check and write", async () => {
+    it("should throw TOCTOU error if version changes between check and write and prevent mutations", async () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,
       );
@@ -408,31 +408,37 @@ describe("AppwriteWishlistRepository", () => {
         total: 0,
       } as MockRowList);
 
-      // 1. Initial check (success)
-      vi.mocked(mockTablesDb.getRow).mockResolvedValueOnce({
+      // Return a version that will cause a conflict (should be wishlist.version - 1)
+      // Wishlist version is 1, so it expects 0 in DB.
+      vi.mocked(mockTablesDb.getRow).mockResolvedValue({
         ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
-        version: 0,
-      });
-
-      // 2. Double-check (TOCTOU) - Return a different version now!
-      vi.mocked(mockTablesDb.getRow).mockResolvedValueOnce({
-        ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
-        version: 1, // Changed by another process!
-      });
-
-      vi.mocked(mockTablesDb.upsertRow).mockResolvedValue(
-        createMockBase("any", config.wishlistItemsCollectionId),
-      );
+        version: 5, // Changed by another process!
+      } as unknown as Models.Row);
 
       const wishlistToUpdate = Wishlist.reconstitute({
         ...mockWishlist.toProps(),
-        version: 1, // Updating from 0 to 1
-        items: [],
+        version: 1, // Updating to 1
+        items: [
+          {
+            id: "550e8400-e29b-41d4-a716-446655440002",
+            wishlistId: mockWishlist.id,
+            name: "Item 1",
+            priority: Priority.MEDIUM,
+            totalQuantity: 1,
+            reservedQuantity: 0,
+            purchasedQuantity: 0,
+            isUnlimited: false,
+          },
+        ],
       });
 
       await expect(repository.save(wishlistToUpdate)).rejects.toThrow(
         /Concurrency conflict \(TOCTOU\)/,
       );
+
+      // Verify that item sync was NEVER called because the conflict check happened first
+      expect(mockTablesDb.upsertRow).not.toHaveBeenCalled();
+      expect(mockTablesDb.deleteRow).not.toHaveBeenCalled();
     });
   });
   describe("findById", () => {

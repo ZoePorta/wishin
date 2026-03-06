@@ -15,6 +15,8 @@ describe("WishlistItemMapper", () => {
     imageUrl?: string | null;
     isUnlimited: boolean;
     totalQuantity: number;
+    reservedQuantity: number;
+    purchasedQuantity: number;
     id?: string;
     $sequence: number;
   }
@@ -50,14 +52,14 @@ describe("WishlistItemMapper", () => {
       imageUrl: itemProps.imageUrl,
       isUnlimited: itemProps.isUnlimited,
       totalQuantity: itemProps.totalQuantity,
+      reservedQuantity: itemProps.reservedQuantity,
+      purchasedQuantity: itemProps.purchasedQuantity,
     });
   });
 
   it("should map persistence document to domain entity", () => {
     const { id, ...propsWithoutId } = itemProps;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { reservedQuantity, purchasedQuantity, ...propsForDoc } =
-      propsWithoutId;
+    const propsForDoc = propsWithoutId;
 
     const doc: WishlistItemDocument = {
       $id: id,
@@ -94,6 +96,8 @@ describe("WishlistItemMapper", () => {
       priority: itemProps.priority,
       isUnlimited: itemProps.isUnlimited,
       totalQuantity: itemProps.totalQuantity,
+      reservedQuantity: 0,
+      purchasedQuantity: 0,
       description: null,
       price: null,
       currency: null,
@@ -106,7 +110,7 @@ describe("WishlistItemMapper", () => {
     expect(domain.imageUrl).toBeUndefined();
   });
 
-  it("should map persistence document with specific quantities via options object", () => {
+  it("should map persistence document with specific quantities", () => {
     const doc: WishlistItemDocument = {
       $id: itemProps.id,
       $collectionId: "wishlist_items",
@@ -120,12 +124,11 @@ describe("WishlistItemMapper", () => {
       priority: itemProps.priority,
       isUnlimited: itemProps.isUnlimited,
       totalQuantity: itemProps.totalQuantity,
-    };
-
-    const domain = WishlistItemMapper.toDomain(doc, {
       reservedQuantity: 5,
       purchasedQuantity: 3,
-    });
+    };
+
+    const domain = WishlistItemMapper.toDomain(doc);
 
     expect(domain.reservedQuantity).toBe(5);
     expect(domain.purchasedQuantity).toBe(3);
@@ -139,6 +142,8 @@ describe("WishlistItemMapper", () => {
       priority: "2", // String from DB
       isUnlimited: false,
       totalQuantity: 1,
+      reservedQuantity: 0,
+      purchasedQuantity: 0,
     } as unknown as Models.Document;
 
     const domain = WishlistItemMapper.toDomain(doc);
@@ -153,6 +158,8 @@ describe("WishlistItemMapper", () => {
       priority: 99, // Invalid value
       isUnlimited: false,
       totalQuantity: 1,
+      reservedQuantity: 0,
+      purchasedQuantity: 0,
     } as unknown as Models.Document;
 
     const domain = WishlistItemMapper.toDomain(doc);

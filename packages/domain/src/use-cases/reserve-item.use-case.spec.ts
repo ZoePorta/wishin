@@ -258,4 +258,78 @@ describe("ReserveItemUseCase", () => {
     const savedTransaction = transactionRepo.save.mock.calls[0][0];
     expect(savedTransaction.toProps().ownerUsername).toBe("Unknown User");
   });
+
+  it("should attempt compensating rollback if transaction save fails", async () => {
+    const item = WishlistItem.reconstitute({
+      id: itemId,
+      wishlistId,
+      name: "Test Item",
+      description: "Item desc",
+      priority: Priority.MEDIUM,
+      price: 10,
+      currency: "EUR",
+      isUnlimited: false,
+      totalQuantity: 5,
+      reservedQuantity: 0,
+      purchasedQuantity: 0,
+    });
+    const wishlist = Wishlist.reconstitute({
+      id: wishlistId,
+      ownerId,
+      title: "My Wishlist",
+      visibility: Visibility.LINK,
+      participation: Participation.ANYONE,
+      items: [item.toProps()],
+      version: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const profile = Profile.reconstitute({ id: userId, username: "testuser" });
+    const ownerProfile = Profile.reconstitute({
+      id: ownerId,
+      username: "owner",
+    });
+
+    wishlistRepo.findById.mockResolvedValue(wishlist);
+    profileRepo.findById.mockImplementation(async (id: string) => {
+      if (id === userId) return profile;
+      if (id === ownerId) return ownerProfile;
+      return null;
+    });
+
+    // Mock transaction save to fail
+    const transactionError = new Error("Database error");
+    transactionRepo.save.mockRejectedValue(transactionError);
+
+    await expect(
+      useCase.execute({
+        wishlistId,
+        itemId,
+        userId,
+        quantity: 1,
+      }),
+    ).rejects.toThrow(transactionError);
+
+    // Verify 1st save (reservation) and 2nd save (rollback)
+    expect(wishlistRepo.save).toHaveBeenCalledTimes(2);
+
+    // Initial save: version 1 (reconstituted with 0, reserveItem increments to 1)
+    const firstSave = wishlistRepo.save.mock.calls[0][0];
+    expect(firstSave.version).toBe(1);
+    expect(firstSave.items[0].reservedQuantity).toBe(1);
+
+    // Rollback save: version 2
+    const secondSave = wishlistRepo.save.mock.calls[1][0];
+    expect(secondSave.version).toBe(2);
+    expect(secondSave.items[0].reservedQuantity).toBe(0);
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "Transaction save failed after wishlist update. Attempting compensating rollback.",
+      expect.any(Object),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      "Compensating rollback successful",
+      expect.any(Object),
+    );
+  });
 });

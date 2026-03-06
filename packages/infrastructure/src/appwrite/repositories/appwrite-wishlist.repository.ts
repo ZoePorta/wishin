@@ -239,6 +239,7 @@ export class AppwriteWishlistRepository
     await this.ensureSession();
 
     // 2. Fetch current version for optimistic locking (ADR 022)
+    // Double-check version immediately before write to prevent TOCTOU (ADR 023)
     try {
       const existingDoc = await this.tablesDb.getRow({
         databaseId: this.databaseId,
@@ -253,7 +254,7 @@ export class AppwriteWishlistRepository
       // So the expected version in DB should be wishlist.version - 1
       if (currentVersion !== wishlist.version - 1) {
         throw new Error(
-          `Concurrency conflict: Wishlist ${
+          `Concurrency conflict (TOCTOU): Wishlist ${
             wishlist.id
           } version mismatch (DB: ${String(currentVersion)}, Expecting: ${String(
             wishlist.version - 1,
@@ -265,7 +266,7 @@ export class AppwriteWishlistRepository
         // If 404, it's a new wishlist, proceed with save (version should be 0)
         if (wishlist.version !== 0) {
           throw new Error(
-            `Validation error: New wishlist ${wishlist.id} must have version 0 (got ${String(wishlist.version)})`,
+            `Validation error (TOCTOU): New wishlist ${wishlist.id} must have version 0 (got ${String(wishlist.version)})`,
           );
         }
       } else {
@@ -350,37 +351,8 @@ export class AppwriteWishlistRepository
       }
     }
 
-    // 3. Upsert Wishlist Document AFTER successful item sync
-    // Double-check version immediately before write to prevent TOCTOU (ADR 023)
-    try {
-      const reFetchDoc = await this.tablesDb.getRow({
-        databaseId: this.databaseId,
-        tableId: this.wishlistCollectionId,
-        rowId: wishlist.id,
-      });
-      const data = reFetchDoc as unknown as { version?: number };
-      const currentVersion = data.version ?? 0;
-
-      if (currentVersion !== wishlist.version - 1) {
-        throw new Error(
-          `Concurrency conflict (TOCTOU): Wishlist ${
-            wishlist.id
-          } version mismatch (DB: ${String(currentVersion)}, Expecting: ${String(
-            wishlist.version - 1,
-          )})`,
-        );
-      }
-    } catch (error: unknown) {
-      if (error instanceof AppwriteException && error.code === 404) {
-        if (wishlist.version !== 0) {
-          throw new Error(
-            `Validation error (TOCTOU): New wishlist ${wishlist.id} must have version 0 (got ${String(wishlist.version)})`,
-          );
-        }
-      } else {
-        throw error;
-      }
-    }
+    // 3. Upsert Wishlist Document AFTER successful items sync
+    // (Version check already performed at step 2 to prevent TOCTOU)
 
     await this.tablesDb.upsertRow({
       databaseId: this.databaseId,

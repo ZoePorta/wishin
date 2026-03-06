@@ -21,6 +21,10 @@ import type { WishlistOutput } from "./dtos/get-wishlist.dto";
  * 4. Updating the wishlist item's reserved quantity.
  * 5. Creating and persisting a reservation transaction.
  *
+ * FIXME: Sequential saves below break atomicity (ADR 023).
+ * Current mitigation: Compensating rollback for MVP.
+ * Long-term fix: Move to Appwrite Functions (Phase 6) for server-side atomic multi-entity updates.
+ *
  * @throws {WishlistNotFoundError} If the wishlist is not found.
  * @throws {InvalidOperationError} If the user is not registered or the item is missing.
  * @throws {NotFoundError} If the wishlist or item not found.
@@ -34,7 +38,6 @@ export class ReserveItemUseCase {
    * @param wishlistRepository - Repository for wishlist operations.
    * @param profileRepository - Repository for profile metadata.
    * @param transactionRepository - Repository for transaction persistence.
-   * @param unitOfWork - Unit of work for atomic operations.
    * @param logger - Logger for operational telemetry.
    * @param uuidFn - Optional factory for unique IDs.
    */
@@ -51,10 +54,9 @@ export class ReserveItemUseCase {
    * Executes the reservation logic.
    *
    * @param input - Reservation details.
-   * @returns The updated wishlist as a DTO.
+   * @returns {Promise<WishlistOutput>} The updated wishlist as a DTO.
    * @throws {WishlistNotFoundError} If the wishlist id does not exist.
-   * @throws {NotFoundError} If the wishlist or item not found.
-   * @throws {InvalidOperationError} For business rule violations (e.g., non-registered user).
+   * @throws {InvalidOperationError} If the user is not registered or the item is missing, or for business rule violations.
    * @throws {Error} For unexpected failures.
    */
   async execute(input: ReserveItemInput): Promise<WishlistOutput> {
@@ -103,9 +105,38 @@ export class ReserveItemUseCase {
       ownerUsername: ownerUsername,
     });
 
-    // 3. Persist Atomic Changes (Sequential saves for MVP)
+    // 3. Persist Changes (Non-atomic sequential saves for MVP)
+    // TODO: Upgrade to server-side atomicity in Phase 6.
     await this.wishlistRepository.save(updatedWishlist);
-    await this.transactionRepository.save(transaction);
+
+    try {
+      await this.transactionRepository.save(transaction);
+    } catch (error: unknown) {
+      // Compensating Rollback: Attempt to undo the reservation in the wishlist
+      this.logger.error(
+        "Transaction save failed after wishlist update. Attempting compensating rollback.",
+        { wishlistId: wishlist.id, itemId: input.itemId },
+      );
+
+      try {
+        const rollbackWishlist = updatedWishlist.cancelItemReservation(
+          input.itemId,
+          input.quantity,
+        );
+        await this.wishlistRepository.save(rollbackWishlist);
+        this.logger.info("Compensating rollback successful", {
+          wishlistId: wishlist.id,
+        });
+      } catch (rollbackError: unknown) {
+        this.logger.error("CRITICAL: Compensating rollback failed", {
+          originalError: error,
+          rollbackError,
+          wishlistId: wishlist.id,
+        });
+      }
+
+      throw error; // Rethrow original error
+    }
 
     return WishlistOutputMapper.toDTO(updatedWishlist);
   }

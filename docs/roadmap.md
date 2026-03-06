@@ -114,9 +114,11 @@
 
 ---
 
-## Phase 6: Automated Notifications
+## Phase 6: Automated Notifications & Advanced Integrity
 
 - [ ] **Pruning Alerts**: Implement Appwrite Function (DB Trigger) to notify users when a transaction status changes to `CANCELLED_BY_OWNER`.
+- [ ] **Transactional Atomicity (Server-side)**: Implement Appwrite Functions to handle complex multi-entity updates (e.g., Stock + Transaction + Wishlist Version) atomically on the server. This supersedes the client-side sequential saves for critical paths.
+- [ ] **Task: Server-side Counters Integration**: Implement Appwrite Functions triggered by transaction creations/deletions to update `WishlistItem` counters (`reservedQuantity`, `purchasedQuantity`) atomically on the server for improved consistency and performance.
 
 ---
 
@@ -124,7 +126,6 @@
 
 - [ ] **Selective Pruning**: Implement logic to preserve reservations when reducing total quantity (replaces ADR 019).
 - [ ] **Advanced Notifications**: Implement real-time alerts for reservation cancellations (pruning, expiration).
-- [ ] **Task: Server-side Counters Integration**: Implement Appwrite Functions triggered by transaction creations/deletions to update `WishlistItem` counters (`reservedQuantity`, `purchasedQuantity`) atomically on the server for improved consistency and performance.
 - [ ] **Transaction Data Sync**: Implement an Appwrite Function (DB Trigger) to synchronize denormalized fields and resolve data staleness (ADR 021).
   - **Triggers**: `WishlistItem` metadata updates or `Profile` username changes.
   - **Sync Rules**:
