@@ -59,7 +59,6 @@ describe("WishlistItemMapper", () => {
 
   it("should map persistence document to domain entity", () => {
     const { id, ...propsWithoutId } = itemProps;
-    const propsForDoc = propsWithoutId;
 
     const doc: WishlistItemDocument = {
       $id: id,
@@ -69,7 +68,7 @@ describe("WishlistItemMapper", () => {
       $updatedAt: "2024-01-01T00:00:00.000Z",
       $permissions: [] as string[],
       $sequence: 0,
-      ...propsForDoc,
+      ...propsWithoutId,
     };
 
     const domain = WishlistItemMapper.toDomain(doc);

@@ -290,7 +290,7 @@ describe("ReserveItemUseCase", () => {
       username: "owner",
     });
 
-    wishlistRepo.findById.mockResolvedValue(wishlist);
+    wishlistRepo.findById.mockResolvedValueOnce(wishlist);
     profileRepo.findById.mockImplementation(async (id: string) => {
       if (id === userId) return profile;
       if (id === ownerId) return ownerProfile;
@@ -300,6 +300,12 @@ describe("ReserveItemUseCase", () => {
     // Mock transaction save to fail
     const transactionError = new Error("Database error");
     transactionRepo.save.mockRejectedValue(transactionError);
+
+    // Mock the second findById call during rollback
+    // Note: The second findById returns the "fresh" state. In this test, we assume no concurrent modifications.
+    // However, after the first wishlistRepo.save, the DB would have version 1.
+    const wishlistWithReservation = wishlist.reserveItem(itemId, 1);
+    wishlistRepo.findById.mockResolvedValueOnce(wishlistWithReservation);
 
     await expect(
       useCase.execute({
@@ -318,6 +324,14 @@ describe("ReserveItemUseCase", () => {
     expect(firstSave.version).toBe(1);
     expect(firstSave.items[0].reservedQuantity).toBe(1);
 
+    /**
+     * NOTE: This test assumes no concurrent modifications between the failed transaction save
+     * and the compensating rollback. The mocked repository does not enforce optimistic-locking,
+     * so the observed rollback version (secondSave.version === 2) succeeds by coincidence.
+     * In the real repository (appwrite-wishlist repository behavior) a concurrent update
+     * could cause the rollback to be rejected due to version mismatch if findById is not used
+     * to fetch the latest state.
+     */
     // Rollback save: version 2
     const secondSave = wishlistRepo.save.mock.calls[1][0];
     expect(secondSave.version).toBe(2);

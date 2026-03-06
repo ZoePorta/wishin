@@ -32,14 +32,12 @@ export class AppwriteWishlistRepository
    * @param databaseId - The ID of the Appwrite database.
    * @param wishlistCollectionId - The ID of the wishlists collection.
    * @param wishlistItemsCollectionId - The ID of the wishlist items collection.
-   * @param transactionsCollectionId - The ID of the transactions collection.
    */
   constructor(
     private readonly client: Client,
     private readonly databaseId: string,
     private readonly wishlistCollectionId: string,
     private readonly wishlistItemsCollectionId: string,
-    private readonly transactionsCollectionId: string,
   ) {
     this.tablesDb = new TablesDB(this.client);
     this.account = new Account(this.client);
@@ -276,7 +274,7 @@ export class AppwriteWishlistRepository
 
     // 3. Sync Wishlist Items First (Atomicity step)
     // ... rest of the existing sync logic ...
-    // 2a. Get existing items IDs to identify removals
+    // 3a. Get existing items IDs to identify removals
     const existingItemIds: string[] = [];
     let existingCursor: string | undefined = undefined;
     do {
@@ -301,14 +299,14 @@ export class AppwriteWishlistRepository
       }
     } while (existingCursor);
 
-    // 2b. Prepare upserts and deletes
+    // 3b. Prepare upserts and deletes
     const currentItems = wishlist.items;
     const currentItemIds = new Set(currentItems.map((item) => item.id));
     const itemIdsToDelete = existingItemIds.filter(
       (id) => !currentItemIds.has(id),
     );
 
-    // 2c. Execute sync with retry logic
+    // 3c. Execute sync with retry logic
     const MAX_RETRIES = 2;
     let attempt = 0;
     while (attempt <= MAX_RETRIES) {

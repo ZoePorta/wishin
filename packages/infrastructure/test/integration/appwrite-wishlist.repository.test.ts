@@ -66,7 +66,6 @@ describe.skipIf(!shouldRun)(
         databaseId,
         wishlistCollectionId,
         wishlistItemsCollectionId,
-        transactionsCollectionId,
       );
     });
 

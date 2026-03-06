@@ -113,7 +113,6 @@ describe("AppwriteWishlistRepository", () => {
       config.databaseId,
       config.wishlistCollectionId,
       config.wishlistItemsCollectionId,
-      config.transactionsCollectionId,
     );
 
     mockAccount = repository.mockAccount;

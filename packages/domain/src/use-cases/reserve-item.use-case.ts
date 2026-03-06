@@ -27,7 +27,6 @@ import type { WishlistOutput } from "./dtos/get-wishlist.dto";
  *
  * @throws {WishlistNotFoundError} If the wishlist is not found.
  * @throws {InvalidOperationError} If the user is not registered or the item is missing.
- * @throws {NotFoundError} If the wishlist or item not found.
  * @throws {ValidationError} For invalid input (if applicable).
  * @throws {Error} For unexpected failures.
  */
@@ -119,14 +118,20 @@ export class ReserveItemUseCase {
       );
 
       try {
-        const rollbackWishlist = updatedWishlist.cancelItemReservation(
-          input.itemId,
-          input.quantity,
+        // Re-fetch to get the latest version and prevent optimistic lock failure (ADR 022)
+        const freshWishlist = await this.wishlistRepository.findById(
+          wishlist.id,
         );
-        await this.wishlistRepository.save(rollbackWishlist);
-        this.logger.info("Compensating rollback successful", {
-          wishlistId: wishlist.id,
-        });
+        if (freshWishlist) {
+          const rollbackWishlist = freshWishlist.cancelItemReservation(
+            input.itemId,
+            input.quantity,
+          );
+          await this.wishlistRepository.save(rollbackWishlist);
+          this.logger.info("Compensating rollback successful", {
+            wishlistId: wishlist.id,
+          });
+        }
       } catch (rollbackError: unknown) {
         this.logger.error("CRITICAL: Compensating rollback failed", {
           originalError: error,
