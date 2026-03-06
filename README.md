@@ -50,6 +50,7 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 ### 🤖 AI Governance & Observability
 
 - **Automated AI Review:** Integration of CodeRabbit to enforce architectural constraints and identify logical edge cases in every Pull Request.
+- [x] **Image Upload:** Integrate image upload for wishlist items and profile/wishlist headers.
 - **Real-time Telemetry:** Full visibility into system health and user behavior via Sentry and PostHog.
 
 ## Infrastructure & Database Setup

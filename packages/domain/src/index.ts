@@ -1,6 +1,7 @@
 export * from "./repositories/wishlist.repository";
 export * from "./repositories/user.repository";
 export * from "./repositories/transaction.repository";
+export * from "./repositories/storage.repository";
 export * from "./use-cases/get-wishlist-by-uuid.use-case";
 export * from "./use-cases/get-wishlist-by-owner.use-case";
 export * from "./use-cases/create-wishlist.use-case";
@@ -8,6 +9,9 @@ export * from "./use-cases/update-wishlist.use-case";
 export * from "./use-cases/add-wishlist-item.use-case";
 export * from "./use-cases/update-wishlist-item.use-case";
 export * from "./use-cases/remove-wishlist-item.use-case";
+export * from "./use-cases/upload-image.use-case";
+export * from "./use-cases/get-image-preview.use-case";
+export * from "./use-cases/delete-image.use-case";
 export * from "./use-cases/dtos";
 export * from "./use-cases/mappers/wishlist-output.mapper";
 export * from "./errors/domain-errors";
