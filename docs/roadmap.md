@@ -62,7 +62,7 @@
 
 - [x] Owner Dashboard: Form for wishlist creation and item management.
 - [ ] **UI Polish:** Refine styles, add micro-animations, and improve layout for the owner dashboard.
-- [ ] **Image Upload:** Integrate image upload for wishlist items and profile/wishlist headers.
+- [x] **Image Upload:** Integrate image upload for wishlist items and profile/wishlist headers. (Infrastructure & Use Cases complete)
 
 ---
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { UpdateWishlistItemUseCase } from "./update-wishlist-item.use-case";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
@@ -22,11 +21,16 @@ describe("UpdateWishlistItemUseCase", () => {
   const WISHLIST_ID = "550e8400-e29b-41d4-a716-446655440000";
   const ITEM_ID = "660e8400-e29b-41d4-a716-446655441111";
 
+  const repoFindById = vi.fn();
+  const repoSave = vi.fn();
+  const transactionCancelByItemId = vi.fn();
+
   beforeEach(() => {
+    vi.clearAllMocks();
     mockRepo = {
-      findById: vi.fn(),
+      findById: repoFindById,
       findByOwnerId: vi.fn(),
-      save: vi.fn(),
+      save: repoSave,
       delete: vi.fn(),
     };
     mockTransactionRepo = {
@@ -34,7 +38,7 @@ describe("UpdateWishlistItemUseCase", () => {
       findById: vi.fn(),
       findByItemId: vi.fn().mockResolvedValue([]),
       findByUserId: vi.fn().mockResolvedValue([]),
-      cancelByItemId: vi.fn(),
+      cancelByItemId: transactionCancelByItemId,
       delete: vi.fn(),
     };
     useCase = new UpdateWishlistItemUseCase(mockRepo, mockTransactionRepo);
@@ -71,8 +75,8 @@ describe("UpdateWishlistItemUseCase", () => {
   it("should successfully update item metadata and save", async () => {
     // Arrange
     const existingWishlist = createExistingWishlistWithItem();
-    mockRepo.findById = vi.fn().mockResolvedValue(existingWishlist);
-    mockRepo.save = vi.fn().mockResolvedValue(undefined);
+    repoFindById.mockResolvedValue(existingWishlist);
+    repoSave.mockResolvedValue(undefined);
 
     const input: UpdateWishlistItemInput = {
       wishlistId: WISHLIST_ID,
@@ -87,13 +91,11 @@ describe("UpdateWishlistItemUseCase", () => {
     const result = await useCase.execute(input);
 
     // Assert
-    expect(mockRepo.findById).toHaveBeenCalledWith(WISHLIST_ID);
-    expect(mockRepo.save).toHaveBeenCalledTimes(1);
+    expect(repoFindById).toHaveBeenCalledWith(WISHLIST_ID);
+    expect(repoSave).toHaveBeenCalledTimes(1);
 
-    const savedWishlist = vi.mocked(mockRepo.save).mock.calls[0][0];
-    const updatedItem = savedWishlist.items.find(
-      (i: WishlistItem) => i.id === ITEM_ID,
-    );
+    const savedWishlist = repoSave.mock.calls[0][0] as Wishlist;
+    const updatedItem = savedWishlist.items.find((i) => i.id === ITEM_ID);
     expect(updatedItem?.name).toBe("Updated Name");
     expect(updatedItem?.description).toBe("Updated Description");
     expect(updatedItem?.price).toBe(75);
@@ -107,8 +109,8 @@ describe("UpdateWishlistItemUseCase", () => {
   it("should cancel ALL reservations when totalQuantity reduction causes over-commitment (ADR 019)", async () => {
     // Arrange
     const existingWishlist = createExistingWishlistWithItem(); // total: 10, reserved: 2, purchased: 3
-    mockRepo.findById = vi.fn().mockResolvedValue(existingWishlist);
-    mockRepo.save = vi.fn().mockResolvedValue(undefined);
+    repoFindById.mockResolvedValue(existingWishlist);
+    repoSave.mockResolvedValue(undefined);
 
     const input: UpdateWishlistItemInput = {
       wishlistId: WISHLIST_ID,
@@ -120,7 +122,7 @@ describe("UpdateWishlistItemUseCase", () => {
     await useCase.execute(input);
 
     // Assert
-    const savedWishlist = vi.mocked(mockRepo.save).mock.calls[0][0];
+    const savedWishlist = repoSave.mock.calls[0][0] as Wishlist;
     const updatedItem = savedWishlist.items.find(
       (i: WishlistItem) => i.id === ITEM_ID,
     );
@@ -132,7 +134,7 @@ describe("UpdateWishlistItemUseCase", () => {
   it("should cancel all RESERVED transactions when item is pruned (ADR 019)", async () => {
     // Arrange
     const existingWishlist = createExistingWishlistWithItem(); // reserved: 2
-    mockRepo.findById = vi.fn().mockResolvedValue(existingWishlist);
+    repoFindById.mockResolvedValue(existingWishlist);
 
     mockTransactionRepo.save = vi.fn().mockResolvedValue(undefined);
 
@@ -146,12 +148,12 @@ describe("UpdateWishlistItemUseCase", () => {
     await useCase.execute(input);
 
     // Assert
-    expect(mockTransactionRepo.cancelByItemId).toHaveBeenCalledWith(ITEM_ID);
+    expect(transactionCancelByItemId).toHaveBeenCalledWith(ITEM_ID);
   });
 
   it("should throw WishlistNotFoundError if the wishlist does not exist", async () => {
     // Arrange
-    mockRepo.findById = vi.fn().mockResolvedValue(null);
+    repoFindById.mockResolvedValue(null);
 
     const input: UpdateWishlistItemInput = {
       wishlistId: "non-existent-id",
@@ -161,7 +163,7 @@ describe("UpdateWishlistItemUseCase", () => {
 
     // Act & Assert
     await expect(useCase.execute(input)).rejects.toThrow(WishlistNotFoundError);
-    expect(mockRepo.save).not.toHaveBeenCalled();
+    expect(repoSave).not.toHaveBeenCalled();
   });
 
   it("should throw WishlistItemNotFoundError if the item does not exist in the wishlist", async () => {
@@ -177,7 +179,7 @@ describe("UpdateWishlistItemUseCase", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    mockRepo.findById = vi.fn().mockResolvedValue(existingWishlist);
+    repoFindById.mockResolvedValue(existingWishlist);
 
     const input: UpdateWishlistItemInput = {
       wishlistId: WISHLIST_ID,
@@ -189,13 +191,13 @@ describe("UpdateWishlistItemUseCase", () => {
     await expect(useCase.execute(input)).rejects.toThrow(
       WishlistItemNotFoundError,
     );
-    expect(mockRepo.save).not.toHaveBeenCalled();
+    expect(repoSave).not.toHaveBeenCalled();
   });
 
   it("should throw InvalidAttributeError if validation fails (e.g., name too short)", async () => {
     // Arrange
     const existingWishlist = createExistingWishlistWithItem();
-    mockRepo.findById = vi.fn().mockResolvedValue(existingWishlist);
+    repoFindById.mockResolvedValue(existingWishlist);
 
     const input: UpdateWishlistItemInput = {
       wishlistId: WISHLIST_ID,
@@ -205,6 +207,6 @@ describe("UpdateWishlistItemUseCase", () => {
 
     // Act & Assert
     await expect(useCase.execute(input)).rejects.toThrow(InvalidAttributeError);
-    expect(mockRepo.save).not.toHaveBeenCalled();
+    expect(repoSave).not.toHaveBeenCalled();
   });
 });
