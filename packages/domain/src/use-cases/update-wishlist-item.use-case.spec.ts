@@ -11,6 +11,7 @@ import {
   InvalidAttributeError,
 } from "../errors/domain-errors";
 import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
+import type { WishlistItemOutput } from "./dtos/get-wishlist.dto";
 
 import type { TransactionRepository } from "../repositories/transaction.repository";
 
@@ -61,6 +62,7 @@ describe("UpdateWishlistItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [item.toProps()],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -89,15 +91,17 @@ describe("UpdateWishlistItemUseCase", () => {
     expect(mockRepo.save).toHaveBeenCalledTimes(1);
 
     const savedWishlist = vi.mocked(mockRepo.save).mock.calls[0][0];
-    const updatedItem = savedWishlist.items.find((i) => i.id === ITEM_ID);
+    const updatedItem = savedWishlist.items.find(
+      (i: WishlistItem) => i.id === ITEM_ID,
+    );
     expect(updatedItem?.name).toBe("Updated Name");
     expect(updatedItem?.description).toBe("Updated Description");
     expect(updatedItem?.price).toBe(75);
     expect(updatedItem?.priority).toBe(Priority.HIGH);
 
-    expect(result.items.find((i) => i.id === ITEM_ID)?.name).toBe(
-      "Updated Name",
-    );
+    expect(
+      result.items.find((i: WishlistItemOutput) => i.id === ITEM_ID)?.name,
+    ).toBe("Updated Name");
   });
 
   it("should cancel ALL reservations when totalQuantity reduction causes over-commitment (ADR 019)", async () => {
@@ -169,6 +173,7 @@ describe("UpdateWishlistItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

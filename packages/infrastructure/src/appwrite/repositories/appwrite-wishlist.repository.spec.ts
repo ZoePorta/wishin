@@ -22,6 +22,7 @@ interface MockRow extends Models.Document {
   userId?: string;
   status?: string;
   quantity?: number;
+  version?: number;
 }
 
 interface MockRowList {
@@ -92,7 +93,6 @@ describe("AppwriteWishlistRepository", () => {
     databaseId: "db-id",
     wishlistCollectionId: "wishlists-id",
     wishlistItemsCollectionId: "items-id",
-    transactionsCollectionId: "transactions-id",
   };
 
   class TestAppwriteWishlistRepository extends AppwriteWishlistRepository {
@@ -112,7 +112,6 @@ describe("AppwriteWishlistRepository", () => {
       config.databaseId,
       config.wishlistCollectionId,
       config.wishlistItemsCollectionId,
-      config.transactionsCollectionId,
     );
 
     mockAccount = repository.mockAccount;
@@ -220,6 +219,7 @@ describe("AppwriteWishlistRepository", () => {
       participation: Participation.REGISTERED,
       createdAt: new Date(),
       updatedAt: new Date(),
+      version: 0,
       items: [
         {
           id: "550e8400-e29b-41d4-a716-446655440002",
@@ -242,6 +242,9 @@ describe("AppwriteWishlistRepository", () => {
         rows: [],
         total: 0,
       } as MockRowList);
+      vi.mocked(mockTablesDb.getRow).mockRejectedValue(
+        new AppwriteException("Not found", 404),
+      );
       vi.mocked(mockTablesDb.upsertRow).mockResolvedValue(
         createMockBase("any", config.wishlistItemsCollectionId),
       );
@@ -254,7 +257,7 @@ describe("AppwriteWishlistRepository", () => {
       expect(upsertCalls[0][0]).toEqual(
         expect.objectContaining({ tableId: config.wishlistItemsCollectionId }),
       );
-      expect(upsertCalls[1][0]).toEqual(
+      expect(upsertCalls[upsertCalls.length - 1][0]).toEqual(
         expect.objectContaining({ tableId: config.wishlistCollectionId }),
       );
     });
@@ -269,6 +272,9 @@ describe("AppwriteWishlistRepository", () => {
       } as MockRowList);
 
       // Fail twice, then succeed
+      vi.mocked(mockTablesDb.getRow).mockRejectedValue(
+        new AppwriteException("Not found", 404),
+      );
       vi.mocked(mockTablesDb.upsertRow)
         .mockRejectedValueOnce(new Error("Transient error"))
         .mockRejectedValueOnce(new Error("Transient error"))
@@ -304,6 +310,9 @@ describe("AppwriteWishlistRepository", () => {
         ],
         total: 1,
       } as MockRowList);
+      vi.mocked(mockTablesDb.getRow).mockRejectedValue(
+        new AppwriteException("Not found", 404),
+      );
       vi.mocked(mockTablesDb.upsertRow).mockResolvedValue(
         createMockBase("any", config.wishlistItemsCollectionId),
       );
@@ -335,6 +344,9 @@ describe("AppwriteWishlistRepository", () => {
         ],
         total: 1,
       } as MockRowList);
+      vi.mocked(mockTablesDb.getRow).mockRejectedValue(
+        new AppwriteException("Not found", 404),
+      );
       vi.mocked(mockTablesDb.upsertRow).mockResolvedValue(
         createMockBase("any", config.wishlistItemsCollectionId),
       );
@@ -349,6 +361,82 @@ describe("AppwriteWishlistRepository", () => {
         tableId: config.wishlistItemsCollectionId,
         rowId: "550e8400-e29b-41d4-a716-446655440004",
       });
+    });
+
+    it("should throw error on concurrency conflict during saving", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
+      const conflictDoc = {
+        ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
+        version: 5, // different from expected 0
+      };
+      vi.mocked(mockTablesDb.getRow).mockResolvedValue(conflictDoc);
+
+      await expect(repository.save(mockWishlist)).rejects.toThrow(
+        /Concurrency conflict/,
+      );
+    });
+
+    it("should throw error when saving a new wishlist with version != 0", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
+      vi.mocked(mockTablesDb.getRow).mockRejectedValue(
+        new AppwriteException("Not found", 404),
+      );
+
+      const invalidNewWishlist = Wishlist.reconstitute({
+        ...mockWishlist.toProps(),
+        version: 1, // Invalid for a "new" wishlist
+        items: [],
+      });
+
+      await expect(repository.save(invalidNewWishlist)).rejects.toThrow(
+        /Validation error \(TOCTOU\): New wishlist.*must have version 0/,
+      );
+    });
+
+    it("should throw TOCTOU error if version changes between check and write and prevent mutations", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+        rows: [],
+        total: 0,
+      } as MockRowList);
+
+      // Return a version that will cause a conflict (should be wishlist.version - 1)
+      // Wishlist version is 1, so it expects 0 in DB.
+      vi.mocked(mockTablesDb.getRow).mockResolvedValue({
+        ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
+        version: 5, // Changed by another process!
+      } as unknown as Models.Row);
+
+      const wishlistToUpdate = Wishlist.reconstitute({
+        ...mockWishlist.toProps(),
+        version: 1, // Updating to 1
+        items: [
+          {
+            id: "550e8400-e29b-41d4-a716-446655440002",
+            wishlistId: mockWishlist.id,
+            name: "Item 1",
+            priority: Priority.MEDIUM,
+            totalQuantity: 1,
+            reservedQuantity: 0,
+            purchasedQuantity: 0,
+            isUnlimited: false,
+          },
+        ],
+      });
+
+      await expect(repository.save(wishlistToUpdate)).rejects.toThrow(
+        /Concurrency conflict \(TOCTOU\)/,
+      );
+
+      // Verify that item sync was NEVER called because the conflict check happened first
+      expect(mockTablesDb.upsertRow).not.toHaveBeenCalled();
+      expect(mockTablesDb.deleteRow).not.toHaveBeenCalled();
     });
   });
   describe("findById", () => {
@@ -402,13 +490,10 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,
       );
-      vi.mocked(mockTablesDb.listRows)
-        .mockResolvedValueOnce({
-          rows: [mockDoc],
-          total: 1,
-        } as MockRowList) // for findByOwnerId
-        .mockResolvedValue({ rows: [], total: 0 } as MockRowList); // for findById internal calls
-
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+        rows: [mockDoc],
+        total: 1,
+      } as MockRowList);
       vi.mocked(mockTablesDb.getRow).mockResolvedValue(mockDoc);
 
       const findByIdSpy = vi.spyOn(repository, "findById");
@@ -417,8 +502,8 @@ describe("AppwriteWishlistRepository", () => {
 
       expect(mockAccount.get).toHaveBeenCalledTimes(1);
       expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, false, false);
-      // The first call to listRows is in findByOwnerId, subsequent are in findById
-      expect(mockTablesDb.listRows).toHaveBeenCalled();
+      // The first call to listRows is in findByOwnerId
+      expect(mockTablesDb.listRows).toHaveBeenCalledTimes(1);
       // Assert hydration via internal findById calls by checking getRow
       expect(mockTablesDb.getRow).toHaveBeenCalledWith(
         expect.objectContaining({

@@ -3,11 +3,19 @@
  */
 export interface ReserveItemInput {
   /**
+   * UUID of the wishlist containing the item.
+   */
+  wishlistId: string;
+  /**
    * UUID of the item to reserve.
    */
   itemId: string;
   /**
-   * Amount of units to reserve.
+   * ID of the user performing the reservation.
+   */
+  userId: string;
+  /**
+   * Amount to reserve.
    */
   quantity: number;
 }

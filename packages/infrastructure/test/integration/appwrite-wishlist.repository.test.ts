@@ -66,7 +66,6 @@ describe.skipIf(!shouldRun)(
         databaseId,
         wishlistCollectionId,
         wishlistItemsCollectionId,
-        transactionsCollectionId,
       );
     });
 
@@ -117,7 +116,7 @@ describe.skipIf(!shouldRun)(
       }
     });
 
-    it("should find a wishlist by id including its items and calculated quantities", async () => {
+    it("should find a wishlist by id including its items and persisted quantities", async () => {
       // 0. Seed User Profile (Required for relationship)
       await tablesDb.createRow({
         databaseId,
@@ -142,7 +141,7 @@ describe.skipIf(!shouldRun)(
         },
       });
 
-      // 2. Seed Wishlist Items (WITHOUT reserved/purchased quantity)
+      // 2. Seed Wishlist Items (WITH persisted reserved/purchased quantity)
       await tablesDb.createRow({
         databaseId,
         tableId: wishlistItemsCollectionId,
@@ -153,10 +152,12 @@ describe.skipIf(!shouldRun)(
           priority: Priority.HIGH,
           totalQuantity: 5,
           isUnlimited: false,
+          reservedQuantity: 2,
+          purchasedQuantity: 0,
         },
       });
 
-      // 3. Seed Transactions (To verify calculation)
+      // 3. Seed Transactions (Kept for compatibility with other integration tests/manual verification; not used by WishlistRepository which reads counters directly)
       await tablesDb.createRow({
         databaseId,
         tableId: transactionsCollectionId,
@@ -169,7 +170,7 @@ describe.skipIf(!shouldRun)(
         },
       });
 
-      // 4. Wait for indices & Act
+      // 4. Wait for sync & Act
       await vi.waitUntil(
         async () => {
           const res = await repository.findById(wishlistId);
@@ -192,7 +193,7 @@ describe.skipIf(!shouldRun)(
       expect(result?.id).toBe(wishlistId);
       expect(result?.items).toHaveLength(1);
       expect(result?.items[0].name).toBe("Mechanical Keyboard");
-      // Verify calculated quantities
+      // Verify persisted quantities
       expect(result?.items[0].reservedQuantity).toBe(2);
       expect(result?.items[0].purchasedQuantity).toBe(0);
     });

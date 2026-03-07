@@ -60,6 +60,8 @@ interface ItemData {
   imageUrl?: string;
   isUnlimited?: boolean;
   totalQuantity?: number;
+  reservedQuantity?: number;
+  purchasedQuantity?: number;
 }
 type ItemRow = ItemData & Models.Row;
 
@@ -176,6 +178,8 @@ async function seed() {
         imageUrl:
           "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=800&q=80",
         totalQuantity: 3,
+        reservedQuantity: 1,
+        purchasedQuantity: 1,
       },
     });
 
@@ -193,6 +197,8 @@ async function seed() {
         imageUrl:
           "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
         totalQuantity: 2,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
       },
     });
 
@@ -209,6 +215,8 @@ async function seed() {
         imageUrl:
           "https://images.unsplash.com/photo-1589998059171-988d887df646?w=800&q=80",
         totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
       },
     });
 
@@ -221,6 +229,8 @@ async function seed() {
         name: "Cozy Wool Socks",
         priority: 4,
         isUnlimited: true,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
       },
     });
 
@@ -237,6 +247,8 @@ async function seed() {
         imageUrl:
           "https://images.unsplash.com/photo-1523362622744-8c1303cc1014?w=800&q=80",
         totalQuantity: 5,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
       },
     });
 
@@ -254,6 +266,8 @@ async function seed() {
         imageUrl:
           "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80",
         totalQuantity: 1,
+        reservedQuantity: 1,
+        purchasedQuantity: 0,
       },
     });
 
@@ -269,6 +283,8 @@ async function seed() {
         price: 1200.0,
         currency: "USD",
         totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 1,
       },
     });
 

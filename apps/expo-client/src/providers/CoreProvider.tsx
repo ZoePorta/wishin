@@ -28,7 +28,6 @@ function createRepositories() {
     Config.appwrite.databaseId,
     Config.collections.wishlists,
     Config.collections.wishlistItems,
-    Config.collections.transactions,
   );
 
   const transactionRepository = new AppwriteTransactionRepository(

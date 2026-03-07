@@ -82,6 +82,7 @@ export function reconstituteMockWishlist(): Wishlist {
     participation: MOCK_WISHLIST_DATA.participation,
     createdAt: new Date(MOCK_WISHLIST_DATA.createdAt),
     updatedAt: new Date(MOCK_WISHLIST_DATA.updatedAt),
+    version: 1,
     items: MOCK_WISHLIST_DATA.items.map((item) => {
       return {
         id: item.id,
