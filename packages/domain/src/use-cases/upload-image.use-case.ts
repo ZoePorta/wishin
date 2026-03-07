@@ -32,9 +32,7 @@ export class UploadImageUseCase {
       throw new ValidationError("Invalid file type. Only images are allowed.");
     }
 
-    const buffer =
-      file.buffer instanceof ArrayBuffer ? file.buffer : file.buffer.buffer;
-    const actualLength = buffer.byteLength;
+    const actualLength = file.buffer.byteLength;
 
     if (actualLength > UploadImageUseCase.MAX_FILE_SIZE) {
       const maxMb = String(UploadImageUseCase.MAX_FILE_SIZE / 1024 / 1024);

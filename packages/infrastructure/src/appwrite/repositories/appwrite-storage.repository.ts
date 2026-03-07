@@ -105,7 +105,7 @@ export class AppwriteStorageRepository
       // Platform-agnostic conversion to File for Appwrite SDK
       // This ensures we preserve the filename and MIME type.
       const file = new File(
-        [fileData.buffer as unknown as BlobPart],
+        [new Uint8Array(fileData.buffer)],
         fileData.filename,
         {
           type: fileData.mimeType,

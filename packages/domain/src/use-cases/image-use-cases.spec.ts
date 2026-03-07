@@ -70,6 +70,21 @@ describe("Image Use Cases", () => {
 
       expect(upload).not.toHaveBeenCalled();
     });
+
+    it("should upload successfully if file size is exactly at the limit", async () => {
+      const useCase = new UploadImageUseCase(mockStorageRepository);
+      const boundaryFile: FileData = {
+        ...validFileData,
+        size: UploadImageUseCase.MAX_FILE_SIZE,
+        buffer: new Uint8Array(UploadImageUseCase.MAX_FILE_SIZE),
+      };
+      upload.mockResolvedValue("file-boundary");
+
+      const result = await useCase.execute(boundaryFile);
+
+      expect(result).toBe("file-boundary");
+      expect(upload).toHaveBeenCalledWith(boundaryFile);
+    });
   });
 
   describe("GetImagePreviewUseCase", () => {
