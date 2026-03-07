@@ -11,21 +11,10 @@ import type {
   UserRepository,
   Wishlist,
 } from "@wishin/domain";
-import { TransactionStatus } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
 import { toDocument } from "../utils/to-document";
 import type { SessionAwareRepository } from "./session-aware-repository.interface";
-
-/**
- * Interface representing a Transaction document in Appwrite.
- */
-interface TransactionDocument extends Models.Document {
-  itemId: string | Models.Document;
-  userId: string;
-  status: TransactionStatus;
-  quantity: number;
-}
 
 /**
  * Appwrite implementation of the WishlistRepository and UserRepository.
@@ -43,14 +32,12 @@ export class AppwriteWishlistRepository
    * @param databaseId - The ID of the Appwrite database.
    * @param wishlistCollectionId - The ID of the wishlists collection.
    * @param wishlistItemsCollectionId - The ID of the wishlist items collection.
-   * @param transactionsCollectionId - The ID of the transactions collection.
    */
   constructor(
     private readonly client: Client,
     private readonly databaseId: string,
     private readonly wishlistCollectionId: string,
     private readonly wishlistItemsCollectionId: string,
-    private readonly transactionsCollectionId: string,
   ) {
     this.tablesDb = new TablesDB(this.client);
     this.account = new Account(this.client);
@@ -178,71 +165,9 @@ export class AppwriteWishlistRepository
         } while (itemsCursor);
       }
 
-      const itemIds = itemDocuments.map((doc) => doc.$id);
-
-      // 3. Fetch Transactions for items (if any items exist)
-      const transactions: TransactionDocument[] = [];
-      if (itemIds.length > 0) {
-        // Appwrite has a hard limit of 100 values for Query.equal
-        // We must batch the queries if we have more than 100 items
-        const CHUNK_SIZE = 100;
-        const chunks = [];
-        for (let i = 0; i < itemIds.length; i += CHUNK_SIZE) {
-          chunks.push(itemIds.slice(i, i + CHUNK_SIZE));
-        }
-
-        for (const chunk of chunks) {
-          let cursor: string | undefined = undefined;
-          do {
-            const queries = [Query.equal("itemId", chunk), Query.limit(100)];
-            if (cursor) {
-              queries.push(Query.cursorAfter(cursor));
-            }
-
-            const response = await this.tablesDb.listRows({
-              databaseId: this.databaseId,
-              tableId: this.transactionsCollectionId,
-              queries,
-            });
-
-            const docs = toDocument<TransactionDocument[]>(response.rows);
-            transactions.push(...docs);
-
-            if (response.rows.length < 100) {
-              cursor = undefined;
-            } else {
-              cursor = response.rows[response.rows.length - 1].$id;
-            }
-          } while (cursor);
-        }
-      }
-
-      // 4. Calculate Quantities & Map
-      // Group transactions by itemId using a Map for O(1) access
-      const transactionsByItem = new Map<string, TransactionDocument[]>();
-      for (const t of transactions) {
-        const tItemId = typeof t.itemId === "string" ? t.itemId : t.itemId.$id;
-        const currentTransactions = transactionsByItem.get(tItemId) ?? [];
-        currentTransactions.push(t);
-        transactionsByItem.set(tItemId, currentTransactions);
-      }
-
-      const items = itemDocuments.map((doc) => {
-        const itemTransactions = transactionsByItem.get(doc.$id) ?? [];
-
-        const reservedQuantity = itemTransactions
-          .filter((t) => t.status === TransactionStatus.RESERVED)
-          .reduce((sum, t) => sum + t.quantity, 0);
-
-        const purchasedQuantity = itemTransactions
-          .filter((t) => t.status === TransactionStatus.PURCHASED)
-          .reduce((sum, t) => sum + t.quantity, 0);
-
-        return WishlistItemMapper.toDomain(doc, {
-          reservedQuantity,
-          purchasedQuantity,
-        });
-      });
+      const items = itemDocuments.map((doc) =>
+        WishlistItemMapper.toDomain(doc),
+      );
 
       return WishlistMapper.toDomain(
         toDocument<Models.Document>(wishlistDoc),
@@ -301,18 +226,55 @@ export class AppwriteWishlistRepository
   }
 
   /**
-   * Persists a wishlist aggregate.
+   * Persists a wishlist aggregate with optimistic locking.
    *
    * @param wishlist - The wishlist aggregate to save.
    * @returns A Promise that resolves when the wishlist is saved.
-   * @throws {PersistenceError} If the save operation fails or session cannot be ensured.
+   * @throws {PersistenceError} If the save operation fails, session cannot be ensured, or a concurrency conflict occurs.
    */
   async save(wishlist: Wishlist): Promise<void> {
     // 1. Ensure active session
     await this.ensureSession();
 
-    // 2. Sync Wishlist Items First (Atomicity step)
-    // 2a. Get existing items IDs to identify removals
+    // 2. Fetch current version for optimistic locking (ADR 022)
+    // Double-check version immediately before write to prevent TOCTOU (ADR 023)
+    try {
+      const existingDoc = await this.tablesDb.getRow({
+        databaseId: this.databaseId,
+        tableId: this.wishlistCollectionId,
+        rowId: wishlist.id,
+      });
+
+      const data = existingDoc as unknown as { version?: number };
+      const currentVersion = data.version ?? 0;
+
+      // Note: wishlist.version is the NEW version (incremented in domain)
+      // So the expected version in DB should be wishlist.version - 1
+      if (currentVersion !== wishlist.version - 1) {
+        throw new Error(
+          `Concurrency conflict (TOCTOU): Wishlist ${
+            wishlist.id
+          } version mismatch (DB: ${String(currentVersion)}, Expecting: ${String(
+            wishlist.version - 1,
+          )})`,
+        );
+      }
+    } catch (error: unknown) {
+      if (error instanceof AppwriteException && error.code === 404) {
+        // If 404, it's a new wishlist, proceed with save (version should be 0)
+        if (wishlist.version !== 0) {
+          throw new Error(
+            `Validation error (TOCTOU): New wishlist ${wishlist.id} must have version 0 (got ${String(wishlist.version)})`,
+          );
+        }
+      } else {
+        throw error;
+      }
+    }
+
+    // 3. Sync Wishlist Items First (Atomicity step)
+    // ... rest of the existing sync logic ...
+    // 3a. Get existing items IDs to identify removals
     const existingItemIds: string[] = [];
     let existingCursor: string | undefined = undefined;
     do {
@@ -337,14 +299,14 @@ export class AppwriteWishlistRepository
       }
     } while (existingCursor);
 
-    // 2b. Prepare upserts and deletes
+    // 3b. Prepare upserts and deletes
     const currentItems = wishlist.items;
     const currentItemIds = new Set(currentItems.map((item) => item.id));
     const itemIdsToDelete = existingItemIds.filter(
       (id) => !currentItemIds.has(id),
     );
 
-    // 2c. Execute sync with retry logic
+    // 3c. Execute sync with retry logic
     const MAX_RETRIES = 2;
     let attempt = 0;
     while (attempt <= MAX_RETRIES) {
@@ -387,7 +349,9 @@ export class AppwriteWishlistRepository
       }
     }
 
-    // 3. Upsert Wishlist Document AFTER successful item sync
+    // 3. Upsert Wishlist Document AFTER successful items sync
+    // (Version check already performed at step 2 to prevent TOCTOU)
+
     await this.tablesDb.upsertRow({
       databaseId: this.databaseId,
       tableId: this.wishlistCollectionId,

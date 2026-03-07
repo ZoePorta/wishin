@@ -26,6 +26,7 @@ import { Visibility, Participation } from "../value-objects";
  * @property {Visibility} visibility - Visibility setting (LINK, PRIVATE).
  * @property {Participation} participation - Participation setting (ANYONE, REGISTERED).
  * @property {WishlistItemProps[]} items - Collection of WishlistItem Snapshots included in the list.
+ * @property {number} version - Logical version of the aggregate for optimistic locking.
  * @property {Date} createdAt - Timestamp when the wishlist was created.
  * @property {Date} updatedAt - Timestamp when the wishlist was last updated.
  */
@@ -37,6 +38,7 @@ export interface WishlistSnapshot {
   visibility: Visibility;
   participation: Participation;
   items: WishlistItemProps[];
+  version: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -54,6 +56,7 @@ interface WishlistProps {
   visibility: Visibility;
   participation: Participation;
   items: WishlistItem[];
+  version: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -119,6 +122,13 @@ export class Wishlist {
     return [...this.props.items];
   }
   /**
+   * Logical version of the aggregate for optimistic locking.
+   * @returns number
+   */
+  public get version(): number {
+    return this.props.version;
+  }
+  /**
    * Timestamp when the wishlist was created.
    * @returns Date
    */
@@ -148,8 +158,12 @@ export class Wishlist {
    * @throws {InvalidAttributeError} If validation fails (structural or business rules).
    */
   public static create(
-    props: Omit<WishlistSnapshot, "items" | "createdAt" | "updatedAt"> & {
+    props: Omit<
+      WishlistSnapshot,
+      "items" | "createdAt" | "updatedAt" | "version"
+    > & {
       items?: WishlistItem[];
+      version?: number;
       createdAt?: Date;
       updatedAt?: Date;
     },
@@ -165,6 +179,7 @@ export class Wishlist {
             ? props.description.trim()
             : props.description,
         items: props.items ? [...props.items] : [],
+        version: props.version ?? 0,
         createdAt: props.createdAt ? new Date(props.createdAt) : now,
         updatedAt: props.updatedAt ? new Date(props.updatedAt) : now,
       },
@@ -239,6 +254,7 @@ export class Wishlist {
       {
         ...this.toProps(),
         ...allowedProps,
+        version: this.version + 1,
         updatedAt: new Date(),
       },
       ValidationMode.STRICT,
@@ -273,6 +289,7 @@ export class Wishlist {
       {
         ...this.toProps(),
         items: [...this.items, ownedItem],
+        version: this.version + 1,
         updatedAt: new Date(),
       },
       ValidationMode.STRUCTURAL,
@@ -300,6 +317,7 @@ export class Wishlist {
         {
           ...this.toProps(),
           items: this.items.filter((item) => !item.equals(itemToRemove)), // Use equals
+          version: this.version + 1,
           updatedAt: new Date(),
         },
         ValidationMode.STRUCTURAL,
@@ -335,6 +353,7 @@ export class Wishlist {
       {
         ...this.toProps(),
         items: newItems,
+        version: this.version + 1,
         updatedAt: new Date(),
       },
       ValidationMode.STRUCTURAL,
@@ -366,6 +385,7 @@ export class Wishlist {
       {
         ...this.toProps(),
         items: newItems,
+        version: this.version + 1,
         updatedAt: new Date(),
       },
       ValidationMode.STRUCTURAL,
@@ -403,6 +423,7 @@ export class Wishlist {
       {
         ...this.toProps(),
         items: newItems,
+        version: this.version + 1,
         updatedAt: new Date(),
       },
       ValidationMode.STRUCTURAL,
@@ -434,6 +455,7 @@ export class Wishlist {
       {
         ...this.toProps(),
         items: newItems,
+        version: this.version + 1,
         updatedAt: new Date(),
       },
       ValidationMode.STRUCTURAL,
@@ -465,6 +487,7 @@ export class Wishlist {
       {
         ...this.toProps(),
         items: newItems,
+        version: this.version + 1,
         updatedAt: new Date(),
       },
       ValidationMode.STRUCTURAL,
@@ -549,6 +572,7 @@ export class Wishlist {
     return {
       ...this.props,
       items: [...this.props.items],
+      version: this.props.version,
       createdAt: new Date(this.props.createdAt.getTime()),
       updatedAt: new Date(this.props.updatedAt.getTime()),
     };

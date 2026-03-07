@@ -10,6 +10,7 @@ import {
   InvalidAttributeError,
 } from "../errors/domain-errors";
 import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
+import type { WishlistItemOutput } from "./dtos/get-wishlist.dto";
 
 import type { TransactionRepository } from "../repositories/transaction.repository";
 
@@ -65,6 +66,7 @@ describe("UpdateWishlistItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [item.toProps()],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -99,9 +101,9 @@ describe("UpdateWishlistItemUseCase", () => {
     expect(updatedItem?.price).toBe(75);
     expect(updatedItem?.priority).toBe(Priority.HIGH);
 
-    expect(result.items.find((i) => i.id === ITEM_ID)?.name).toBe(
-      "Updated Name",
-    );
+    expect(
+      result.items.find((i: WishlistItemOutput) => i.id === ITEM_ID)?.name,
+    ).toBe("Updated Name");
   });
 
   it("should cancel ALL reservations when totalQuantity reduction causes over-commitment (ADR 019)", async () => {
@@ -173,6 +175,7 @@ describe("UpdateWishlistItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

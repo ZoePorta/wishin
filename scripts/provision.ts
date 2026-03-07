@@ -167,6 +167,7 @@ const schema: CollectionSchema[] = [
       { key: "ownerId", type: "string", required: true, size: 255 },
       { key: "title", type: "string", required: true, size: 100 },
       { key: "description", type: "string", required: false, size: 500 },
+      { key: "version", type: "integer", required: false, default: 0 },
       {
         key: "visibility",
         type: "string",
@@ -203,6 +204,13 @@ const schema: CollectionSchema[] = [
       { key: "imageUrl", type: "string", required: false, size: 2048 },
       { key: "isUnlimited", type: "boolean", required: false, default: false },
       { key: "totalQuantity", type: "integer", required: false, default: 1 },
+      { key: "reservedQuantity", type: "integer", required: false, default: 0 },
+      {
+        key: "purchasedQuantity",
+        type: "integer",
+        required: false,
+        default: 0,
+      },
     ],
   },
   {

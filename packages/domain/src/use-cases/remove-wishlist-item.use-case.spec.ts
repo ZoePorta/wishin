@@ -44,6 +44,7 @@ describe("RemoveWishlistItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [item.toProps()],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -77,6 +78,7 @@ describe("RemoveWishlistItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

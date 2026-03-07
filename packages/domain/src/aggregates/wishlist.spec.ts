@@ -23,6 +23,7 @@ describe("Wishlist Aggregate", () => {
     description: "Things I want for my birthday",
     visibility: Visibility.LINK,
     participation: Participation.ANYONE,
+    version: 0,
   };
 
   describe("Equality", () => {
@@ -154,6 +155,7 @@ describe("Wishlist Aggregate", () => {
         expect.objectContaining({
           ...validProps,
           title: newTitle,
+          version: 1, // Incremented
           updatedAt: expect.any(Date) as unknown as Date,
         }),
       );

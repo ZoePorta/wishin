@@ -32,6 +32,7 @@ describe("AddWishlistItemUseCase", () => {
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
       items: [],
+      version: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

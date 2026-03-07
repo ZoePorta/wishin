@@ -11,6 +11,7 @@ interface WishlistDocument extends Models.Document {
   description: string | null;
   visibility: Visibility | string | null;
   participation: Participation | string | null;
+  version?: number;
 }
 
 /**
@@ -37,6 +38,7 @@ export const WishlistMapper = {
       description: props.description ?? null,
       visibility: props.visibility,
       participation: props.participation,
+      version: props.version,
     };
   },
 
@@ -60,6 +62,7 @@ export const WishlistMapper = {
         (data.participation?.toUpperCase() as Participation | undefined) ??
         Participation.ANYONE,
       items: items.map((item) => item.toProps()),
+      version: data.version ?? 0,
       createdAt: new Date(doc.$createdAt),
       updatedAt: new Date(doc.$updatedAt),
     });
