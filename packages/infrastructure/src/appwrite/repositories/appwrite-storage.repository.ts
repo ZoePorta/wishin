@@ -66,12 +66,15 @@ export class AppwriteStorageRepository
             this.sessionEnsured = true;
           } catch (sessionError: unknown) {
             throw new PersistenceError("Failed to create anonymous session", {
-              cause: sessionError,
+              cause:
+                sessionError instanceof Error
+                  ? sessionError
+                  : String(sessionError),
             });
           }
         } else {
           throw new PersistenceError("Failed to get current account", {
-            cause: error,
+            cause: error instanceof Error ? error : String(error),
           });
         }
       }
@@ -101,9 +104,13 @@ export class AppwriteStorageRepository
     try {
       // Platform-agnostic conversion to File for Appwrite SDK
       // This ensures we preserve the filename and MIME type.
-      const file = new File([fileData.buffer as BlobPart], fileData.filename, {
-        type: fileData.mimeType,
-      });
+      const file = new File(
+        [fileData.buffer as unknown as BlobPart],
+        fileData.filename,
+        {
+          type: fileData.mimeType,
+        },
+      );
 
       const result = await this.storage.createFile({
         bucketId: this.bucketId,
@@ -113,7 +120,7 @@ export class AppwriteStorageRepository
       return result.$id;
     } catch (error: unknown) {
       throw new PersistenceError("AppwriteStorageRepository.upload failed", {
-        cause: error,
+        cause: error instanceof Error ? error : String(error),
       });
     }
   }
@@ -140,7 +147,7 @@ export class AppwriteStorageRepository
         return; // Already deleted
       }
       throw new PersistenceError("AppwriteStorageRepository.delete failed", {
-        cause: error,
+        cause: error instanceof Error ? error : String(error),
       });
     }
   }

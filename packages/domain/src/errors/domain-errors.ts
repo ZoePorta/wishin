@@ -116,7 +116,7 @@ export class WishlistItemNotFoundError extends NotFoundError {
  * @returns {PersistenceError} An instance of PersistenceError.
  */
 export class PersistenceError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+  constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);
     this.name = "PersistenceError";
     Object.setPrototypeOf(this, PersistenceError.prototype);
