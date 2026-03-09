@@ -2,7 +2,7 @@ import type { AuthResult } from "../use-cases/dtos/auth.dto";
 
 /**
  * Repository interface for Authentication operations.
- * Wraps Appwrite Account service.
+ * Handles user identity, session management, and credential verification.
  */
 export interface AuthRepository {
   /**
@@ -25,14 +25,24 @@ export interface AuthRepository {
 
   /**
    * Initiates a login flow with Google OAuth2.
-   * @returns A Promise that resolves when the flow is initiated.
+   * @returns A Promise that resolves to the OAuth2 redirection URL.
    * @throws {Error} If the flow cannot be initiated.
    */
-  loginWithGoogle(): Promise<void>;
+  loginWithGoogle(): Promise<string>;
 
   /**
    * Logs out the current user session.
    * @returns A Promise that resolves when the logout is complete.
+   * @throws {Error} If logout fails.
    */
   logout(): Promise<void>;
+
+  /**
+   * Deletes a user by their ID.
+   * Used for cleanup during failed registration flows.
+   * @param userId - The unique identifier of the user to delete.
+   * @returns A Promise that resolves when the user is deleted.
+   * @throws {Error} If deletion fails.
+   */
+  deleteUser(userId: string): Promise<void>;
 }

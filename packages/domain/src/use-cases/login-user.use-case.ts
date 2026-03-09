@@ -1,4 +1,4 @@
-import type { LoginUserInput } from "./dtos/auth.dto";
+import type { LoginUserInput, AuthResult } from "./dtos/auth.dto";
 import type { AuthRepository } from "../repositories/auth.repository";
 
 /**
@@ -12,10 +12,10 @@ export class LoginUserUseCase {
    * Logs in a user with their credentials.
    *
    * @param input - The login credentials (email, password).
-   * @returns A Promise that resolves when login is successful.
+   * @returns A Promise that resolves to the AuthResult when login is successful.
    * @throws {Error} If login fails.
    */
-  async execute(input: LoginUserInput): Promise<void> {
-    await this.authRepo.login(input.email, input.password);
+  async execute(input: LoginUserInput): Promise<AuthResult> {
+    return await this.authRepo.login(input.email, input.password);
   }
 }

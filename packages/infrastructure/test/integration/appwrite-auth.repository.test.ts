@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { Client as ServerClient, Users } from "node-appwrite";
 import { randomUUID } from "node:crypto";
@@ -71,6 +70,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     expect(result).toBeDefined();
     expect(result.email).toBe(email);
     expect(result.userId).toBeDefined();
+    expect(result.isNewUser).toBe(true);
 
     createdUserId = result.userId;
   });
@@ -89,6 +89,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     expect(result).toBeDefined();
     expect(result.email).toBe(email);
     expect(result.userId).toBe(createdUserId);
+    expect(result.isNewUser).toBe(false);
   });
 
   it("should logout successfully", async () => {
@@ -101,22 +102,32 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     await repository.login(email, password);
 
     // 2. Logout
-    await expect(repository.logout()).resolves.not.toThrow();
+    await repository.logout();
+
+    // 3. Verify session was removed by attempting an authenticated call
+    // Using a fresh Account instance with the same client
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const account = new (vi.importActual("appwrite") as any).Account(client);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    await expect(account.get()).rejects.toThrow();
   });
 
-  it("should initiate Google OAuth2 flow", async () => {
-    // Create a spy on the account service within the repository to verify the call
-    const createOAuth2SessionSpy = vi.spyOn(
-      (repository as any).account,
-      "createOAuth2Session",
-    );
+  it("should initiate Google OAuth2 flow and return a URL", async () => {
+    // We use a partial object to avoid 'any' and handle the private property access
+    // in a way that doesn't require @typescript-eslint/no-unsafe-member-access disable globally
+    const repoWithPrivateAccess = repository as unknown as { account: any };
+    const mockUrl = "https://appwrite.io/oauth/google";
+    const createOAuth2TokenSpy = vi
+      .spyOn(repoWithPrivateAccess.account, "createOAuth2Token")
+      .mockReturnValue(mockUrl);
 
-    await repository.loginWithGoogle();
+    const result = await repository.loginWithGoogle();
 
-    expect(createOAuth2SessionSpy).toHaveBeenCalledWith({
+    expect(createOAuth2TokenSpy).toHaveBeenCalledWith({
       provider: OAuthProvider.Google,
     });
+    expect(result).toBe(mockUrl);
 
-    createOAuth2SessionSpy.mockRestore();
+    createOAuth2TokenSpy.mockRestore();
   });
 });

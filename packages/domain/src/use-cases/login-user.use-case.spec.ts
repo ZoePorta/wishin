@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { LoginUserUseCase } from "./login-user.use-case";
 import type { AuthRepository } from "../repositories/auth.repository";
@@ -12,6 +13,7 @@ describe("LoginUserUseCase", () => {
       login: vi.fn(),
       loginWithGoogle: vi.fn(),
       logout: vi.fn(),
+      deleteUser: vi.fn(),
     };
     useCase = new LoginUserUseCase(authRepo);
   });
@@ -21,18 +23,21 @@ describe("LoginUserUseCase", () => {
     password: "Password123!",
   };
 
-  it("should login a user successfully", async () => {
-    vi.mocked(authRepo.login).mockResolvedValue({
+  it("should login a user successfully and return AuthResult", async () => {
+    const authResult = {
       userId: "user-123",
       email: validLoginInput.email,
-    });
+      isNewUser: false,
+    };
+    vi.mocked(authRepo.login).mockResolvedValue(authResult);
 
-    await useCase.execute(validLoginInput);
+    const result = await useCase.execute(validLoginInput);
 
     expect(authRepo.login).toHaveBeenCalledWith(
       validLoginInput.email,
       validLoginInput.password,
     );
+    expect(result).toEqual(authResult);
   });
 
   it("should throw an error if login fails", async () => {

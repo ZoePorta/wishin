@@ -63,7 +63,6 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/no-explicit-any": "off", // Tests often mock with any
       "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/unbound-method": "off",
     },
   },
   {

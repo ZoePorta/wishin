@@ -27,13 +27,22 @@ export class RegisterUserUseCase {
       input.password,
     );
 
-    // 2. Create and Save Profile
-    // Using the same ID from Auth as the Profile ID (ADR 014/018)
-    const profile = Profile.create({
-      id: authResult.userId,
-      username: input.username,
-    });
+    try {
+      // 2. Create and Save Profile
+      // Using the same ID from Auth as the Profile ID (ADR 014/018)
+      const profile = Profile.create({
+        id: authResult.userId,
+        username: input.username,
+      });
 
-    await this.profileRepo.save(profile);
+      await this.profileRepo.save(profile);
+    } catch (error) {
+      // 3. Compensation: Delete the user ONLY if it was a newly created account
+      // If it was an anonymous promotion, we never delete to avoid data loss (ADR 018)
+      if (authResult.isNewUser) {
+        await this.authRepo.deleteUser(authResult.userId);
+      }
+      throw error;
+    }
   }
 }

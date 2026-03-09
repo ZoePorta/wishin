@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { RegisterUserUseCase } from "./register-user.use-case";
 import type { AuthRepository } from "../repositories/auth.repository";
@@ -15,6 +16,7 @@ describe("RegisterUserUseCase", () => {
       login: vi.fn(),
       loginWithGoogle: vi.fn(),
       logout: vi.fn(),
+      deleteUser: vi.fn(),
     };
     profileRepo = {
       findById: vi.fn(),
@@ -32,8 +34,9 @@ describe("RegisterUserUseCase", () => {
   it("should register a user and create a profile", async () => {
     const userId = "user-123";
     vi.mocked(authRepo.register).mockResolvedValue({
-      userId,
+      userId: "user-123",
       email: validRegistrationInput.email,
+      isNewUser: true,
     });
     vi.mocked(profileRepo.save).mockResolvedValue(undefined);
 
@@ -59,15 +62,33 @@ describe("RegisterUserUseCase", () => {
     expect(profileRepo.save).not.toHaveBeenCalled();
   });
 
-  it("should throw an error if profile creation fails", async () => {
+  it("should throw an error if profile creation fails and call compensation (deleteUser) if it was a new user", async () => {
+    const userId = "user-123";
     vi.mocked(authRepo.register).mockResolvedValue({
-      userId: "user-123",
+      userId,
       email: validRegistrationInput.email,
+      isNewUser: true,
     });
     vi.mocked(profileRepo.save).mockRejectedValue(new Error("DB failed"));
 
     await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
       "DB failed",
     );
+    expect(authRepo.deleteUser).toHaveBeenCalledWith(userId);
+  });
+
+  it("should throw an error if profile creation fails but NOT call compensation (deleteUser) if it was an anonymous promotion", async () => {
+    const userId = "user-123";
+    vi.mocked(authRepo.register).mockResolvedValue({
+      userId,
+      email: validRegistrationInput.email,
+      isNewUser: false,
+    });
+    vi.mocked(profileRepo.save).mockRejectedValue(new Error("DB failed"));
+
+    await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
+      "DB failed",
+    );
+    expect(authRepo.deleteUser).not.toHaveBeenCalled();
   });
 });
