@@ -8,7 +8,7 @@ Proposed
 
 The "Wishin" domain requires multi-entity updates for core gifting flows (e.g., updating a `WishlistItem` inventory and creating a `Transaction` record). Ideally, these operations should be atomic to ensure data consistency.
 
-However, the current infrastructure (Appwrite as a BaaS) does not support native cross-collection acid transactions directly from the client-side SDK.
+However, the current infrastructure (Appwrite as a BaaS) does not support native cross-collection ACID transactions directly from the client-side SDK.
 
 Implementing full atomicity at this stage would require migrating logic to server-side Appwrite Functions (Phase 6), which would significantly increase implementation complexity and delay the MVP.
 

@@ -119,18 +119,8 @@ Unlike other entities where business rules might evolve (e.g., username length),
 - **Behavior:**
   - Updates the `quantity` and `updatedAt` fields.
   - Used primarily in **Smart Consumption** to "shrink" redundant reservations.
+  - Throws `InvalidTransitionError` if status is `CANCELLED` or `CANCELLED_BY_OWNER`.
 - **Returns:** New `Transaction` instance with updated quantity.
-
-### `promoteToPurchase(newQuantity: number)`
-
-- **Effect:** Promotes a reservation to a purchase with a final quantity.
-- **Validation:** **STRICT**.
-- **Behavior:**
-  - Transitions `status` to `PURCHASED`.
-  - Updates `quantity` and `updatedAt`.
-  - **Preserves `createdAt`**.
-  - Throws `InvalidTransitionError` if current status is not `RESERVED`.
-- **Returns:** New `Transaction` instance.
 
 ### `equals(other: Transaction)`
 

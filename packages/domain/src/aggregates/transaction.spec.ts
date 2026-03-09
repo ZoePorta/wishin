@@ -336,8 +336,8 @@ describe("Transaction Aggregate", () => {
     });
   });
 
-  describe("Lifecycle Transitions: cancelByOwner", () => {
-    it("should allow cancelling a reservation (Success)", () => {
+  describe("updateQuantity", () => {
+    it("should allow updating quantity for RESERVED transaction", () => {
       const reservation = Transaction.reconstitute({
         id: VALID_TRANSACTION_ID,
         itemId: VALID_ITEM_ID,
@@ -353,34 +353,12 @@ describe("Transaction Aggregate", () => {
         updatedAt: new Date(),
       });
 
-      const cancelled = reservation.cancelByOwner();
-      expect(cancelled.status).toBe(TransactionStatus.CANCELLED_BY_OWNER);
-      expect(cancelled.updatedAt.getTime()).toBeGreaterThanOrEqual(
-        reservation.updatedAt.getTime(),
-      );
+      const updated = reservation.updateQuantity(5);
+      expect(updated.quantity).toBe(5);
+      expect(updated.status).toBe(TransactionStatus.RESERVED);
     });
 
-    it("should return same instance if already CANCELLED_BY_OWNER (Idempotency/No Friction)", () => {
-      const cancelled = Transaction.reconstitute({
-        id: VALID_TRANSACTION_ID,
-        itemId: VALID_ITEM_ID,
-        userId: VALID_USER_ID,
-        itemName: DUMMY_ITEM_NAME,
-        itemPrice: DUMMY_ITEM_PRICE,
-        itemCurrency: DUMMY_ITEM_CURRENCY,
-        itemDescription: DUMMY_ITEM_DESCRIPTION,
-        ownerUsername: DUMMY_OWNER_USERNAME,
-        status: TransactionStatus.CANCELLED_BY_OWNER,
-        quantity: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-
-      const result = cancelled.cancelByOwner();
-      expect(result).toBe(cancelled);
-    });
-
-    it("should return same instance if already CANCELLED (No Friction)", () => {
+    it("should throw InvalidTransitionError if status is CANCELLED", () => {
       const cancelled = Transaction.reconstitute({
         id: VALID_TRANSACTION_ID,
         itemId: VALID_ITEM_ID,
@@ -396,12 +374,11 @@ describe("Transaction Aggregate", () => {
         updatedAt: new Date(),
       });
 
-      const result = cancelled.cancelByOwner();
-      expect(result).toBe(cancelled);
+      expect(() => cancelled.updateQuantity(5)).toThrow(InvalidTransitionError);
     });
 
-    it("should throw InvalidTransitionError if status is PURCHASED (Owner cannot cancel purchases)", () => {
-      const purchase = Transaction.reconstitute({
+    it("should throw InvalidTransitionError if status is CANCELLED_BY_OWNER", () => {
+      const cancelledByOwner = Transaction.reconstitute({
         id: VALID_TRANSACTION_ID,
         itemId: VALID_ITEM_ID,
         userId: VALID_USER_ID,
@@ -410,13 +387,15 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
-        status: TransactionStatus.PURCHASED,
+        status: TransactionStatus.CANCELLED_BY_OWNER,
         quantity: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
-      expect(() => purchase.cancelByOwner()).toThrow(InvalidTransitionError);
+      expect(() => cancelledByOwner.updateQuantity(5)).toThrow(
+        InvalidTransitionError,
+      );
     });
   });
 

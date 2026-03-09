@@ -192,8 +192,22 @@ When a transaction is initiated (`createReservation` or `createPurchase`), the c
 To prevent duplicate inventory blocks and provide a seamless gifting experience, the domain implements a **Smart Consumption** strategy during the purchase flow.
 
 1.  **Intent Detection:** When a user initiates a purchase, the system automatically detects existing `RESERVED` transactions for the same item.
-2.  **History Preservation (Case Buy >= Reserved):** The oldest reservation is "promoted" to a purchase record. Its quantity is updated to the total requested amount, but it **retains its original creation date**. This honors the user's intent to gift desde the moment they made the reservation.
+2.  **History Preservation (Case Buy >= Reserved):** The oldest reservation is "promoted" to a purchase record. Its quantity is updated to the total requested amount, but it **retains its original creation date**. This honors the user's intent to gift since the moment they made the reservation.
 3.  **Partial Consumption (Case Buy < Reserved):** A new purchase record is created for the requested quantity, and the oldest reservation's quantity is reduced accordingly.
+
+#### 4.7.1 Concurrency and Multi-User Policy
+
+- **Policy**: A user can **only** consume reservations they own (`Transaction.userId` must match). Smart Consumption is strictly scoped to the purchasing user's active reservations to prevent accidental consumption of others' gift commitments.
+- **Concurrency Strategy**: Operations that modify `RESERVED` and create `PURCHASED` records must be guarded by **Optimistic Concurrency Control**. Entities use version/timestamp columns (ADR 012), and the application layer must implement retry logic on version conflicts.
+- **Anonymous Users**: As per Section 5.8, anonymous users cannot initiate reservations. Therefore, they are excluded from the promotion/consumption flow and always result in direct `PURCHASED` transactions.
+- **Identity Preservation**: A promoted reservation preserves the original `Transaction.userId`. It is never re-assigned to a different user.
+- **Race Conditions**: Sequence transitions (e.g., from `RESERVED` to `PURCHASED`) must be guarded by atomic infrastructure operations where possible or sequential checks to prevent double-spending/over-allocation.
+
+**Examples:**
+
+- **Own-Reservation**: User A has 1 reserved, buys 1. Reservation is promoted to Purchase (1 unit used).
+- **Cross-User**: User A has 1 reserved. User B buys 1. System ignores User A's reservation; User B creates a new Purchase record (Total: 1 Reserved + 1 Purchased).
+- **Concurrent Purchases**: Two users buy the last available unit simultaneously. Optimistic locking ensures only one succeeds while the other fails on the version check.
 
 ## 5. Domain Invariants & Lifecycle
 

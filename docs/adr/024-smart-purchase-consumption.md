@@ -28,18 +28,26 @@ When a user performs a purchase for `requestedQuantity`, the system automaticall
   - Its quantity is updated to the full `requestedQuantity`.
   - **Outcome**: A single purchase record that preserves the original reservation's `createdAt` timestamp.
   - _Any additional reservations (rare) are cancelled to clean up state._
-
 - **Case 2: requested < reserved** (Partial Consumption):
   - A NEW `PURCHASED` transaction is created for the `requestedQuantity`.
   - The oldest reservation's quantity is reduced (shrunk).
   - **Outcome**: The user has their new purchase record and still maintains the remaining reservation.
 
-### Domain Support
+### Concurrency and Atomicity
 
-To support this without breaking immutability, the `Transaction` entity includes:
+To prevent race conditions during the read-modify-write flow:
 
-- `promoteToPurchase(newQuantity)`: Updates status and quantity in one step.
-- `updateQuantity(newQuantity)`: Adjusts quantity while keeping other metadata and timestamps.
+- **Strategy**: Optimistic Concurrency Control using versioning (ADR 012).
+- **Isolation**: Operations that modify `RESERVED` and create `PURCHASED` must check the entity version before saving.
+- **Conflict Resolution**: If a version mismatch occurs (e.g., concurrent purchase or cancellation), the operation must abort and surface an error (allowing for application-level retries).
+
+### Domain Support (Immutability)
+
+The `Transaction` entity is **immutable**. Every state transition or quantity update returns a **new instance** reflecting the changes:
+
+- `confirmPurchase()`: Returns a new instance with `PURCHASED` status.
+- `updateQuantity(newQuantity)`: Returns a new instance with the updated quantity.
+- **Pattern**: The system ensures history preservation by passing the original `createdAt` date to the new instances during these transformations.
 
 ## Consequences
 
