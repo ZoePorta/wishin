@@ -155,6 +155,7 @@ To minimize friction while maintaining data integrity, anonymous actions are han
 
 - **Undo:** Available to everyone on Purchase. Deletes the transaction record. Only available immediately after the action.
 - **Cancellation:** Available to both **Registered** and **Anonymous** users (via ADR 018) via their "Gifting History", **restricted to their own transactions**. It transitions the transaction to a `CANCELLED` status (Soft Delete) for audit purposes.
+- **Smart Consumption:** Automatic logic during purchase that prioritizes existing reservations to prevent duplicate units (ADR 024).
 
 ### 4.6 Transaction Snapshot Pattern
 
@@ -185,6 +186,14 @@ When a transaction is initiated (`createReservation` or `createPurchase`), the c
 
 - **Fully Normalized**: Rejected due to N+1 query overhead in Appwrite.
 - **Versioned Entities**: Rejected for MVP due to high implementation and migration complexity.
+
+### 4.7 Smart Purchase & Reservation Consumption (ADR 024)
+
+To prevent duplicate inventory blocks and provide a seamless gifting experience, the domain implements a **Smart Consumption** strategy during the purchase flow.
+
+1.  **Intent Detection:** When a user initiates a purchase, the system automatically detects existing `RESERVED` transactions for the same item.
+2.  **History Preservation (Case Buy >= Reserved):** The oldest reservation is "promoted" to a purchase record. Its quantity is updated to the total requested amount, but it **retains its original creation date**. This honors the user's intent to gift desde the moment they made the reservation.
+3.  **Partial Consumption (Case Buy < Reserved):** A new purchase record is created for the requested quantity, and the oldest reservation's quantity is reduced accordingly.
 
 ## 5. Domain Invariants & Lifecycle
 

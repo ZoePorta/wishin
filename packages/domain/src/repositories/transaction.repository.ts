@@ -48,6 +48,19 @@ export interface TransactionRepository {
   ): Promise<Transaction[]>;
 
   /**
+   * Finds transactions for a specific user and item, filtered by status.
+   * @param userId - The user identity.
+   * @param itemId - The item UUID.
+   * @param status - Optional filter by transaction status.
+   * @returns {Promise<Transaction[]>}
+   */
+  findByUserIdAndItemId(
+    userId: string,
+    itemId: string,
+    status?: TransactionStatus,
+  ): Promise<Transaction[]>;
+
+  /**
    * Deletes a transaction by its ID (hard delete/undo).
    * This operation is idempotent; it returns success if the transaction doesn't exist.
    * @param id - The transaction UUID.

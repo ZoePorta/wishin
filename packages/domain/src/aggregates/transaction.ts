@@ -352,6 +352,50 @@ export class Transaction {
   }
 
   /**
+   * Updates the transaction quantity.
+   *
+   * @param {number} newQuantity - The new quantity.
+   * @returns {Transaction} New instance with updated quantity.
+   * @throws {InvalidAttributeError} If quantity is invalid.
+   */
+  public updateQuantity(newQuantity: number): Transaction {
+    return new Transaction(
+      {
+        ...this.toProps(),
+        quantity: newQuantity,
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRICT,
+    );
+  }
+
+  /**
+   * Promotes a reservation to a purchase with an updated quantity.
+   *
+   * @param {number} newQuantity - The new purchase quantity.
+   * @returns {Transaction} New instance with PURCHASED status and new quantity.
+   * @throws {InvalidTransitionError} If not a reservation.
+   * @throws {InvalidAttributeError} If quantity is invalid.
+   */
+  public promoteToPurchase(newQuantity: number): Transaction {
+    if (this.status !== TransactionStatus.RESERVED) {
+      throw new InvalidTransitionError(
+        "Only reservations can be promoted to purchases",
+      );
+    }
+
+    return new Transaction(
+      {
+        ...this.toProps(),
+        status: TransactionStatus.PURCHASED,
+        quantity: newQuantity,
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRICT,
+    );
+  }
+
+  /**
    * Identity-based equality check.
    *
    * @param {Transaction} other
