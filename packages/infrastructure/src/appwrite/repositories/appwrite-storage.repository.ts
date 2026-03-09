@@ -156,6 +156,7 @@ export class AppwriteStorageRepository
   /**
    * Retrieves the current user's unique identifier.
    * @returns {Promise<string>} The current user's unique identifier.
+   * @throws {PersistenceError} If the session cannot be retrieved.
    */
   async getCurrentUserId(): Promise<string> {
     const user = await this.ensureSession();
@@ -166,6 +167,7 @@ export class AppwriteStorageRepository
    * Returns a preview URL for the image.
    * @param fileId - The unique identifier of the file.
    * @returns A promise that resolves to the preview URL string.
+   * @throws {PersistenceError} If the preview cannot be generated.
    */
   async getPreview(fileId: string): Promise<string> {
     const result = this.storage.getFilePreview({
