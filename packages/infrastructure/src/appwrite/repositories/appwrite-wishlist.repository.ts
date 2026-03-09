@@ -10,6 +10,8 @@ import type {
   WishlistRepository,
   UserRepository,
   Wishlist,
+  Logger,
+  ObservabilityService,
 } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
@@ -32,12 +34,16 @@ export class AppwriteWishlistRepository
    * @param databaseId - The ID of the Appwrite database.
    * @param wishlistCollectionId - The ID of the wishlists collection.
    * @param wishlistItemsCollectionId - The ID of the wishlist items collection.
+   * @param logger - Logger for technical/operational logs.
+   * @param observability - Service for breadcrumbs and telemetry events.
    */
   constructor(
     private readonly client: Client,
     private readonly databaseId: string,
     private readonly wishlistCollectionId: string,
     private readonly wishlistItemsCollectionId: string,
+    private readonly logger: Logger,
+    private readonly observability: ObservabilityService,
   ) {
     this.tablesDb = new TablesDB(this.client);
     this.account = new Account(this.client);
@@ -409,6 +415,7 @@ export class AppwriteWishlistRepository
           $permissions: ____,
           $createdAt: _____,
           $updatedAt: ______,
+          $sequence: _______, // ADR 023: Omit Appwrite system field
           ...persistenceData
         } = oldItem as unknown as Record<string, unknown>;
 
@@ -448,14 +455,26 @@ export class AppwriteWishlistRepository
       );
       if (rejected.length > 0) {
         const errorMsg = `CRITICAL: Compensation failed for ${String(rejected.length)} operations during wishlist save rollback.`;
-        console.error(errorMsg, rejected);
+        this.logger.error(errorMsg, { rejected });
+        this.observability.trackEvent("compensation_failure", {
+          failedCount: rejected.length,
+          totalCount: results.length,
+        });
         throw new Error(errorMsg);
       }
     } catch (compensationError: unknown) {
-      console.error(
+      this.logger.error(
         "CRITICAL: Compensation logic failed to execute fully",
-        compensationError,
+        {
+          error:
+            compensationError instanceof Error
+              ? compensationError.message
+              : String(compensationError),
+        },
       );
+      this.observability.trackEvent("compensation_failed_exception", {
+        reason: "exception_in_retry_loop",
+      });
     }
   }
 

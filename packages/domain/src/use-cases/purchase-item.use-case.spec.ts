@@ -251,5 +251,8 @@ describe("PurchaseItemUseCase", () => {
         freshVersion: 2,
       }),
     );
+
+    // Verify that compensating delete still ran for the transaction (Duplicate Comment / ADR 023)
+    expect(transactionRepo.delete).toHaveBeenCalledWith(transactionId);
   });
 });

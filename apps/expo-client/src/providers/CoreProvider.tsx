@@ -28,6 +28,15 @@ function createRepositories() {
     Config.appwrite.databaseId,
     Config.collections.wishlists,
     Config.collections.wishlistItems,
+    console, // Simple Logger implementation
+    {
+      addBreadcrumb: (message, category, data) => {
+        console.log(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
+      },
+      trackEvent: (name, props) => {
+        console.log(`[Event] ${name}`, props);
+      },
+    }, // Simple Observability implementation using console for now
   );
 
   const transactionRepository = new AppwriteTransactionRepository(

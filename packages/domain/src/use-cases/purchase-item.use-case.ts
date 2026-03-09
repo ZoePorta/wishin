@@ -33,6 +33,14 @@ import type { WishlistOutput } from "./dtos/get-wishlist.dto";
  * @throws {Error} For unexpected failures.
  */
 export class PurchaseItemUseCase {
+  /**
+   * @param {WishlistRepository} wishlistRepository - Repository for wishlist persistence/retrieval.
+   * @param {ProfileRepository} profileRepository - Repository for user profile data.
+   * @param {TransactionRepository} transactionRepository - Repository for recording purchase transactions.
+   * @param {Logger} logger - Logger for technical/operational logs.
+   * @param {ObservabilityService} observability - Service for breadcrumbs and telemetry events.
+   * @param {() => string} [uuidFn] - Optional function to generate UUIDs (defaults to crypto.randomUUID).
+   */
   constructor(
     private readonly wishlistRepository: WishlistRepository,
     private readonly profileRepository: ProfileRepository,
@@ -124,7 +132,9 @@ export class PurchaseItemUseCase {
         {
           wishlistId: wishlist.id,
           itemId: input.itemId,
-          rollbackPlan,
+          itemQuantity: input.quantity,
+          wishlistVersion: wishlist.version,
+          pendingTransactionCount: rollbackPlan.pendingTransactions.length,
           error: errorMessage,
         },
       );
@@ -138,6 +148,23 @@ export class PurchaseItemUseCase {
       await this.rollback(rollbackPlan, input);
       throw error;
     }
+
+    // Success telemetry signal (ADR 023 / Review Comment)
+    this.observability.addBreadcrumb(
+      "Purchase completion successful",
+      "transaction",
+      {
+        wishlistId: updatedWishlist.id,
+        userId: input.userId,
+        itemId: input.itemId,
+      },
+    );
+    this.observability.trackEvent("purchase_completed", {
+      wishlistId: updatedWishlist.id,
+      userId: input.userId,
+      itemId: input.itemId,
+      quantity: input.quantity,
+    });
 
     return WishlistOutputMapper.toDTO(updatedWishlist);
   }
