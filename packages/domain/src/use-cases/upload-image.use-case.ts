@@ -9,19 +9,22 @@ import { ValidationError } from "../errors/domain-errors";
  */
 export class UploadImageUseCase {
   /**
-   * Maximum allowed file size for image uploads (20MB).
+   * Default maximum allowed file size for image uploads (20MB).
    * Aligned with Appwrite's optimization limits.
    */
-  public static readonly MAX_FILE_SIZE = 20 * 1024 * 1024;
+  public static readonly DEFAULT_MAX_FILE_SIZE = 20 * 1024 * 1024;
 
-  constructor(private readonly storageRepository: StorageRepository) {}
+  constructor(
+    private readonly storageRepository: StorageRepository,
+    private readonly maxFileSize: number = UploadImageUseCase.DEFAULT_MAX_FILE_SIZE,
+  ) {}
 
   /**
    * Executes the use case to upload a file after validation.
    *
    * Business Rules:
    * - Only images are allowed (MIME type must start with "image/").
-   * - File size must not exceed MAX_FILE_SIZE.
+   * - File size must not exceed the configured maxFileSize.
    *
    * @param file - The file data to upload.
    * @returns A Promise that resolves to the fileId of the uploaded image.
@@ -34,8 +37,8 @@ export class UploadImageUseCase {
 
     const actualLength = file.buffer.byteLength;
 
-    if (actualLength > UploadImageUseCase.MAX_FILE_SIZE) {
-      const maxMb = String(UploadImageUseCase.MAX_FILE_SIZE / 1024 / 1024);
+    if (actualLength > this.maxFileSize) {
+      const maxMb = String(this.maxFileSize / 1024 / 1024);
       throw new ValidationError(
         `File size exceeds the maximum limit of ${maxMb}MB.`,
       );

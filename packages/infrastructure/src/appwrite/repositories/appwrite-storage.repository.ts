@@ -128,6 +128,7 @@ export class AppwriteStorageRepository
   /**
    * Deletes a file from the Appwrite bucket.
    * @param fileId - The unique identifier of the file.
+   * @returns {Promise<void>} Resolves when the file is deleted or rejects with PersistenceError on failure.
    * @throws {PersistenceError} If the deletion fails.
    */
   async delete(fileId: string): Promise<void> {
@@ -154,6 +155,7 @@ export class AppwriteStorageRepository
 
   /**
    * Retrieves the current user's unique identifier.
+   * @returns {Promise<string>} The current user's unique identifier.
    */
   async getCurrentUserId(): Promise<string> {
     const user = await this.ensureSession();
