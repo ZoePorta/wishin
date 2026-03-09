@@ -17,14 +17,11 @@ import type { WishlistOutput } from "./dtos/get-wishlist.dto";
  *
  * This coordinates:
  * 1. Fetching the wishlist.
- * 2. Fetching existing reservations for the user to avoid duplicate commitments (Smart Consumption).
- * 3. Fetching the wishlist owner's username for denormalization.
- * 4. Updating the wishlist item's purchased quantity.
- * 5. Syncing transaction records (Preserving reservation history).
+ * 2. Updating the wishlist item's purchased quantity.
+ * 3. Recording a purchase transaction.
  *
- * Consumption Strategy:
- * - If requested >= totalReserved: Promo oldest reservation to PURCHASED with full quantity. Cancel others.
- * - If requested < totalReserved: Shrink oldest reservation and create NEW purchase record.
+ * NOTE: Advanced reservation promotion and "Smart Consumption" (ADR 024)
+ * are deferred per ADR 025. This use-case only handles direct purchases.
  *
  * FIXME: Sequential saves below break atomicity (ADR 023).
  * Mitigation: Multi-stage compensating rollback.
@@ -96,13 +93,14 @@ export class PurchaseItemUseCase {
     // 3. Persistence (Sequential saves for MVP)
     await this.wishlistRepository.save(updatedWishlist);
 
-    const transactionToRollbackIfFails = {
-      wishlist: wishlist, // Original state
-      pendingTransactions: [transaction],
+    const rollbackPlan = {
+      wishlist: wishlist, // Original state (version check will use this)
+      pendingTransactions: [] as Transaction[],
     };
 
     try {
       await this.transactionRepository.save(transaction);
+      rollbackPlan.pendingTransactions.push(transaction);
     } catch (error: unknown) {
       this.logger.error(
         "Purchase failed during transaction save. Attempting rollback.",
@@ -112,7 +110,7 @@ export class PurchaseItemUseCase {
           error: error instanceof Error ? error.message : String(error),
         },
       );
-      await this.rollback(transactionToRollbackIfFails, input);
+      await this.rollback(rollbackPlan, input);
       throw error;
     }
 
@@ -128,11 +126,24 @@ export class PurchaseItemUseCase {
       try {
         const fresh = await this.wishlistRepository.findById(plan.wishlist.id);
         if (fresh) {
-          const rolledBackWishlist = fresh.cancelItemPurchase(
-            input.itemId,
-            input.quantity,
-          );
-          await this.wishlistRepository.save(rolledBackWishlist);
+          // Optimistic version check: ensure it's exactly one version ahead (ours)
+          if (fresh.version === plan.wishlist.version + 1) {
+            const rolledBackWishlist = fresh.cancelItemPurchase(
+              input.itemId,
+              input.quantity,
+            );
+            await this.wishlistRepository.save(rolledBackWishlist);
+          } else {
+            this.logger.warn(
+              "Rollback skipped: Wishlist version mismatch (concurrent change detected).",
+              {
+                wishlistId: plan.wishlist.id,
+                itemId: input.itemId,
+                originalVersion: plan.wishlist.version,
+                freshVersion: fresh.version,
+              },
+            );
+          }
         }
       } catch (wishlistError) {
         this.logger.error("Failed to revert wishlist during rollback", {
