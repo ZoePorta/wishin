@@ -273,9 +273,8 @@ export class AppwriteWishlistRepository
     }
 
     // 3. Sync Wishlist Items First (Atomicity step)
-    // ... rest of the existing sync logic ...
-    // 3a. Get existing items IDs to identify removals
-    const existingItemIds: string[] = [];
+    // 3a. Get existing items for compensation backup
+    const existingItems: Models.Document[] = [];
     let existingCursor: string | undefined = undefined;
     do {
       const queries = [
@@ -290,7 +289,7 @@ export class AppwriteWishlistRepository
         tableId: this.wishlistItemsCollectionId,
         queries,
       });
-      existingItemIds.push(...response.rows.map((row) => row.$id));
+      existingItems.push(...toDocument<Models.Document[]>(response.rows));
 
       if (response.rows.length < 100) {
         existingCursor = undefined;
@@ -298,6 +297,8 @@ export class AppwriteWishlistRepository
         existingCursor = response.rows[response.rows.length - 1].$id;
       }
     } while (existingCursor);
+
+    const existingItemIds = existingItems.map((row) => row.$id);
 
     // 3b. Prepare upserts and deletes
     const currentItems = wishlist.items;
@@ -351,13 +352,54 @@ export class AppwriteWishlistRepository
 
     // 3. Upsert Wishlist Document AFTER successful items sync
     // (Version check already performed at step 2 to prevent TOCTOU)
+    try {
+      await this.tablesDb.upsertRow({
+        databaseId: this.databaseId,
+        tableId: this.wishlistCollectionId,
+        rowId: wishlist.id,
+        data: WishlistMapper.toPersistence(wishlist),
+      });
+    } catch (saveError: unknown) {
+      // 4. COMPENSATION: Best-effort rollback of item changes (ADR 023)
+      console.error(
+        `Wishlist ${wishlist.id} header save failed. Reverting item changes.`,
+        saveError,
+      );
 
-    await this.tablesDb.upsertRow({
-      databaseId: this.databaseId,
-      tableId: this.wishlistCollectionId,
-      rowId: wishlist.id,
-      data: WishlistMapper.toPersistence(wishlist),
-    });
+      try {
+        // 4a. Restore deleted/modified items
+        const restorePromises = existingItems.map((oldItem) =>
+          this.tablesDb.upsertRow({
+            databaseId: this.databaseId,
+            tableId: this.wishlistItemsCollectionId,
+            rowId: oldItem.$id,
+            data: oldItem,
+          }),
+        );
+
+        // 4b. Delete newly created items
+        const currentItemIds = new Set(currentItems.map((item) => item.id));
+        const newItemIdsToDelete = Array.from(currentItemIds).filter(
+          (id) => !existingItemIds.includes(id),
+        );
+        const cleanupPromises = newItemIdsToDelete.map((id) =>
+          this.tablesDb.deleteRow({
+            databaseId: this.databaseId,
+            tableId: this.wishlistItemsCollectionId,
+            rowId: id,
+          }),
+        );
+
+        await Promise.allSettled([...restorePromises, ...cleanupPromises]);
+      } catch (compensationError: unknown) {
+        console.error(
+          "CRITICAL: Compensation failed during wishlist save rollback",
+          compensationError,
+        );
+      }
+
+      throw saveError;
+    }
   }
 
   /**

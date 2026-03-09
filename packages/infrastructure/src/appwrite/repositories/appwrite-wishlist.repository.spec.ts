@@ -30,8 +30,17 @@ interface MockRowList {
   total: number;
 }
 
-function isUpsertCall(arg: unknown): arg is { tableId: string } {
-  return typeof arg === "object" && arg !== null && "tableId" in arg;
+function isUpsertCall(
+  arg: unknown,
+): arg is { tableId: string; data: Record<string, unknown> } {
+  return (
+    typeof arg === "object" &&
+    arg !== null &&
+    "tableId" in arg &&
+    "data" in arg &&
+    typeof (arg as { data: unknown }).data === "object" &&
+    (arg as { data: unknown }).data !== null
+  );
 }
 
 // Mock Appwrite SDK
@@ -437,6 +446,70 @@ describe("AppwriteWishlistRepository", () => {
       // Verify that item sync was NEVER called because the conflict check happened first
       expect(mockTablesDb.upsertRow).not.toHaveBeenCalled();
       expect(mockTablesDb.deleteRow).not.toHaveBeenCalled();
+    });
+    it("should perform internal compensation if wishlist upsert fails", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(
+        {} as Models.User<Models.Preferences>,
+      );
+
+      const updatingWishlist = Wishlist.reconstitute({
+        ...mockWishlist.toProps(),
+        items: mockWishlist.items.map((i) => i.toProps()),
+        version: 1, // Updating from 0 to 1
+      });
+
+      // 1. Mock existing items in DB
+      const existingItemId = "00000000-0000-4000-8000-000000000002";
+      const existingItem = {
+        ...createMockBase(existingItemId, config.wishlistItemsCollectionId),
+        name: "Old Name",
+      };
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+        rows: [existingItem],
+        total: 1,
+      } as MockRowList);
+
+      // 2. Mock version check success
+      vi.mocked(mockTablesDb.getRow).mockResolvedValue({
+        ...createMockBase(updatingWishlist.id, config.wishlistCollectionId),
+        version: 0,
+      } as MockRow);
+
+      // 3. Mock wishlist upsert failure
+      const upsertError = new Error("Final upsert failed");
+      vi.mocked(mockTablesDb.upsertRow)
+        .mockResolvedValueOnce(existingItem) // Item 1 sync
+        .mockRejectedValueOnce(upsertError) // Wishlist header sync (fails)
+        .mockResolvedValueOnce(existingItem); // Compensation restore (succeeds)
+
+      await expect(repository.save(updatingWishlist)).rejects.toThrow(
+        upsertError,
+      );
+
+      // 4. Verify compensation
+      // We expect upsertRow to be called for:
+      // - Initial item sync (item 1)
+      // - Wishlist header (fails)
+      // - Restoration of existing items (compensation)
+
+      const itemUpserts = vi
+        .mocked(mockTablesDb.upsertRow)
+        .mock.calls.filter(
+          (c) =>
+            isUpsertCall(c[0]) &&
+            c[0].tableId === config.wishlistItemsCollectionId,
+        );
+
+      // At least 2 calls for items: initial sync and compensation restore
+      expect(itemUpserts.length).toBeGreaterThanOrEqual(2);
+
+      // Specifically check that the original item state was restored
+      const restoreCall = itemUpserts.find(
+        (c) =>
+          isUpsertCall(c[0]) &&
+          (c[0].data as { name: string }).name === "Old Name",
+      );
+      expect(restoreCall).toBeDefined();
     });
   });
   describe("findById", () => {

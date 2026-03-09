@@ -5,6 +5,7 @@ import type { WishlistRepository } from "../repositories/wishlist.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
 import type { TransactionRepository } from "../repositories/transaction.repository";
 import type { Logger } from "../common/logger";
+import type { ObservabilityService } from "../common/observability";
 import { Wishlist } from "../aggregates/wishlist";
 import { Profile } from "../aggregates/profile";
 import { WishlistItem } from "../entities/wishlist-item";
@@ -21,6 +22,7 @@ describe("PurchaseItemUseCase", () => {
   let profileRepo: Mocked<ProfileRepository>;
   let transactionRepo: Mocked<TransactionRepository>;
   let logger: Mocked<Logger>;
+  let observability: Mocked<ObservabilityService>;
 
   const wishlistId = "00000000-0000-4000-8000-000000000001";
   const itemId = "00000000-0000-4000-8000-000000000002";
@@ -47,12 +49,17 @@ describe("PurchaseItemUseCase", () => {
       warn: vi.fn(),
       error: vi.fn(),
     } as unknown as Mocked<Logger>;
+    observability = {
+      addBreadcrumb: vi.fn(),
+      trackEvent: vi.fn(),
+    } as unknown as Mocked<ObservabilityService>;
 
     useCase = new PurchaseItemUseCase(
       wishlistRepo,
       profileRepo,
       transactionRepo,
       logger,
+      observability,
       () => transactionId,
     );
   });
@@ -174,5 +181,73 @@ describe("PurchaseItemUseCase", () => {
     expect(wishlistRepo.save).toHaveBeenCalledTimes(2); // 1. Purchase 2. Rollback
     const rollbackSave = wishlistRepo.save.mock.calls[1][0];
     expect(rollbackSave.items[0].purchasedQuantity).toBe(0);
+
+    // Verify Observability
+    expect(observability.addBreadcrumb).toHaveBeenCalledWith(
+      "Purchase failed during transaction save",
+      "transaction",
+      expect.objectContaining({
+        wishlistId,
+        itemId,
+        error: transactionError.message,
+      }),
+    );
+    expect(observability.trackEvent).toHaveBeenCalledWith("purchase_failed", {
+      wishlistId,
+      itemId,
+      reason: "transaction_save_failure",
+    });
+  });
+
+  it("should record breadcrumb when rollback skip occurs due to version mismatch", async () => {
+    const item = WishlistItem.reconstitute({
+      id: itemId,
+      wishlistId,
+      name: "Test Item",
+      isUnlimited: false,
+      totalQuantity: 5,
+      reservedQuantity: 0,
+      purchasedQuantity: 0,
+      priority: Priority.MEDIUM,
+    });
+    const wishlist = Wishlist.reconstitute({
+      id: wishlistId,
+      ownerId,
+      title: "My Wishlist",
+      visibility: Visibility.LINK,
+      participation: Participation.ANYONE,
+      items: [item.toProps()],
+      version: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    wishlistRepo.findById.mockResolvedValueOnce(wishlist);
+    profileRepo.findById.mockResolvedValue(null);
+
+    const transactionError = new Error("Persistence error");
+    transactionRepo.save.mockRejectedValue(transactionError);
+
+    // Mock version mismatch on rollback: fetch returns version 2 (expecting 1)
+    const wishlistMismatch = Wishlist.reconstitute({
+      ...wishlist.toProps(),
+      items: wishlist.items.map((i) => i.toProps()),
+      version: 2,
+    });
+    wishlistRepo.findById.mockResolvedValueOnce(wishlistMismatch);
+
+    await expect(
+      useCase.execute({ wishlistId, itemId, userId, quantity: 1 }),
+    ).rejects.toThrow(transactionError);
+
+    expect(observability.addBreadcrumb).toHaveBeenCalledWith(
+      "Rollback skipped due to version mismatch",
+      "transaction",
+      expect.objectContaining({
+        wishlistId,
+        originalVersion: 0,
+        freshVersion: 2,
+      }),
+    );
   });
 });
