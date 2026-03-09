@@ -40,6 +40,7 @@ describe("PurchaseItemUseCase", () => {
     } as unknown as Mocked<ProfileRepository>;
     transactionRepo = {
       save: vi.fn(),
+      delete: vi.fn(),
       // Intentionally prepared for future reservation logic restoration (Deferred for MVP)
       findByUserIdAndItemId: vi.fn(),
     } as unknown as Mocked<TransactionRepository>;
@@ -181,6 +182,7 @@ describe("PurchaseItemUseCase", () => {
     expect(wishlistRepo.save).toHaveBeenCalledTimes(2); // 1. Purchase 2. Rollback
     const rollbackSave = wishlistRepo.save.mock.calls[1][0];
     expect(rollbackSave.items[0].purchasedQuantity).toBe(0);
+    expect(transactionRepo.delete).toHaveBeenCalledWith(transactionId);
 
     // Verify Observability
     expect(observability.addBreadcrumb).toHaveBeenCalledWith(

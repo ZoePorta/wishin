@@ -9,6 +9,8 @@ export interface ObservabilityService {
    * @param message - Short description of the event.
    * @param category - Functional area (e.g., 'auth', 'transaction').
    * @param data - Metadata associated with the breadcrumb.
+   * @returns void
+   * @throws {Error} If breadcrumb storage fails or invalid arguments are provided.
    */
   addBreadcrumb(
     message: string,
@@ -22,6 +24,8 @@ export interface ObservabilityService {
    *
    * @param name - The name of the event.
    * @param properties - Contextual data for the event.
+   * @returns void
+   * @throws {Error} If event tracking fails due to validation or submission errors.
    */
   trackEvent(name: string, properties?: Record<string, unknown>): void;
 }

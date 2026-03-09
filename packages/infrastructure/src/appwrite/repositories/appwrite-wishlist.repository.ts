@@ -343,6 +343,14 @@ export class AppwriteWishlistRepository
         attempt++;
         if (attempt > MAX_RETRIES) {
           console.error("Failed to sync wishlist items after retries:", error);
+          // COMPENSATION: Best-effort rollback of item changes even after retry failure
+          const newItemIdsToDelete = Array.from(currentItemIds).filter(
+            (id) => !existingItemIds.includes(id),
+          );
+          await this.compensateItemSyncTransitions(
+            existingItems,
+            newItemIdsToDelete,
+          );
           throw error;
         }
         // Small backoff
@@ -366,39 +374,88 @@ export class AppwriteWishlistRepository
         saveError,
       );
 
-      try {
-        // 4a. Restore deleted/modified items
-        const restorePromises = existingItems.map((oldItem) =>
-          this.tablesDb.upsertRow({
-            databaseId: this.databaseId,
-            tableId: this.wishlistItemsCollectionId,
-            rowId: oldItem.$id,
-            data: oldItem,
-          }),
-        );
+      const newItemIdsToDelete = Array.from(currentItemIds).filter(
+        (id) => !existingItemIds.includes(id),
+      );
 
-        // 4b. Delete newly created items
-        const currentItemIds = new Set(currentItems.map((item) => item.id));
-        const newItemIdsToDelete = Array.from(currentItemIds).filter(
-          (id) => !existingItemIds.includes(id),
-        );
-        const cleanupPromises = newItemIdsToDelete.map((id) =>
-          this.tablesDb.deleteRow({
+      await this.compensateItemSyncTransitions(
+        existingItems,
+        newItemIdsToDelete,
+      );
+
+      throw saveError;
+    }
+  }
+
+  /**
+   * Performs a compensating rollback for wishlist item changes.
+   *
+   * @param existingItems - The snapshot of item documents preserved before the operation.
+   * @param newItemIdsToDelete - IDs of items that were newly created and should be removed.
+   */
+  private async compensateItemSyncTransitions(
+    existingItems: Models.Document[],
+    newItemIdsToDelete: string[],
+  ): Promise<void> {
+    try {
+      // 4a. Restore deleted/modified items
+      const restorePromises = existingItems.map((oldItem) => {
+        // Strip system fields before re-upserting
+        const {
+          $id,
+          $tableId: _,
+          $databaseId: __,
+          $collectionId: ___,
+          $permissions: ____,
+          $createdAt: _____,
+          $updatedAt: ______,
+          ...persistenceData
+        } = oldItem as unknown as Record<string, unknown>;
+
+        return this.tablesDb.upsertRow({
+          databaseId: this.databaseId,
+          tableId: this.wishlistItemsCollectionId,
+          rowId: $id as string,
+          data: persistenceData as Record<string, unknown>,
+        });
+      });
+
+      // 4b. Delete newly created items
+      const cleanupPromises = newItemIdsToDelete.map(async (id) => {
+        try {
+          await this.tablesDb.deleteRow({
             databaseId: this.databaseId,
             tableId: this.wishlistItemsCollectionId,
             rowId: id,
-          }),
-        );
+          });
+        } catch (error) {
+          // Treat 404 (Not Found) as a success to ensure idempotency
+          if (error instanceof AppwriteException && error.code === 404) {
+            return;
+          }
+          throw error;
+        }
+      });
 
-        await Promise.allSettled([...restorePromises, ...cleanupPromises]);
-      } catch (compensationError: unknown) {
-        console.error(
-          "CRITICAL: Compensation failed during wishlist save rollback",
-          compensationError,
-        );
+      const results = await Promise.allSettled([
+        ...restorePromises,
+        ...cleanupPromises,
+      ]);
+
+      // Detect and surface partial rollback failures
+      const rejected = results.filter(
+        (res): res is PromiseRejectedResult => res.status === "rejected",
+      );
+      if (rejected.length > 0) {
+        const errorMsg = `CRITICAL: Compensation failed for ${String(rejected.length)} operations during wishlist save rollback.`;
+        console.error(errorMsg, rejected);
+        throw new Error(errorMsg);
       }
-
-      throw saveError;
+    } catch (compensationError: unknown) {
+      console.error(
+        "CRITICAL: Compensation logic failed to execute fully",
+        compensationError,
+      );
     }
   }
 

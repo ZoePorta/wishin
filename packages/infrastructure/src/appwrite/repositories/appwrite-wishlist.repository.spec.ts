@@ -199,7 +199,7 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,
       );
-      vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(
+      vi.mocked(mockTablesDb.deleteRow).mockRejectedValueOnce(
         new AppwriteException("Not found", 404),
       );
 
@@ -211,7 +211,7 @@ describe("AppwriteWishlistRepository", () => {
         {} as Models.User<Models.Preferences>,
       );
       const error = new AppwriteException("Internal Server Error", 500);
-      vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(error);
+      vi.mocked(mockTablesDb.deleteRow).mockRejectedValueOnce(error);
 
       await expect(
         repository.delete("550e8400-e29b-41d4-a716-446655440001"),
@@ -510,6 +510,14 @@ describe("AppwriteWishlistRepository", () => {
           (c[0].data as { name: string }).name === "Old Name",
       );
       expect(restoreCall).toBeDefined();
+
+      // Verify that the newly created item was deleted during compensation
+      expect(mockTablesDb.deleteRow).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tableId: config.wishlistItemsCollectionId,
+          rowId: "550e8400-e29b-41d4-a716-446655440002",
+        }),
+      );
     });
   });
   describe("findById", () => {

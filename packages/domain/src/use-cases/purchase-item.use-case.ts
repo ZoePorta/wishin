@@ -104,8 +104,8 @@ export class PurchaseItemUseCase {
     };
 
     try {
-      await this.transactionRepository.save(transaction);
       rollbackPlan.pendingTransactions.push(transaction);
+      await this.transactionRepository.save(transaction);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
