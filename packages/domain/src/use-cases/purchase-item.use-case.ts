@@ -98,7 +98,7 @@ export class PurchaseItemUseCase {
 
     const transactionToRollbackIfFails = {
       wishlist: wishlist, // Original state
-      savedTransactions: [transaction],
+      pendingTransactions: [transaction],
     };
 
     try {
@@ -120,7 +120,7 @@ export class PurchaseItemUseCase {
   }
 
   private async rollback(
-    plan: { wishlist: Wishlist; savedTransactions: Transaction[] },
+    plan: { wishlist: Wishlist; pendingTransactions: Transaction[] },
     input: PurchaseItemInput,
   ): Promise<void> {
     try {
@@ -142,7 +142,7 @@ export class PurchaseItemUseCase {
       }
 
       // 2. Revert Transactions
-      for (const tx of plan.savedTransactions) {
+      for (const tx of plan.pendingTransactions) {
         try {
           await this.transactionRepository.delete(tx.id);
         } catch (txError) {

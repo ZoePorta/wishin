@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed
+Accepted (2026-03-09)
+
+Accepted after implementation was merged and validated as part of the MVP consolidation.
 
 ## Context
 

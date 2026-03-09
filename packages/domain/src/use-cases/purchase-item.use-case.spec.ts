@@ -38,6 +38,7 @@ describe("PurchaseItemUseCase", () => {
     } as unknown as Mocked<ProfileRepository>;
     transactionRepo = {
       save: vi.fn(),
+      // Intentionally prepared for future reservation logic restoration (Deferred for MVP)
       findByUserIdAndItemId: vi.fn(),
     } as unknown as Mocked<TransactionRepository>;
     logger = {
@@ -115,6 +116,7 @@ describe("PurchaseItemUseCase", () => {
 
     wishlistRepo.findById.mockResolvedValue(wishlist);
     profileRepo.findById.mockResolvedValue(ownerProfile);
+    // Unused in current MVP flow, but kept for future reservation logic restoration
     transactionRepo.findByUserIdAndItemId.mockResolvedValue([]);
 
     const result = await useCase.execute({

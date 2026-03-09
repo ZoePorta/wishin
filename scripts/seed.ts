@@ -252,7 +252,8 @@ async function seed() {
       },
     });
 
-    await tablesDb.upsertRow<ItemRow>({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const item6 = await tablesDb.upsertRow<ItemRow>({
       databaseId,
       tableId: itemsCollectionId,
       rowId: SEED_IDS.ITEMS.WATCH,
