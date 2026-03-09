@@ -116,12 +116,26 @@ export class WishlistItemNotFoundError extends NotFoundError {
  * @returns {PersistenceError} An instance of PersistenceError.
  */
 export class PersistenceError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
+  constructor(message: string, options?: { cause?: unknown }) {
     super(message, options);
     this.name = "PersistenceError";
     Object.setPrototypeOf(this, PersistenceError.prototype);
   }
 }
+/**
+ * Error thrown when a validation rule is violated at the use case or entity level.
+ *
+ * @param {string} message - The error message.
+ * @returns {ValidationError} An instance of ValidationError.
+ */
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ValidationError";
+    Object.setPrototypeOf(this, ValidationError.prototype);
+  }
+}
+
 /**
  * Error message used when a visibility value is invalid.
  * Invariant: Visibility must be one of the following:

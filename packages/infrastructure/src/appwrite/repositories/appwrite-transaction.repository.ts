@@ -79,12 +79,15 @@ export class AppwriteTransactionRepository
             this.sessionEnsured = true;
           } catch (sessionError: unknown) {
             throw new PersistenceError("Failed to create anonymous session", {
-              cause: sessionError,
+              cause:
+                sessionError instanceof Error
+                  ? sessionError
+                  : String(sessionError),
             });
           }
         } else {
           throw new PersistenceError("Failed to get current account", {
-            cause: error,
+            cause: error instanceof Error ? error : String(error),
           });
         }
       }
@@ -131,7 +134,7 @@ export class AppwriteTransactionRepository
       });
     } catch (error) {
       throw new PersistenceError("Failed to save transaction", {
-        cause: error,
+        cause: error instanceof Error ? error : String(error),
       });
     }
   }
@@ -165,7 +168,7 @@ export class AppwriteTransactionRepository
         return null;
       }
       throw new PersistenceError("Failed to find transaction by ID", {
-        cause: error,
+        cause: error instanceof Error ? error : String(error),
       });
     }
   }
@@ -190,7 +193,7 @@ export class AppwriteTransactionRepository
       return docs.map((doc) => TransactionMapper.toDomain(doc));
     } catch (error) {
       throw new PersistenceError("Failed to find transactions by item ID", {
-        cause: error,
+        cause: error instanceof Error ? error : String(error),
       });
     }
   }
@@ -255,7 +258,7 @@ export class AppwriteTransactionRepository
       }
     } catch (error) {
       throw new PersistenceError("Failed to cancel transactions by item ID", {
-        cause: error,
+        cause: error instanceof Error ? error : String(error),
       });
     }
 
@@ -342,7 +345,7 @@ export class AppwriteTransactionRepository
     } catch (error) {
       if (error instanceof PersistenceError) throw error;
       throw new PersistenceError("Failed to find transactions by user ID", {
-        cause: error,
+        cause: error instanceof Error ? error : String(error),
       });
     }
 
@@ -368,7 +371,7 @@ export class AppwriteTransactionRepository
         return; // Already deleted
       }
       throw new PersistenceError("Failed to delete transaction", {
-        cause: error,
+        cause: error instanceof Error ? error : String(error),
       });
     }
   }
