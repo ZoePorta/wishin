@@ -348,7 +348,10 @@ export class AppwriteWishlistRepository
       } catch (error) {
         attempt++;
         if (attempt > MAX_RETRIES) {
-          console.error("Failed to sync wishlist items after retries:", error);
+          this.logger.error("Failed to sync wishlist items after retries:", {
+            wishlistId: wishlist.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
           // COMPENSATION: Best-effort rollback of item changes even after retry failure
           const newItemIdsToDelete = Array.from(currentItemIds).filter(
             (id) => !existingItemIds.includes(id),
@@ -356,6 +359,7 @@ export class AppwriteWishlistRepository
           await this.compensateItemSyncTransitions(
             existingItems,
             newItemIdsToDelete,
+            error instanceof Error ? error.message : String(error),
           );
           throw error;
         }
@@ -375,9 +379,11 @@ export class AppwriteWishlistRepository
       });
     } catch (saveError: unknown) {
       // 4. COMPENSATION: Best-effort rollback of item changes (ADR 023)
-      console.error(
+      const saveErrorMessage =
+        saveError instanceof Error ? saveError.message : String(saveError);
+      this.logger.error(
         `Wishlist ${wishlist.id} header save failed. Reverting item changes.`,
-        saveError,
+        { wishlistId: wishlist.id, error: saveErrorMessage },
       );
 
       const newItemIdsToDelete = Array.from(currentItemIds).filter(
@@ -387,6 +393,7 @@ export class AppwriteWishlistRepository
       await this.compensateItemSyncTransitions(
         existingItems,
         newItemIdsToDelete,
+        saveErrorMessage,
       );
 
       throw saveError;
@@ -398,10 +405,12 @@ export class AppwriteWishlistRepository
    *
    * @param existingItems - The snapshot of item documents preserved before the operation.
    * @param newItemIdsToDelete - IDs of items that were newly created and should be removed.
+   * @param originalErrorMessage - The error message that triggered this compensation.
    */
   private async compensateItemSyncTransitions(
     existingItems: Models.Document[],
     newItemIdsToDelete: string[],
+    originalErrorMessage: string,
   ): Promise<void> {
     try {
       // 4a. Restore deleted/modified items
@@ -454,27 +463,42 @@ export class AppwriteWishlistRepository
         (res): res is PromiseRejectedResult => res.status === "rejected",
       );
       if (rejected.length > 0) {
-        const errorMsg = `CRITICAL: Compensation failed for ${String(rejected.length)} operations during wishlist save rollback.`;
+        const errorMsg = `CRITICAL: Compensation failed for ${String(
+          rejected.length,
+        )} operations during wishlist save rollback.`;
+        const compensationErrorMessage = rejected
+          .map((r) => String(r.reason))
+          .join("; ");
         this.logger.error(errorMsg, { rejected });
         this.observability.trackEvent("compensation_failure", {
           failedCount: rejected.length,
           totalCount: results.length,
+          originalErrorMessage,
+          compensationErrorMessage,
         });
-        throw new Error(errorMsg);
+        throw new Error(`${errorMsg} Original error: ${originalErrorMessage}`);
       }
     } catch (compensationError: unknown) {
+      const compensationErrorMessage =
+        compensationError instanceof Error
+          ? compensationError.message
+          : String(compensationError);
       this.logger.error(
         "CRITICAL: Compensation logic failed to execute fully",
         {
-          error:
-            compensationError instanceof Error
-              ? compensationError.message
-              : String(compensationError),
+          error: compensationErrorMessage,
+          originalError: originalErrorMessage,
         },
       );
       this.observability.trackEvent("compensation_failed_exception", {
         reason: "exception_in_retry_loop",
+        originalErrorMessage,
+        compensationErrorMessage,
       });
+      // Rethrow as a combined error to preserve context instead of swallowing
+      throw new Error(
+        `Save failure and compensation failure. Original: ${originalErrorMessage}, Compensation: ${compensationErrorMessage}`,
+      );
     }
   }
 

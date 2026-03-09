@@ -11,6 +11,24 @@ import {
 import { Config, ensureAppwriteConfig } from "../constants/Config";
 
 /**
+ * Adapter that maps console methods to the Logger interface.
+ */
+const consoleLogger = {
+  debug: (msg: string, ctx?: Record<string, unknown>) => {
+    console.debug(msg, ctx);
+  },
+  info: (msg: string, ctx?: Record<string, unknown>) => {
+    console.info(msg, ctx);
+  },
+  warn: (msg: string, ctx?: Record<string, unknown>) => {
+    console.warn(msg, ctx);
+  },
+  error: (msg: string, ctx?: Record<string, unknown>) => {
+    console.error(msg, ctx);
+  },
+};
+
+/**
  * Factory function to create new repository instances.
  * This is now a pure function that does not maintain its own cache,
  * allowing the React component to manage the lifecycle.
@@ -28,7 +46,7 @@ function createRepositories() {
     Config.appwrite.databaseId,
     Config.collections.wishlists,
     Config.collections.wishlistItems,
-    console, // Simple Logger implementation
+    consoleLogger,
     {
       addBreadcrumb: (message, category, data) => {
         console.log(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);

@@ -140,6 +140,26 @@ describe("PurchaseItemUseCase", () => {
     expect(savedTransaction.toProps().status).toBe(TransactionStatus.PURCHASED);
     expect(savedTransaction.toProps().quantity).toBe(2);
     expect(result.items[0].purchasedQuantity).toBe(2);
+
+    // Verify Observability (Review Comment)
+    expect(observability.trackEvent).toHaveBeenCalledWith(
+      "purchase_completed",
+      {
+        wishlistId: wishlist.id,
+        userId,
+        itemId,
+        quantity: 2,
+      },
+    );
+    expect(observability.addBreadcrumb).toHaveBeenCalledWith(
+      "Purchase completion successful",
+      "transaction",
+      {
+        wishlistId: wishlist.id,
+        userId,
+        itemId,
+      },
+    );
   });
 
   it("should attempt rollback if transaction save fails", async () => {

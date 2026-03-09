@@ -11,6 +11,7 @@ import {
   type Models,
 } from "appwrite";
 import { Wishlist, Visibility, Participation, Priority } from "@wishin/domain";
+import type { Logger, ObservabilityService } from "@wishin/domain";
 
 // TablesDB specific types from Appwrite SDK
 interface MockRow extends Models.Document {
@@ -104,6 +105,9 @@ describe("AppwriteWishlistRepository", () => {
     wishlistItemsCollectionId: "items-id",
   };
 
+  let mockLogger: Logger;
+  let mockObservability: ObservabilityService;
+
   class TestAppwriteWishlistRepository extends AppwriteWishlistRepository {
     public get mockAccount() {
       return this.accountAccess;
@@ -116,11 +120,24 @@ describe("AppwriteWishlistRepository", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockClient = new Client();
+    mockLogger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    } as unknown as Logger;
+    mockObservability = {
+      addBreadcrumb: vi.fn(),
+      trackEvent: vi.fn(),
+    } as unknown as ObservabilityService;
+
     repository = new TestAppwriteWishlistRepository(
       mockClient,
       config.databaseId,
       config.wishlistCollectionId,
       config.wishlistItemsCollectionId,
+      mockLogger,
+      mockObservability,
     );
 
     mockAccount = repository.mockAccount;

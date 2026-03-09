@@ -67,35 +67,31 @@ export class PurchaseItemUseCase {
    * @throws {Error} If persistence or other operations fail.
    */
   async execute(input: PurchaseItemInput): Promise<WishlistOutput> {
-    const wishlist = await this.wishlistRepository.findById(input.wishlistId);
-    if (!wishlist) throw new WishlistNotFoundError(input.wishlistId);
+    const { wishlistId, itemId, userId, quantity } = input;
+
+    const wishlist = await this.wishlistRepository.findById(wishlistId);
+    if (!wishlist) throw new WishlistNotFoundError(wishlistId);
 
     const ownerProfile = await this.profileRepository.findById(
       wishlist.ownerId,
     );
     const ownerUsername = ownerProfile?.username ?? "Unknown User";
 
-    const item = wishlist.items.find((i) => i.id === input.itemId);
+    const item = wishlist.items.find((i) => i.id === itemId);
     if (!item) {
-      throw new InvalidOperationError(
-        `Item ${input.itemId} not found in wishlist`,
-      );
+      throw new InvalidOperationError(`Item ${itemId} not found in wishlist`);
     }
 
     // 1. Update Wishlist (Direct Purchase only for MVP - ADR 025)
     // We pass 0 to consumeFromReserved as reservations are deferred.
-    const updatedWishlist = wishlist.purchaseItem(
-      input.itemId,
-      input.quantity,
-      0,
-    );
+    const updatedWishlist = wishlist.purchaseItem(itemId, quantity, 0);
 
     // 2. Prepare Transaction (Always a new purchase)
     const transaction = Transaction.createPurchase({
       id: this.uuidFn(),
-      itemId: input.itemId,
-      userId: input.userId,
-      quantity: input.quantity,
+      itemId: itemId,
+      userId: userId,
+      quantity: quantity,
       itemName: item.name,
       itemPrice: item.price ?? null,
       itemCurrency: item.currency ?? null,
@@ -121,7 +117,7 @@ export class PurchaseItemUseCase {
         "Purchase failed during transaction save. Attempting rollback.",
         {
           wishlistId: wishlist.id,
-          itemId: input.itemId,
+          itemId: itemId,
           error: errorMessage,
         },
       );
@@ -131,8 +127,8 @@ export class PurchaseItemUseCase {
         "transaction",
         {
           wishlistId: wishlist.id,
-          itemId: input.itemId,
-          itemQuantity: input.quantity,
+          itemId: itemId,
+          itemQuantity: quantity,
           wishlistVersion: wishlist.version,
           pendingTransactionCount: rollbackPlan.pendingTransactions.length,
           error: errorMessage,
@@ -141,7 +137,7 @@ export class PurchaseItemUseCase {
 
       this.observability.trackEvent("purchase_failed", {
         wishlistId: wishlist.id,
-        itemId: input.itemId,
+        itemId: itemId,
         reason: "transaction_save_failure",
       });
 
@@ -155,15 +151,15 @@ export class PurchaseItemUseCase {
       "transaction",
       {
         wishlistId: updatedWishlist.id,
-        userId: input.userId,
-        itemId: input.itemId,
+        userId: userId,
+        itemId: itemId,
       },
     );
     this.observability.trackEvent("purchase_completed", {
       wishlistId: updatedWishlist.id,
-      userId: input.userId,
-      itemId: input.itemId,
-      quantity: input.quantity,
+      userId: userId,
+      itemId: itemId,
+      quantity: quantity,
     });
 
     return WishlistOutputMapper.toDTO(updatedWishlist);
@@ -208,9 +204,13 @@ export class PurchaseItemUseCase {
           }
         }
       } catch (wishlistError) {
+        const wishlistErrorMessage =
+          wishlistError instanceof Error
+            ? wishlistError.message
+            : String(wishlistError);
         this.logger.error("Failed to revert wishlist during rollback", {
           wishlistId: plan.wishlist.id,
-          error: wishlistError,
+          error: wishlistErrorMessage,
         });
       }
 
@@ -219,9 +219,11 @@ export class PurchaseItemUseCase {
         try {
           await this.transactionRepository.delete(tx.id);
         } catch (txError) {
+          const txErrorMessage =
+            txError instanceof Error ? txError.message : String(txError);
           this.logger.error("Failed to delete transaction during rollback", {
             transactionId: tx.id,
-            error: txError,
+            error: txErrorMessage,
           });
         }
       }
