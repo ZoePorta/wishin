@@ -4,7 +4,6 @@ import {
 } from "../errors/domain-errors";
 import { Wishlist } from "../aggregates/wishlist";
 import { Transaction } from "../aggregates/transaction";
-import { TransactionStatus } from "../value-objects/transaction-status";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
@@ -73,102 +72,40 @@ export class PurchaseItemUseCase {
       );
     }
 
-    // 1. Smart Consumption Calculation
-    const reservations = await this.transactionRepository.findByUserIdAndItemId(
-      input.userId,
-      input.itemId,
-      TransactionStatus.RESERVED,
-    );
-    // Sort by createdAt ASC to prioritize oldest reservation for history preservation
-    const sortedReservations = [...reservations].sort(
-      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
-    );
-    const totalReserved = sortedReservations.reduce(
-      (acc, res) => acc + res.quantity,
-      0,
-    );
-    const consumeFromReserved = Math.min(input.quantity, totalReserved);
-
-    // 2. Update Wishlist
+    // 1. Update Wishlist (Direct Purchase only for MVP - ADR 025)
+    // We pass 0 to consumeFromReserved as reservations are deferred.
     const updatedWishlist = wishlist.purchaseItem(
       input.itemId,
       input.quantity,
-      consumeFromReserved,
+      0,
     );
 
-    // 3. Prepare Transaction Sync Plan
-    const transactionsToSave: Transaction[] = [];
-    let transactionToRollbackIfFails: {
-      wishlist: Wishlist;
-      savedTransactions: Transaction[];
-    } | null = null;
+    // 2. Prepare Transaction (Always a new purchase)
+    const transaction = Transaction.createPurchase({
+      id: this.uuidFn(),
+      itemId: input.itemId,
+      userId: input.userId,
+      quantity: input.quantity,
+      itemName: item.name,
+      itemPrice: item.price ?? null,
+      itemCurrency: item.currency ?? null,
+      itemDescription: item.description ?? null,
+      ownerUsername,
+    });
 
-    if (input.quantity >= totalReserved) {
-      // Case 1: Convert all and potentially increase quantity
-      if (sortedReservations.length > 0) {
-        const oldest = sortedReservations[0];
-        transactionsToSave.push(
-          oldest.updateQuantity(input.quantity).confirmPurchase(),
-        );
-        // Cancel any other redundant reservations
-        for (let i = 1; i < sortedReservations.length; i++) {
-          transactionsToSave.push(sortedReservations[i].cancel());
-        }
-      } else {
-        // Direct Purchase (No reservations)
-        transactionsToSave.push(
-          Transaction.createPurchase({
-            id: this.uuidFn(),
-            itemId: input.itemId,
-            userId: input.userId,
-            quantity: input.quantity,
-            itemName: item.name,
-            itemPrice: item.price ?? null,
-            itemCurrency: item.currency ?? null,
-            itemDescription: item.description ?? null,
-            ownerUsername,
-          }),
-        );
-      }
-    } else {
-      // Case 2: Partial consumption (requested < totalReserved)
-      // Shrink oldest and create new purchase for today
-      const oldest = sortedReservations[0];
-      transactionsToSave.push(
-        oldest.updateQuantity(oldest.quantity - input.quantity),
-      );
-      transactionsToSave.push(
-        Transaction.createPurchase({
-          id: this.uuidFn(),
-          itemId: input.itemId,
-          userId: input.userId,
-          quantity: input.quantity,
-          itemName: item.name,
-          itemPrice: item.price ?? null,
-          itemCurrency: item.currency ?? null,
-          itemDescription: item.description ?? null,
-          ownerUsername,
-        }),
-      );
-    }
-
-    // 4. Persistence (Sequential saves for MVP)
+    // 3. Persistence (Sequential saves for MVP)
     await this.wishlistRepository.save(updatedWishlist);
 
-    // Track for rollback
-    transactionToRollbackIfFails = {
+    const transactionToRollbackIfFails = {
       wishlist: wishlist, // Original state
-      savedTransactions: [],
+      savedTransactions: [transaction],
     };
 
     try {
-      for (const tx of transactionsToSave) {
-        await this.transactionRepository.save(tx);
-        transactionToRollbackIfFails.savedTransactions.push(tx);
-      }
+      await this.transactionRepository.save(transaction);
     } catch (error: unknown) {
       this.logger.error(
-        "Smart Purchase failed during transaction sync. Attempting rollback.",
+        "Purchase failed during transaction save. Attempting rollback.",
         {
           wishlistId: wishlist.id,
           itemId: input.itemId,

@@ -8,7 +8,6 @@ import type { Logger } from "../common/logger";
 import { Wishlist } from "../aggregates/wishlist";
 import { Profile } from "../aggregates/profile";
 import { WishlistItem } from "../entities/wishlist-item";
-import { Transaction } from "../aggregates/transaction";
 import { Priority, Visibility, Participation } from "../value-objects";
 import { TransactionStatus } from "../value-objects/transaction-status";
 import {
@@ -133,138 +132,6 @@ describe("PurchaseItemUseCase", () => {
     expect(result.items[0].purchasedQuantity).toBe(2);
   });
 
-  it("should Case 1: Convert reservation to purchase and increase quantity if Buy > Reserved", async () => {
-    const item = WishlistItem.reconstitute({
-      id: itemId,
-      wishlistId,
-      name: "Test Item",
-      isUnlimited: false,
-      totalQuantity: 10,
-      reservedQuantity: 2,
-      purchasedQuantity: 0,
-      priority: Priority.MEDIUM,
-    });
-    const wishlist = Wishlist.reconstitute({
-      id: wishlistId,
-      ownerId,
-      title: "My Wishlist",
-      visibility: Visibility.LINK,
-      participation: Participation.ANYONE,
-      items: [item.toProps()],
-      version: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    const oldestDate = new Date("2020-01-01");
-    const oldTxId = "00000000-0000-4000-8000-000000000006";
-    const reservation = Transaction.reconstitute({
-      id: oldTxId,
-      itemId,
-      userId,
-      quantity: 2,
-      status: TransactionStatus.RESERVED,
-      createdAt: oldestDate,
-      updatedAt: oldestDate,
-      itemName: "Test Item",
-      itemPrice: 10,
-      itemCurrency: "EUR",
-      itemDescription: null,
-      ownerUsername: "owner",
-    });
-
-    wishlistRepo.findById.mockResolvedValue(wishlist);
-    profileRepo.findById.mockResolvedValue(
-      Profile.reconstitute({ id: ownerId, username: "owner" }),
-    );
-    transactionRepo.findByUserIdAndItemId.mockResolvedValue([reservation]);
-
-    const result = await useCase.execute({
-      wishlistId,
-      itemId,
-      userId,
-      quantity: 5,
-    });
-
-    expect(wishlistRepo.save).toHaveBeenCalled();
-    expect(transactionRepo.save).toHaveBeenCalled();
-
-    const savedTx = transactionRepo.save.mock.calls[0][0];
-    expect(savedTx.id).toBe("00000000-0000-4000-8000-000000000006");
-    expect(savedTx.status).toBe(TransactionStatus.PURCHASED);
-    expect(savedTx.quantity).toBe(5);
-    expect(savedTx.createdAt).toEqual(oldestDate); // Preserved history!
-    expect(result.items[0].purchasedQuantity).toBe(5);
-    expect(result.items[0].reservedQuantity).toBe(0); // Consumed all reserved units
-  });
-
-  it("should Case 2: Shrink reservation and create new purchase if Buy < Reserved", async () => {
-    const item = WishlistItem.reconstitute({
-      id: itemId,
-      wishlistId,
-      name: "Test Item",
-      isUnlimited: false,
-      totalQuantity: 10,
-      reservedQuantity: 5,
-      purchasedQuantity: 0,
-      priority: Priority.MEDIUM,
-    });
-    const wishlist = Wishlist.reconstitute({
-      id: wishlistId,
-      ownerId,
-      title: "My Wishlist",
-      visibility: Visibility.LINK,
-      participation: Participation.ANYONE,
-      items: [item.toProps()],
-      version: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    const oldestDate = new Date("2020-01-01");
-    const oldTxId = "00000000-0000-4000-8000-000000000006";
-    const reservation = Transaction.reconstitute({
-      id: oldTxId,
-      itemId,
-      userId,
-      quantity: 5,
-      status: TransactionStatus.RESERVED,
-      createdAt: oldestDate,
-      updatedAt: oldestDate,
-      itemName: "Test Item",
-      itemPrice: 10,
-      itemCurrency: "EUR",
-      itemDescription: null,
-      ownerUsername: "owner",
-    });
-
-    wishlistRepo.findById.mockResolvedValue(wishlist);
-    profileRepo.findById.mockResolvedValue(
-      Profile.reconstitute({ id: ownerId, username: "owner" }),
-    );
-    transactionRepo.findByUserIdAndItemId.mockResolvedValue([reservation]);
-
-    const result = await useCase.execute({
-      wishlistId,
-      itemId,
-      userId,
-      quantity: 2,
-    });
-
-    expect(wishlistRepo.save).toHaveBeenCalled();
-    expect(transactionRepo.save).toHaveBeenCalledTimes(2); // 1. Update reservation 2. Create purchase
-
-    const updatedRes = transactionRepo.save.mock.calls[0][0];
-    expect(updatedRes.id).toBe("00000000-0000-4000-8000-000000000006");
-    expect(updatedRes.status).toBe(TransactionStatus.RESERVED);
-    expect(updatedRes.quantity).toBe(3); // 5 - 2 = 3
-
-    const newPurchase = transactionRepo.save.mock.calls[1][0];
-    expect(newPurchase.status).toBe(TransactionStatus.PURCHASED);
-    expect(newPurchase.quantity).toBe(2);
-
-    expect(result.items[0].purchasedQuantity).toBe(2);
-    expect(result.items[0].reservedQuantity).toBe(3);
-  });
-
   it("should attempt rollback if transaction save fails", async () => {
     const item = WishlistItem.reconstitute({
       id: itemId,
@@ -290,7 +157,6 @@ describe("PurchaseItemUseCase", () => {
 
     wishlistRepo.findById.mockResolvedValueOnce(wishlist);
     profileRepo.findById.mockResolvedValue(null);
-    transactionRepo.findByUserIdAndItemId.mockResolvedValue([]);
 
     const transactionError = new Error("Persistence error");
     transactionRepo.save.mockRejectedValue(transactionError);
