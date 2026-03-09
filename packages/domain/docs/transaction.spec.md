@@ -41,7 +41,7 @@ Unlike other entities where business rules might evolve (e.g., username length),
 
 ## Domain Invariants
 
-1. **Immutability:** The transaction record is immutable. Core attributes (`itemId`, `quantity`, actors) never change. Any evolution of the `status` MUST result in a **new immutable instance** with the updated state.
+1. **Immutability:** The transaction record is primarily immutable. Core attributes (`id`, `itemId`, actors) never change. Any evolution of the `status` MUST result in a **new immutable instance**. Note that `quantity` is the ONLY attribute that can be adjusted via `updateQuantity` (subject to state restrictions) returning a new instance.
 2. **Identity Mandate:** A transaction MUST belong to a User (either registered or anonymous).
 3. **Irreversibility of Creation:** Once created, a transaction allows the `WishlistItem` to decrement stock.
 4. **Lifecycle Transitions:**
@@ -119,7 +119,8 @@ Unlike other entities where business rules might evolve (e.g., username length),
 - **Behavior:**
   - Updates the `quantity` and `updatedAt` fields.
   - Used primarily in **Smart Consumption** to "shrink" redundant reservations.
-  - Throws `InvalidTransitionError` if status is `CANCELLED` or `CANCELLED_BY_OWNER`.
+  - Throws `InvalidTransitionError` if status is not `RESERVED` (to prevent desync with inventory once purchased).
+  - Throws `InvalidAttributeError` if `newQuantity` is not a positive integer.
 - **Returns:** New `Transaction` instance with updated quantity.
 
 ### `equals(other: Transaction)`

@@ -101,7 +101,6 @@ export class PurchaseItemUseCase {
     let transactionToRollbackIfFails: {
       wishlist: Wishlist;
       savedTransactions: Transaction[];
-      deletedIds: string[];
     } | null = null;
 
     if (input.quantity >= totalReserved) {
@@ -109,7 +108,7 @@ export class PurchaseItemUseCase {
       if (sortedReservations.length > 0) {
         const oldest = sortedReservations[0];
         transactionsToSave.push(
-          oldest.confirmPurchase().updateQuantity(input.quantity),
+          oldest.updateQuantity(input.quantity).confirmPurchase(),
         );
         // Cancel any other redundant reservations
         for (let i = 1; i < sortedReservations.length; i++) {
@@ -160,7 +159,6 @@ export class PurchaseItemUseCase {
     transactionToRollbackIfFails = {
       wishlist: wishlist, // Original state
       savedTransactions: [],
-      deletedIds: [],
     };
 
     try {
@@ -190,13 +188,20 @@ export class PurchaseItemUseCase {
   ): Promise<void> {
     try {
       // 1. Revert Wishlist (optimistic re-fetch)
-      const fresh = await this.wishlistRepository.findById(plan.wishlist.id);
-      if (fresh) {
-        const rolledBackWishlist = fresh.cancelItemPurchase(
-          input.itemId,
-          input.quantity,
-        );
-        await this.wishlistRepository.save(rolledBackWishlist);
+      try {
+        const fresh = await this.wishlistRepository.findById(plan.wishlist.id);
+        if (fresh) {
+          const rolledBackWishlist = fresh.cancelItemPurchase(
+            input.itemId,
+            input.quantity,
+          );
+          await this.wishlistRepository.save(rolledBackWishlist);
+        }
+      } catch (wishlistError) {
+        this.logger.error("Failed to revert wishlist during rollback", {
+          wishlistId: plan.wishlist.id,
+          error: wishlistError,
+        });
       }
 
       // 2. Revert Transactions

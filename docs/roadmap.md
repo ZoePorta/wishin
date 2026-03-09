@@ -77,7 +77,7 @@
 ### 4.2 Application Layer (TDD)
 
 - [x] **DTOs Definition:** `ReserveItemInput`, `PurchaseItemInput`, `ConfirmPurchaseInput`, `CancelTransactionInput`.
-- [x] **TDD - Gifting Cycles:**
+- [ ] **TDD - Gifting Cycles:**
   - [x] **ReserveItem:** RED (Registered only) -> GREEN (Coordination).
   - [x] **DirectPurchase:** RED (Anonymous/Registered) -> GREEN (Immediate stock update).
   - [ ] **Undo (Immediate):** RED (Hard delete within window) -> GREEN (Implementation).

@@ -53,6 +53,7 @@ export interface TransactionRepository {
    * @param itemId - The item UUID.
    * @param status - Optional filter by transaction status.
    * @returns {Promise<Transaction[]>}
+   * @throws {PersistenceError} If there is an error accessing the data store.
    */
   findByUserIdAndItemId(
     userId: string,

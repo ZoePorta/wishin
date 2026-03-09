@@ -60,4 +60,4 @@ The `Transaction` entity is **immutable**. Every state transition or quantity up
 ### Negative
 
 - **Complexity**: The Use Case logic is more complex as it must coordinate multiple transaction updates.
-- **Query Overhead**: Requires an extra read to finding existing reservations before proceeding.
+- **Query Overhead**: Requires an extra read to find existing reservations before proceeding.

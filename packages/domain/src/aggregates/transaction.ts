@@ -357,13 +357,10 @@ export class Transaction {
    * @param {number} newQuantity - The new quantity.
    * @returns {Transaction} New instance with updated quantity.
    * @throws {InvalidAttributeError} If quantity is invalid.
-   * @throws {InvalidTransitionError} If status is cancelled.
+   * @throws {InvalidTransitionError} If status is not RESERVED.
    */
   public updateQuantity(newQuantity: number): Transaction {
-    if (
-      this.status === TransactionStatus.CANCELLED ||
-      this.status === TransactionStatus.CANCELLED_BY_OWNER
-    ) {
+    if (this.status !== TransactionStatus.RESERVED) {
       throw new InvalidTransitionError(
         `Cannot update quantity for ${this.status} transaction`,
       );
