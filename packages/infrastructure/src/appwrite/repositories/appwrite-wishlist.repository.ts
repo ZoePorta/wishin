@@ -114,7 +114,7 @@ export class AppwriteWishlistRepository
       throw new Error("Session initialization failed: user is null");
     }
 
-    return this._currentUser;
+    return this._currentUser as unknown as Models.User<Models.Preferences>;
   }
 
   /**

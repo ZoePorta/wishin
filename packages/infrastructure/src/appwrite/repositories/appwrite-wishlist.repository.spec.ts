@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 /* eslint-disable @typescript-eslint/no-deprecated */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteWishlistRepository } from "./appwrite-wishlist.repository";
@@ -38,24 +38,20 @@ function isUpsertCall(arg: unknown): arg is { tableId: string } {
 vi.mock("appwrite", () => {
   const get = vi.fn();
   const createAnonymousSession = vi.fn();
-  const AccountMock = vi.fn().mockImplementation(function () {
-    return {
-      get,
-      createAnonymousSession,
-    };
+  const AccountMock = vi.fn().mockImplementation(function (this: any) {
+    this.get = get;
+    this.createAnonymousSession = createAnonymousSession;
   });
 
   const getRow = vi.fn();
   const listRows = vi.fn();
   const upsertRow = vi.fn();
   const deleteRow = vi.fn();
-  const TablesDBMock = vi.fn().mockImplementation(function () {
-    return {
-      getRow,
-      listRows,
-      upsertRow,
-      deleteRow,
-    };
+  const TablesDBMock = vi.fn().mockImplementation(function (this: any) {
+    this.getRow = getRow;
+    this.listRows = listRows;
+    this.upsertRow = upsertRow;
+    this.deleteRow = deleteRow;
   });
 
   return {
