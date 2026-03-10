@@ -364,7 +364,13 @@ export class AppwriteTransactionRepository
     itemId: string,
     status?: TransactionStatus,
   ): Promise<Transaction[]> {
-    await this.ensureSession();
+    const authenticatedUser = await this.ensureSession();
+
+    if (userId !== authenticatedUser.$id) {
+      throw new PersistenceError(
+        "Unauthorized access: userId does not match authenticated user",
+      );
+    }
     try {
       const queries = [
         Query.equal("userId", userId),

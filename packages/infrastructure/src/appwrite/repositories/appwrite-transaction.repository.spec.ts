@@ -10,7 +10,11 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import { Transaction, TransactionStatus } from "@wishin/domain";
+import {
+  Transaction,
+  TransactionStatus,
+  PersistenceError,
+} from "@wishin/domain";
 
 // TablesDB specific types from Appwrite SDK
 interface MockRow extends Models.Document {
@@ -637,6 +641,18 @@ describe("AppwriteTransactionRepository", () => {
           ]),
         }),
       );
+    });
+
+    it("should throw PersistenceError if userId does not match authenticated user", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: "different-user",
+      } as Models.User<Models.Preferences>);
+
+      await expect(
+        repository.findByUserIdAndItemId(validUserId, validItemId),
+      ).rejects.toThrow(PersistenceError);
+
+      expect(mockTablesDb.listRows).not.toHaveBeenCalled();
     });
   });
 
