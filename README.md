@@ -103,6 +103,8 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 - [ADR 020: Adopt Material Design 3 and React Native Paper](docs/adr/020-adopt-material-design-3-and-react-native-paper.md)
 - [ADR 021: Transaction Denormalization](docs/adr/021-transaction-denormalization.md)
 - [ADR 022: Image Management via Appwrite Storage](docs/adr/022-image-management-via-appwrite-storage.md)
+- [ADR 023: Non-Atomic Sequential Saves](docs/adr/023-non-atomic-sequential-saves.md)
+- [ADR 024: Smart Purchase Consumption](docs/adr/024-smart-purchase-consumption.md)
 
 ## [Project Roadmap](docs/roadmap.md)
 

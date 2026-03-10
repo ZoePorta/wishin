@@ -28,10 +28,6 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
   const theme = useTheme();
   const isCompleted =
     !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
-  const isReserved =
-    !item.isUnlimited &&
-    !isCompleted &&
-    item.purchasedQuantity + item.reservedQuantity >= item.totalQuantity;
 
   const handleOpenUrl = useCallback(async (url?: string) => {
     if (!url) return;
@@ -69,7 +65,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
         />
       )}
 
-      {(isCompleted || isReserved) && (
+      {isCompleted && (
         <View style={styles.overlayContainer}>
           <Surface
             style={[
@@ -79,7 +75,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item }) => {
             elevation={2}
           >
             <Text variant="labelLarge" style={styles.overlayLabel}>
-              {isCompleted ? "COMPLETED" : "RESERVED"}
+              COMPLETED
             </Text>
           </Surface>
         </View>

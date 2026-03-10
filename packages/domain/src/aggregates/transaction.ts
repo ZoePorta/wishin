@@ -352,6 +352,31 @@ export class Transaction {
   }
 
   /**
+   * Updates the transaction quantity.
+   *
+   * @param {number} newQuantity - The new quantity.
+   * @returns {Transaction} New instance with updated quantity.
+   * @throws {InvalidAttributeError} If quantity is invalid.
+   * @throws {InvalidTransitionError} If status is not RESERVED.
+   */
+  public updateQuantity(newQuantity: number): Transaction {
+    if (this.status !== TransactionStatus.RESERVED) {
+      throw new InvalidTransitionError(
+        `Cannot update quantity for ${this.status} transaction`,
+      );
+    }
+
+    return new Transaction(
+      {
+        ...this.toProps(),
+        quantity: newQuantity,
+        updatedAt: new Date(),
+      },
+      ValidationMode.STRICT,
+    );
+  }
+
+  /**
    * Identity-based equality check.
    *
    * @param {Transaction} other

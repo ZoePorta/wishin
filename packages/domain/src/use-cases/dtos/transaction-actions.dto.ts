@@ -21,21 +21,25 @@ export interface ReserveItemInput {
 }
 
 /**
- * Input DTO for purchasing an item.
+ * Input DTO for purchasing an item (Unified).
  */
 export interface PurchaseItemInput {
+  /**
+   * UUID of the wishlist containing the item.
+   */
+  wishlistId: string;
   /**
    * UUID of the item to purchase.
    */
   itemId: string;
   /**
+   * ID of the user performing the purchase.
+   */
+  userId: string;
+  /**
    * Amount of units to purchase.
    */
   quantity: number;
-  /**
-   * Units to take from the reserved pool (if any).
-   */
-  consumeFromReserved: number;
 }
 
 /**
