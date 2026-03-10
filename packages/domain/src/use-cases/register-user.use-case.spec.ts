@@ -70,7 +70,7 @@ describe("RegisterUserUseCase", () => {
     expect(profileRepo.save).not.toHaveBeenCalled();
   });
 
-  it("should throw an error if profile creation fails and call compensation (deleteUser) if it was a new user", async () => {
+  it("should log an error but NOT call compensation (deleteUser) if profile creation fails for a new user", async () => {
     const userId = "user-123";
     vi.mocked(authRepo.register).mockResolvedValue({
       userId,
@@ -82,7 +82,14 @@ describe("RegisterUserUseCase", () => {
     await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
       "DB failed",
     );
-    expect(authRepo.deleteUser).toHaveBeenCalledWith(userId);
+    expect(authRepo.deleteUser).not.toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalledWith(
+      "Profile creation failed for new user",
+      expect.objectContaining({
+        userId,
+        originalError: "DB failed",
+      }),
+    );
   });
 
   it("should throw an error if profile creation fails but NOT call compensation (deleteUser) if it was an anonymous promotion", async () => {
@@ -98,34 +105,5 @@ describe("RegisterUserUseCase", () => {
       "DB failed",
     );
     expect(authRepo.deleteUser).not.toHaveBeenCalled();
-  });
-
-  it("should log an error and rethrow the original error if compensation (deleteUser) fails", async () => {
-    const userId = "user-123";
-    vi.mocked(authRepo.register).mockResolvedValue({
-      userId,
-      email: validRegistrationInput.email,
-      isNewUser: true,
-    });
-    vi.mocked(profileRepo.save).mockRejectedValue(
-      new Error("Original DB failure"),
-    );
-    vi.mocked(authRepo.deleteUser).mockRejectedValue(
-      new Error("Compensation failure"),
-    );
-
-    await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
-      "Original DB failure",
-    );
-
-    expect(authRepo.deleteUser).toHaveBeenCalledWith(userId);
-    expect(logger.error).toHaveBeenCalledWith(
-      "Compensating user deletion failed",
-      expect.objectContaining({
-        userId,
-        originalError: "Original DB failure",
-        compensationError: "Compensation failure",
-      }),
-    );
   });
 });

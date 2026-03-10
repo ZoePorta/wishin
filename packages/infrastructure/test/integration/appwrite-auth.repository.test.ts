@@ -1,9 +1,9 @@
-import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
+import { describe, it, expect, afterEach, beforeAll } from "vitest";
 import { Client as ServerClient, Users } from "node-appwrite";
 import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "../../src/appwrite/client";
 import { AppwriteAuthRepository } from "../../src/appwrite/repositories/appwrite-auth.repository";
-import { Account, OAuthProvider } from "appwrite";
+import { Account } from "appwrite";
 import type { AuthResult } from "@wishin/domain";
 import "dotenv/config";
 
@@ -110,22 +110,6 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     await expect(account.get()).rejects.toThrow();
   });
 
-  it("should initiate Google OAuth2 flow and return a URL", async () => {
-    // We use a partial object to avoid 'any' and handle the private property access
-    // in a way that doesn't require @typescript-eslint/no-unsafe-member-access disable globally
-    const repoWithPrivateAccess = repository as unknown as { account: any };
-    const mockUrl = "https://appwrite.io/oauth/google";
-    const createOAuth2TokenSpy = vi
-      .spyOn(repoWithPrivateAccess.account, "createOAuth2Token")
-      .mockReturnValue(mockUrl);
-
-    const result = await repository.loginWithGoogle();
-
-    expect(createOAuth2TokenSpy).toHaveBeenCalledWith({
-      provider: OAuthProvider.Google,
-    });
-    expect(result).toBe(mockUrl);
-
-    createOAuth2TokenSpy.mockRestore();
-  });
+  // Note: Google OAuth2 integration test removed as requested to avoid white-boxing private internals.
+  // Observable behavior (redirection logic) is covered by unit tests.
 });

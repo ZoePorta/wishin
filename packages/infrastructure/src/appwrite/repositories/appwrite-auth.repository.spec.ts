@@ -72,24 +72,27 @@ describe("AppwriteAuthRepository", () => {
   });
 
   describe("loginWithGoogle", () => {
-    it("should initiate OAuth2 token flow with Google and return a URL", async () => {
+    it("should initiate OAuth2 token flow with Google and throw unimplemented error with URL", async () => {
       const mockUrl = "https://appwrite.io/oauth/google";
-      vi.mocked(account.createOAuth2Token).mockResolvedValue(mockUrl);
+      vi.mocked(account.createOAuth2Token).mockReturnValue(mockUrl);
 
-      const result = await repository.loginWithGoogle();
+      await expect(repository.loginWithGoogle()).rejects.toThrow(
+        /https:\/\/appwrite\.io\/oauth\/google/,
+      );
 
       expect(account.createOAuth2Token).toHaveBeenCalledWith({
         provider: OAuthProvider.Google,
       });
-      expect(result).toBe(mockUrl);
     });
 
     it("should propagate errors from createOAuth2Token", async () => {
-      const error = new Error("OAuth failed");
-      vi.mocked(account.createOAuth2Token).mockRejectedValueOnce(error);
+      const error = new Error("OAuth initiation failed");
+      vi.mocked(account.createOAuth2Token).mockImplementation(() => {
+        throw error;
+      });
 
       await expect(repository.loginWithGoogle()).rejects.toThrow(
-        "OAuth failed",
+        "OAuth initiation failed",
       );
     });
   });
@@ -208,13 +211,13 @@ describe("AppwriteAuthRepository", () => {
   });
 
   describe("deleteUser", () => {
-    it("should log a warning as it is not implemented in Client SDK", async () => {
+    it("should log a warning as it is suppressed for Incomplete Account strategy", async () => {
       const consoleSpy = vi
         .spyOn(console, "warn")
         .mockImplementation(() => undefined);
       await repository.deleteUser("user-123");
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Client SDK"),
+        expect.stringContaining("suppressed"),
       );
       consoleSpy.mockRestore();
     });

@@ -39,6 +39,7 @@ describe("WishlistMapper", () => {
       description: wishlistProps.description,
       visibility: wishlistProps.visibility,
       participation: wishlistProps.participation,
+      version: wishlistProps.version,
     });
   });
 
@@ -50,6 +51,7 @@ describe("WishlistMapper", () => {
       visibility: Visibility;
       participation: Participation;
       $sequence: number;
+      version: number;
     }
 
     const doc: WishlistDocument = {
@@ -65,6 +67,7 @@ describe("WishlistMapper", () => {
       description: "A description",
       visibility: Visibility.LINK,
       participation: Participation.ANYONE,
+      version: 0,
     };
 
     const itemProps = {
@@ -91,6 +94,7 @@ describe("WishlistMapper", () => {
     expect(domain.participation).toBe(wishlistProps.participation);
     expect(domain.createdAt.getTime()).toBe(wishlistProps.createdAt.getTime());
     expect(domain.updatedAt.getTime()).toBe(wishlistProps.updatedAt.getTime());
+    expect(domain.version).toBe(0);
   });
 
   it("should map persistence document with null description to domain aggregate with undefined description", () => {

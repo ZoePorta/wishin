@@ -42,20 +42,13 @@ export class RegisterUserUseCase {
       // 3. Compensation: Delete the user ONLY if it was a newly created account
       // If it was an anonymous promotion, we never delete to avoid data loss (ADR 018)
       if (authResult.isNewUser) {
-        try {
-          await this.authRepo.deleteUser(authResult.userId);
-        } catch (compensationError) {
-          // Log secondary error but do NOT rethrow it to preserve original root cause
-          this.logger.error("Compensating user deletion failed", {
-            userId: authResult.userId,
-            originalError:
-              error instanceof Error ? error.message : String(error),
-            compensationError:
-              compensationError instanceof Error
-                ? compensationError.message
-                : String(compensationError),
-          });
-        }
+        // NOTE: We no longer delete the user here to support "Incomplete Accounts".
+        // This allows the user to retry profile creation later without losing their identity.
+        // It also avoids using privileged deleteUser calls in the client SDK.
+        this.logger.error("Profile creation failed for new user", {
+          userId: authResult.userId,
+          originalError: error instanceof Error ? error.message : String(error),
+        });
       }
       throw error;
     }
