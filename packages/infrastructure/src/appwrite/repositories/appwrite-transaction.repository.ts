@@ -351,6 +351,47 @@ export class AppwriteTransactionRepository
 
     return allTransactions;
   }
+  /**
+   * Finds transactions for a specific user and item, filtered by status.
+   * @param userId - The user identity.
+   * @param itemId - The item UUID.
+   * @param status - Optional filter by transaction status.
+   * @returns {Promise<Transaction[]>}
+   * @throws {PersistenceError} If the query fails or session cannot be ensured.
+   */
+  async findByUserIdAndItemId(
+    userId: string,
+    itemId: string,
+    status?: TransactionStatus,
+  ): Promise<Transaction[]> {
+    await this.ensureSession();
+    try {
+      const queries = [
+        Query.equal("userId", userId),
+        Query.equal("itemId", itemId),
+      ];
+
+      if (status) {
+        queries.push(Query.equal("status", status));
+      }
+
+      const response = await this.tablesDb.listRows({
+        databaseId: this.databaseId,
+        tableId: this.transactionsCollectionId,
+        queries,
+      });
+
+      const docs = toDocument<TransactionDocument[]>(response.rows);
+      return docs.map((doc) => TransactionMapper.toDomain(doc));
+    } catch (error) {
+      throw new PersistenceError(
+        "Failed to find transactions by user ID and item ID",
+        {
+          cause: error instanceof Error ? error : String(error),
+        },
+      );
+    }
+  }
 
   /**
    * Deletes a transaction by its ID (hard delete/undo).
