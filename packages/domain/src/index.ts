@@ -14,6 +14,7 @@ export * from "./use-cases/remove-wishlist-item.use-case";
 export * from "./use-cases/upload-image.use-case";
 export * from "./use-cases/get-image-preview.use-case";
 export * from "./use-cases/delete-image.use-case";
+export * from "./use-cases/undo-purchase.use-case";
 export * from "./use-cases/dtos";
 export * from "./use-cases/mappers/wishlist-output.mapper";
 export * from "./errors/domain-errors";

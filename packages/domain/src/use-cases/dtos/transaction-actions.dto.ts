@@ -61,3 +61,21 @@ export interface CancelTransactionInput {
    */
   transactionId: string;
 }
+
+/**
+ * Input DTO for undoing a purchase (Immediate deletion).
+ */
+export interface UndoPurchaseInput {
+  /**
+   * UUID of the wishlist.
+   */
+  wishlistId: string;
+  /**
+   * UUID of the transaction to undo.
+   */
+  transactionId: string;
+  /**
+   * ID of the user requesting the undo.
+   */
+  userId: string;
+}
