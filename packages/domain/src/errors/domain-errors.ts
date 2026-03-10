@@ -110,6 +110,20 @@ export class WishlistItemNotFoundError extends NotFoundError {
 }
 
 /**
+ * Error thrown when a requested transaction is not found.
+ *
+ * @param {string} transactionId - The ID of the missing transaction.
+ * @returns {TransactionNotFoundError} An instance of TransactionNotFoundError.
+ */
+export class TransactionNotFoundError extends NotFoundError {
+  constructor(transactionId: string) {
+    super(`Transaction with ID ${transactionId} not found`);
+    this.name = "TransactionNotFoundError";
+    Object.setPrototypeOf(this, TransactionNotFoundError.prototype);
+  }
+}
+
+/**
  * Error thrown when there is a failure in the underlying database or infrastructure.
  *
  * @param {string} message - The error message.
