@@ -2,6 +2,7 @@ import {
   WishlistNotFoundError,
   TransactionNotFoundError,
   InvalidOperationError,
+  ConsistencyError,
 } from "../errors/domain-errors";
 import { TransactionStatus } from "../value-objects/transaction-status";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
@@ -20,10 +21,6 @@ import type { Wishlist } from "../aggregates/wishlist";
  * 3. Fetching the wishlist.
  * 4. Reverting the wishlist item's purchased quantity.
  * 5. Physically deleting the transaction record (ADR 009).
- *
- * @throws {TransactionNotFoundError} If the transaction is not found.
- * @throws {WishlistNotFoundError} If the wishlist is not found.
- * @throws {InvalidOperationError} If the user is unauthorized or transaction status is invalid.
  */
 export class UndoPurchaseUseCase {
   constructor(
@@ -38,6 +35,10 @@ export class UndoPurchaseUseCase {
    *
    * @param {UndoPurchaseInput} input - The payload containing wishlistId, transactionId, and userId.
    * @returns {Promise<void>}
+   * @throws {TransactionNotFoundError} If the transaction is not found.
+   * @throws {WishlistNotFoundError} If the wishlist is not found.
+   * @throws {InvalidOperationError} If the user is unauthorized or transaction status is invalid.
+   * @throws {ConsistencyError} If the rollback fails after a transaction deletion failure.
    */
   async execute(input: UndoPurchaseInput): Promise<void> {
     const { wishlistId, transactionId, userId } = input;
@@ -78,7 +79,9 @@ export class UndoPurchaseUseCase {
     await this.wishlistRepository.save(updatedWishlist);
 
     const rollbackPlan = {
-      wishlist: wishlist, // Original state
+      wishlistId,
+      itemId,
+      originalWishlist: wishlist,
       transaction: transaction,
     };
 
@@ -129,35 +132,47 @@ export class UndoPurchaseUseCase {
   }
 
   private async rollback(plan: {
-    wishlist: Wishlist;
-    transaction: { itemId: string | null; quantity: number };
+    wishlistId: string;
+    itemId: string;
+    originalWishlist: Wishlist;
+    transaction: { quantity: number };
   }): Promise<void> {
+    const { wishlistId, itemId, originalWishlist, transaction } = plan;
     try {
-      const fresh = await this.wishlistRepository.findById(plan.wishlist.id);
-      if (
-        fresh?.version === plan.wishlist.version + 1 &&
-        plan.transaction.itemId
-      ) {
-        const rolledBackWishlist = fresh.purchaseItem(
-          plan.transaction.itemId,
-          plan.transaction.quantity,
-          0, // Direct purchase restore
-        );
-        await this.wishlistRepository.save(rolledBackWishlist);
-      } else {
-        this.logger.warn(
-          "Undo rollback skipped: Wishlist version mismatch or missing itemId.",
-          {
-            wishlistId: plan.wishlist.id,
-          },
+      const fresh = await this.wishlistRepository.findById(wishlistId);
+
+      if (!fresh) {
+        throw new Error("Wishlist not found during reload");
+      }
+
+      if (fresh.version !== originalWishlist.version + 1) {
+        throw new Error(
+          `Version mismatch: expected ${(originalWishlist.version + 1).toString()}, got ${fresh.version.toString()}`,
         );
       }
+
+      const rolledBackWishlist = fresh.purchaseItem(
+        itemId,
+        transaction.quantity,
+        0, // Direct purchase restore
+      );
+      await this.wishlistRepository.save(rolledBackWishlist);
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       this.logger.error("CRITICAL: Undo rollback failed", {
-        wishlistId: plan.wishlist.id,
+        wishlistId,
+        itemId,
         error: errorMessage,
       });
+
+      throw new ConsistencyError(
+        `Critical consistency failure: rollback failed to restore wishlist status after transaction deletion error. ${errorMessage}`,
+        {
+          wishlistId,
+          itemId,
+          currentVersion: originalWishlist.version + 1,
+        },
+      );
     }
   }
 }

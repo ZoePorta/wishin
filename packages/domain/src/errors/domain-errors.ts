@@ -154,6 +154,24 @@ export class ValidationError extends Error {
 }
 
 /**
+ * Error thrown when a compensating action fails to restore consistency.
+ *
+ * @param {string} message - The error message.
+ * @param {object} metadata - Extra context for debugging (ids, versions).
+ * @returns {ConsistencyError} An instance of ConsistencyError.
+ */
+export class ConsistencyError extends Error {
+  constructor(
+    message: string,
+    public readonly metadata: Record<string, unknown>,
+  ) {
+    super(message);
+    this.name = "ConsistencyError";
+    Object.setPrototypeOf(this, ConsistencyError.prototype);
+  }
+}
+
+/**
  * Error message used when a visibility value is invalid.
  * Invariant: Visibility must be one of the following:
  * - Visibility.LINK: Anyone with the link can view.

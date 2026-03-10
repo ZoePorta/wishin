@@ -14,6 +14,7 @@ import {
   WishlistNotFoundError,
   TransactionNotFoundError,
   InvalidOperationError,
+  ConsistencyError,
 } from "../errors/domain-errors";
 
 describe("UndoPurchaseUseCase", () => {
@@ -242,5 +243,131 @@ describe("UndoPurchaseUseCase", () => {
     expect(wishlistRepo.save).toHaveBeenCalledTimes(2); // 1. Undo 2. Rollback
     const rollbackSave = wishlistRepo.save.mock.calls[1][0];
     expect(rollbackSave.items[0].purchasedQuantity).toBe(1);
+  });
+
+  it("should throw ConsistencyError if reload fails during rollback", async () => {
+    const transaction = Transaction.reconstitute({
+      id: transactionId,
+      itemId,
+      userId,
+      itemName: "Test Item",
+      itemPrice: 10,
+      itemCurrency: "EUR",
+      itemDescription: "Desc",
+      ownerUsername: "owner",
+      status: TransactionStatus.PURCHASED,
+      quantity: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const item = WishlistItem.reconstitute({
+      id: itemId,
+      wishlistId,
+      name: "Test Item",
+      priority: Priority.MEDIUM,
+      isUnlimited: false,
+      totalQuantity: 5,
+      reservedQuantity: 0,
+      purchasedQuantity: 1,
+    });
+
+    const wishlist = Wishlist.reconstitute({
+      id: wishlistId,
+      ownerId: "owner-id",
+      title: "Title",
+      visibility: Visibility.LINK,
+      participation: Participation.ANYONE,
+      items: [item.toProps()],
+      version: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    transactionRepo.findById.mockResolvedValue(transaction);
+    wishlistRepo.findById.mockResolvedValueOnce(wishlist);
+
+    transactionRepo.delete.mockRejectedValue(new Error("Deletion failed"));
+
+    // Reload fetch: wishlist doesn't exist anymore for some reason
+    wishlistRepo.findById.mockResolvedValueOnce(null);
+
+    await expect(
+      useCase.execute({ wishlistId, transactionId, userId }),
+    ).rejects.toThrow(ConsistencyError);
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "CRITICAL: Undo rollback failed",
+      expect.objectContaining({
+        wishlistId: wishlistId,
+        error: "Wishlist not found during reload",
+      }),
+    );
+  });
+
+  it("should throw ConsistencyError if version mismatch occurs during rollback", async () => {
+    const transaction = Transaction.reconstitute({
+      id: transactionId,
+      itemId,
+      userId,
+      itemName: "Test Item",
+      itemPrice: 10,
+      itemCurrency: "EUR",
+      itemDescription: "Desc",
+      ownerUsername: "owner",
+      status: TransactionStatus.PURCHASED,
+      quantity: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const item = WishlistItem.reconstitute({
+      id: itemId,
+      wishlistId,
+      name: "Test Item",
+      priority: Priority.MEDIUM,
+      isUnlimited: false,
+      totalQuantity: 5,
+      reservedQuantity: 0,
+      purchasedQuantity: 1,
+    });
+
+    const wishlist = Wishlist.reconstitute({
+      id: wishlistId,
+      ownerId: "owner-id",
+      title: "Title",
+      visibility: Visibility.LINK,
+      participation: Participation.ANYONE,
+      items: [item.toProps()],
+      version: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    transactionRepo.findById.mockResolvedValue(transaction);
+    wishlistRepo.findById.mockResolvedValueOnce(wishlist);
+
+    transactionRepo.delete.mockRejectedValue(new Error("Deletion failed"));
+
+    // Version mismatch: someone else changed the wishlist mid-undo
+    const snapshot = {
+      ...wishlist.toProps(),
+      items: wishlist.items.map((i) => i.toProps()),
+      version: 10, // Far ahead
+    };
+    const mismatchingWishlist = Wishlist.reconstitute(snapshot);
+    wishlistRepo.findById.mockResolvedValueOnce(mismatchingWishlist);
+
+    await expect(
+      useCase.execute({ wishlistId, transactionId, userId }),
+    ).rejects.toThrow(ConsistencyError);
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "CRITICAL: Undo rollback failed",
+      expect.objectContaining({
+        wishlistId: wishlistId,
+        error: expect.stringContaining("Version mismatch") as unknown,
+      }),
+    );
   });
 });
