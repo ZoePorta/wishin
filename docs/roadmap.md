@@ -67,31 +67,30 @@
 
 ---
 
-## Phase 4: Gifting & Synchronization (Transactions)
+## Phase 4: Gifting & Direct Purchase (MVP Focus)
 
 ### 4.1 Domain Refinement
 
-- [x] Define `TransactionRepository` interface with `save`, `findById`, `findByItemId`, `cancelByItemId`, `findByUserId` (with optional status and limit), and `delete`.
+- [x] Define `TransactionRepository` interface.
 - [x] Refine `WishlistItem` invariants for atomic stock updates.
 
 ### 4.2 Application Layer (TDD)
 
-- [x] **DTOs Definition:** `ReserveItemInput`, `PurchaseItemInput`, `ConfirmPurchaseInput`, `CancelTransactionInput`.
-- [ ] **TDD - Gifting Cycles:**
-  - [x] **ReserveItem:** RED (Registered only) -> GREEN (Coordination).
-  - [ ] **DirectPurchase:** RED (Anonymous/Registered) -> GREEN (Immediate stock update).
+- [x] **DTOs Definition:** `PurchaseItemInput` (Main focus), `UndoPurchaseInput`.
+- [ ] **TDD - Gifting Cycles (Direct Purchase):**
+  - [x] **DirectPurchase:** RED (Anonymous/Registered) -> GREEN (Immediate stock update).
   - [ ] **Undo (Immediate):** RED (Hard delete within window) -> GREEN (Implementation).
-  - [ ] **Confirm/Cancel:** RED (State transitions) -> GREEN (Persistence).
 
 ### 4.3 Infrastructure Layer (Appwrite)
 
-- [x] **Schema Definition:** Create `Transactions` collection (Simplified MVP version).
+- [x] **Schema Definition:** Create `Transactions` collection.
 - [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI).
 - [ ] **Integration Tests:** Test transaction persistence and stock consistency.
 
 ### 4.4 UI & Presentation
 
-- [ ] Guest/Anonymous interaction: Reservation/Purchase buttons with immediate "Undo" snackbar.
+- [ ] Guest/Anonymous interaction: Simple "Buy" button with immediate "Undo" snackbar.
+- [ ] Clean UI: No "Reserved" status shown during MVP (ADR 025).
 
 ---
 
@@ -100,7 +99,7 @@
 ### 5.1 Application Layer
 
 - [ ] **TDD - Auth:** `RegisterUser` and `LoginUser` use cases.
-- [ ] **TDD - History:** `GetGiftingHistory` (Filtering transactions by UserID).
+- [ ] **TDD - History:** `GetGiftingHistory` (Purchases only for MVP).
 
 ### 5.2 Infrastructure Layer
 
@@ -125,6 +124,10 @@
 
 ## Post-MVP / Future Enhancements
 
+- [ ] **Reservations System**: Full implementation of the "soft lock" flow.
+  - [ ] `ReserveItem` use case integration.
+  - [ ] `Confirm/Cancel` reservation UI and logic.
+  - [ ] Smart Consumption (FIFO) for multiple reservations (ADR 024).
 - [ ] **Selective Pruning**: Implement logic to preserve reservations when reducing total quantity (replaces ADR 019).
 - [ ] **Advanced Notifications**: Implement real-time alerts for reservation cancellations (pruning, expiration).
 - [ ] **Transaction Data Sync**: Implement an Appwrite Function (DB Trigger) to synchronize denormalized fields and resolve data staleness (ADR 021).

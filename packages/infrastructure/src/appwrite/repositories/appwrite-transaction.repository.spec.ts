@@ -10,7 +10,11 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import { Transaction, TransactionStatus } from "@wishin/domain";
+import {
+  Transaction,
+  TransactionStatus,
+  PersistenceError,
+} from "@wishin/domain";
 
 // TablesDB specific types from Appwrite SDK
 interface MockRow extends Models.Document {
@@ -554,6 +558,101 @@ describe("AppwriteTransactionRepository", () => {
           ]),
         }),
       );
+    });
+  });
+
+  describe("findByUserIdAndItemId", () => {
+    const mockDocs: MockRow[] = [
+      {
+        $id: validId,
+        itemId: validItemId,
+        userId: validUserId,
+        itemName: "Test Item",
+        itemPrice: 99.99,
+        itemCurrency: "EUR",
+        itemDescription: "A test item description",
+        ownerUsername: "testuser",
+        status: TransactionStatus.RESERVED,
+        quantity: 1,
+        $createdAt: new Date().toISOString(),
+        $updatedAt: new Date().toISOString(),
+        $permissions: [],
+        $databaseId: config.databaseId,
+        $collectionId: config.transactionsCollectionId,
+        $tableId: config.transactionsCollectionId,
+        $sequence: 1,
+      },
+    ];
+
+    it("should return transactions for a user and item", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+        rows: mockDocs,
+        total: 1,
+      } as MockRowList);
+
+      const results = await repository.findByUserIdAndItemId(
+        validUserId,
+        validItemId,
+      );
+
+      expect(results).toHaveLength(1);
+      expect(results[0].userId).toBe(validUserId);
+      expect(results[0].itemId).toBe(validItemId);
+      expect(mockAccount.get).toHaveBeenCalled();
+      expect(mockTablesDb.listRows).toHaveBeenCalledWith(
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          queries: expect.arrayContaining([
+            expect.objectContaining({ field: "userId", value: validUserId }),
+            expect.objectContaining({ field: "itemId", value: validItemId }),
+          ]),
+        }),
+      );
+    });
+
+    it("should allow filtering by status", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: validUserId,
+      } as Models.User<Models.Preferences>);
+      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+        rows: [],
+        total: 0,
+      } as MockRowList);
+
+      await repository.findByUserIdAndItemId(
+        validUserId,
+        validItemId,
+        TransactionStatus.PURCHASED,
+      );
+
+      expect(mockTablesDb.listRows).toHaveBeenCalledWith(
+        expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          queries: expect.arrayContaining([
+            expect.objectContaining({ field: "userId", value: validUserId }),
+            expect.objectContaining({ field: "itemId", value: validItemId }),
+            expect.objectContaining({
+              field: "status",
+              value: TransactionStatus.PURCHASED,
+            }),
+          ]),
+        }),
+      );
+    });
+
+    it("should throw PersistenceError if userId does not match authenticated user", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: "different-user",
+      } as Models.User<Models.Preferences>);
+
+      await expect(
+        repository.findByUserIdAndItemId(validUserId, validItemId),
+      ).rejects.toThrow(PersistenceError);
+
+      expect(mockTablesDb.listRows).not.toHaveBeenCalled();
     });
   });
 

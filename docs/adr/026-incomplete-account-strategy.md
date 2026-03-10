@@ -1,4 +1,4 @@
-# ADR 023: Incomplete Account Strategy
+# ADR 026: Incomplete Account Strategy
 
 **Status:** Accepted  
 **Date:** 2026-03-10  

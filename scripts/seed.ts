@@ -1,5 +1,6 @@
 import { Client, TablesDB, type Models } from "node-appwrite";
 import "dotenv/config";
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Visibility, Participation, TransactionStatus } from "@wishin/domain";
 
 const REQUIRED_ENV_VARS = [
@@ -178,7 +179,7 @@ async function seed() {
         imageUrl:
           "https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=800&q=80",
         totalQuantity: 3,
-        reservedQuantity: 1,
+        reservedQuantity: 0, // TODO: Restore reservations post-MVP
         purchasedQuantity: 1,
       },
     });
@@ -252,6 +253,7 @@ async function seed() {
       },
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const item6 = await tablesDb.upsertRow<ItemRow>({
       databaseId,
       tableId: itemsCollectionId,
@@ -266,7 +268,7 @@ async function seed() {
         imageUrl:
           "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80",
         totalQuantity: 1,
-        reservedQuantity: 1,
+        reservedQuantity: 0, // TODO: Restore reservations post-MVP
         purchasedQuantity: 0,
       },
     });
@@ -294,6 +296,7 @@ async function seed() {
       ? `${prefix}_transactions`
       : "transactions";
 
+    /* // TODO: Restore reservations post-MVP
     // Item 1: Partially reserved (1/3)
     await tablesDb.upsertRow<TransactionRow>({
       databaseId,
@@ -319,6 +322,7 @@ async function seed() {
         quantity: 1,
       },
     });
+    */
 
     // Item 7: Fully purchased (1/1)
     await tablesDb.upsertRow<TransactionRow>({

@@ -155,6 +155,7 @@ To minimize friction while maintaining data integrity, anonymous actions are han
 
 - **Undo:** Available to everyone on Purchase. Deletes the transaction record. Only available immediately after the action.
 - **Cancellation:** Available to both **Registered** and **Anonymous** users (via ADR 018) via their "Gifting History", **restricted to their own transactions**. It transitions the transaction to a `CANCELLED` status (Soft Delete) for audit purposes.
+- **Smart Consumption:** Automatic logic during purchase that prioritizes existing reservations to prevent duplicate units (ADR 024).
 
 ### 4.6 Transaction Snapshot Pattern
 
@@ -185,6 +186,28 @@ When a transaction is initiated (`createReservation` or `createPurchase`), the c
 
 - **Fully Normalized**: Rejected due to N+1 query overhead in Appwrite.
 - **Versioned Entities**: Rejected for MVP due to high implementation and migration complexity.
+
+### 4.7 Smart Purchase & Reservation Consumption (ADR 024)
+
+To prevent duplicate inventory blocks and provide a seamless gifting experience, the domain implements a **Smart Consumption** strategy during the purchase flow.
+
+1.  **Intent Detection:** When a user initiates a purchase, the system automatically detects existing `RESERVED` transactions for the same item.
+2.  **History Preservation (Case Buy >= Reserved):** The oldest reservation is "promoted" to a purchase record. Its quantity is updated to the total requested amount, but it **retains its original creation date**. This honors the user's intent to gift since the moment they made the reservation.
+3.  **Partial Consumption (Case Buy < Reserved):** A new purchase record is created for the requested quantity, and the oldest reservation's quantity is reduced accordingly.
+
+#### 4.7.1 Concurrency and Multi-User Policy
+
+- **Policy**: A user can **only** consume reservations they own (`Transaction.userId` must match). Smart Consumption is strictly scoped to the purchasing user's active reservations to prevent accidental consumption of others' gift commitments.
+- **Concurrency Strategy**: Operations that modify `RESERVED` and create `PURCHASED` records must be guarded by **Optimistic Concurrency Control**. Entities use version/timestamp columns (ADR 012), and the application layer must implement retry logic on version conflicts.
+- **Anonymous Users**: As per Section 5.8, anonymous users cannot initiate reservations. Therefore, they are excluded from the promotion/consumption flow and always result in direct `PURCHASED` transactions.
+- **Identity Preservation**: A promoted reservation preserves the original `Transaction.userId`. It is never re-assigned to a different user.
+- **Race Conditions**: Sequence transitions (e.g., from `RESERVED` to `PURCHASED`) must be guarded by atomic infrastructure operations where possible or sequential checks to prevent double-spending/over-allocation.
+
+**Examples:**
+
+- **Own-Reservation**: User A has 1 reserved, buys 1. Reservation is promoted to Purchase (1 unit used).
+- **Cross-User**: User A has 1 reserved. User B buys 1. System ignores User A's reservation; User B creates a new Purchase record (Total: 1 Reserved + 1 Purchased).
+- **Concurrent Purchases**: Two users buy the last available unit simultaneously. Optimistic locking ensures only one succeeds while the other fails on the version check.
 
 ## 5. Domain Invariants & Lifecycle
 

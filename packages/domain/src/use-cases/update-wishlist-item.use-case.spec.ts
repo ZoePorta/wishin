@@ -38,6 +38,7 @@ describe("UpdateWishlistItemUseCase", () => {
       findById: vi.fn(),
       findByItemId: vi.fn().mockResolvedValue([]),
       findByUserId: vi.fn().mockResolvedValue([]),
+      findByUserIdAndItemId: vi.fn().mockResolvedValue([]),
       cancelByItemId: transactionCancelByItemId,
       delete: vi.fn(),
     };

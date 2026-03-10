@@ -10,6 +10,8 @@ import type {
   WishlistRepository,
   UserRepository,
   Wishlist,
+  Logger,
+  ObservabilityService,
 } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
@@ -32,12 +34,16 @@ export class AppwriteWishlistRepository
    * @param databaseId - The ID of the Appwrite database.
    * @param wishlistCollectionId - The ID of the wishlists collection.
    * @param wishlistItemsCollectionId - The ID of the wishlist items collection.
+   * @param logger - Logger for technical/operational logs.
+   * @param observability - Service for breadcrumbs and telemetry events.
    */
   constructor(
     private readonly client: Client,
     private readonly databaseId: string,
     private readonly wishlistCollectionId: string,
     private readonly wishlistItemsCollectionId: string,
+    private readonly logger: Logger,
+    private readonly observability: ObservabilityService,
   ) {
     this.tablesDb = new TablesDB(this.client);
     this.account = new Account(this.client);
@@ -273,9 +279,8 @@ export class AppwriteWishlistRepository
     }
 
     // 3. Sync Wishlist Items First (Atomicity step)
-    // ... rest of the existing sync logic ...
-    // 3a. Get existing items IDs to identify removals
-    const existingItemIds: string[] = [];
+    // 3a. Get existing items for compensation backup
+    const existingItems: Models.Document[] = [];
     let existingCursor: string | undefined = undefined;
     do {
       const queries = [
@@ -290,7 +295,7 @@ export class AppwriteWishlistRepository
         tableId: this.wishlistItemsCollectionId,
         queries,
       });
-      existingItemIds.push(...response.rows.map((row) => row.$id));
+      existingItems.push(...toDocument<Models.Document[]>(response.rows));
 
       if (response.rows.length < 100) {
         existingCursor = undefined;
@@ -298,6 +303,8 @@ export class AppwriteWishlistRepository
         existingCursor = response.rows[response.rows.length - 1].$id;
       }
     } while (existingCursor);
+
+    const existingItemIds = existingItems.map((row) => row.$id);
 
     // 3b. Prepare upserts and deletes
     const currentItems = wishlist.items;
@@ -341,7 +348,19 @@ export class AppwriteWishlistRepository
       } catch (error) {
         attempt++;
         if (attempt > MAX_RETRIES) {
-          console.error("Failed to sync wishlist items after retries:", error);
+          this.logger.error("Failed to sync wishlist items after retries:", {
+            wishlistId: wishlist.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          // COMPENSATION: Best-effort rollback of item changes even after retry failure
+          const newItemIdsToDelete = Array.from(currentItemIds).filter(
+            (id) => !existingItemIds.includes(id),
+          );
+          await this.compensateItemSyncTransitions(
+            existingItems,
+            newItemIdsToDelete,
+            error instanceof Error ? error.message : String(error),
+          );
           throw error;
         }
         // Small backoff
@@ -351,13 +370,136 @@ export class AppwriteWishlistRepository
 
     // 3. Upsert Wishlist Document AFTER successful items sync
     // (Version check already performed at step 2 to prevent TOCTOU)
+    try {
+      await this.tablesDb.upsertRow({
+        databaseId: this.databaseId,
+        tableId: this.wishlistCollectionId,
+        rowId: wishlist.id,
+        data: WishlistMapper.toPersistence(wishlist),
+      });
+    } catch (saveError: unknown) {
+      // 4. COMPENSATION: Best-effort rollback of item changes (ADR 023)
+      const saveErrorMessage =
+        saveError instanceof Error ? saveError.message : String(saveError);
+      this.logger.error(
+        `Wishlist ${wishlist.id} header save failed. Reverting item changes.`,
+        { wishlistId: wishlist.id, error: saveErrorMessage },
+      );
 
-    await this.tablesDb.upsertRow({
-      databaseId: this.databaseId,
-      tableId: this.wishlistCollectionId,
-      rowId: wishlist.id,
-      data: WishlistMapper.toPersistence(wishlist),
-    });
+      const newItemIdsToDelete = Array.from(currentItemIds).filter(
+        (id) => !existingItemIds.includes(id),
+      );
+
+      await this.compensateItemSyncTransitions(
+        existingItems,
+        newItemIdsToDelete,
+        saveErrorMessage,
+      );
+
+      throw saveError;
+    }
+  }
+
+  /**
+   * Performs a compensating rollback for wishlist item changes.
+   *
+   * @param existingItems - The snapshot of item documents preserved before the operation.
+   * @param newItemIdsToDelete - IDs of items that were newly created and should be removed.
+   * @param originalErrorMessage - The error message that triggered this compensation.
+   */
+  private async compensateItemSyncTransitions(
+    existingItems: Models.Document[],
+    newItemIdsToDelete: string[],
+    originalErrorMessage: string,
+  ): Promise<void> {
+    try {
+      // 4a. Restore deleted/modified items
+      const restorePromises = existingItems.map((oldItem) => {
+        // Strip system fields before re-upserting
+        const {
+          $id,
+          $tableId: _,
+          $databaseId: __,
+          $collectionId: ___,
+          $permissions: ____,
+          $createdAt: _____,
+          $updatedAt: ______,
+          $sequence: _______, // ADR 023: Omit Appwrite system field
+          ...persistenceData
+        } = oldItem as unknown as Record<string, unknown>;
+
+        return this.tablesDb.upsertRow({
+          databaseId: this.databaseId,
+          tableId: this.wishlistItemsCollectionId,
+          rowId: $id as string,
+          data: persistenceData as Record<string, unknown>,
+        });
+      });
+
+      // 4b. Delete newly created items
+      const cleanupPromises = newItemIdsToDelete.map(async (id) => {
+        try {
+          await this.tablesDb.deleteRow({
+            databaseId: this.databaseId,
+            tableId: this.wishlistItemsCollectionId,
+            rowId: id,
+          });
+        } catch (error) {
+          // Treat 404 (Not Found) as a success to ensure idempotency
+          if (error instanceof AppwriteException && error.code === 404) {
+            return;
+          }
+          throw error;
+        }
+      });
+
+      const results = await Promise.allSettled([
+        ...restorePromises,
+        ...cleanupPromises,
+      ]);
+
+      // Detect and surface partial rollback failures
+      const rejected = results.filter(
+        (res): res is PromiseRejectedResult => res.status === "rejected",
+      );
+      if (rejected.length > 0) {
+        const errorMsg = `CRITICAL: Compensation failed for ${String(
+          rejected.length,
+        )} operations during wishlist save rollback.`;
+        const compensationErrorMessage = rejected
+          .map((r) => String(r.reason))
+          .join("; ");
+        this.logger.error(errorMsg, { rejected });
+        this.observability.trackEvent("compensation_failure", {
+          failedCount: rejected.length,
+          totalCount: results.length,
+          originalErrorMessage,
+          compensationErrorMessage,
+        });
+        throw new Error(`${errorMsg} Original error: ${originalErrorMessage}`);
+      }
+    } catch (compensationError: unknown) {
+      const compensationErrorMessage =
+        compensationError instanceof Error
+          ? compensationError.message
+          : String(compensationError);
+      this.logger.error(
+        "CRITICAL: Compensation logic failed to execute fully",
+        {
+          error: compensationErrorMessage,
+          originalError: originalErrorMessage,
+        },
+      );
+      this.observability.trackEvent("compensation_failed_exception", {
+        reason: "exception_in_retry_loop",
+        originalErrorMessage,
+        compensationErrorMessage,
+      });
+      // Rethrow as a combined error to preserve context instead of swallowing
+      throw new Error(
+        `Save failure and compensation failure. Original: ${originalErrorMessage}, Compensation: ${compensationErrorMessage}`,
+      );
+    }
   }
 
   /**
