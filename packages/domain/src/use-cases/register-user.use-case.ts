@@ -24,14 +24,17 @@ export class RegisterUserUseCase {
    * @throws {Error} If authentication or profile creation fails.
    */
   async execute(input: RegisterUserInput): Promise<void> {
-    // 1. Register with Auth Service
+    // 1. Validation: Fail fast before creating auth identity
+    Profile.validateUsername(input.username);
+
+    // 2. Register with Auth Service
     const authResult = await this.authRepo.register(
       input.email,
       input.password,
     );
 
     try {
-      // 2. Create and Save Profile
+      // 3. Create and Save Profile
       // Using the same ID from Auth as the Profile ID (ADR 014/018)
       const profile = Profile.create({
         id: authResult.userId,
@@ -40,12 +43,16 @@ export class RegisterUserUseCase {
 
       await this.profileRepo.save(profile);
     } catch (error) {
-      // 3. Compensation: Log and surface partial registration (ADR 018)
-      this.logger.error("Profile creation failed after auth success", {
-        userId: authResult.userId,
-        isNewUser: authResult.isNewUser,
-        originalError: error instanceof Error ? error.message : String(error),
-      });
+      // 4. Compensation: Log and surface partial registration (ADR 018)
+      try {
+        this.logger.error("Profile creation failed after auth success", {
+          userId: authResult.userId,
+          isNewUser: authResult.isNewUser,
+          originalError: error instanceof Error ? error.message : String(error),
+        });
+      } catch (_logError) {
+        // Logging is best-effort; avoid throwing here to ensure domain error is propagated
+      }
 
       throw new IncompleteRegistrationError(
         authResult.userId,

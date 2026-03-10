@@ -153,6 +153,30 @@ export class Profile {
     return this.id === other.id;
   }
 
+  /**
+   * Validates a username string against business rules.
+   *
+   * @param {string} username - The username to validate.
+   * @throws {InvalidAttributeError} If the username is invalid.
+   */
+  public static validateUsername(username: string): void {
+    if (typeof username !== "string" || !username) {
+      throw new InvalidAttributeError(
+        "Invalid username: Must be a non-empty string",
+      );
+    }
+    const trimmed = username.trim();
+    if (trimmed.length < 3 || trimmed.length > 30) {
+      throw new InvalidAttributeError(
+        "Invalid username length: Must be 3-30 characters",
+      );
+    }
+    const usernameRegex = /^[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*$/;
+    if (!usernameRegex.test(trimmed)) {
+      throw new InvalidAttributeError("Invalid username format");
+    }
+  }
+
   private validate(mode: ValidationMode): void {
     // Structural integrity
     if (typeof this.id !== "string" || !this.id) {
@@ -166,10 +190,14 @@ export class Profile {
       );
     }
 
-    if (typeof this.username !== "string" || !this.username) {
-      throw new InvalidAttributeError(
-        "Invalid username: Must be a non-empty string",
-      );
+    if (mode === ValidationMode.STRICT) {
+      Profile.validateUsername(this.username);
+    } else {
+      if (typeof this.username !== "string" || !this.username) {
+        throw new InvalidAttributeError(
+          "Invalid username: Must be a non-empty string",
+        );
+      }
     }
 
     if (this.bio !== undefined && typeof this.bio !== "string") {
@@ -198,16 +226,6 @@ export class Profile {
 
     // Business Rules (STRICT)
     if (mode === ValidationMode.STRICT) {
-      if (this.username.length < 3 || this.username.length > 30) {
-        throw new InvalidAttributeError(
-          "Invalid username length: Must be 3-30 characters",
-        );
-      }
-      const usernameRegex = /^[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*$/;
-      if (!usernameRegex.test(this.username)) {
-        throw new InvalidAttributeError("Invalid username format");
-      }
-
       if (this.bio !== undefined && this.bio.length > 500) {
         throw new InvalidAttributeError(
           "Invalid bio: Must be at most 500 characters",

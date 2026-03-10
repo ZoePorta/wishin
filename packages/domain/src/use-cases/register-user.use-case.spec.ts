@@ -109,4 +109,18 @@ describe("RegisterUserUseCase", () => {
     );
     expect(authRepo.deleteUser).not.toHaveBeenCalled();
   });
+
+  it("should reject invalid usernames before calling auth or profile repositories", async () => {
+    const invalidInput = {
+      ...validRegistrationInput,
+      username: "a", // Too short
+    };
+
+    await expect(useCase.execute(invalidInput)).rejects.toThrow(
+      /Invalid username/,
+    );
+
+    expect(authRepo.register).not.toHaveBeenCalled();
+    expect(profileRepo.save).not.toHaveBeenCalled();
+  });
 });

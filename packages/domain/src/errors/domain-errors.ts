@@ -157,6 +157,26 @@ export const INVALID_VISIBILITY_ERROR = "Invalid visibility" as const;
 export const INVALID_PARTICIPATION_ERROR = "Invalid participation" as const;
 /**
  * Error thrown when authentication succeeds but profile creation fails.
+ *
+ * This represents a partial registration state where the user exists in the auth service
+ * but lacks corresponding domain metadata. Callers should use the provided recovery fields
+ * to either retry profile creation or clean up the registration.
+ *
+ * @param {string} userId - The unique identifier of the affected user from the auth provider.
+ * @param {boolean} isNewUser - Whether this was a newly created user (true) or an existing one being promoted/authenticated (false).
+ * @param {string} message - Human-readable error message.
+ * @param {object} [options] - Optional configuration.
+ * @param {unknown} [options.cause] - The original error cause (e.g., a database or network failure).
+ *
+ * @example
+ * try {
+ *   await useCase.execute(input);
+ * } catch (error) {
+ *   if (error instanceof IncompleteRegistrationError) {
+ *     console.error(`Partial registration for user ${error.userId}. New user: ${error.isNewUser}`);
+ *     // Retry logic or manual intervention requested
+ *   }
+ * }
  */
 export class IncompleteRegistrationError extends Error {
   constructor(

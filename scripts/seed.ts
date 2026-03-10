@@ -1,6 +1,5 @@
 import { Client, TablesDB, type Models } from "node-appwrite";
 import "dotenv/config";
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Visibility, Participation, TransactionStatus } from "@wishin/domain";
 
 const REQUIRED_ENV_VARS = [
@@ -10,7 +9,9 @@ const REQUIRED_ENV_VARS = [
   "EXPO_PUBLIC_APPWRITE_DATABASE_ID",
 ] as const;
 
-const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]);
+const missingVars = REQUIRED_ENV_VARS.filter((v) => {
+  return !process.env[v];
+});
 
 if (missingVars.length > 0) {
   console.error(
@@ -142,7 +143,9 @@ async function seed() {
       data: {
         ownerId: user1.$id,
         title: "Alice's Birthday Wishlist",
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         visibility: Visibility.LINK,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         participation: Participation.ANYONE,
       },
     });
@@ -153,7 +156,9 @@ async function seed() {
       data: {
         ownerId: user2.$id,
         title: "Bob's Holiday Wishlist",
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         visibility: Visibility.LINK,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         participation: Participation.ANYONE,
       },
     });
@@ -296,34 +301,6 @@ async function seed() {
       ? `${prefix}_transactions`
       : "transactions";
 
-    /* // TODO: Restore reservations post-MVP
-    // Item 1: Partially reserved (1/3)
-    await tablesDb.upsertRow<TransactionRow>({
-      databaseId,
-      tableId: transactionsCollectionId,
-      rowId: SEED_IDS.TRANSACTIONS.RESERVATION_1,
-      data: {
-        itemId: item1.$id,
-        userId: user2.$id,
-        status: TransactionStatus.RESERVED,
-        quantity: 1,
-      },
-    });
-
-    // Item 6: Fully reserved (1/1)
-    await tablesDb.upsertRow<TransactionRow>({
-      databaseId,
-      tableId: transactionsCollectionId,
-      rowId: SEED_IDS.TRANSACTIONS.RESERVATION_2,
-      data: {
-        itemId: item6.$id,
-        userId: user2.$id,
-        status: TransactionStatus.RESERVED,
-        quantity: 1,
-      },
-    });
-    */
-
     // Item 7: Fully purchased (1/1)
     await tablesDb.upsertRow<TransactionRow>({
       databaseId,
@@ -332,6 +309,7 @@ async function seed() {
       data: {
         itemId: item7.$id,
         userId: user2.$id,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         status: TransactionStatus.PURCHASED,
         quantity: 1,
       },
@@ -344,6 +322,7 @@ async function seed() {
       data: {
         itemId: item1.$id,
         userId: "550e8400-e29b-41d4-a716-44665544000x", // Maria (Anonymous)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         status: TransactionStatus.PURCHASED,
         quantity: 1,
       },

@@ -62,30 +62,39 @@ describe("AppwriteAuthRepository", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     client = new Client();
-    repository = new AppwriteAuthRepository(client);
+    const logger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
+    repository = new AppwriteAuthRepository(client, logger);
     // @ts-expect-error - access private for testing
     account = repository.account;
   });
 
   describe("getGoogleOAuthUrl", () => {
-    it("should return the OAuth2 token URL from Appwrite", () => {
+    it("should return the OAuth2 token URL from Appwrite", async () => {
       const mockUrl = "https://appwrite.io/oauth/google";
       const createOAuth2Token = vi.spyOn(account, "createOAuth2Token");
       createOAuth2Token.mockReturnValue(mockUrl);
 
-      const url = repository.getGoogleOAuthUrl();
+      const url = await repository.getGoogleOAuthUrl();
 
-      expect(url).toBe(mockUrl);
+      expect(url).toEqual({
+        url: mockUrl,
+        state: "appwrite-internal",
+      });
       expect(createOAuth2Token).toHaveBeenCalledWith({
         provider: OAuthProvider.Google,
       });
     });
 
-    it("should throw if Appwrite fails to generate a URL", () => {
+    it("should throw if Appwrite fails to generate a URL", async () => {
       const createOAuth2Token = vi.spyOn(account, "createOAuth2Token");
       createOAuth2Token.mockReturnValue("");
 
-      expect(() => repository.getGoogleOAuthUrl()).toThrow(
+      await expect(repository.getGoogleOAuthUrl()).rejects.toThrow(
         "Failed to generate Google OAuth2 URL",
       );
     });
@@ -106,7 +115,10 @@ describe("AppwriteAuthRepository", () => {
       createSession.mockResolvedValue({} as Models.Session);
       get.mockResolvedValue(mockUser);
 
-      const result = await repository.completeGoogleOAuth(callbackUrl);
+      const result = await repository.completeGoogleOAuth(
+        callbackUrl,
+        "any-state",
+      );
 
       expect(createSession).toHaveBeenCalledWith({
         userId: "user-123",
@@ -122,9 +134,9 @@ describe("AppwriteAuthRepository", () => {
     it("should throw if userId or secret are missing in URL", async () => {
       const invalidUrl = "exp://localhost:8081?userId=user-123";
 
-      await expect(repository.completeGoogleOAuth(invalidUrl)).rejects.toThrow(
-        /missing userId or secret/,
-      );
+      await expect(
+        repository.completeGoogleOAuth(invalidUrl, "state"),
+      ).rejects.toThrow(/missing userId or secret/);
     });
   });
 
@@ -175,7 +187,7 @@ describe("AppwriteAuthRepository", () => {
       const result = await repository.register(email, password);
 
       expect(create).toHaveBeenCalledWith({
-        userId: "unique-id",
+        userId,
         email,
         password,
       });
@@ -240,14 +252,15 @@ describe("AppwriteAuthRepository", () => {
 
   describe("deleteUser", () => {
     it("should log a warning as it is suppressed for Incomplete Account strategy", async () => {
-      const consoleSpy = vi
-        .spyOn(console, "warn")
-        .mockImplementation(() => undefined);
+      // @ts-expect-error - access private logger for verification
+      const logger = repository.logger;
+      const warnSpy = vi.spyOn(logger, "warn");
+
       await repository.deleteUser("user-123");
-      expect(consoleSpy).toHaveBeenCalledWith(
+      expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining("suppressed"),
+        expect.objectContaining({ userIdObfuscated: "user****" }),
       );
-      consoleSpy.mockRestore();
     });
   });
 });

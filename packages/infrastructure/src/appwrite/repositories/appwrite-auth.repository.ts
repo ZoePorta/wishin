@@ -5,8 +5,8 @@ import {
   OAuthProvider,
   AppwriteException,
 } from "appwrite";
-import type { AuthRepository } from "@wishin/domain";
-import type { AuthResult } from "@wishin/domain";
+import type { AuthRepository, OAuthInitiation } from "@wishin/domain";
+import type { AuthResult, Logger } from "@wishin/domain";
 
 /**
  * Appwrite implementation of the AuthRepository.
@@ -15,10 +15,14 @@ export class AppwriteAuthRepository implements AuthRepository {
   private readonly account: Account;
 
   /**
-   * Initializes the repository with an Appwrite Client.
+   * Initializes the repository with an Appwrite Client and a Logger.
    * @param client - The Appwrite Client SDK instance.
+   * @param logger - The domain logger for infrastructure events.
    */
-  constructor(private readonly client: Client) {
+  constructor(
+    private readonly client: Client,
+    private readonly logger: Logger,
+  ) {
     this.account = new Account(this.client);
   }
 
@@ -33,10 +37,14 @@ export class AppwriteAuthRepository implements AuthRepository {
    */
   async register(email: string, password: string): Promise<AuthResult> {
     let isAnonymous = false;
+    let userId: string = ID.unique();
     try {
       // Check if there is an active anonymous session to promote (ADR 018)
       const currentUser = await this.account.get();
       isAnonymous = !currentUser.email;
+      if (isAnonymous) {
+        userId = currentUser.$id;
+      }
     } catch (error: unknown) {
       // 401 (Unauthorized) means there is no active session, which is fine.
       // We re-throw any other error (network, server error) to avoid silent failures.
@@ -52,7 +60,7 @@ export class AppwriteAuthRepository implements AuthRepository {
     // The official Appwrite way to promote an anonymous user is to call account.create
     // while the session is active. It converts the account and preserves the userId.
     const user = await this.account.create({
-      userId: ID.unique(),
+      userId,
       email,
       password,
     });
@@ -86,10 +94,10 @@ export class AppwriteAuthRepository implements AuthRepository {
   }
 
   /**
-   * Generates the URL to initiate Google OAuth2 flow using the Account service.
-   * @returns The OAuth2 provider URL.
+   * Generates the URL and state to initiate Google OAuth2 flow using the Account service.
+   * @returns A Promise that resolves to the OAuth initiation metadata.
    */
-  getGoogleOAuthUrl(): string {
+  async getGoogleOAuthUrl(): Promise<OAuthInitiation> {
     const oauthUrl = this.account.createOAuth2Token({
       provider: OAuthProvider.Google,
     });
@@ -98,15 +106,26 @@ export class AppwriteAuthRepository implements AuthRepository {
       throw new Error("Failed to generate Google OAuth2 URL");
     }
 
-    return oauthUrl;
+    // Note: Appwrite's client-side createOAuth2Token handle state internally via redirect
+    // but the domain contract now requires it. For now, we return a placeholder
+    // if the underlying SDK doesn't expose it, or we would generate it if we were
+    // managing the full server-side flow.
+    return {
+      url: oauthUrl,
+      state: "appwrite-internal", // Appwrite manages the nonce in the URL internally
+    };
   }
 
   /**
    * Completes the Google OAuth2 flow using the callback URL parameters.
    * @param callbackUrl The full URL received from the OAuth2 redirect.
+   * @param _expectedState The expected state to verify (currently ignored as Appwrite handles it).
    * @returns A Promise that resolves to the authentication result.
    */
-  async completeGoogleOAuth(callbackUrl: string): Promise<AuthResult> {
+  async completeGoogleOAuth(
+    callbackUrl: string,
+    _expectedState: string,
+  ): Promise<AuthResult> {
     const url = new URL(callbackUrl);
     const userId = url.searchParams.get("userId");
     const secret = url.searchParams.get("secret");
@@ -148,9 +167,10 @@ export class AppwriteAuthRepository implements AuthRepository {
   async deleteUser(userId: string): Promise<void> {
     // Note: The Client SDK Account service does not have a delete method for users.
     // To support "Incomplete Accounts", we avoid deletion and instead rely on UI-driven recovery.
-    // We log the attempt for observability as requested.
-    console.warn(
-      `deleteUser(${userId}) suppressed. "Incomplete Account" strategy active: Auth account is preserved even if profile fails.`,
+    // We log the attempt for observability as requested, redacting the full userId.
+    this.logger.warn(
+      `deleteUser suppressed for user [REDACTED]. "Incomplete Account" strategy active: Auth account is preserved even if profile fails.`,
+      { userIdObfuscated: userId.substring(0, 4) + "****" },
     );
   }
 }
