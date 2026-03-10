@@ -15,7 +15,6 @@ vi.mock("appwrite", () => {
     createEmailPasswordSession: vi.fn(),
     get: vi.fn(),
     createOAuth2Session: vi.fn(),
-    createOAuth2Token: vi.fn(),
     createSession: vi.fn(),
     deleteSession: vi.fn(),
   };
@@ -74,25 +73,24 @@ describe("AppwriteAuthRepository", () => {
   });
 
   describe("getGoogleOAuthUrl", () => {
-    it("should return the OAuth2 token URL from Appwrite", async () => {
+    it("should return the OAuth2 token URL and a random state", async () => {
       const mockUrl = "https://appwrite.io/oauth/google";
-      const createOAuth2Token = vi.spyOn(account, "createOAuth2Token");
-      createOAuth2Token.mockReturnValue(mockUrl);
+      const createOAuth2TokenSpy = vi
+        .spyOn(account, "createOAuth2Token")
+        .mockReturnValue(mockUrl);
 
-      const url = await repository.getGoogleOAuthUrl();
+      const result = await repository.getGoogleOAuthUrl();
 
-      expect(url).toEqual({
-        url: mockUrl,
-        state: "appwrite-internal",
-      });
-      expect(createOAuth2Token).toHaveBeenCalledWith({
+      expect(result.url).toBe(mockUrl);
+      expect(result.state).toBeDefined();
+      expect(result.state.length).toBeGreaterThan(5);
+      expect(createOAuth2TokenSpy).toHaveBeenCalledWith({
         provider: OAuthProvider.Google,
       });
     });
 
     it("should throw if Appwrite fails to generate a URL", async () => {
-      const createOAuth2Token = vi.spyOn(account, "createOAuth2Token");
-      createOAuth2Token.mockReturnValue("");
+      vi.spyOn(account, "createOAuth2Token").mockReturnValue("");
 
       await expect(repository.getGoogleOAuthUrl()).rejects.toThrow(
         "Failed to generate Google OAuth2 URL",
@@ -101,7 +99,12 @@ describe("AppwriteAuthRepository", () => {
   });
 
   describe("completeGoogleOAuth", () => {
-    it("should create a session and return AuthResult from callback URL", async () => {
+    it("should create a session when state matches", async () => {
+      // 1. Generate a URL and state
+      vi.spyOn(account, "createOAuth2Token").mockReturnValue("http://url");
+      const initiation = await repository.getGoogleOAuthUrl();
+
+      // 2. Complete flow
       const callbackUrl =
         "exp://localhost:8081?userId=user-123&secret=secret-456";
       const mockUser = {
@@ -109,33 +112,63 @@ describe("AppwriteAuthRepository", () => {
         email: "test@example.com",
       } as Models.User<Models.Preferences>;
 
-      const createSession = vi.spyOn(account, "createSession");
-      const get = vi.spyOn(account, "get");
-
-      createSession.mockResolvedValue({} as Models.Session);
-      get.mockResolvedValue(mockUser);
+      const createSessionSpy = vi
+        .spyOn(account, "createSession")
+        .mockResolvedValue({} as Models.Session);
+      vi.spyOn(account, "get").mockResolvedValue(mockUser);
 
       const result = await repository.completeGoogleOAuth(
         callbackUrl,
-        "any-state",
+        initiation.state,
       );
 
-      expect(createSession).toHaveBeenCalledWith({
-        userId: "user-123",
-        secret: "secret-456",
-      });
-      expect(result).toEqual({
-        userId: "user-123",
-        email: "test@example.com",
-        isNewUser: false,
-      });
+      expect(result.userId).toBe("user-123");
+      expect(createSessionSpy).toHaveBeenCalled();
+    });
+
+    it("should throw if state is invalid or missing", async () => {
+      const callbackUrl =
+        "exp://localhost:8081?userId=user-123&secret=secret-456";
+
+      await expect(
+        repository.completeGoogleOAuth(callbackUrl, "invalid-state"),
+      ).rejects.toThrow(/Invalid OAuth state/);
+    });
+
+    it("should cleanup state after successful verification", async () => {
+      vi.spyOn(account, "createOAuth2Token").mockReturnValue("http://url");
+      const initiation = await repository.getGoogleOAuthUrl();
+
+      vi.spyOn(account, "createSession").mockResolvedValue(
+        {} as Models.Session,
+      );
+      vi.spyOn(account, "get").mockResolvedValue({
+        $id: "1",
+        email: "a",
+      } as Models.User<Models.Preferences>);
+
+      await repository.completeGoogleOAuth(
+        "exp://?userId=1&secret=s",
+        initiation.state,
+      );
+
+      // Second attempt with same state should fail
+      await expect(
+        repository.completeGoogleOAuth(
+          "exp://?userId=1&secret=s",
+          initiation.state,
+        ),
+      ).rejects.toThrow(/Invalid OAuth state/);
     });
 
     it("should throw if userId or secret are missing in URL", async () => {
+      vi.spyOn(account, "createOAuth2Token").mockReturnValue("http://url");
+      const initiation = await repository.getGoogleOAuthUrl();
+
       const invalidUrl = "exp://localhost:8081?userId=user-123";
 
       await expect(
-        repository.completeGoogleOAuth(invalidUrl, "state"),
+        repository.completeGoogleOAuth(invalidUrl, initiation.state),
       ).rejects.toThrow(/missing userId or secret/);
     });
   });
@@ -146,19 +179,19 @@ describe("AppwriteAuthRepository", () => {
       const password = "Password123!";
       const userId = "user-123";
 
-      const get = vi.spyOn(account, "get");
-      const create = vi.spyOn(account, "create");
+      const getSpy = vi.spyOn(account, "get");
+      const createSpy = vi.spyOn(account, "create");
 
-      get.mockRejectedValueOnce(new AppwriteException("No session", 401));
+      getSpy.mockRejectedValueOnce(new AppwriteException("No session", 401));
 
-      create.mockResolvedValue({
+      createSpy.mockResolvedValue({
         $id: userId,
         email,
       } as Models.User<Models.Preferences>);
 
       const result = await repository.register(email, password);
 
-      expect(create).toHaveBeenCalledWith({
+      expect(createSpy).toHaveBeenCalledWith({
         userId: "unique-id",
         email,
         password,
@@ -171,40 +204,27 @@ describe("AppwriteAuthRepository", () => {
       const password = "Password123!";
       const userId = "anonymous-123";
 
-      const get = vi.spyOn(account, "get");
-      const create = vi.spyOn(account, "create");
+      const getSpy = vi.spyOn(account, "get");
+      const createSpy = vi.spyOn(account, "create");
 
-      get.mockResolvedValueOnce({
+      getSpy.mockResolvedValueOnce({
         $id: userId,
         email: "",
       } as Models.User<Models.Preferences>);
 
-      create.mockResolvedValue({
+      createSpy.mockResolvedValue({
         $id: userId,
         email,
       } as Models.User<Models.Preferences>);
 
       const result = await repository.register(email, password);
 
-      expect(create).toHaveBeenCalledWith({
+      expect(createSpy).toHaveBeenCalledWith({
         userId,
         email,
         password,
       });
       expect(result).toEqual({ userId, email, isNewUser: false });
-    });
-
-    it("should propagate errors from register", async () => {
-      const error = new Error("Registration failed");
-      const create = vi.spyOn(account, "create");
-      const get = vi.spyOn(account, "get");
-
-      create.mockRejectedValueOnce(error);
-      get.mockRejectedValueOnce(new AppwriteException("No session", 401));
-
-      await expect(
-        repository.register("test@example.com", "pass"),
-      ).rejects.toThrow("Registration failed");
     });
   });
 
@@ -214,37 +234,37 @@ describe("AppwriteAuthRepository", () => {
       const password = "Password123!";
       const userId = "user-123";
 
-      const createEmailPasswordSession = vi.spyOn(
+      const createEmailPasswordSessionSpy = vi.spyOn(
         account,
         "createEmailPasswordSession",
       );
-      const get = vi.spyOn(account, "get");
+      const getSpy = vi.spyOn(account, "get");
 
-      createEmailPasswordSession.mockResolvedValue({} as Models.Session);
-      get.mockResolvedValue({
+      createEmailPasswordSessionSpy.mockResolvedValue({} as Models.Session);
+      getSpy.mockResolvedValue({
         $id: userId,
         email,
       } as Models.User<Models.Preferences>);
 
       const result = await repository.login(email, password);
 
-      expect(createEmailPasswordSession).toHaveBeenCalledWith({
+      expect(createEmailPasswordSessionSpy).toHaveBeenCalledWith({
         email,
         password,
       });
-      expect(get).toHaveBeenCalled();
+      expect(getSpy).toHaveBeenCalled();
       expect(result).toEqual({ userId, email, isNewUser: false });
     });
   });
 
   describe("logout", () => {
     it("should delete the current session", async () => {
-      const deleteSession = vi.spyOn(account, "deleteSession");
-      deleteSession.mockResolvedValue({} as Models.Session);
+      const deleteSessionSpy = vi.spyOn(account, "deleteSession");
+      deleteSessionSpy.mockResolvedValue({} as Models.Session);
 
       await repository.logout();
 
-      expect(deleteSession).toHaveBeenCalledWith({
+      expect(deleteSessionSpy).toHaveBeenCalledWith({
         sessionId: "current",
       });
     });

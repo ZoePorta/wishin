@@ -13,6 +13,11 @@ import type { AuthResult, Logger } from "@wishin/domain";
  */
 export class AppwriteAuthRepository implements AuthRepository {
   private readonly account: Account;
+  private readonly oauthStates: Map<string, { timestamp: number }> = new Map<
+    string,
+    { timestamp: number }
+  >();
+  private static readonly STATE_TTL = 10 * 60 * 1000; // 10 minutes
 
   /**
    * Initializes the repository with an Appwrite Client and a Logger.
@@ -98,6 +103,9 @@ export class AppwriteAuthRepository implements AuthRepository {
    * @returns A Promise that resolves to the OAuth initiation metadata.
    */
   async getGoogleOAuthUrl(): Promise<OAuthInitiation> {
+    const state = Math.random().toString(36).substring(2, 15);
+    this.oauthStates.set(state, { timestamp: Date.now() });
+
     const oauthUrl = this.account.createOAuth2Token({
       provider: OAuthProvider.Google,
     });
@@ -106,13 +114,11 @@ export class AppwriteAuthRepository implements AuthRepository {
       throw new Error("Failed to generate Google OAuth2 URL");
     }
 
-    // Note: Appwrite's client-side createOAuth2Token handle state internally via redirect
-    // but the domain contract now requires it. For now, we return a placeholder
-    // if the underlying SDK doesn't expose it, or we would generate it if we were
-    // managing the full server-side flow.
+    // Appwrite's createOAuth2Token handles redirection, but we return the URL and state
+    // so the caller can track it according to the AuthRepository contract.
     return {
       url: oauthUrl,
-      state: "appwrite-internal", // Appwrite manages the nonce in the URL internally
+      state,
     };
   }
 
@@ -124,8 +130,17 @@ export class AppwriteAuthRepository implements AuthRepository {
    */
   async completeGoogleOAuth(
     callbackUrl: string,
-    _expectedState: string,
+    expectedState: string,
   ): Promise<AuthResult> {
+    // 1. Cleanup expired states
+    this.cleanupExpiredStates();
+
+    // 2. Validate state
+    if (!this.oauthStates.has(expectedState)) {
+      throw new Error("Invalid OAuth state: CSRF protection triggered");
+    }
+    this.oauthStates.delete(expectedState);
+
     const url = new URL(callbackUrl);
     const userId = url.searchParams.get("userId");
     const secret = url.searchParams.get("secret");
@@ -141,6 +156,15 @@ export class AppwriteAuthRepository implements AuthRepository {
       email: user.email,
       isNewUser: false,
     };
+  }
+
+  private cleanupExpiredStates(): void {
+    const now = Date.now();
+    for (const [state, meta] of this.oauthStates.entries()) {
+      if (now - meta.timestamp > AppwriteAuthRepository.STATE_TTL) {
+        this.oauthStates.delete(state);
+      }
+    }
   }
 
   /**

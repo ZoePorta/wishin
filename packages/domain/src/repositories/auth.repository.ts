@@ -38,6 +38,7 @@ export interface AuthRepository {
   /**
    * Generates the URL and state to initiate Google OAuth2 flow.
    * @returns A Promise that resolves to the OAuth initiation metadata.
+   * @throws {Error} If failure to build the URL or other runtime errors occur.
    */
   getGoogleOAuthUrl(): Promise<OAuthInitiation>;
 

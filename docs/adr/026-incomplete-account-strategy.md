@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-03-10  
-**Amends:** [ADR 018](docs/adr/018-unified-identity-anonymous-sessions.md)
+**Amends:** [ADR 018](018-unified-identity-anonymous-sessions.md)
 
 ## Context
 

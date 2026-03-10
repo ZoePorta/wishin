@@ -157,6 +157,7 @@ export class Profile {
    * Validates a username string against business rules.
    *
    * @param {string} username - The username to validate.
+   * @returns {void}
    * @throws {InvalidAttributeError} If the username is invalid.
    */
   public static validateUsername(username: string): void {
