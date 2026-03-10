@@ -98,7 +98,7 @@ export class AppwriteAuthRepository implements AuthRepository {
       provider: OAuthProvider.Google,
     });
     // In SDK versions where it might return void or string, we ensure a string
-    return response?.toString() ?? "";
+    return typeof response === "string" ? response : "";
   }
 
   /**

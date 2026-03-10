@@ -3,7 +3,8 @@ import { Client as ServerClient, Users } from "node-appwrite";
 import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "../../src/appwrite/client";
 import { AppwriteAuthRepository } from "../../src/appwrite/repositories/appwrite-auth.repository";
-import { OAuthProvider } from "appwrite";
+import { Account, OAuthProvider } from "appwrite";
+import type { AuthResult } from "@wishin/domain";
 import "dotenv/config";
 
 const {
@@ -65,7 +66,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     const email = `test-${randomUUID()}@example.com`;
     const password = "Password123!";
 
-    const result = await repository.register(email, password);
+    const result: AuthResult = await repository.register(email, password);
 
     expect(result).toBeDefined();
     expect(result.email).toBe(email);
@@ -84,7 +85,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     createdUserId = user.userId;
 
     // 2. Login using repository
-    const result = await repository.login(email, password);
+    const result: AuthResult = await repository.login(email, password);
 
     expect(result).toBeDefined();
     expect(result.email).toBe(email);
@@ -105,10 +106,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     await repository.logout();
 
     // 3. Verify session was removed by attempting an authenticated call
-    // Using a fresh Account instance with the same client
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    const account = new (vi.importActual("appwrite") as any).Account(client);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    const account = new Account(client);
     await expect(account.get()).rejects.toThrow();
   });
 

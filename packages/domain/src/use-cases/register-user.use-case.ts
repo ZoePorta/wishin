@@ -1,6 +1,7 @@
 import type { RegisterUserInput } from "./dtos/auth.dto";
 import type { AuthRepository } from "../repositories/auth.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
+import type { Logger } from "../common/logger";
 import { Profile } from "../aggregates/profile";
 
 /**
@@ -11,6 +12,7 @@ export class RegisterUserUseCase {
   constructor(
     private readonly authRepo: AuthRepository,
     private readonly profileRepo: ProfileRepository,
+    private readonly logger: Logger,
   ) {}
 
   /**
@@ -40,7 +42,20 @@ export class RegisterUserUseCase {
       // 3. Compensation: Delete the user ONLY if it was a newly created account
       // If it was an anonymous promotion, we never delete to avoid data loss (ADR 018)
       if (authResult.isNewUser) {
-        await this.authRepo.deleteUser(authResult.userId);
+        try {
+          await this.authRepo.deleteUser(authResult.userId);
+        } catch (compensationError) {
+          // Log secondary error but do NOT rethrow it to preserve original root cause
+          this.logger.error("Compensating user deletion failed", {
+            userId: authResult.userId,
+            originalError:
+              error instanceof Error ? error.message : String(error),
+            compensationError:
+              compensationError instanceof Error
+                ? compensationError.message
+                : String(compensationError),
+          });
+        }
       }
       throw error;
     }

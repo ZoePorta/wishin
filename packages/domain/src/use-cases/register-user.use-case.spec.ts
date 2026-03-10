@@ -3,12 +3,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { RegisterUserUseCase } from "./register-user.use-case";
 import type { AuthRepository } from "../repositories/auth.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
+import type { Logger } from "../common/logger";
 import { Profile } from "../aggregates/profile";
 
 describe("RegisterUserUseCase", () => {
   let useCase: RegisterUserUseCase;
   let authRepo: AuthRepository;
   let profileRepo: ProfileRepository;
+  let logger: Logger;
 
   beforeEach(() => {
     authRepo = {
@@ -22,7 +24,13 @@ describe("RegisterUserUseCase", () => {
       findById: vi.fn(),
       save: vi.fn(),
     };
-    useCase = new RegisterUserUseCase(authRepo, profileRepo);
+    logger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
+    useCase = new RegisterUserUseCase(authRepo, profileRepo, logger);
   });
 
   const validRegistrationInput = {
@@ -90,5 +98,34 @@ describe("RegisterUserUseCase", () => {
       "DB failed",
     );
     expect(authRepo.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("should log an error and rethrow the original error if compensation (deleteUser) fails", async () => {
+    const userId = "user-123";
+    vi.mocked(authRepo.register).mockResolvedValue({
+      userId,
+      email: validRegistrationInput.email,
+      isNewUser: true,
+    });
+    vi.mocked(profileRepo.save).mockRejectedValue(
+      new Error("Original DB failure"),
+    );
+    vi.mocked(authRepo.deleteUser).mockRejectedValue(
+      new Error("Compensation failure"),
+    );
+
+    await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
+      "Original DB failure",
+    );
+
+    expect(authRepo.deleteUser).toHaveBeenCalledWith(userId);
+    expect(logger.error).toHaveBeenCalledWith(
+      "Compensating user deletion failed",
+      expect.objectContaining({
+        userId,
+        originalError: "Original DB failure",
+        compensationError: "Compensation failure",
+      }),
+    );
   });
 });

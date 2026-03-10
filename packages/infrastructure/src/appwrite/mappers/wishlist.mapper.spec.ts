@@ -26,6 +26,7 @@ describe("WishlistMapper", () => {
     items: [],
     createdAt,
     updatedAt,
+    version: 1,
   };
 
   it("should map domain aggregate to persistence object (excluding items)", () => {
