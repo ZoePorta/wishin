@@ -3,6 +3,7 @@ import type { AuthRepository } from "../repositories/auth.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
 import type { Logger } from "../common/logger";
 import { Profile } from "../aggregates/profile";
+import { IncompleteRegistrationError } from "../errors/domain-errors";
 
 /**
  * Use Case: RegisterUser
@@ -39,18 +40,19 @@ export class RegisterUserUseCase {
 
       await this.profileRepo.save(profile);
     } catch (error) {
-      // 3. Compensation: Delete the user ONLY if it was a newly created account
-      // If it was an anonymous promotion, we never delete to avoid data loss (ADR 018)
-      if (authResult.isNewUser) {
-        // NOTE: We no longer delete the user here to support "Incomplete Accounts".
-        // This allows the user to retry profile creation later without losing their identity.
-        // It also avoids using privileged deleteUser calls in the client SDK.
-        this.logger.error("Profile creation failed for new user", {
-          userId: authResult.userId,
-          originalError: error instanceof Error ? error.message : String(error),
-        });
-      }
-      throw error;
+      // 3. Compensation: Log and surface partial registration (ADR 018)
+      this.logger.error("Profile creation failed after auth success", {
+        userId: authResult.userId,
+        isNewUser: authResult.isNewUser,
+        originalError: error instanceof Error ? error.message : String(error),
+      });
+
+      throw new IncompleteRegistrationError(
+        authResult.userId,
+        authResult.isNewUser,
+        "User registered but profile creation failed. Registration is incomplete.",
+        { cause: error },
+      );
     }
   }
 }

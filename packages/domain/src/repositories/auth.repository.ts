@@ -24,11 +24,18 @@ export interface AuthRepository {
   login(email: string, password: string): Promise<AuthResult>;
 
   /**
-   * Initiates a login flow with Google OAuth2.
-   * @returns A Promise that resolves to the authentication result after flow completion.
-   * @throws {Error} If the flow cannot be initiated or completed.
+   * Generates the URL to initiate Google OAuth2 flow.
+   * @returns The OAuth2 provider URL.
    */
-  loginWithGoogle(): Promise<AuthResult>;
+  getGoogleOAuthUrl(): string;
+
+  /**
+   * Completes the Google OAuth2 flow using the callback URL.
+   * @param callbackUrl The full URL received from the OAuth2 redirect.
+   * @returns A Promise that resolves to the authentication result.
+   * @throws {Error} If flow completion fails.
+   */
+  completeGoogleOAuth(callbackUrl: string): Promise<AuthResult>;
 
   /**
    * Logs out the current user session.

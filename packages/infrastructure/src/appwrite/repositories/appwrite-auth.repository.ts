@@ -86,13 +86,10 @@ export class AppwriteAuthRepository implements AuthRepository {
   }
 
   /**
-   * Initiates and completes a login flow with Google OAuth2 for Expo/React Native.
-   *
-   * @returns A Promise that resolves to the authentication result.
-   * @throws {Error} If the OAuth2 flow fails at any stage.
+   * Generates the URL to initiate Google OAuth2 flow using the Account service.
+   * @returns The OAuth2 provider URL.
    */
-  async loginWithGoogle(): Promise<AuthResult> {
-    // 1. Create OAuth2 token to get the provider URL
+  getGoogleOAuthUrl(): string {
     const oauthUrl = this.account.createOAuth2Token({
       provider: OAuthProvider.Google,
     });
@@ -101,41 +98,30 @@ export class AppwriteAuthRepository implements AuthRepository {
       throw new Error("Failed to generate Google OAuth2 URL");
     }
 
-    // 2. In a real environment, the UI layer or a service would handle the redirection.
-    // For the purpose of fulfilling the review "implement full flow" requirement:
-    // We assume the caller handles the browsing or we use a platform-specific helper.
-    // NOTE: This implementation now includes the logic to transform the redirect URL
-    // into a session, which was the missing "implemented" part.
+    return oauthUrl;
+  }
 
-    // placeholder: extraction logic from deep link
-    // callbackUrl: exp://.../?userId=...&secret=...
-    const _finishLogin = async (callbackUrl: string): Promise<AuthResult> => {
-      const url = new URL(callbackUrl);
-      const userId = url.searchParams.get("userId");
-      const secret = url.searchParams.get("secret");
+  /**
+   * Completes the Google OAuth2 flow using the callback URL parameters.
+   * @param callbackUrl The full URL received from the OAuth2 redirect.
+   * @returns A Promise that resolves to the authentication result.
+   */
+  async completeGoogleOAuth(callbackUrl: string): Promise<AuthResult> {
+    const url = new URL(callbackUrl);
+    const userId = url.searchParams.get("userId");
+    const secret = url.searchParams.get("secret");
 
-      if (!userId || !secret) {
-        throw new Error("Invalid OAuth2 callback: missing userId or secret");
-      }
+    if (!userId || !secret) {
+      throw new Error("Invalid OAuth2 callback: missing userId or secret");
+    }
 
-      await this.account.createSession({ userId, secret });
-      const user = await this.account.get();
-      return {
-        userId: user.$id,
-        email: user.email,
-        isNewUser: false,
-      };
+    await this.account.createSession({ userId, secret });
+    const user = await this.account.get();
+    return {
+      userId: user.$id,
+      email: user.email,
+      isNewUser: false,
     };
-
-    // Since we cannot "wait" for a deep link inside a pure async call without
-    // a platform listener (Linking), we throw a more descriptive error or
-    // return a structure that can be completed.
-    // However, to satisfy the reviewer's "return session token/result",
-    // we must acknowledge that this method is the entry point.
-    // For now, we leave the parsing logic ready.
-    throw new Error(
-      `OAuth2 redirection logic implemented but requires platform Linker. URL: ${oauthUrl}`,
-    );
   }
 
   /**
@@ -151,10 +137,13 @@ export class AppwriteAuthRepository implements AuthRepository {
   }
 
   /**
-   * Deletes a user by their ID.
-   * @param userId - The unique identifier of the user to delete.
-   * @returns A Promise that resolves when the user is deleted.
-   * @throws {AppwriteException} If user deletion fails.
+   * Logs an intended user deletion attempt.
+   *
+   * @note This method is intentionally a noop to support the "Incomplete Account" strategy.
+   * Auth accounts are preserved to avoid data loss during profile creation failures.
+   *
+   * @param userId - The unique identifier of the user.
+   * @returns A Promise that resolves immediately.
    */
   async deleteUser(userId: string): Promise<void> {
     // Note: The Client SDK Account service does not have a delete method for users.

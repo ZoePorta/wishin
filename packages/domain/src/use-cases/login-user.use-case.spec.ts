@@ -11,7 +11,8 @@ describe("LoginUserUseCase", () => {
     authRepo = {
       register: vi.fn(),
       login: vi.fn(),
-      loginWithGoogle: vi.fn(),
+      getGoogleOAuthUrl: vi.fn(),
+      completeGoogleOAuth: vi.fn(),
       logout: vi.fn(),
       deleteUser: vi.fn(),
     };

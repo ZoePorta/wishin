@@ -155,3 +155,21 @@ export const INVALID_VISIBILITY_ERROR = "Invalid visibility" as const;
  * - Participation.CONTACTS: Only owner's contacts can participate.
  */
 export const INVALID_PARTICIPATION_ERROR = "Invalid participation" as const;
+/**
+ * Error thrown when authentication succeeds but profile creation fails.
+ */
+export class IncompleteRegistrationError extends Error {
+  constructor(
+    public readonly userId: string,
+    public readonly isNewUser: boolean,
+    message: string,
+    options?: { cause?: unknown },
+  ) {
+    super(message);
+    if (options?.cause) {
+      this.cause = options.cause;
+    }
+    this.name = "IncompleteRegistrationError";
+    Object.setPrototypeOf(this, IncompleteRegistrationError.prototype);
+  }
+}

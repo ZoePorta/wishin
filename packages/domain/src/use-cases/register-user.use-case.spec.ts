@@ -5,6 +5,7 @@ import type { AuthRepository } from "../repositories/auth.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
 import type { Logger } from "../common/logger";
 import { Profile } from "../aggregates/profile";
+import { IncompleteRegistrationError } from "../errors/domain-errors";
 
 describe("RegisterUserUseCase", () => {
   let useCase: RegisterUserUseCase;
@@ -16,7 +17,8 @@ describe("RegisterUserUseCase", () => {
     authRepo = {
       register: vi.fn(),
       login: vi.fn(),
-      loginWithGoogle: vi.fn(),
+      getGoogleOAuthUrl: vi.fn(),
+      completeGoogleOAuth: vi.fn(),
       logout: vi.fn(),
       deleteUser: vi.fn(),
     };
@@ -80,13 +82,14 @@ describe("RegisterUserUseCase", () => {
     vi.mocked(profileRepo.save).mockRejectedValue(new Error("DB failed"));
 
     await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
-      "DB failed",
+      IncompleteRegistrationError,
     );
     expect(authRepo.deleteUser).not.toHaveBeenCalled();
     expect(logger.error).toHaveBeenCalledWith(
-      "Profile creation failed for new user",
+      "Profile creation failed after auth success",
       expect.objectContaining({
         userId,
+        isNewUser: true,
         originalError: "DB failed",
       }),
     );
@@ -102,7 +105,7 @@ describe("RegisterUserUseCase", () => {
     vi.mocked(profileRepo.save).mockRejectedValue(new Error("DB failed"));
 
     await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
-      "DB failed",
+      IncompleteRegistrationError,
     );
     expect(authRepo.deleteUser).not.toHaveBeenCalled();
   });
