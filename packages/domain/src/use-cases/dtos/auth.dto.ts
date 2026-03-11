@@ -26,6 +26,11 @@ export interface LoginUserInput {
 
 /**
  * Result of an authentication operation.
+ * @property {string} userId - The unique identifier of the user.
+ * @property {string} email - The user's email address.
+ * @property {boolean | undefined} isNewUser - Whether a new user account was created (true) or an existing one was promoted/used (false). Can be undefined if the status is unknown (e.g., OAuth).
+ * @returns {AuthResult} The result of the authentication operation.
+ * @throws None
  */
 export interface AuthResult {
   /** The unique identifier of the user. */
