@@ -7,7 +7,11 @@ import React, {
   useCallback,
   type ReactNode,
 } from "react";
-import { useUserRepository } from "./WishlistRepositoryContext";
+
+import {
+  useUserRepository,
+  useAuthRepository,
+} from "./WishlistRepositoryContext";
 
 interface UserContextValue {
   /** The unique identifier of the current user, or null if not loaded yet. */
@@ -18,6 +22,8 @@ interface UserContextValue {
   error: string | null;
   /** Refetch the current user ID. */
   refetch: () => Promise<void>;
+  /** Explicitly login as a guest. */
+  loginAsGuest: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -32,6 +38,7 @@ interface UserProviderProps {
  */
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const repository = useUserRepository();
+  const authRepository = useAuthRepository();
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +59,22 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   }, [repository]);
 
+  const loginAsGuest = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await authRepository.loginAnonymously();
+      await fetchUser();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to login as guest";
+      setError(message);
+      console.error("loginAsGuest error:", message);
+    } finally {
+      setLoading(false);
+    }
+  }, [authRepository, fetchUser]);
+
   useEffect(() => {
     void fetchUser();
   }, [fetchUser]);
@@ -62,8 +85,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       loading,
       error,
       refetch: fetchUser,
+      loginAsGuest,
     }),
-    [userId, loading, error, fetchUser],
+    [userId, loading, error, fetchUser, loginAsGuest],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

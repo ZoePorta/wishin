@@ -1,6 +1,6 @@
 # ADR 018: Unified Identity via Appwrite Anonymous Sessions
 
-**Status:** Amended by ADR 026  
+**Status:** Amended by ADR 011, ADR 026, ADR 027  
 **Date:** 2026-02-24  
 **Amends:** [ADR 013](docs/adr/013-unified-transaction-state-model.md), [ADR 014](docs/adr/014-identity-and-repository-mapping-strategy.md)
 

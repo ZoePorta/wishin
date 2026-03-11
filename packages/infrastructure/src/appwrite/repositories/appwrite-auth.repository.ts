@@ -221,4 +221,19 @@ export class AppwriteAuthRepository implements AuthRepository {
       { userIdObfuscated: userId.substring(0, 4) + "****" },
     );
   }
+
+  /**
+   * Explicitly starts an anonymous session.
+   * @returns A Promise that resolves to the authentication result (anonymous userId).
+   * @throws {AppwriteException} If session creation fails.
+   */
+  async loginAnonymously(): Promise<AuthResult> {
+    await this.account.createAnonymousSession();
+    const user = await this.account.get();
+    return {
+      userId: user.$id,
+      email: user.email,
+      isNewUser: true,
+    };
+  }
 }

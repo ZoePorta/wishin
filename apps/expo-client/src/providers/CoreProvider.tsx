@@ -5,8 +5,8 @@ import { UserProvider } from "../contexts/UserContext";
 import {
   AppwriteWishlistRepository,
   AppwriteTransactionRepository,
+  AppwriteAuthRepository,
   createAppwriteClient,
-  type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
 
@@ -15,9 +15,11 @@ import { Config, ensureAppwriteConfig } from "../constants/Config";
  */
 const consoleLogger = {
   debug: (msg: string, ctx?: Record<string, unknown>) => {
+    // eslint-disable-next-line no-console
     console.debug(msg, ctx);
   },
   info: (msg: string, ctx?: Record<string, unknown>) => {
+    // eslint-disable-next-line no-console
     console.info(msg, ctx);
   },
   warn: (msg: string, ctx?: Record<string, unknown>) => {
@@ -49,10 +51,10 @@ function createRepositories() {
     consoleLogger,
     {
       addBreadcrumb: (message, category, data) => {
-        console.log(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
+        console.warn(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
       },
       trackEvent: (name, props) => {
-        console.log(`[Event] ${name}`, props);
+        console.warn(`[Event] ${name}`, props);
       },
     }, // Simple Observability implementation using console for now
   );
@@ -63,9 +65,12 @@ function createRepositories() {
     Config.collections.transactions,
   );
 
+  const authRepository = new AppwriteAuthRepository(client, consoleLogger);
+
   return {
     wishlistRepository,
     transactionRepository,
+    authRepository,
   };
 }
 
@@ -78,12 +83,6 @@ interface CoreProviderProps {
  * High-level provider that orchestrates infrastructure initialization.
  * Decouples the UI routing from the repository lifecycle.
  */
-function isSessionAware(repo: unknown): repo is SessionAwareRepository {
-  return (
-    !!repo &&
-    typeof (repo as SessionAwareRepository).ensureSession === "function"
-  );
-}
 
 export const CoreProvider: React.FC<CoreProviderProps> = ({
   children,
@@ -99,12 +98,8 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
       try {
         const wishlistRepo = repos.wishlistRepository;
 
-        if (!isSessionAware(wishlistRepo)) {
-          throw new Error("Wishlist repository must be session aware");
-        }
-
-        // establish or restore session before allowing app entry
-        await wishlistRepo.ensureSession();
+        // attempt to restore session without forcing creation
+        await wishlistRepo.resolveSession();
         setIsInitialized(true);
       } catch (error) {
         console.error("Failed to initialize core infrastructure:", error);
@@ -130,6 +125,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
       wishlistRepository={repos.wishlistRepository}
       transactionRepository={repos.transactionRepository}
       userRepository={repos.wishlistRepository}
+      authRepository={repos.authRepository}
     >
       <UserProvider>{children}</UserProvider>
     </WishlistRepositoryProvider>

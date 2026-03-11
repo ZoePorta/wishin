@@ -6,12 +6,13 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import type {
-  WishlistRepository,
-  UserRepository,
+import {
+  type WishlistRepository,
+  PersistenceError,
+  type UserRepository,
+  type Logger,
+  type ObservabilityService,
   Wishlist,
-  Logger,
-  ObservabilityService,
 } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
@@ -63,64 +64,48 @@ export class AppwriteWishlistRepository
     return this.tablesDb;
   }
 
-  private ensureSessionInFlight: Promise<void> | null = null;
-  private sessionEnsured = false;
+  private resolveSessionInFlight: Promise<Models.User<Models.Preferences> | null> | null =
+    null;
   private _currentUser: Models.User<Models.Preferences> | null = null;
 
   /**
-   * Ensures an active session exists.
-   * Creates an anonymous session if no session is active.
-   * // TODO: Replace with authenticated sessions once Phase 5 is implemented
-   * @returns A Promise that resolves to the session/user object.
-   * @throws {PersistenceError} If the session cannot be ensured.
+   * Resolves the current session state.
+   *
+   * @returns A Promise that resolves to the user object if a session is active/created, or null otherwise.
+   * @throws {PersistenceError} If the session resolution fails (e.g., network error).
    */
-  async ensureSession(): Promise<Models.User<Models.Preferences>> {
-    if (this.sessionEnsured && this._currentUser) {
+  async resolveSession(): Promise<Models.User<Models.Preferences> | null> {
+    if (this._currentUser) {
       return this._currentUser;
     }
 
-    if (this.ensureSessionInFlight) {
-      await this.ensureSessionInFlight;
-      if (this._currentUser) return this._currentUser;
+    if (this.resolveSessionInFlight) {
+      return this.resolveSessionInFlight;
     }
 
-    this.ensureSessionInFlight = (async () => {
+    this.resolveSessionInFlight = (async () => {
       try {
         this._currentUser = await this.account.get();
-        this.sessionEnsured = true;
+        return this._currentUser;
       } catch (error: unknown) {
-        // More robust check for code 401 to handle monorepo instanceof issues
         if (
           error &&
           typeof error === "object" &&
           "code" in error &&
           error.code === 401
         ) {
-          try {
-            await this.account.createAnonymousSession();
-            this._currentUser = await this.account.get();
-            this.sessionEnsured = true;
-          } catch (sessionError: unknown) {
-            console.error("Failed to create anonymous session");
-            throw sessionError;
-          }
-        } else {
-          throw error;
+          this._currentUser = null;
+          return null;
         }
+        throw new PersistenceError("Failed to get current account", {
+          cause: error instanceof Error ? error : String(error),
+        });
+      } finally {
+        this.resolveSessionInFlight = null;
       }
     })();
 
-    try {
-      await this.ensureSessionInFlight;
-    } finally {
-      this.ensureSessionInFlight = null;
-    }
-
-    if (!this._currentUser) {
-      throw new Error("Session initialization failed: user is null");
-    }
-
-    return this._currentUser;
+    return this.resolveSessionInFlight;
   }
 
   /**
@@ -131,14 +116,8 @@ export class AppwriteWishlistRepository
    * @returns A Promise that resolves to the Wishlist aggregate or null if not found.
    * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
-  async findById(
-    id: string,
-    includeItems = true,
-    shouldEnsureSession = true,
-  ): Promise<Wishlist | null> {
-    if (shouldEnsureSession) {
-      await this.ensureSession();
-    }
+  async findById(id: string, includeItems = true): Promise<Wishlist | null> {
+    await this.resolveSession();
     try {
       // 1. Fetch Wishlist Document
       const wishlistDoc = await this.tablesDb.getRow({
@@ -195,7 +174,7 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
-    await this.ensureSession();
+    await this.resolveSession();
 
     // 1. Fetch all Wishlist Documents by ownerId
     // Business Rule: Maximum 20 wishlists per owner (Post-MVP scaling limit)
@@ -213,7 +192,7 @@ export class AppwriteWishlistRepository
 
     // 2. Map docs to aggregates by fetching details for each
     const wishlists = await Promise.all(
-      rows.map((row) => this.findById(row.$id, false, false)),
+      rows.map((row) => this.findById(row.$id, false)),
     );
 
     // Filter out any nulls if findById could potentially return null
@@ -226,9 +205,9 @@ export class AppwriteWishlistRepository
    * @returns A Promise that resolves to the current user ID.
    * @throws {PersistenceError} If the account cannot be retrieved.
    */
-  async getCurrentUserId(): Promise<string> {
-    const user = await this.ensureSession();
-    return user.$id;
+  async getCurrentUserId(): Promise<string | null> {
+    const session = await this.resolveSession();
+    return session?.$id ?? null;
   }
 
   /**
@@ -239,8 +218,11 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the save operation fails, session cannot be ensured, or a concurrency conflict occurs.
    */
   async save(wishlist: Wishlist): Promise<void> {
-    // 1. Ensure active session
-    await this.ensureSession();
+    // 1. Ensure active session (Must have identity to act)
+    const user = await this.resolveSession();
+    if (!user) {
+      throw new PersistenceError("Unauthorized: No active session for saving");
+    }
 
     // 2. Fetch current version for optimistic locking (ADR 022)
     // Double-check version immediately before write to prevent TOCTOU (ADR 023)
@@ -510,7 +492,7 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the deletion fails or session cannot be ensured.
    */
   async delete(id: string): Promise<void> {
-    await this.ensureSession();
+    await this.resolveSession();
     try {
       await this.tablesDb.deleteRow({
         databaseId: this.databaseId,

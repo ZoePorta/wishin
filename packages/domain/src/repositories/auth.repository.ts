@@ -70,4 +70,11 @@ export interface AuthRepository {
    * @returns A Promise that resolves when the cleanup attempt is complete.
    */
   cleanupAuthAfterFailedRegistration(userId: string): Promise<void>;
+
+  /**
+   * Explicitly starts an anonymous session.
+   * @returns A Promise that resolves to the authentication result (anonymous userId).
+   * @throws {Error} If session creation fails.
+   */
+  loginAnonymously(): Promise<AuthResult>;
 }

@@ -4,12 +4,14 @@ import type {
   WishlistRepository,
   TransactionRepository,
   UserRepository,
+  AuthRepository,
 } from "@wishin/domain";
 
 interface WishlistRepositoryContextProps {
   wishlistRepository: WishlistRepository;
   transactionRepository: TransactionRepository;
   userRepository: UserRepository;
+  authRepository: AuthRepository;
 }
 
 const WishlistRepositoryContext = createContext<
@@ -30,16 +32,23 @@ export const WishlistRepositoryProvider: React.FC<{
   wishlistRepository: WishlistRepository;
   transactionRepository: TransactionRepository;
   userRepository: UserRepository;
+  authRepository: AuthRepository;
   children: ReactNode;
 }> = ({
   wishlistRepository,
   transactionRepository,
   userRepository,
+  authRepository,
   children,
 }) => {
   const value = useMemo(
-    () => ({ wishlistRepository, transactionRepository, userRepository }),
-    [wishlistRepository, transactionRepository, userRepository],
+    () => ({
+      wishlistRepository,
+      transactionRepository,
+      userRepository,
+      authRepository,
+    }),
+    [wishlistRepository, transactionRepository, userRepository, authRepository],
   );
 
   return (
@@ -93,4 +102,13 @@ export const useTransactionRepository = (): TransactionRepository => {
  */
 export const useUserRepository = (): UserRepository => {
   return useRepositories().userRepository;
+};
+
+/**
+ * Hook to consume only the AuthRepository from context.
+ *
+ * @returns The auth repository instance.
+ */
+export const useAuthRepository = (): AuthRepository => {
+  return useRepositories().authRepository;
 };

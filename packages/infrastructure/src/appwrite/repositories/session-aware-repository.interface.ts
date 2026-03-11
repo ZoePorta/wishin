@@ -6,16 +6,16 @@ import type { Models } from "appwrite";
  */
 export interface SessionAwareRepository {
   /**
-   * Ensures an active session exists.
-   * Creates an anonymous session if no session is active.
-   * @returns A Promise that resolves to the session/user object when a session is ensured.
-   * @throws {PersistenceError} If the session cannot be ensured.
+   * Resolves the current active session.
+   * Returns null if no session is active.
+   * @returns A Promise that resolves to the session/user object if it exists, otherwise null.
+   * @throws {PersistenceError} If the session check fails unexpectedly.
    */
-  ensureSession(): Promise<Models.User<Models.Preferences>>;
+  resolveSession(): Promise<Models.User<Models.Preferences> | null>;
 
   /**
    * Retrieves the current user's unique identifier.
-   * @returns A Promise that resolves to the current user ID.
+   * @returns A Promise that resolves to the current user ID, or null if no session active.
    */
-  getCurrentUserId(): Promise<string>;
+  getCurrentUserId(): Promise<string | null>;
 }

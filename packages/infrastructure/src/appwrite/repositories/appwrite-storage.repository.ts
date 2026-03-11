@@ -1,8 +1,10 @@
-import { Client, Storage, Account, type Models, ID } from "appwrite";
+import { Models, Client, Storage, Account, ID } from "appwrite";
 import {
   type StorageRepository,
   type FileData,
   PersistenceError,
+  type Logger,
+  type ObservabilityService,
 } from "@wishin/domain";
 import type { SessionAwareRepository } from "./session-aware-repository.interface";
 
@@ -15,44 +17,46 @@ export class AppwriteStorageRepository
   private readonly storage: Storage;
   private readonly account: Account;
 
+  private _currentUser: Models.User<Models.Preferences> | null = null;
+  private resolveSessionInFlight: Promise<Models.User<Models.Preferences> | null> | null =
+    null;
+
   /**
    * Initializes the repository.
    * @param client - The Appwrite Client SDK instance.
-   * @param bucketId - The ID of the Appwrite storage bucket.
+   * @param bucketId - The Appwrite storage bucket ID.
+   * @param logger - The domain logger for infrastructure events.
+   * @param observability - Service for breadcrumbs and telemetry events.
    */
   constructor(
     private readonly client: Client,
     private readonly bucketId: string,
+    private readonly logger: Logger,
+    private readonly observability: ObservabilityService,
   ) {
     this.storage = new Storage(this.client);
     this.account = new Account(this.client);
   }
 
-  private ensureSessionInFlight: Promise<void> | null = null;
-  private sessionEnsured = false;
-  private _currentUser: Models.User<Models.Preferences> | null = null;
-
   /**
-   * Ensures an active session exists.
-   * Creates an anonymous session if no session is active.
+   * Resolves the current session state.
    *
-   * @returns {Promise<Models.User<Models.Preferences>>} The current user model.
-   * @throws {PersistenceError} If the session cannot be ensured.
+   * @returns A Promise that resolves to the user object if a session is active/created, or null otherwise.
+   * @throws {PersistenceError} If the session resolution fails (e.g., network error).
    */
-  async ensureSession(): Promise<Models.User<Models.Preferences>> {
-    if (this.sessionEnsured && this._currentUser) {
+  async resolveSession(): Promise<Models.User<Models.Preferences> | null> {
+    if (this._currentUser) {
       return this._currentUser;
     }
 
-    if (this.ensureSessionInFlight) {
-      await this.ensureSessionInFlight;
-      if (this._currentUser) return this._currentUser;
+    if (this.resolveSessionInFlight) {
+      return this.resolveSessionInFlight;
     }
 
-    this.ensureSessionInFlight = (async () => {
+    this.resolveSessionInFlight = (async () => {
       try {
         this._currentUser = await this.account.get();
-        this.sessionEnsured = true;
+        return this._currentUser;
       } catch (error: unknown) {
         if (
           error &&
@@ -60,37 +64,19 @@ export class AppwriteStorageRepository
           "code" in error &&
           error.code === 401
         ) {
-          try {
-            await this.account.createAnonymousSession();
-            this._currentUser = await this.account.get();
-            this.sessionEnsured = true;
-          } catch (sessionError: unknown) {
-            throw new PersistenceError("Failed to create anonymous session", {
-              cause:
-                sessionError instanceof Error
-                  ? sessionError
-                  : String(sessionError),
-            });
-          }
-        } else {
-          throw new PersistenceError("Failed to get current account", {
-            cause: error instanceof Error ? error : String(error),
-          });
+          this._currentUser = null;
+          return null;
         }
+        this.logger.error("Failed to get current account", { error });
+        throw new PersistenceError("Failed to get current account", {
+          cause: error instanceof Error ? error : String(error),
+        });
+      } finally {
+        this.resolveSessionInFlight = null;
       }
     })();
 
-    try {
-      await this.ensureSessionInFlight;
-    } finally {
-      this.ensureSessionInFlight = null;
-    }
-
-    if (!this._currentUser) {
-      throw new PersistenceError("Session initialization failed: user is null");
-    }
-
-    return this._currentUser;
+    return this.resolveSessionInFlight;
   }
 
   /**
@@ -100,7 +86,12 @@ export class AppwriteStorageRepository
    * @throws {PersistenceError} If the upload fails.
    */
   async upload(fileData: FileData): Promise<string> {
-    await this.ensureSession();
+    const session = await this.resolveSession();
+    if (!session) {
+      throw new PersistenceError(
+        "Unauthorized: No active session for file upload",
+      );
+    }
     try {
       // Platform-agnostic conversion to File for Appwrite SDK
       // This ensures we preserve the filename and MIME type.
@@ -117,9 +108,11 @@ export class AppwriteStorageRepository
         fileId: ID.unique(),
         file,
       });
+
       return result.$id;
     } catch (error: unknown) {
-      throw new PersistenceError("AppwriteStorageRepository.upload failed", {
+      this.logger.error("AppwriteStorageRepository.upload failed", { error });
+      throw new PersistenceError("Failed to upload file", {
         cause: error instanceof Error ? error : String(error),
       });
     }
@@ -132,7 +125,12 @@ export class AppwriteStorageRepository
    * @throws {PersistenceError} If the deletion fails.
    */
   async delete(fileId: string): Promise<void> {
-    await this.ensureSession();
+    const session = await this.resolveSession();
+    if (!session) {
+      throw new PersistenceError(
+        "Unauthorized: No active session for file deletion",
+      );
+    }
     try {
       await this.storage.deleteFile({
         bucketId: this.bucketId,
@@ -158,9 +156,9 @@ export class AppwriteStorageRepository
    * @returns {Promise<string>} The current user's unique identifier.
    * @throws {PersistenceError} If the session cannot be retrieved.
    */
-  async getCurrentUserId(): Promise<string> {
-    const user = await this.ensureSession();
-    return user.$id;
+  async getCurrentUserId(): Promise<string | null> {
+    const user = await this.resolveSession();
+    return user?.$id ?? null;
   }
 
   /**
@@ -173,7 +171,7 @@ export class AppwriteStorageRepository
     const result = this.storage.getFilePreview({
       bucketId: this.bucketId,
       fileId,
-    }) as string | { toString(): string };
+    }) as unknown as string | { toString(): string };
 
     // Appwrite SDK returns a URL object in web environments.
     // Ensure we return a string as defined in StorageRepository.

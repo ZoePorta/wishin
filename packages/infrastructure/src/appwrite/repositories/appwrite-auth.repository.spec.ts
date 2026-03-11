@@ -17,6 +17,7 @@ vi.mock("appwrite", () => {
     createOAuth2Token: vi.fn(),
     createSession: vi.fn(),
     deleteSession: vi.fn(),
+    createAnonymousSession: vi.fn(),
   };
 
   const ClientMock = vi.fn().mockImplementation(function () {
@@ -318,6 +319,29 @@ describe("AppwriteAuthRepository", () => {
         expect.stringContaining("called"),
         expect.objectContaining({ userIdObfuscated: "user****" }),
       );
+    });
+  });
+
+  describe("loginAnonymously", () => {
+    it("should create an anonymous session and return AuthResult", async () => {
+      const mockUser = {
+        $id: "anonymous-123",
+        email: "",
+      } as Models.User<Models.Preferences>;
+
+      const createAnonymousSessionSpy = vi
+        .spyOn(account, "createAnonymousSession")
+        .mockResolvedValue({} as Models.Session);
+      vi.spyOn(account, "get").mockResolvedValue(mockUser);
+
+      const result = await repository.loginAnonymously();
+
+      expect(createAnonymousSessionSpy).toHaveBeenCalled();
+      expect(result).toEqual({
+        userId: "anonymous-123",
+        email: "",
+        isNewUser: true,
+      });
     });
   });
 });

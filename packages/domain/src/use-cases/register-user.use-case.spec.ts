@@ -21,6 +21,7 @@ describe("RegisterUserUseCase", () => {
       completeGoogleOAuth: vi.fn(),
       logout: vi.fn(),
       cleanupAuthAfterFailedRegistration: vi.fn(),
+      loginAnonymously: vi.fn(),
     };
     profileRepo = {
       findById: vi.fn(),
