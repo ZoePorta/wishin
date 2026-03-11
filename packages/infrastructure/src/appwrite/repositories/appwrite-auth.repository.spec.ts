@@ -14,7 +14,7 @@ vi.mock("appwrite", () => {
     create: vi.fn(),
     createEmailPasswordSession: vi.fn(),
     get: vi.fn(),
-    createOAuth2Session: vi.fn(),
+    createOAuth2Token: vi.fn(),
     createSession: vi.fn(),
     deleteSession: vi.fn(),
   };
