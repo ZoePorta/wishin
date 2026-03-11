@@ -17,6 +17,7 @@ export * from "./use-cases/get-image-preview.use-case";
 export * from "./use-cases/delete-image.use-case";
 export * from "./use-cases/register-user.use-case";
 export * from "./use-cases/login-user.use-case";
+export * from "./use-cases/undo-purchase.use-case";
 export * from "./use-cases/dtos";
 export * from "./use-cases/dtos/auth.dto";
 export * from "./use-cases/mappers/wishlist-output.mapper";
