@@ -213,7 +213,7 @@ export const INVALID_PARTICIPATION_ERROR = "Invalid participation" as const;
 export class IncompleteRegistrationError extends Error {
   constructor(
     public readonly userId: string,
-    public readonly isNewUser: boolean,
+    public readonly isNewUser: boolean | undefined,
     message: string,
     options?: { cause?: unknown },
   ) {

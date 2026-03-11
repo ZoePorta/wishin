@@ -20,7 +20,7 @@ describe("RegisterUserUseCase", () => {
       getGoogleOAuthUrl: vi.fn(),
       completeGoogleOAuth: vi.fn(),
       logout: vi.fn(),
-      deleteUser: vi.fn(),
+      cleanupAuthAfterFailedRegistration: vi.fn(),
     };
     profileRepo = {
       findById: vi.fn(),
@@ -84,7 +84,7 @@ describe("RegisterUserUseCase", () => {
     await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
       IncompleteRegistrationError,
     );
-    expect(authRepo.deleteUser).not.toHaveBeenCalled();
+    expect(authRepo.cleanupAuthAfterFailedRegistration).not.toHaveBeenCalled();
     expect(logger.error).toHaveBeenCalledWith(
       "Profile creation failed after auth success",
       expect.objectContaining({
@@ -107,7 +107,7 @@ describe("RegisterUserUseCase", () => {
     await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
       IncompleteRegistrationError,
     );
-    expect(authRepo.deleteUser).not.toHaveBeenCalled();
+    expect(authRepo.cleanupAuthAfterFailedRegistration).not.toHaveBeenCalled();
   });
 
   it("should reject invalid usernames before calling auth or profile repositories", async () => {

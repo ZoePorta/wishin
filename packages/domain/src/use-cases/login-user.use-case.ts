@@ -8,6 +8,12 @@ import { IncompleteRegistrationError } from "../errors/domain-errors";
  * Handles user login.
  */
 export class LoginUserUseCase {
+  /**
+   * Initializes the login use case.
+   *
+   * @param authRepo - The repository for authentication operations.
+   * @param profileRepo - The repository for managing user profiles.
+   */
   constructor(
     private readonly authRepo: AuthRepository,
     private readonly profileRepo: ProfileRepository,

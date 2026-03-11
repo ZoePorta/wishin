@@ -99,12 +99,16 @@ export class Profile {
     props: ProfileProps,
     mode: ValidationMode,
   ): Profile {
+    const username =
+      typeof props.username === "string"
+        ? mode === ValidationMode.STRICT
+          ? Profile.validateUsername(props.username)
+          : props.username.trim()
+        : props.username;
+
     const sanitizedProps = {
       ...props,
-      username:
-        typeof props.username === "string"
-          ? props.username.trim()
-          : props.username,
+      username,
       bio: typeof props.bio === "string" ? props.bio.trim() : props.bio,
     };
     return new Profile(sanitizedProps, mode);
@@ -157,10 +161,10 @@ export class Profile {
    * Validates a username string against business rules.
    *
    * @param {string} username - The username to validate.
-   * @returns {void}
+   * @returns {string} The trimmed and validated username.
    * @throws {InvalidAttributeError} If the username is invalid.
    */
-  public static validateUsername(username: string): void {
+  public static validateUsername(username: string): string {
     if (typeof username !== "string" || !username) {
       throw new InvalidAttributeError(
         "Invalid username: Must be a non-empty string",
@@ -176,6 +180,7 @@ export class Profile {
     if (!usernameRegex.test(trimmed)) {
       throw new InvalidAttributeError("Invalid username format");
     }
+    return trimmed;
   }
 
   private validate(mode: ValidationMode): void {

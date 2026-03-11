@@ -83,7 +83,7 @@ describe("AppwriteAuthRepository", () => {
 
       expect(result.url).toBe(mockUrl);
       expect(result.state).toBeDefined();
-      expect(result.state.length).toBeGreaterThan(5);
+      expect(result.state.length).toBe(64); // 32 bytes hex
       expect(createOAuth2TokenSpy).toHaveBeenCalledWith({
         provider: OAuthProvider.Google,
       });
@@ -123,6 +123,7 @@ describe("AppwriteAuthRepository", () => {
       );
 
       expect(result.userId).toBe("user-123");
+      expect(result.isNewUser).toBeUndefined();
       expect(createSessionSpy).toHaveBeenCalled();
     });
 
@@ -270,15 +271,15 @@ describe("AppwriteAuthRepository", () => {
     });
   });
 
-  describe("deleteUser", () => {
+  describe("cleanupAuthAfterFailedRegistration", () => {
     it("should log a warning as it is suppressed for Incomplete Account strategy", async () => {
       // @ts-expect-error - access private logger for verification
       const logger = repository.logger;
       const warnSpy = vi.spyOn(logger, "warn");
 
-      await repository.deleteUser("user-123");
+      await repository.cleanupAuthAfterFailedRegistration("user-123");
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("suppressed"),
+        expect.stringContaining("called"),
         expect.objectContaining({ userIdObfuscated: "user****" }),
       );
     });

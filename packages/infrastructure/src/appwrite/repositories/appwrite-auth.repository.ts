@@ -103,7 +103,11 @@ export class AppwriteAuthRepository implements AuthRepository {
    * @returns A Promise that resolves to the OAuth initiation metadata.
    */
   async getGoogleOAuthUrl(): Promise<OAuthInitiation> {
-    const state = Math.random().toString(36).substring(2, 15);
+    const array = new Uint8Array(32);
+    globalThis.crypto.getRandomValues(array);
+    const state = Array.from(array)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
     this.oauthStates.set(state, { timestamp: Date.now() });
 
     const oauthUrl = this.account.createOAuth2Token({
@@ -154,7 +158,7 @@ export class AppwriteAuthRepository implements AuthRepository {
     return {
       userId: user.$id,
       email: user.email,
-      isNewUser: false,
+      isNewUser: undefined,
     };
   }
 
@@ -180,20 +184,20 @@ export class AppwriteAuthRepository implements AuthRepository {
   }
 
   /**
-   * Logs an intended user deletion attempt.
+   * Logs an intended user cleanup attempt after a failed registration.
    *
-   * @note This method is intentionally a noop to support the "Incomplete Account" strategy.
+   * @note This method is intentionally a noop or log-only to support the "Incomplete Account" strategy.
    * Auth accounts are preserved to avoid data loss during profile creation failures.
    *
    * @param userId - The unique identifier of the user.
    * @returns A Promise that resolves immediately.
    */
-  async deleteUser(userId: string): Promise<void> {
+  async cleanupAuthAfterFailedRegistration(userId: string): Promise<void> {
     // Note: The Client SDK Account service does not have a delete method for users.
     // To support "Incomplete Accounts", we avoid deletion and instead rely on UI-driven recovery.
     // We log the attempt for observability as requested, redacting the full userId.
     this.logger.warn(
-      `deleteUser suppressed for user [REDACTED]. "Incomplete Account" strategy active: Auth account is preserved even if profile fails.`,
+      `cleanupAuthAfterFailedRegistration called for user [REDACTED]. "Incomplete Account" strategy active: Auth account is preserved even if profile fails.`,
       { userIdObfuscated: userId.substring(0, 4) + "****" },
     );
   }

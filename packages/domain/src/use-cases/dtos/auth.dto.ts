@@ -32,6 +32,6 @@ export interface AuthResult {
   userId: string;
   /** The user's email address. */
   email: string;
-  /** Whether a new user account was created (true) or an existing one was promoted/used (false). */
-  isNewUser: boolean;
+  /** Whether a new user account was created (true) or an existing one was promoted/used (false). Can be undefined if the status is unknown (e.g., OAuth). */
+  isNewUser?: boolean;
 }

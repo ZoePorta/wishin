@@ -62,11 +62,12 @@ export interface AuthRepository {
   logout(): Promise<void>;
 
   /**
-   * Deletes a user by their ID.
-   * Used for cleanup during failed registration flows.
-   * @param userId - The unique identifier of the user to delete.
-   * @returns A Promise that resolves when the user is deleted.
-   * @throws {Error} If deletion fails.
+   * Performs a best-effort cleanup of authentication data after a failed registration.
+   *
+   * @note Appwrite implementation may preserve the account to support the "Incomplete Account" strategy.
+   *
+   * @param userId - The unique identifier of the user to clean up.
+   * @returns A Promise that resolves when the cleanup attempt is complete.
    */
-  deleteUser(userId: string): Promise<void>;
+  cleanupAuthAfterFailedRegistration(userId: string): Promise<void>;
 }

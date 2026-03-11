@@ -25,7 +25,7 @@ export class RegisterUserUseCase {
    */
   async execute(input: RegisterUserInput): Promise<void> {
     // 1. Validation: Fail fast before creating auth identity
-    Profile.validateUsername(input.username);
+    const normalizedUsername = Profile.validateUsername(input.username);
 
     // 2. Register with Auth Service
     const authResult = await this.authRepo.register(
@@ -38,7 +38,7 @@ export class RegisterUserUseCase {
       // Using the same ID from Auth as the Profile ID (ADR 014/018)
       const profile = Profile.create({
         id: authResult.userId,
-        username: input.username,
+        username: normalizedUsername,
       });
 
       await this.profileRepo.save(profile);
