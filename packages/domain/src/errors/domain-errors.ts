@@ -213,6 +213,9 @@ export const INVALID_PARTICIPATION_ERROR = "Invalid participation" as const;
  *     // Retry logic or manual intervention requested
  *   }
  * }
+ *
+ * @returns {IncompleteRegistrationError} An instance of IncompleteRegistrationError detailing the partial registration.
+ * @throws {Error} If the constructor itself fails (though currently it only initializes properties).
  */
 export class IncompleteRegistrationError extends Error {
   constructor(

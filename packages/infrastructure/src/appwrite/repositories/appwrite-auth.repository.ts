@@ -103,13 +103,6 @@ export class AppwriteAuthRepository implements AuthRepository {
    * @returns A Promise that resolves to the OAuth initiation metadata.
    */
   async getGoogleOAuthUrl(): Promise<OAuthInitiation> {
-    const array = new Uint8Array(32);
-    globalThis.crypto.getRandomValues(array);
-    const state = Array.from(array)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-    this.oauthStates.set(state, { timestamp: Date.now() });
-
     const oauthUrl = this.account.createOAuth2Token({
       provider: OAuthProvider.Google,
     });
@@ -117,6 +110,15 @@ export class AppwriteAuthRepository implements AuthRepository {
     if (!oauthUrl) {
       throw new Error("Failed to generate Google OAuth2 URL");
     }
+
+    const url = new URL(oauthUrl);
+    const state = url.searchParams.get("state");
+
+    if (!state) {
+      throw new Error("Appwrite OAuth URL missing state parameter");
+    }
+
+    this.oauthStates.set(state, { timestamp: Date.now() });
 
     // Appwrite's createOAuth2Token handles redirection, but we return the URL and state
     // so the caller can track it according to the AuthRepository contract.
@@ -143,14 +145,21 @@ export class AppwriteAuthRepository implements AuthRepository {
     const parsedState = url.searchParams.get("state");
 
     // 2. Validate state
+    // Use expectedState as the source of truth for verification.
     if (!parsedState || parsedState !== expectedState) {
       throw new Error("Mismatched OAuth state: possible CSRF attempt");
     }
 
+    // 3. Best-effort cache check
     if (!this.oauthStates.has(parsedState)) {
-      throw new Error("Invalid or expired OAuth state");
+      this.logger.warn(
+        "OAuth state missing from local cache. Proceeding with caller-provided expectedState as source of truth.",
+        { state: parsedState },
+      );
+    } else {
+      this.oauthStates.delete(parsedState);
     }
-    this.oauthStates.delete(parsedState);
+
     const userId = url.searchParams.get("userId");
     const secret = url.searchParams.get("secret");
 

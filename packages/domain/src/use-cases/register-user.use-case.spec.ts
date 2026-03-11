@@ -72,7 +72,7 @@ describe("RegisterUserUseCase", () => {
     expect(profileRepo.save).not.toHaveBeenCalled();
   });
 
-  it("should log an error but NOT call compensation (deleteUser) if profile creation fails for a new user", async () => {
+  it("should log an error and throws IncompleteRegistrationError but does NOT call cleanupAuthAfterFailedRegistration when profile creation fails for a new user", async () => {
     const userId = "user-123";
     vi.mocked(authRepo.register).mockResolvedValue({
       userId,
@@ -102,7 +102,7 @@ describe("RegisterUserUseCase", () => {
     );
   });
 
-  it("should throw an error if profile creation fails but NOT call compensation (deleteUser) if it was an anonymous promotion", async () => {
+  it("should throw IncompleteRegistrationError but does NOT call cleanupAuthAfterFailedRegistration when profile creation fails after anonymous promotion", async () => {
     const userId = "user-123";
     vi.mocked(authRepo.register).mockResolvedValue({
       userId,
