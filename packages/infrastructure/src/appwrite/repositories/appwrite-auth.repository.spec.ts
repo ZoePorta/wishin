@@ -105,8 +105,7 @@ describe("AppwriteAuthRepository", () => {
       const initiation = await repository.getGoogleOAuthUrl();
 
       // 2. Complete flow
-      const callbackUrl =
-        "exp://localhost:8081?userId=user-123&secret=secret-456";
+      const callbackUrl = `exp://localhost:8081?userId=user-123&secret=secret-456&state=${initiation.state}`;
       const mockUser = {
         $id: "user-123",
         email: "test@example.com",
@@ -133,7 +132,7 @@ describe("AppwriteAuthRepository", () => {
 
       await expect(
         repository.completeGoogleOAuth(callbackUrl, "invalid-state"),
-      ).rejects.toThrow(/Invalid OAuth state/);
+      ).rejects.toThrow(/Mismatched OAuth state/);
     });
 
     it("should cleanup state after successful verification", async () => {
@@ -149,24 +148,24 @@ describe("AppwriteAuthRepository", () => {
       } as Models.User<Models.Preferences>);
 
       await repository.completeGoogleOAuth(
-        "exp://?userId=1&secret=s",
+        `exp://?userId=1&secret=s&state=${initiation.state}`,
         initiation.state,
       );
 
       // Second attempt with same state should fail
       await expect(
         repository.completeGoogleOAuth(
-          "exp://?userId=1&secret=s",
+          `exp://?userId=1&secret=s&state=${initiation.state}`,
           initiation.state,
         ),
-      ).rejects.toThrow(/Invalid OAuth state/);
+      ).rejects.toThrow(/Invalid or expired OAuth state/);
     });
 
     it("should throw if userId or secret are missing in URL", async () => {
       vi.spyOn(account, "createOAuth2Token").mockReturnValue("http://url");
       const initiation = await repository.getGoogleOAuthUrl();
 
-      const invalidUrl = "exp://localhost:8081?userId=user-123";
+      const invalidUrl = `exp://localhost:8081?userId=user-123&state=${initiation.state}`;
 
       await expect(
         repository.completeGoogleOAuth(invalidUrl, initiation.state),

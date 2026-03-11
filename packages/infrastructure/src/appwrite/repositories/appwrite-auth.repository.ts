@@ -139,13 +139,18 @@ export class AppwriteAuthRepository implements AuthRepository {
     // 1. Cleanup expired states
     this.cleanupExpiredStates();
 
-    // 2. Validate state
-    if (!this.oauthStates.has(expectedState)) {
-      throw new Error("Invalid OAuth state: CSRF protection triggered");
-    }
-    this.oauthStates.delete(expectedState);
-
     const url = new URL(callbackUrl);
+    const parsedState = url.searchParams.get("state");
+
+    // 2. Validate state
+    if (!parsedState || parsedState !== expectedState) {
+      throw new Error("Mismatched OAuth state: possible CSRF attempt");
+    }
+
+    if (!this.oauthStates.has(parsedState)) {
+      throw new Error("Invalid or expired OAuth state");
+    }
+    this.oauthStates.delete(parsedState);
     const userId = url.searchParams.get("userId");
     const secret = url.searchParams.get("secret");
 

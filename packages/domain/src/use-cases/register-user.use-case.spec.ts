@@ -81,9 +81,16 @@ describe("RegisterUserUseCase", () => {
     });
     vi.mocked(profileRepo.save).mockRejectedValue(new Error("DB failed"));
 
-    await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
-      IncompleteRegistrationError,
-    );
+    const errorPromise = useCase.execute(validRegistrationInput);
+    await expect(errorPromise).rejects.toThrow(IncompleteRegistrationError);
+
+    const error = (await errorPromise.catch(
+      (e: unknown) => e,
+    )) as IncompleteRegistrationError;
+    expect(error.userId).toBe(userId);
+    expect(error.isNewUser).toBe(true);
+    expect((error.cause as Error).message).toBe("DB failed");
+
     expect(authRepo.cleanupAuthAfterFailedRegistration).not.toHaveBeenCalled();
     expect(logger.error).toHaveBeenCalledWith(
       "Profile creation failed after auth success",
@@ -104,9 +111,16 @@ describe("RegisterUserUseCase", () => {
     });
     vi.mocked(profileRepo.save).mockRejectedValue(new Error("DB failed"));
 
-    await expect(useCase.execute(validRegistrationInput)).rejects.toThrow(
-      IncompleteRegistrationError,
-    );
+    const errorPromise = useCase.execute(validRegistrationInput);
+    await expect(errorPromise).rejects.toThrow(IncompleteRegistrationError);
+
+    const error = (await errorPromise.catch(
+      (e: unknown) => e,
+    )) as IncompleteRegistrationError;
+    expect(error.userId).toBe(userId);
+    expect(error.isNewUser).toBe(false);
+    expect((error.cause as Error).message).toBe("DB failed");
+
     expect(authRepo.cleanupAuthAfterFailedRegistration).not.toHaveBeenCalled();
   });
 

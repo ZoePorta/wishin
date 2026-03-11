@@ -195,7 +195,11 @@ export const INVALID_PARTICIPATION_ERROR = "Invalid participation" as const;
  * to either retry profile creation or clean up the registration.
  *
  * @param {string} userId - The unique identifier of the affected user from the auth provider.
- * @param {boolean} isNewUser - Whether this was a newly created user (true) or an existing one being promoted/authenticated (false).
+ * @param {boolean | undefined} isNewUser - Whether this was a newly created user (`true`),
+ * an existing one being promoted/authenticated (`false`), or unknown (`undefined`).
+ * `undefined` typically occurs in OAuth flows where the provider doesn't communicate
+ * if the account was just created. Callers should treat `undefined` as indeterminate
+ * and follow a safe recovery or cleanup path according to project policy.
  * @param {string} message - Human-readable error message.
  * @param {object} [options] - Optional configuration.
  * @param {unknown} [options.cause] - The original error cause (e.g., a database or network failure).
