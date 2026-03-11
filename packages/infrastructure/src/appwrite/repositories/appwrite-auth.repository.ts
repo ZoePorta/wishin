@@ -120,6 +120,7 @@ export class AppwriteAuthRepository implements AuthRepository {
       throw new Error("Appwrite OAuth URL missing state parameter");
     }
 
+    this.cleanupExpiredStates();
     this.oauthStates.set(state, { timestamp: Date.now() });
 
     // Appwrite's createOAuth2Token handles redirection, but we return the URL and state
@@ -159,7 +160,7 @@ export class AppwriteAuthRepository implements AuthRepository {
     if (!this.oauthStates.has(parsedState)) {
       this.logger.warn(
         "OAuth state missing from local cache. Proceeding with caller-provided expectedState as source of truth.",
-        { state: parsedState },
+        { hasCacheHit: false },
       );
     } else {
       this.oauthStates.delete(parsedState);

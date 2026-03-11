@@ -106,6 +106,27 @@ describe("AppwriteAuthRepository", () => {
         "Failed to generate Google OAuth2 URL",
       );
     });
+
+    it("should cleanup expired states before adding a new one", async () => {
+      const mockUrl = "https://appwrite.io/oauth/google?state=new-state";
+      vi.spyOn(account, "createOAuth2Token").mockReturnValue(mockUrl);
+
+      // Manually inject an expired state
+      // @ts-expect-error - access private field
+      const statesMap = repository.oauthStates as Map<
+        string,
+        { timestamp: number }
+      >;
+      const expiredTimestamp = Date.now() - 20 * 60 * 1000; // 20 mins ago
+      statesMap.set("expired-state", { timestamp: expiredTimestamp });
+      statesMap.set("valid-state", { timestamp: Date.now() });
+
+      await repository.getGoogleOAuthUrl();
+
+      expect(statesMap.has("expired-state")).toBe(false);
+      expect(statesMap.has("valid-state")).toBe(true);
+      expect(statesMap.has("new-state")).toBe(true);
+    });
   });
 
   describe("completeGoogleOAuth", () => {
@@ -147,7 +168,7 @@ describe("AppwriteAuthRepository", () => {
       ).rejects.toThrow(/Mismatched OAuth state/);
     });
 
-    it("should proceed if state is match but missing from local map (warning) but matched expectedState", async () => {
+    it("should proceed if state is match but missing from local map (warning) but matched expectedState, without logging the state", async () => {
       const state = "valid-matching-state";
       const callbackUrl = `exp://localhost:8081?userId=user-123&secret=secret-456&state=${state}`;
       const mockUser = {
@@ -167,8 +188,12 @@ describe("AppwriteAuthRepository", () => {
       expect(result.userId).toBe("user-123");
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining("missing from local cache"),
-        expect.anything(),
+        expect.objectContaining({ hasCacheHit: false }),
       );
+      // Verify the sensitive state is NOT in the logs
+      const callArgs = warnSpy.mock.calls[0];
+      const context = callArgs[1]!;
+      expect(context).not.toHaveProperty("state");
     });
 
     it("should throw if userId or secret are missing in URL", async () => {
