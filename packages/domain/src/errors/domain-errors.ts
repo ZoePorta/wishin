@@ -187,3 +187,48 @@ export const INVALID_VISIBILITY_ERROR = "Invalid visibility" as const;
  * - Participation.CONTACTS: Only owner's contacts can participate.
  */
 export const INVALID_PARTICIPATION_ERROR = "Invalid participation" as const;
+/**
+ * Error thrown when authentication succeeds but profile creation fails.
+ *
+ * This represents a partial registration state where the user exists in the auth service
+ * but lacks corresponding domain metadata. Callers should use the provided recovery fields
+ * to either retry profile creation or clean up the registration.
+ *
+ * @param {string} userId - The unique identifier of the affected user from the auth provider.
+ * @param {boolean | undefined} isNewUser - Whether this was a newly created user (`true`),
+ * an existing one being promoted/authenticated (`false`), or unknown (`undefined`).
+ * `undefined` typically occurs in OAuth flows where the provider doesn't communicate
+ * if the account was just created. Callers should treat `undefined` as indeterminate
+ * and follow a safe recovery or cleanup path according to project policy.
+ * @param {string} message - Human-readable error message.
+ * @param {object} [options] - Optional configuration.
+ * @param {unknown} [options.cause] - The original error cause (e.g., a database or network failure).
+ *
+ * @example
+ * try {
+ *   await useCase.execute(input);
+ * } catch (error) {
+ *   if (error instanceof IncompleteRegistrationError) {
+ *     console.error(`Partial registration for user ${error.userId}. New user: ${error.isNewUser}`);
+ *     // Retry logic or manual intervention requested
+ *   }
+ * }
+ *
+ * @returns {IncompleteRegistrationError} An instance of IncompleteRegistrationError detailing the partial registration.
+ * @throws {Error} If the constructor itself fails (though currently it only initializes properties).
+ */
+export class IncompleteRegistrationError extends Error {
+  constructor(
+    public readonly userId: string,
+    public readonly isNewUser: boolean | undefined,
+    message: string,
+    options?: { cause?: unknown },
+  ) {
+    super(message);
+    if (options?.cause) {
+      this.cause = options.cause;
+    }
+    this.name = "IncompleteRegistrationError";
+    Object.setPrototypeOf(this, IncompleteRegistrationError.prototype);
+  }
+}
