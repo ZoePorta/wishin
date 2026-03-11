@@ -6,6 +6,8 @@
 
 ## Context
 
+This ADR amends ADR 018 by defining how the system handles accounts whose Auth record exists but whose profile document was not created successfully.
+
 During the registration or anonymous promotion flow, the system performs two main operations:
 
 1.  **Auth Account Update/Creation**: In Appwrite Auth (email/password or OAuth).
