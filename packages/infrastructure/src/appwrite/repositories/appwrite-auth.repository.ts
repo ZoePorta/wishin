@@ -101,6 +101,8 @@ export class AppwriteAuthRepository implements AuthRepository {
   /**
    * Generates the URL and state to initiate Google OAuth2 flow using the Account service.
    * @returns A Promise that resolves to the OAuth initiation metadata.
+   * @throws {Error} If the Google OAuth2 URL generation fails.
+   * @throws {Error} If the generated URL is missing the state parameter.
    */
   async getGoogleOAuthUrl(): Promise<OAuthInitiation> {
     const oauthUrl = this.account.createOAuth2Token({
@@ -130,9 +132,12 @@ export class AppwriteAuthRepository implements AuthRepository {
 
   /**
    * Completes the Google OAuth2 flow using the callback URL parameters.
-   * @param callbackUrl The full URL received from the OAuth2 redirect.
-   * @param _expectedState The expected state to verify (currently ignored as Appwrite handles it).
+   * @param callbackUrl - The full URL received from the OAuth2 redirect.
+   * @param expectedState - The expected state to verify for CSRF protection.
    * @returns A Promise that resolves to the authentication result.
+   * @throws {Error} If the state parameter is missing or does not match the expected state.
+   * @throws {Error} If the callback URL is missing the userId or secret.
+   * @throws {AppwriteException} If session creation or account retrieval fails.
    */
   async completeGoogleOAuth(
     callbackUrl: string,
