@@ -232,6 +232,47 @@ export class AppwriteWishlistRepository
   }
 
   /**
+   * Determines the current session type to distinguish between guests and members.
+   *
+   * @returns A Promise that resolves to the session type:
+   * - 'anonymous': Guest user with no registered account.
+   * - 'incomplete': Registered account but missing profile record.
+   * - 'registered': Fully registered user with a profile.
+   */
+  async getSessionType(): Promise<"anonymous" | "incomplete" | "registered"> {
+    const user = await this.ensureSession();
+
+    if (!user.email) {
+      return "anonymous";
+    }
+
+    // If it has email, it's a member. Check if they have a profile (ADR 026)
+    try {
+      // We use a query instead of findById to avoid unnecessary errors if possible,
+      // but findById is already implemented with 404 handling in most repositories.
+      // For AppwriteWishlistRepository, we'll need to use the profile repository if available
+      // or implement the check directly on the profiles collection.
+      await this.tablesDb.getRow({
+        databaseId: this.databaseId,
+        tableId: "profiles", // Hardcoded for now or we should pass it in constructor
+        rowId: user.$id,
+      });
+
+      return "registered";
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === 404
+      ) {
+        return "incomplete";
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Persists a wishlist aggregate with optimistic locking.
    *
    * @param wishlist - The wishlist aggregate to save.

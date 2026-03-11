@@ -5,6 +5,7 @@ import { UserProvider } from "../contexts/UserContext";
 import {
   AppwriteWishlistRepository,
   AppwriteTransactionRepository,
+  AppwriteAuthRepository,
   createAppwriteClient,
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
@@ -15,10 +16,10 @@ import { Config, ensureAppwriteConfig } from "../constants/Config";
  */
 const consoleLogger = {
   debug: (msg: string, ctx?: Record<string, unknown>) => {
-    console.debug(msg, ctx);
+    console.debug(msg, ctx); // eslint-disable-line no-console
   },
   info: (msg: string, ctx?: Record<string, unknown>) => {
-    console.info(msg, ctx);
+    console.info(msg, ctx); // eslint-disable-line no-console
   },
   warn: (msg: string, ctx?: Record<string, unknown>) => {
     console.warn(msg, ctx);
@@ -49,10 +50,10 @@ function createRepositories() {
     consoleLogger,
     {
       addBreadcrumb: (message, category, data) => {
-        console.log(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
+        console.log(`[Breadcrumb] ${category ?? "info"}: ${message}`, data); // eslint-disable-line no-console
       },
       trackEvent: (name, props) => {
-        console.log(`[Event] ${name}`, props);
+        console.log(`[Event] ${name}`, props); // eslint-disable-line no-console
       },
     }, // Simple Observability implementation using console for now
   );
@@ -63,9 +64,12 @@ function createRepositories() {
     Config.collections.transactions,
   );
 
+  const authRepository = new AppwriteAuthRepository(client, consoleLogger);
+
   return {
     wishlistRepository,
     transactionRepository,
+    authRepository,
   };
 }
 
@@ -130,6 +134,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
       wishlistRepository={repos.wishlistRepository}
       transactionRepository={repos.transactionRepository}
       userRepository={repos.wishlistRepository}
+      authRepository={repos.authRepository}
     >
       <UserProvider>{children}</UserProvider>
     </WishlistRepositoryProvider>

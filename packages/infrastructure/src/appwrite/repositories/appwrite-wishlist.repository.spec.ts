@@ -610,4 +610,62 @@ describe("AppwriteWishlistRepository", () => {
       findByIdSpy.mockRestore();
     });
   });
+
+  describe("getSessionType", () => {
+    it("should return 'anonymous' when user has no email", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: "guest-id",
+        email: "",
+      } as Models.User<Models.Preferences>);
+
+      const type = await repository.getSessionType();
+
+      expect(type).toBe("anonymous");
+      expect(mockTablesDb.getRow).not.toHaveBeenCalled();
+    });
+
+    it("should return 'registered' when user has email and profile exists", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: "user-id",
+        email: "user@example.com",
+      } as Models.User<Models.Preferences>);
+      vi.mocked(mockTablesDb.getRow).mockResolvedValue({
+        $id: "user-id",
+      } as MockRow);
+
+      const type = await repository.getSessionType();
+
+      expect(type).toBe("registered");
+      expect(mockTablesDb.getRow).toHaveBeenCalledWith({
+        databaseId: config.databaseId,
+        tableId: "profiles",
+        rowId: "user-id",
+      });
+    });
+
+    it("should return 'incomplete' when user has email but profile does not exist (404)", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: "user-id",
+        email: "user@example.com",
+      } as Models.User<Models.Preferences>);
+      vi.mocked(mockTablesDb.getRow).mockRejectedValueOnce(
+        new AppwriteException("Not found", 404),
+      );
+
+      const type = await repository.getSessionType();
+
+      expect(type).toBe("incomplete");
+    });
+
+    it("should rethrow non-404 errors during profile check", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue({
+        $id: "user-id",
+        email: "user@example.com",
+      } as Models.User<Models.Preferences>);
+      const error = new AppwriteException("Internal Server Error", 500);
+      vi.mocked(mockTablesDb.getRow).mockRejectedValueOnce(error);
+
+      await expect(repository.getSessionType()).rejects.toThrow(error);
+    });
+  });
 });
