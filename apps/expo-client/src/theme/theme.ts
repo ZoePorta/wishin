@@ -19,6 +19,20 @@ export const theme = {
     colors: {
       ...MD3LightTheme.colors,
       ...materialTheme.schemes.light,
+      // BRAND OVERRIDES: Using Tonal Palettes instead of generated Schemes
+      // Background uses the secondary (lavender) hue at high luminance
+      background: materialTheme.palettes.secondary[98],
+
+      // Surfaces use pure white to pop against the tinted background
+      surface: materialTheme.palettes.neutral[100],
+
+      // Container colors forced to pastel instead of greyish-pink
+      surfaceVariant: materialTheme.palettes.primary[95],
+      secondaryContainer: materialTheme.palettes.secondary[90],
+
+      // Text and Outlines
+      onSurfaceVariant: materialTheme.palettes.primary[30],
+      outline: materialTheme.palettes.secondary[80],
     },
   },
   dark: {

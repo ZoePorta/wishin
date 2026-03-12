@@ -10,7 +10,13 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import { Wishlist, Visibility, Participation, Priority } from "@wishin/domain";
+import {
+  Wishlist,
+  Visibility,
+  Participation,
+  Priority,
+  PersistenceError,
+} from "@wishin/domain";
 import type { Logger, ObservabilityService } from "@wishin/domain";
 
 // TablesDB specific types from Appwrite SDK
@@ -104,6 +110,11 @@ describe("AppwriteWishlistRepository", () => {
   let mockLogger: Logger;
   let mockObservability: ObservabilityService;
 
+  const mockUser = {
+    $id: "user-123",
+    email: "test@example.com",
+  } as Models.User<Models.Preferences>;
+
   class TestAppwriteWishlistRepository extends AppwriteWishlistRepository {
     public get mockAccount() {
       return this.accountAccess;
@@ -151,49 +162,36 @@ describe("AppwriteWishlistRepository", () => {
     $permissions: [],
   });
 
-  describe("ensureSession", () => {
-    it("should do nothing if a session already exists (account.get succeeds)", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
-
-      await repository.ensureSession();
-
-      expect(mockAccount.get).toHaveBeenCalledTimes(1);
+  describe("resolveSession", () => {
+    it("should return the user if account.get succeeds", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(mockUser);
+      const result = await repository.resolveSession();
+      expect(result).toEqual(mockUser);
       expect(mockAccount.createAnonymousSession).not.toHaveBeenCalled();
     });
 
-    it("should create an anonymous session if account.get fails with 401", async () => {
+    it("should return null if account.get fails with 401", async () => {
       vi.mocked(mockAccount.get).mockRejectedValueOnce(
         new AppwriteException("Unauthorized", 401),
       );
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
-      vi.mocked(mockAccount.createAnonymousSession).mockResolvedValue(
-        {} as Models.Session,
-      );
-
-      await repository.ensureSession();
-
-      expect(mockAccount.get).toHaveBeenCalledTimes(2);
-      expect(mockAccount.createAnonymousSession).toHaveBeenCalledTimes(1);
+      const result = await repository.resolveSession();
+      expect(result).toBeNull();
+      expect(mockAccount.createAnonymousSession).not.toHaveBeenCalled();
     });
 
-    it("should rethrow if account.get fails with any other error", async () => {
-      const error = new AppwriteException("Direct access forbidden", 403);
-      vi.mocked(mockAccount.get).mockRejectedValue(error);
+    it("should throw PersistenceError if account.get fails with any other error", async () => {
+      const error = new Error("Other error");
+      vi.mocked(mockAccount.get).mockRejectedValueOnce(error);
 
-      await expect(repository.ensureSession()).rejects.toThrow(error);
-      expect(mockAccount.createAnonymousSession).not.toHaveBeenCalled();
+      await expect(repository.resolveSession()).rejects.toThrow(
+        PersistenceError,
+      );
     });
   });
 
   describe("delete", () => {
-    it("should call ensureSession before deleting", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+    it("should call resolveSession() before deleting", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValueOnce(mockUser);
       vi.mocked(mockTablesDb.deleteRow).mockResolvedValue(
         {} as Models.Document,
       ); // deleteRow returns a document in Appwrite SDK mock
@@ -256,10 +254,8 @@ describe("AppwriteWishlistRepository", () => {
       ],
     });
 
-    it("should call ensureSession and sync items before saving the wishlist document", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
+    it("should call resolveSession() and sync items before saving the wishlist document", async () => {
+      vi.mocked(mockAccount.get).mockResolvedValue(mockUser);
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [],
         total: 0,
@@ -541,7 +537,7 @@ describe("AppwriteWishlistRepository", () => {
       title: "My Wishlist",
     } satisfies MockRow;
 
-    it("should call ensureSession by default", async () => {
+    it("should call resolveSession by default", async () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,
       );
@@ -555,21 +551,6 @@ describe("AppwriteWishlistRepository", () => {
 
       expect(mockAccount.get).toHaveBeenCalledTimes(1);
     });
-
-    it("should NOT call ensureSession when ensureSession is false", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
-      vi.mocked(mockTablesDb.getRow).mockResolvedValue(mockDoc);
-      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
-        rows: [],
-        total: 0,
-      } as MockRowList);
-
-      await repository.findById(validId, true, false);
-
-      expect(mockAccount.get).not.toHaveBeenCalled();
-    });
   });
 
   describe("findByOwnerId", () => {
@@ -580,7 +561,7 @@ describe("AppwriteWishlistRepository", () => {
       title: "My Wishlist",
     } satisfies MockRow;
 
-    it("should call ensureSession only once and findById with ensureSession=false", async () => {
+    it("should call resolveSession and findById correctly", async () => {
       vi.mocked(mockAccount.get).mockResolvedValue(
         {} as Models.User<Models.Preferences>,
       );
@@ -594,8 +575,8 @@ describe("AppwriteWishlistRepository", () => {
 
       await repository.findByOwnerId("owner-id");
 
-      expect(mockAccount.get).toHaveBeenCalledTimes(1);
-      expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, false, false);
+      expect(mockAccount.get).toHaveBeenCalled();
+      expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, false);
       // The first call to listRows is in findByOwnerId
       expect(mockTablesDb.listRows).toHaveBeenCalledTimes(1);
       // Assert hydration via internal findById calls by checking getRow

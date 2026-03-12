@@ -17,6 +17,7 @@ vi.mock("appwrite", () => {
     createOAuth2Token: vi.fn(),
     createSession: vi.fn(),
     deleteSession: vi.fn(),
+    createAnonymousSession: vi.fn(),
   };
 
   const ClientMock = vi.fn().mockImplementation(function () {
@@ -154,6 +155,7 @@ describe("AppwriteAuthRepository", () => {
         initiation.state,
       );
 
+      expect(result.type).toBe("authenticated");
       expect(result.userId).toBe("user-123");
       expect(result.isNewUser).toBeUndefined();
       expect(createSessionSpy).toHaveBeenCalled();
@@ -185,6 +187,7 @@ describe("AppwriteAuthRepository", () => {
 
       const result = await repository.completeGoogleOAuth(callbackUrl, state);
 
+      expect(result.type).toBe("authenticated");
       expect(result.userId).toBe("user-123");
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining("missing from local cache"),
@@ -233,7 +236,12 @@ describe("AppwriteAuthRepository", () => {
         email,
         password,
       });
-      expect(result).toEqual({ userId, email, isNewUser: true });
+      expect(result).toEqual({
+        type: "authenticated",
+        userId,
+        email,
+        isNewUser: true,
+      });
     });
 
     it("should promote an anonymous session if active", async () => {
@@ -261,7 +269,12 @@ describe("AppwriteAuthRepository", () => {
         email,
         password,
       });
-      expect(result).toEqual({ userId, email, isNewUser: false });
+      expect(result).toEqual({
+        type: "authenticated",
+        userId,
+        email,
+        isNewUser: false,
+      });
     });
   });
 
@@ -290,7 +303,12 @@ describe("AppwriteAuthRepository", () => {
         password,
       });
       expect(getSpy).toHaveBeenCalled();
-      expect(result).toEqual({ userId, email, isNewUser: false });
+      expect(result).toEqual({
+        type: "authenticated",
+        userId,
+        email,
+        isNewUser: false,
+      });
     });
   });
 
@@ -318,6 +336,29 @@ describe("AppwriteAuthRepository", () => {
         expect.stringContaining("called"),
         expect.objectContaining({ userIdObfuscated: "user****" }),
       );
+    });
+  });
+
+  describe("loginAnonymously", () => {
+    it("should create an anonymous session and return AuthResult", async () => {
+      const mockUser = {
+        $id: "anonymous-123",
+        email: "",
+      } as Models.User<Models.Preferences>;
+
+      const createAnonymousSessionSpy = vi
+        .spyOn(account, "createAnonymousSession")
+        .mockResolvedValue({} as Models.Session);
+      vi.spyOn(account, "get").mockResolvedValue(mockUser);
+
+      const result = await repository.loginAnonymously();
+
+      expect(createAnonymousSessionSpy).toHaveBeenCalled();
+      expect(result).toEqual({
+        type: "anonymous",
+        userId: "anonymous-123",
+        isNewUser: true,
+      });
     });
   });
 });

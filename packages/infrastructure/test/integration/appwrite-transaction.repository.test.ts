@@ -1,5 +1,14 @@
-import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  afterEach,
+  beforeAll,
+  afterAll,
+  vi,
+} from "vitest";
 import { Client as ServerClient, TablesDB } from "node-appwrite";
+import { Account } from "appwrite";
 import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "@wishin/infrastructure/appwrite/client";
 import { AppwriteTransactionRepository } from "@wishin/infrastructure/appwrite/repositories/appwrite-transaction.repository";
@@ -37,7 +46,7 @@ describe.skipIf(!shouldRun)(
     let wishlistsCollectionId: string;
     let profilesCollectionId: string;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       const endpoint = EXPO_PUBLIC_APPWRITE_ENDPOINT!;
       const projectId = EXPO_PUBLIC_APPWRITE_PROJECT_ID!;
       const apiKey = APPWRITE_API_SECRET!;
@@ -64,6 +73,23 @@ describe.skipIf(!shouldRun)(
         databaseId,
         transactionsCollectionId,
       );
+
+      // Create anonymous session to enable authenticated calls
+      const session = await new Account(client).createAnonymousSession();
+      process.env.TEST_ANONYMOUS_USER_ID = session.userId;
+    });
+
+    afterAll(async () => {
+      const userId = process.env.TEST_ANONYMOUS_USER_ID;
+      if (userId) {
+        // Delete anonymous user using Server SDK (Users API)
+        const { Users } = await import("node-appwrite");
+        const users = new Users(serverClient);
+        // SDK uses object parameter style in recent versions (ADR 027)
+        await users.delete({ userId }).catch(() => {
+          /* ignore */
+        });
+      }
     });
 
     // Helper to seed required parent records
@@ -362,6 +388,12 @@ describe.skipIf(!shouldRun)(
 
     it("should find transactions by userId", async () => {
       const currentUserId = await repository.getCurrentUserId();
+      if (!currentUserId) {
+        throw new Error(
+          "Test failed: currentUserId is null. Check session initialization.",
+        );
+      }
+
       localId = randomUUID();
       const localItemId = randomUUID();
 
@@ -407,6 +439,11 @@ describe.skipIf(!shouldRun)(
 
     it("should default to current userId when findByUserId is called without arguments", async () => {
       const currentUserId = await repository.getCurrentUserId();
+      if (!currentUserId) {
+        throw new Error(
+          "Test failed: currentUserId is null. Check session initialization.",
+        );
+      }
       localId = randomUUID();
       const localItemId = randomUUID();
 
@@ -439,6 +476,7 @@ describe.skipIf(!shouldRun)(
         const results = await repository.findByUserId();
         expect(results.length).toBeGreaterThanOrEqual(1);
         expect(results.some((r) => r.id === localId)).toBe(true);
+        expect(results.every((r) => r.userId === currentUserId)).toBe(true);
       } finally {
         await tablesDb
           .deleteRow({

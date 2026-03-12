@@ -5,9 +5,9 @@
 export interface UserRepository {
   /**
    * Retrieves the current user's unique identifier.
-   * @returns A Promise that resolves to the current user ID.
+   * @returns A Promise that resolves to the current user ID, or null if no session is active.
    */
-  getCurrentUserId(): Promise<string>;
+  getCurrentUserId(): Promise<string | null>;
 
   /**
    * Determines the current session type to distinguish between guests and members.
@@ -16,5 +16,5 @@ export interface UserRepository {
    * - 'incomplete': Registered account but missing profile record.
    * - 'registered': Fully registered user with a profile.
    */
-  getSessionType(): Promise<"anonymous" | "incomplete" | "registered">;
+  getSessionType(): Promise<"anonymous" | "incomplete" | "registered" | null>;
 }

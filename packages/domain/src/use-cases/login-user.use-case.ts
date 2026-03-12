@@ -1,4 +1,4 @@
-import type { LoginUserInput, AuthResult } from "./dtos/auth.dto";
+import type { LoginUserInput, AuthenticatedAuthResult } from "./dtos/auth.dto";
 import type { AuthRepository } from "../repositories/auth.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
 import { IncompleteRegistrationError } from "../errors/domain-errors";
@@ -23,10 +23,10 @@ export class LoginUserUseCase {
    * Logs in a user with their credentials.
    *
    * @param input - The login credentials (email, password).
-   * @returns A Promise that resolves to the AuthResult when login is successful.
+   * @returns A Promise that resolves to the AuthenticatedAuthResult when login is successful.
    * @throws {Error} If login fails.
    */
-  async execute(input: LoginUserInput): Promise<AuthResult> {
+  async execute(input: LoginUserInput): Promise<AuthenticatedAuthResult> {
     const authResult = await this.authRepo.login(input.email, input.password);
 
     const profile = await this.profileRepo.findById(authResult.userId);

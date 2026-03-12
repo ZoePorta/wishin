@@ -6,8 +6,12 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import { TransactionStatus, PersistenceError } from "@wishin/domain";
-import type { TransactionRepository, Transaction } from "@wishin/domain";
+import {
+  TransactionStatus,
+  PersistenceError,
+  type TransactionRepository,
+  type Transaction,
+} from "@wishin/domain";
 import {
   TransactionMapper,
   type TransactionDocument,
@@ -40,80 +44,62 @@ export class AppwriteTransactionRepository
     this.account = new Account(this.client);
   }
 
-  private ensureSessionInFlight: Promise<void> | null = null;
-  private sessionEnsured = false;
+  private resolveSessionInFlight: Promise<Models.User<Models.Preferences> | null> | null =
+    null;
   private _currentUser: Models.User<Models.Preferences> | null = null;
 
   /**
-   * Ensures an active session exists.
-   * Creates an anonymous session if no session is active.
+   * Resolves the current session state.
    *
-   * @returns {Promise<Models.User<Models.Preferences>>} The current user model.
-   * @throws {PersistenceError} If the session cannot be ensured.
+   * @remarks
+   * This method does not create a session if one does not exist; it only retrieves
+   * the current state from Appwrite.
+   *
+   * @returns A Promise that resolves to the user object if a session is active, or null if no session exists.
+   * @throws {PersistenceError} If the session resolution fails due to a network or server error.
    */
-  async ensureSession(): Promise<Models.User<Models.Preferences>> {
-    if (this.sessionEnsured && this._currentUser) {
-      return this._currentUser;
+  async resolveSession(): Promise<Models.User<Models.Preferences> | null> {
+    if (this.resolveSessionInFlight) {
+      return this.resolveSessionInFlight;
     }
 
-    if (this.ensureSessionInFlight) {
-      await this.ensureSessionInFlight;
-      if (this._currentUser) return this._currentUser;
-    }
-
-    this.ensureSessionInFlight = (async () => {
+    this.resolveSessionInFlight = (async () => {
       try {
         this._currentUser = await this.account.get();
-        this.sessionEnsured = true;
+        return this._currentUser;
       } catch (error: unknown) {
-        // More robust check for code 401 to handle monorepo instanceof issues
         if (
           error &&
           typeof error === "object" &&
           "code" in error &&
           error.code === 401
         ) {
-          try {
-            await this.account.createAnonymousSession();
-            this._currentUser = await this.account.get();
-            this.sessionEnsured = true;
-          } catch (sessionError: unknown) {
-            throw new PersistenceError("Failed to create anonymous session", {
-              cause:
-                sessionError instanceof Error
-                  ? sessionError
-                  : String(sessionError),
-            });
-          }
-        } else {
-          throw new PersistenceError("Failed to get current account", {
-            cause: error instanceof Error ? error : String(error),
-          });
+          this._currentUser = null;
+          return null;
         }
+        throw new PersistenceError("Failed to get current account", {
+          cause: error instanceof Error ? error : String(error),
+        });
+      } finally {
+        this.resolveSessionInFlight = null;
       }
     })();
 
-    try {
-      await this.ensureSessionInFlight;
-    } finally {
-      this.ensureSessionInFlight = null;
-    }
-
-    if (!this._currentUser) {
-      throw new PersistenceError("Session initialization failed: user is null");
-    }
-
-    return this._currentUser;
+    return this.resolveSessionInFlight;
   }
 
   /**
    * Retrieves the current user's unique identifier.
-   * @returns A Promise that resolves to the current user ID.
-   * @throws {PersistenceError} If the account cannot be retrieved.
+   *
+   * @remarks
+   * This method only returns the ID for an existing session and does not create one.
+   *
+   * @returns A Promise that resolves to the current user ID as a string, or null if no active session exists.
+   * @throws {PersistenceError} If the account cannot be retrieved due to a system error.
    */
-  async getCurrentUserId(): Promise<string> {
-    const user = await this.ensureSession();
-    return user.$id;
+  async getCurrentUserId(): Promise<string | null> {
+    const session = await this.resolveSession();
+    return session?.$id ?? null;
   }
 
   /**
@@ -124,7 +110,13 @@ export class AppwriteTransactionRepository
    * @throws {PersistenceError} If the upsert fails.
    */
   async save(transaction: Transaction): Promise<void> {
-    await this.ensureSession();
+    // Ensure session exists to have an identity to act
+    const session = await this.resolveSession();
+    if (!session) {
+      throw new PersistenceError(
+        "Unauthorized: No active session for saving transaction",
+      );
+    }
     try {
       await this.tablesDb.upsertRow({
         databaseId: this.databaseId,
@@ -147,7 +139,7 @@ export class AppwriteTransactionRepository
    * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findById(id: string): Promise<Transaction | null> {
-    await this.ensureSession();
+    await this.resolveSession();
     try {
       const response = await this.tablesDb.getRow({
         databaseId: this.databaseId,
@@ -181,7 +173,7 @@ export class AppwriteTransactionRepository
    * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findByItemId(itemId: string): Promise<Transaction[]> {
-    await this.ensureSession();
+    await this.resolveSession();
     try {
       const response = await this.tablesDb.listRows({
         databaseId: this.databaseId,
@@ -212,7 +204,12 @@ export class AppwriteTransactionRepository
    * @throws {PersistenceError} If the cancellation operation fails.
    */
   async cancelByItemId(itemId: string): Promise<number> {
-    await this.ensureSession();
+    const session = await this.resolveSession();
+    if (!session) {
+      throw new PersistenceError(
+        "Unauthorized: No active session for cancelling transactions",
+      );
+    }
     let totalCancelled = 0;
     let hasMore = true;
 
@@ -278,7 +275,16 @@ export class AppwriteTransactionRepository
     status?: TransactionStatus,
     limit?: number,
   ): Promise<Transaction[]> {
-    const authenticatedUser = await this.ensureSession();
+    const authenticatedUser = await this.resolveSession();
+
+    if (!authenticatedUser) {
+      if (userId !== undefined) {
+        throw new PersistenceError(
+          "Unauthorized access: no active session for requested user",
+        );
+      }
+      return [];
+    }
     const targetUserId = userId ?? authenticatedUser.$id;
 
     if (userId !== undefined && userId !== authenticatedUser.$id) {
@@ -364,9 +370,9 @@ export class AppwriteTransactionRepository
     itemId: string,
     status?: TransactionStatus,
   ): Promise<Transaction[]> {
-    const authenticatedUser = await this.ensureSession();
+    const authenticatedUser = await this.resolveSession();
 
-    if (userId !== authenticatedUser.$id) {
+    if (userId !== authenticatedUser?.$id) {
       throw new PersistenceError(
         "Unauthorized access: userId does not match authenticated user",
       );
@@ -406,7 +412,12 @@ export class AppwriteTransactionRepository
    * @throws {PersistenceError} If the deletion fails or session cannot be ensured.
    */
   async delete(id: string): Promise<void> {
-    await this.ensureSession();
+    const session = await this.resolveSession();
+    if (!session) {
+      throw new PersistenceError(
+        "Unauthorized: No active session for deleting transaction",
+      );
+    }
     try {
       await this.tablesDb.deleteRow({
         databaseId: this.databaseId,

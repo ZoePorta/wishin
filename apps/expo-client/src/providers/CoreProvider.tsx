@@ -16,10 +16,12 @@ import { Config, ensureAppwriteConfig } from "../constants/Config";
  */
 const consoleLogger = {
   debug: (msg: string, ctx?: Record<string, unknown>) => {
-    console.debug(msg, ctx); // eslint-disable-line no-console
+    // eslint-disable-next-line no-console
+    console.debug(msg, ctx);
   },
   info: (msg: string, ctx?: Record<string, unknown>) => {
-    console.info(msg, ctx); // eslint-disable-line no-console
+    // eslint-disable-next-line no-console
+    console.info(msg, ctx);
   },
   warn: (msg: string, ctx?: Record<string, unknown>) => {
     console.warn(msg, ctx);
@@ -50,10 +52,10 @@ function createRepositories() {
     consoleLogger,
     {
       addBreadcrumb: (message, category, data) => {
-        console.log(`[Breadcrumb] ${category ?? "info"}: ${message}`, data); // eslint-disable-line no-console
+        console.warn(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
       },
       trackEvent: (name, props) => {
-        console.log(`[Event] ${name}`, props); // eslint-disable-line no-console
+        console.warn(`[Event] ${name}`, props);
       },
     }, // Simple Observability implementation using console for now
   );
@@ -82,12 +84,6 @@ interface CoreProviderProps {
  * High-level provider that orchestrates infrastructure initialization.
  * Decouples the UI routing from the repository lifecycle.
  */
-function isSessionAware(repo: unknown): repo is SessionAwareRepository {
-  return (
-    !!repo &&
-    typeof (repo as SessionAwareRepository).ensureSession === "function"
-  );
-}
 
 export const CoreProvider: React.FC<CoreProviderProps> = ({
   children,
@@ -99,26 +95,42 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
   const repos = useMemo(() => createRepositories(), []);
 
   useEffect(() => {
+    let isMounted = true;
     const init = async () => {
       try {
         const wishlistRepo = repos.wishlistRepository;
+        const sessionAwareRepo =
+          wishlistRepo as unknown as SessionAwareRepository;
 
-        if (!isSessionAware(wishlistRepo)) {
-          throw new Error("Wishlist repository must be session aware");
-        }
-
-        // establish or restore session before allowing app entry
-        await wishlistRepo.ensureSession();
-        setIsInitialized(true);
-      } catch (error) {
-        console.error("Failed to initialize core infrastructure:", error);
-        onConfigError(
-          error instanceof Error ? error : new Error(String(error)),
+        // timeout to prevent slow network from blocking startup (ADR 027)
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => {
+            reject(new Error("Session resolution timeout"));
+          }, 5000),
         );
+
+        // attempt to restore session without forcing creation
+
+        await Promise.race([sessionAwareRepo.resolveSession(), timeoutPromise]);
+      } catch (error) {
+        // Log the error but do not block app initialization for transient session/network errors.
+        // PersistenceError from resolveSession should not trigger onConfigError.
+        console.error(
+          "Transient session resolution error during initialization:",
+          error,
+        );
+      } finally {
+        if (isMounted) {
+          setIsInitialized(true);
+        }
       }
     };
 
     void init();
+
+    return () => {
+      isMounted = false;
+    };
   }, [onConfigError, repos]);
 
   if (!isInitialized) {

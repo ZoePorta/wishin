@@ -143,9 +143,7 @@ async function seed() {
       data: {
         ownerId: user1.$id,
         title: "Alice's Birthday Wishlist",
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         visibility: Visibility.LINK,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         participation: Participation.ANYONE,
       },
     });
@@ -156,9 +154,7 @@ async function seed() {
       data: {
         ownerId: user2.$id,
         title: "Bob's Holiday Wishlist",
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         visibility: Visibility.LINK,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         participation: Participation.ANYONE,
       },
     });
@@ -309,7 +305,6 @@ async function seed() {
       data: {
         itemId: item7.$id,
         userId: user2.$id,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         status: TransactionStatus.PURCHASED,
         quantity: 1,
       },
@@ -322,7 +317,6 @@ async function seed() {
       data: {
         itemId: item1.$id,
         userId: "550e8400-e29b-41d4-a716-44665544000x", // Maria (Anonymous)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         status: TransactionStatus.PURCHASED,
         quantity: 1,
       },
