@@ -6,7 +6,11 @@ import {
   AppwriteException,
 } from "appwrite";
 import type { AuthRepository, OAuthInitiation } from "@wishin/domain";
-import type { AuthResult, Logger } from "@wishin/domain";
+import type {
+  AuthenticatedAuthResult,
+  AnonymousAuthResult,
+  Logger,
+} from "@wishin/domain";
 
 /**
  * Appwrite implementation of the AuthRepository.
@@ -40,7 +44,10 @@ export class AppwriteAuthRepository implements AuthRepository {
    * @returns A Promise that resolves to the authentication result.
    * @throws {AppwriteException} If user creation or promotion fails.
    */
-  async register(email: string, password: string): Promise<AuthResult> {
+  async register(
+    email: string,
+    password: string,
+  ): Promise<AuthenticatedAuthResult> {
     let isAnonymous = false;
     let userId: string = ID.unique();
     try {
@@ -71,6 +78,7 @@ export class AppwriteAuthRepository implements AuthRepository {
     });
 
     return {
+      type: "authenticated",
       userId: user.$id,
       email: user.email,
       isNewUser: !isAnonymous,
@@ -85,13 +93,17 @@ export class AppwriteAuthRepository implements AuthRepository {
    * @returns A Promise that resolves to the authentication result.
    * @throws {AppwriteException} If session creation or account retrieval fails.
    */
-  async login(email: string, password: string): Promise<AuthResult> {
+  async login(
+    email: string,
+    password: string,
+  ): Promise<AuthenticatedAuthResult> {
     await this.account.createEmailPasswordSession({
       email,
       password,
     });
     const user = await this.account.get();
     return {
+      type: "authenticated",
       userId: user.$id,
       email: user.email,
       isNewUser: false,
@@ -143,7 +155,7 @@ export class AppwriteAuthRepository implements AuthRepository {
   async completeGoogleOAuth(
     callbackUrl: string,
     expectedState: string,
-  ): Promise<AuthResult> {
+  ): Promise<AuthenticatedAuthResult> {
     // 1. Cleanup expired states
     this.cleanupExpiredStates();
 
@@ -176,6 +188,7 @@ export class AppwriteAuthRepository implements AuthRepository {
     await this.account.createSession({ userId, secret });
     const user = await this.account.get();
     return {
+      type: "authenticated",
       userId: user.$id,
       email: user.email,
       isNewUser: undefined,
@@ -220,5 +233,20 @@ export class AppwriteAuthRepository implements AuthRepository {
       `cleanupAuthAfterFailedRegistration called for user [REDACTED]. "Incomplete Account" strategy active: Auth account is preserved even if profile fails.`,
       { userIdObfuscated: userId.substring(0, 4) + "****" },
     );
+  }
+
+  /**
+   * Explicitly starts an anonymous session.
+   * @returns A Promise that resolves to the authentication result (anonymous userId).
+   * @throws {AppwriteException} If session creation fails.
+   */
+  async loginAnonymously(): Promise<AnonymousAuthResult> {
+    await this.account.createAnonymousSession();
+    const user = await this.account.get();
+    return {
+      type: "anonymous",
+      userId: user.$id,
+      isNewUser: true,
+    };
   }
 }

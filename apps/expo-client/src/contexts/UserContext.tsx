@@ -7,7 +7,11 @@ import React, {
   useCallback,
   type ReactNode,
 } from "react";
-import { useUserRepository } from "./WishlistRepositoryContext";
+
+import {
+  useUserRepository,
+  useAuthRepository,
+} from "./WishlistRepositoryContext";
 
 interface UserContextValue {
   /** The unique identifier of the current user, or null if not loaded yet. */
@@ -17,7 +21,9 @@ interface UserContextValue {
   /** Error message if the user ID could not be fetched. */
   error: string | null;
   /** Refetch the current user ID. */
-  refetch: () => Promise<void>;
+  refetch: () => Promise<string | null>;
+  /** Explicitly login as a guest. */
+  loginAsGuest: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -32,6 +38,7 @@ interface UserProviderProps {
  */
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const repository = useUserRepository();
+  const authRepository = useAuthRepository();
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,15 +49,41 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       const id = await repository.getCurrentUserId();
       setUserId(id);
+      return id;
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to fetch user session";
       setError(message);
       console.error("UserProvider error:", message);
+      return null;
     } finally {
       setLoading(false);
     }
   }, [repository]);
+
+  const loginAsGuest = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await authRepository.loginAnonymously();
+      const id = await fetchUser();
+
+      if (!id) {
+        const message = "No user identity resolved after guest login";
+        setError(message);
+        console.error("loginAsGuest error:", message);
+        throw new Error(message);
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to login as guest";
+      setError(message);
+      console.error("loginAsGuest error:", message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [authRepository, fetchUser]);
 
   useEffect(() => {
     void fetchUser();
@@ -62,8 +95,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       loading,
       error,
       refetch: fetchUser,
+      loginAsGuest,
     }),
-    [userId, loading, error, fetchUser],
+    [userId, loading, error, fetchUser, loginAsGuest],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

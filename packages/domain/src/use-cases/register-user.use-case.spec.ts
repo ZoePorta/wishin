@@ -21,6 +21,7 @@ describe("RegisterUserUseCase", () => {
       completeGoogleOAuth: vi.fn(),
       logout: vi.fn(),
       cleanupAuthAfterFailedRegistration: vi.fn(),
+      loginAnonymously: vi.fn(),
     };
     profileRepo = {
       findById: vi.fn(),
@@ -44,6 +45,7 @@ describe("RegisterUserUseCase", () => {
   it("should register a user and create a profile", async () => {
     const userId = "user-123";
     vi.mocked(authRepo.register).mockResolvedValue({
+      type: "authenticated",
       userId: "user-123",
       email: validRegistrationInput.email,
       isNewUser: true,
@@ -75,6 +77,7 @@ describe("RegisterUserUseCase", () => {
   it("should log an error and throws IncompleteRegistrationError but does NOT call cleanupAuthAfterFailedRegistration when profile creation fails for a new user", async () => {
     const userId = "user-123";
     vi.mocked(authRepo.register).mockResolvedValue({
+      type: "authenticated",
       userId,
       email: validRegistrationInput.email,
       isNewUser: true,
@@ -105,6 +108,7 @@ describe("RegisterUserUseCase", () => {
   it("should throw IncompleteRegistrationError but does NOT call cleanupAuthAfterFailedRegistration when profile creation fails after anonymous promotion", async () => {
     const userId = "user-123";
     vi.mocked(authRepo.register).mockResolvedValue({
+      type: "authenticated",
       userId,
       email: validRegistrationInput.email,
       isNewUser: false,

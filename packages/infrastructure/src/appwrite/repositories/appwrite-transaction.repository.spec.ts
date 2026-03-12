@@ -147,33 +147,27 @@ describe("AppwriteTransactionRepository", () => {
     } as MockRow;
   }
 
-  describe("ensureSession", () => {
-    it("should do nothing if a session already exists (account.get succeeds)", async () => {
+  describe("resolveSession", () => {
+    it("should return the user if account.get succeeds", async () => {
       vi.mocked(mockAccount.get).mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
 
-      await repository.ensureSession();
+      const result = await repository.resolveSession();
 
+      expect(result?.$id).toBe(validUserId);
       expect(mockAccount.get).toHaveBeenCalledTimes(1);
-      expect(mockAccount.createAnonymousSession).not.toHaveBeenCalled();
     });
 
-    it("should create an anonymous session if account.get fails with 401", async () => {
-      vi.mocked(mockAccount.get).mockRejectedValueOnce(
+    it("should return null if account.get fails with 401", async () => {
+      vi.mocked(mockAccount.get).mockRejectedValue(
         new AppwriteException("Unauthorized", 401),
       );
-      vi.mocked(mockAccount.get).mockResolvedValue({
-        $id: validUserId,
-      } as Models.User<Models.Preferences>);
-      vi.mocked(mockAccount.createAnonymousSession).mockResolvedValue(
-        {} as Models.Session,
-      );
 
-      await repository.ensureSession();
+      const result = await repository.resolveSession();
 
-      expect(mockAccount.get).toHaveBeenCalledTimes(2);
-      expect(mockAccount.createAnonymousSession).toHaveBeenCalledTimes(1);
+      expect(result).toBeNull();
+      expect(mockAccount.get).toHaveBeenCalledTimes(1);
     });
   });
 

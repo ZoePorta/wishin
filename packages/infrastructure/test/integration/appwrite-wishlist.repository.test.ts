@@ -9,6 +9,8 @@ import {
   Participation,
   Priority,
   TransactionStatus,
+  type Logger,
+  type ObservabilityService,
 } from "@wishin/domain";
 import "dotenv/config";
 
@@ -39,7 +41,7 @@ describe.skipIf(!shouldRun)(
     let profilesCollectionId: string;
     let transactionsCollectionId: string;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       const endpoint = EXPO_PUBLIC_APPWRITE_ENDPOINT!;
       const projectId = EXPO_PUBLIC_APPWRITE_PROJECT_ID!;
       const apiKey = APPWRITE_API_SECRET!;
@@ -66,6 +68,28 @@ describe.skipIf(!shouldRun)(
         databaseId,
         wishlistCollectionId,
         wishlistItemsCollectionId,
+        {
+          debug: () => {
+            /* no-op */
+          },
+          info: () => {
+            /* no-op */
+          },
+          warn: () => {
+            /* no-op */
+          },
+          error: () => {
+            /* no-op */
+          },
+        } as unknown as Logger,
+        {
+          addBreadcrumb: () => {
+            /* no-op */
+          },
+          trackEvent: () => {
+            /* no-op */
+          },
+        } as unknown as ObservabilityService,
       );
     });
 

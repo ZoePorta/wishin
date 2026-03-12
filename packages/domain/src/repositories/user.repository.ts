@@ -5,7 +5,7 @@
 export interface UserRepository {
   /**
    * Retrieves the current user's unique identifier.
-   * @returns A Promise that resolves to the current user ID.
+   * @returns A Promise that resolves to the current user ID, or null if no session is active.
    */
-  getCurrentUserId(): Promise<string>;
+  getCurrentUserId(): Promise<string | null>;
 }
