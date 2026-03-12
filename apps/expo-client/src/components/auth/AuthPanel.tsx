@@ -5,7 +5,7 @@ import {
   useWindowDimensions,
   ScrollView,
 } from "react-native";
-import { Surface, Divider } from "react-native-paper";
+import { Surface, Divider, useTheme } from "react-native-paper";
 import { LoginForm } from "./LoginForm";
 import { RegisterForm } from "./RegisterForm";
 
@@ -29,69 +29,102 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
   loading,
 }) => {
   const { width } = useWindowDimensions();
+  const theme = useTheme();
   const isDesktop = width >= 768;
   const [showLogin, setShowLogin] = useState(true);
 
-  if (isDesktop) {
+  const renderForms = () => {
+    if (isDesktop) {
+      return (
+        <Surface style={styles.desktopCard} elevation={2}>
+          <View style={styles.formSection}>
+            <LoginForm
+              onLogin={onLogin}
+              onSwitchToRegister={() => {
+                setShowLogin(false);
+              }}
+              loading={loading}
+            />
+          </View>
+          <Divider style={styles.verticalDivider} />
+          <View style={styles.formSection}>
+            <RegisterForm
+              onRegister={onRegister}
+              onSwitchToLogin={() => {
+                setShowLogin(true);
+              }}
+              loading={loading}
+            />
+          </View>
+        </Surface>
+      );
+    }
+
     return (
-      <Surface style={styles.desktopContainer} elevation={1}>
-        <View style={styles.formWrapper}>
-          <LoginForm
-            onLogin={onLogin}
-            onSwitchToRegister={() => {
-              setShowLogin(false);
-            }}
-            loading={loading}
-          />
-        </View>
-        <Divider style={styles.divider} />
-        <View style={styles.formWrapper}>
-          <RegisterForm
-            onRegister={onRegister}
-            onSwitchToLogin={() => {
-              setShowLogin(true);
-            }}
-            loading={loading}
-          />
-        </View>
+      <Surface style={styles.mobileContainer} elevation={0}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {showLogin ? (
+            <LoginForm
+              onLogin={onLogin}
+              onSwitchToRegister={() => {
+                setShowLogin(false);
+              }}
+              loading={loading}
+            />
+          ) : (
+            <RegisterForm
+              onRegister={onRegister}
+              onSwitchToLogin={() => {
+                setShowLogin(true);
+              }}
+              loading={loading}
+            />
+          )}
+        </ScrollView>
       </Surface>
     );
-  }
+  };
 
   return (
-    <Surface style={styles.mobileContainer} elevation={0}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {showLogin ? (
-          <LoginForm
-            onLogin={onLogin}
-            onSwitchToRegister={() => {
-              setShowLogin(false);
-            }}
-            loading={loading}
-          />
-        ) : (
-          <RegisterForm
-            onRegister={onRegister}
-            onSwitchToLogin={() => {
-              setShowLogin(true);
-            }}
-            loading={loading}
-          />
-        )}
-      </ScrollView>
-    </Surface>
+    <View
+      style={[
+        styles.mainContainer,
+        { backgroundColor: theme.colors.background },
+      ]}
+    >
+      {renderForms()}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  desktopContainer: {
-    flexDirection: "row",
-    padding: 32,
-    borderRadius: 28,
+  mainContainer: {
+    flex: 1,
     width: "100%",
-    maxWidth: 1000,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  desktopCard: {
+    flexDirection: "row",
+    padding: 16,
+    borderRadius: 28,
+    width: "90%",
+    maxWidth: 900,
+    minHeight: 500,
     alignSelf: "center",
-    justifyContent: "space-between",
+  },
+  formSection: {
+    flex: 1,
+    padding: 32,
+    justifyContent: "center",
+  },
+  verticalDivider: {
+    width: 1,
+    height: "80%",
+    alignSelf: "center",
   },
   mobileContainer: {
     flex: 1,
@@ -101,14 +134,5 @@ const styles = StyleSheet.create({
     padding: 24,
     flexGrow: 1,
     justifyContent: "center",
-  },
-  formWrapper: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  divider: {
-    width: 1,
-    height: "100%",
-    marginHorizontal: 8,
   },
 });

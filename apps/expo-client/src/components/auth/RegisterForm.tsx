@@ -1,6 +1,14 @@
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
-import { TextInput, Button, Text } from "react-native-paper";
+import { StyleSheet } from "react-native";
+import {
+  TextInput,
+  Button,
+  Text,
+  useTheme,
+  Surface,
+  Avatar,
+  HelperText,
+} from "react-native-paper";
 
 interface RegisterFormProps {
   onRegister: (
@@ -13,13 +21,14 @@ interface RegisterFormProps {
 }
 
 /**
- * Friendly registration form with Material Design 3.
+ * Premium RegisterForm component designed with Material Design 3.
  */
 export const RegisterForm: React.FC<RegisterFormProps> = ({
   onRegister,
   onSwitchToLogin,
   loading,
 }) => {
+  const theme = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -39,7 +48,20 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <Surface
+      elevation={0}
+      style={[styles.container, { backgroundColor: "transparent" }]}
+    >
+      <Avatar.Icon
+        icon="account-plus"
+        size={64}
+        style={[
+          styles.avatar,
+          { backgroundColor: theme.colors.secondaryContainer },
+        ]}
+        color={theme.colors.onSecondaryContainer}
+      />
+
       <Text variant="headlineSmall" style={styles.title}>
         Join Wishin
       </Text>
@@ -47,39 +69,52 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         Don't have an account yet? Join Wishin and start sharing your dreams.
       </Text>
 
-      {error && (
-        <Text variant="bodySmall" style={styles.errorText}>
-          {error}
-        </Text>
-      )}
-
       <TextInput
         label="Username"
         value={username}
-        onChangeText={setUsername}
+        onChangeText={(text) => {
+          setUsername(text);
+          if (error) setError(null);
+        }}
         mode="outlined"
         autoCapitalize="none"
         style={styles.input}
+        left={<TextInput.Icon icon="account-outline" />}
+        error={!!error && !username}
       />
 
       <TextInput
         label="Email"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(text) => {
+          setEmail(text);
+          if (error) setError(null);
+        }}
         mode="outlined"
         keyboardType="email-address"
         autoCapitalize="none"
         style={styles.input}
+        left={<TextInput.Icon icon="email-outline" />}
+        error={!!error && !email}
       />
 
       <TextInput
         label="Password"
         value={password}
-        onChangeText={setPassword}
+        onChangeText={(text) => {
+          setPassword(text);
+          if (error) setError(null);
+        }}
         mode="outlined"
         secureTextEntry
         style={styles.input}
+        left={<TextInput.Icon icon="lock-outline" />}
+        error={!!error && !password}
       />
+
+      <HelperText type="error" visible={!!error} style={styles.errorText}>
+        {error}
+      </HelperText>
 
       <Button
         mode="contained"
@@ -94,21 +129,30 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         Sign Up
       </Button>
 
-      <Button mode="text" onPress={onSwitchToLogin} style={styles.switchButton}>
-        Already have an account? Log in back!
+      <Button
+        mode="text"
+        onPress={onSwitchToLogin}
+        style={styles.switchButton}
+        labelStyle={styles.switchButtonLabel}
+      >
+        Already have an account? Log in!
       </Button>
-    </View>
+    </Surface>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     width: "100%",
+    alignItems: "center",
     paddingVertical: 16,
   },
+  avatar: {
+    marginBottom: 16,
+  },
   title: {
-    fontWeight: "bold",
-    marginBottom: 8,
+    fontWeight: "700",
+    marginBottom: 4,
     textAlign: "center",
   },
   subtitle: {
@@ -117,20 +161,26 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   input: {
-    marginBottom: 16,
+    width: "100%",
+    marginBottom: 12,
+  },
+  errorText: {
+    textAlign: "center",
+    width: "100%",
+    marginBottom: 8,
   },
   button: {
+    width: "100%",
     marginTop: 8,
+    borderRadius: 12,
   },
   buttonContent: {
-    height: 48,
+    height: 52,
   },
   switchButton: {
     marginTop: 16,
   },
-  errorText: {
-    color: "#BA1A1A",
-    marginBottom: 16,
-    textAlign: "center",
+  switchButtonLabel: {
+    fontSize: 14,
   },
 });

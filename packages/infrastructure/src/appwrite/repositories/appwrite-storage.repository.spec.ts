@@ -1,4 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import { AppwriteStorageRepository } from "./appwrite-storage.repository";
 import { Client, type Models } from "appwrite";
 import { PersistenceError } from "@wishin/domain";
@@ -77,7 +79,7 @@ describe("AppwriteStorageRepository", () => {
   describe("resolveSession", () => {
     it("should return user if session exists", async () => {
       const mockUser = { $id: "user-123" };
-      get.mockResolvedValue(
+      (get as any).mockResolvedValue(
         mockUser as unknown as Models.User<Models.Preferences>,
       );
 
@@ -88,7 +90,7 @@ describe("AppwriteStorageRepository", () => {
     });
 
     it("should return null if 401 error occurs", async () => {
-      get.mockRejectedValue({ code: 401 });
+      (get as any).mockRejectedValue({ code: 401 });
 
       const user = await repository.resolveSession();
 
@@ -101,7 +103,7 @@ describe("AppwriteStorageRepository", () => {
         code?: number;
       };
       unexpectedError.code = 500;
-      get.mockRejectedValue(unexpectedError);
+      (get as any).mockRejectedValue(unexpectedError);
 
       await expect(repository.resolveSession()).rejects.toThrow(
         PersistenceError,
@@ -112,7 +114,7 @@ describe("AppwriteStorageRepository", () => {
   describe("getCurrentUserId", () => {
     it("should return current user ID", async () => {
       const mockUser = { $id: "user-123" };
-      get.mockResolvedValue(
+      (get as any).mockResolvedValue(
         mockUser as unknown as Models.User<Models.Preferences>,
       );
 
@@ -123,7 +125,7 @@ describe("AppwriteStorageRepository", () => {
     });
 
     it("should return null if no session", async () => {
-      get.mockRejectedValue({ code: 401 });
+      (get as any).mockRejectedValue({ code: 401 });
 
       const userId = await repository.getCurrentUserId();
 
@@ -139,10 +141,10 @@ describe("AppwriteStorageRepository", () => {
         mimeType: "image/png",
         size: 3,
       };
-      get.mockResolvedValue({
+      (get as any).mockResolvedValue({
         $id: "user-123",
       } as unknown as Models.User<Models.Preferences>);
-      createFile.mockResolvedValue({
+      (createFile as any).mockResolvedValue({
         $id: "file-123",
       } as unknown as Models.File);
 
@@ -163,7 +165,7 @@ describe("AppwriteStorageRepository", () => {
         mimeType: "image/png",
         size: 3,
       };
-      get.mockRejectedValue({ code: 401 });
+      (get as any).mockRejectedValue({ code: 401 });
 
       await expect(repository.upload(fileData)).rejects.toThrow(
         PersistenceError,
@@ -174,10 +176,10 @@ describe("AppwriteStorageRepository", () => {
 
   describe("delete", () => {
     it("should delete a file", async () => {
-      get.mockResolvedValue({
+      (get as any).mockResolvedValue({
         $id: "user-123",
       } as unknown as Models.User<Models.Preferences>);
-      deleteFile.mockResolvedValue(undefined);
+      (deleteFile as any).mockResolvedValue(undefined);
 
       await repository.delete("file-123");
 
@@ -188,7 +190,7 @@ describe("AppwriteStorageRepository", () => {
     });
 
     it("should throw PersistenceError if no session and not call storage", async () => {
-      get.mockRejectedValue({ code: 401 });
+      (get as any).mockRejectedValue({ code: 401 });
 
       await expect(repository.delete("file-123")).rejects.toThrow(
         PersistenceError,
@@ -200,7 +202,7 @@ describe("AppwriteStorageRepository", () => {
   describe("getPreview", () => {
     it("should return preview URL string from string return", async () => {
       const mockUrl = "http://preview/file-123";
-      getFilePreview.mockReturnValue(mockUrl);
+      (getFilePreview as any).mockReturnValue(mockUrl);
 
       const result = await repository.getPreview("file-123");
 
@@ -217,7 +219,7 @@ describe("AppwriteStorageRepository", () => {
         toString: () => mockUrl,
         href: mockUrl,
       };
-      getFilePreview.mockReturnValue(urlObject);
+      (getFilePreview as any).mockReturnValue(urlObject);
 
       const result = await repository.getPreview("file-123");
 

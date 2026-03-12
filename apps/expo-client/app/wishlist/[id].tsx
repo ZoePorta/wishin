@@ -30,18 +30,27 @@ export default function WishlistDetail() {
     if (!wishlist) return null;
     return (
       <View style={styles.header}>
-        <Text variant="headlineMedium" style={styles.headerTitle}>
+        <Text
+          variant="headlineMedium"
+          style={[styles.headerTitle, { color: theme.colors.onSurface }]}
+        >
           {wishlist.title}
         </Text>
         {wishlist.description && (
-          <Text variant="bodyMedium" style={styles.description}>
+          <Text
+            variant="bodyLarge"
+            style={[
+              styles.description,
+              { color: theme.colors.onSurfaceVariant },
+            ]}
+          >
             {wishlist.description}
           </Text>
         )}
         <Divider style={styles.divider} />
       </View>
     );
-  }, [wishlist]);
+  }, [wishlist, theme]);
 
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => <PublicItemCard item={item} />,
@@ -51,7 +60,7 @@ export default function WishlistDetail() {
   if (loading) {
     return (
       <Surface style={styles.centerContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </Surface>
     );
   }
@@ -79,14 +88,27 @@ export default function WishlistDetail() {
   if (!wishlist) {
     return (
       <Surface style={styles.centerContainer}>
-        <Text variant="bodyLarge">Wishlist not found.</Text>
+        <Text
+          variant="bodyLarge"
+          style={{ color: theme.colors.onSurfaceVariant }}
+        >
+          Wishlist not found.
+        </Text>
       </Surface>
     );
   }
 
   return (
-    <Surface style={styles.container}>
-      <Stack.Screen options={{ title: wishlist.title }} />
+    <Surface
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <Stack.Screen
+        options={{
+          title: wishlist.title,
+          headerStyle: { backgroundColor: theme.colors.surface },
+          headerTintColor: theme.colors.onSurface,
+        }}
+      />
       <FlatList
         contentContainerStyle={styles.listContent}
         data={wishlist.items}
@@ -95,11 +117,18 @@ export default function WishlistDetail() {
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text variant="bodyMedium" style={styles.emptyText}>
-              No items in this wishlist.
+            <Text
+              variant="bodyLarge"
+              style={[
+                styles.emptyText,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
+              No items in this wishlist yet.
             </Text>
           </View>
         }
+        showsVerticalScrollIndicator={false}
       />
     </Surface>
   );
@@ -113,38 +142,40 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 24,
   },
   listContent: {
-    padding: 16,
+    padding: 20,
     flexGrow: 1,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   headerTitle: {
-    marginBottom: 4,
+    fontWeight: "700",
+    marginBottom: 8,
   },
   description: {
-    opacity: 0.7,
+    lineHeight: 24,
   },
   divider: {
-    marginTop: 16,
+    marginTop: 24,
   },
   errorText: {
-    marginBottom: 20,
+    marginBottom: 24,
     textAlign: "center",
+    fontWeight: "600",
   },
   emptyContainer: {
-    paddingVertical: 40,
+    paddingVertical: 64,
     alignItems: "center",
   },
   emptyText: {
     fontStyle: "italic",
-    opacity: 0.5,
+    textAlign: "center",
   },
   buttonContent: {
-    minHeight: 44,
-    minWidth: 44,
+    height: 48,
+    paddingHorizontal: 16,
   },
 });

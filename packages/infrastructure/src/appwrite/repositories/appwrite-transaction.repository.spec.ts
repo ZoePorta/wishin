@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
-/* eslint-disable @typescript-eslint/no-deprecated */
-
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteTransactionRepository } from "./appwrite-transaction.repository";
 import {
@@ -36,33 +33,46 @@ interface MockRowList {
   total: number;
 }
 
-// Mock Appwrite SDK
-vi.mock("appwrite", () => {
-  const Account = vi.fn();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  Account.prototype.get = vi.fn();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  Account.prototype.createAnonymousSession = vi.fn();
+// Mocks
+const {
+  mockGet,
+  mockCreateAnonymousSession,
+  mockGetRow,
+  mockListRows,
+  mockUpsertRow,
+  mockUpdateRow,
+  mockDeleteRow,
+} = vi.hoisted(() => ({
+  mockGet: vi.fn(),
+  mockCreateAnonymousSession: vi.fn(),
+  mockGetRow: vi.fn(),
+  mockListRows: vi.fn(),
+  mockUpsertRow: vi.fn(),
+  mockUpdateRow: vi.fn(),
+  mockDeleteRow: vi.fn(),
+}));
 
-  const TablesDB = vi.fn();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  TablesDB.prototype.getRow = vi.fn();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  TablesDB.prototype.listRows = vi.fn();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  TablesDB.prototype.upsertRow = vi.fn();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  TablesDB.prototype.updateRow = vi.fn();
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  TablesDB.prototype.deleteRow = vi.fn();
+// Mock Appwrite SDK
+vi.mock("appwrite", async (importActual) => {
+  const actual = await importActual<typeof import("appwrite")>();
 
   return {
+    ...actual,
     Client: class {
       setEndpoint = vi.fn().mockReturnThis();
       setProject = vi.fn().mockReturnThis();
     },
-    Account,
-    TablesDB,
+    Account: class {
+      get = mockGet;
+      createAnonymousSession = mockCreateAnonymousSession;
+    },
+    TablesDB: class {
+      getRow = mockGetRow;
+      listRows = mockListRows;
+      upsertRow = mockUpsertRow;
+      updateRow = mockUpdateRow;
+      deleteRow = mockDeleteRow;
+    },
     Query: {
       equal: vi.fn((field: string, value: unknown) => ({
         field,
@@ -72,24 +82,13 @@ vi.mock("appwrite", () => {
       limit: vi.fn((value: number) => ({ value, type: "limit" })),
       offset: vi.fn((value: number) => ({ value, type: "offset" })),
     },
-    AppwriteException: class extends Error {
-      constructor(
-        message: string,
-        public code?: number,
-        public type?: string,
-      ) {
-        super(message);
-        this.name = "AppwriteException";
-      }
-    },
   };
 });
 
 describe("AppwriteTransactionRepository", () => {
+  /* eslint-disable @typescript-eslint/no-unsafe-assignment */
   let repository: AppwriteTransactionRepository;
   let mockClient: Client;
-  let mockAccount: InstanceType<typeof Account>;
-  let mockTablesDb: InstanceType<typeof TablesDB>;
 
   const config = {
     databaseId: "db-id",
@@ -114,14 +113,11 @@ describe("AppwriteTransactionRepository", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockClient = new Client();
-    const testRepo = new TestAppwriteTransactionRepository(
+    repository = new TestAppwriteTransactionRepository(
       mockClient,
       config.databaseId,
       config.transactionsCollectionId,
     );
-    repository = testRepo;
-    mockAccount = testRepo.accountAccess;
-    mockTablesDb = testRepo.tablesDbAccess;
   });
 
   function createMockRow(overrides: Partial<MockRow> = {}): MockRow {
@@ -149,25 +145,24 @@ describe("AppwriteTransactionRepository", () => {
 
   describe("resolveSession", () => {
     it("should return the user if account.get succeeds", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
 
       const result = await repository.resolveSession();
 
-      expect(result?.$id).toBe(validUserId);
-      expect(mockAccount.get).toHaveBeenCalledTimes(1);
+      expect(result).not.toBeNull();
+      expect(result!.$id).toBe(validUserId);
+      expect(mockGet).toHaveBeenCalledTimes(1);
     });
 
     it("should return null if account.get fails with 401", async () => {
-      vi.mocked(mockAccount.get).mockRejectedValue(
-        new AppwriteException("Unauthorized", 401),
-      );
+      mockGet.mockRejectedValue(new AppwriteException("Unauthorized", 401));
 
       const result = await repository.resolveSession();
 
       expect(result).toBeNull();
-      expect(mockAccount.get).toHaveBeenCalledTimes(1);
+      expect(mockGet).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -188,19 +183,18 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should call resolveSession and upsert the transaction document", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.upsertRow).mockResolvedValue({} as MockRow);
+      mockUpsertRow.mockResolvedValue({} as MockRow);
 
       await repository.save(transaction);
 
-      expect(mockAccount.get).toHaveBeenCalled();
-      expect(mockTablesDb.upsertRow).toHaveBeenCalledWith({
+      expect(mockGet).toHaveBeenCalled();
+      expect(mockUpsertRow).toHaveBeenCalledWith({
         databaseId: config.databaseId,
         tableId: config.transactionsCollectionId,
         rowId: transaction.id,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         data: expect.objectContaining({
           itemId: transaction.itemId,
           userId: transaction.userId,
@@ -238,25 +232,23 @@ describe("AppwriteTransactionRepository", () => {
     } as MockRow;
 
     it("should return the transaction if found", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.getRow).mockResolvedValue(mockDoc);
+      mockGetRow.mockResolvedValue(mockDoc);
 
       const result = await repository.findById(validId);
 
       expect(result).toBeInstanceOf(Transaction);
       expect(result?.id).toBe(validId);
-      expect(mockAccount.get).toHaveBeenCalled();
+      expect(mockGet).toHaveBeenCalled();
     });
 
     it("should return null if not found (404)", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.getRow).mockRejectedValue(
-        new AppwriteException("Not found", 404),
-      );
+      mockGetRow.mockRejectedValue(new AppwriteException("Not found", 404));
 
       const result = await repository.findById(validId);
 
@@ -288,10 +280,10 @@ describe("AppwriteTransactionRepository", () => {
     ];
 
     it("should return list of transactions for an item", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+      mockListRows.mockResolvedValue({
         rows: mockDocs,
         total: 1,
       } as MockRowList);
@@ -300,16 +292,16 @@ describe("AppwriteTransactionRepository", () => {
 
       expect(results).toHaveLength(1);
       expect(results[0].id).toBe(validId);
-      expect(mockAccount.get).toHaveBeenCalled();
+      expect(mockGet).toHaveBeenCalled();
     });
   });
 
   describe("cancelByItemId", () => {
     it("should update all RESERVED transactions to CANCELLED_BY_OWNER", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.listRows)
+      mockListRows
         .mockResolvedValueOnce({
           rows: [
             {
@@ -358,13 +350,13 @@ describe("AppwriteTransactionRepository", () => {
           total: 0,
         } as MockRowList);
 
-      vi.mocked(mockTablesDb.updateRow).mockResolvedValue({} as MockRow);
+      mockUpdateRow.mockResolvedValue({} as MockRow);
 
       const cancelledCount = await repository.cancelByItemId(validItemId);
 
       expect(cancelledCount).toBe(2);
-      expect(mockAccount.get).toHaveBeenCalled();
-      expect(mockTablesDb.updateRow).toHaveBeenCalledTimes(2);
+      expect(mockGet).toHaveBeenCalled();
+      expect(mockUpdateRow).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -392,10 +384,10 @@ describe("AppwriteTransactionRepository", () => {
     ];
 
     it("should return transactions for a user", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+      mockListRows.mockResolvedValue({
         rows: mockDocs,
         total: 1,
       } as MockRowList);
@@ -404,10 +396,9 @@ describe("AppwriteTransactionRepository", () => {
 
       expect(results).toHaveLength(1);
       expect(results[0].userId).toBe(validUserId);
-      expect(mockAccount.get).toHaveBeenCalled();
-      expect(mockTablesDb.listRows).toHaveBeenCalledWith(
+      expect(mockGet).toHaveBeenCalled();
+      expect(mockListRows).toHaveBeenCalledWith(
         expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
           ]),
@@ -416,19 +407,18 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should allow filtering by status", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+      mockListRows.mockResolvedValue({
         rows: [],
         total: 0,
       } as MockRowList);
 
       await repository.findByUserId(validUserId, TransactionStatus.PURCHASED);
 
-      expect(mockTablesDb.listRows).toHaveBeenCalledWith(
+      expect(mockListRows).toHaveBeenCalledWith(
         expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
             expect.objectContaining({
@@ -441,7 +431,7 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should aggregate all pages when there are more than 100 results", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
 
@@ -491,7 +481,7 @@ describe("AppwriteTransactionRepository", () => {
           $sequence: 101 + i,
         }));
 
-      vi.mocked(mockTablesDb.listRows)
+      mockListRows
         .mockResolvedValueOnce({
           rows: page1Docs,
           total: 105,
@@ -504,11 +494,10 @@ describe("AppwriteTransactionRepository", () => {
       const results = await repository.findByUserId(validUserId);
 
       expect(results).toHaveLength(105);
-      expect(mockTablesDb.listRows).toHaveBeenCalledTimes(2);
-      expect(mockTablesDb.listRows).toHaveBeenNthCalledWith(
+      expect(mockListRows).toHaveBeenCalledTimes(2);
+      expect(mockListRows).toHaveBeenNthCalledWith(
         1,
         expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
             expect.objectContaining({ value: 100, type: "limit" }),
@@ -516,10 +505,9 @@ describe("AppwriteTransactionRepository", () => {
           ]),
         }),
       );
-      expect(mockTablesDb.listRows).toHaveBeenNthCalledWith(
+      expect(mockListRows).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
             expect.objectContaining({ value: 100, type: "limit" }),
@@ -530,11 +518,11 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should respect the limit parameter", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
 
-      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+      mockListRows.mockResolvedValue({
         rows: Array.from({ length: 20 }).map((_, i) =>
           createMockRow({ $sequence: i + 1 }),
         ),
@@ -544,9 +532,8 @@ describe("AppwriteTransactionRepository", () => {
       const results = await repository.findByUserId(validUserId, undefined, 20);
 
       expect(results).toHaveLength(20);
-      expect(mockTablesDb.listRows).toHaveBeenCalledWith(
+      expect(mockListRows).toHaveBeenCalledWith(
         expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ value: 20, type: "limit" }),
           ]),
@@ -579,10 +566,10 @@ describe("AppwriteTransactionRepository", () => {
     ];
 
     it("should return transactions for a user and item", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+      mockListRows.mockResolvedValue({
         rows: mockDocs,
         total: 1,
       } as MockRowList);
@@ -595,10 +582,9 @@ describe("AppwriteTransactionRepository", () => {
       expect(results).toHaveLength(1);
       expect(results[0].userId).toBe(validUserId);
       expect(results[0].itemId).toBe(validItemId);
-      expect(mockAccount.get).toHaveBeenCalled();
-      expect(mockTablesDb.listRows).toHaveBeenCalledWith(
+      expect(mockGet).toHaveBeenCalled();
+      expect(mockListRows).toHaveBeenCalledWith(
         expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
             expect.objectContaining({ field: "itemId", value: validItemId }),
@@ -608,10 +594,10 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should allow filtering by status", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.listRows).mockResolvedValue({
+      mockListRows.mockResolvedValue({
         rows: [],
         total: 0,
       } as MockRowList);
@@ -622,9 +608,8 @@ describe("AppwriteTransactionRepository", () => {
         TransactionStatus.PURCHASED,
       );
 
-      expect(mockTablesDb.listRows).toHaveBeenCalledWith(
+      expect(mockListRows).toHaveBeenCalledWith(
         expect.objectContaining({
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
             expect.objectContaining({ field: "itemId", value: validItemId }),
@@ -638,7 +623,7 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should throw PersistenceError if userId does not match authenticated user", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: "different-user",
       } as Models.User<Models.Preferences>);
 
@@ -646,23 +631,21 @@ describe("AppwriteTransactionRepository", () => {
         repository.findByUserIdAndItemId(validUserId, validItemId),
       ).rejects.toThrow(PersistenceError);
 
-      expect(mockTablesDb.listRows).not.toHaveBeenCalled();
+      expect(mockListRows).not.toHaveBeenCalled();
     });
   });
 
   describe("delete", () => {
     it("should call resolveSession and delete the transaction", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.deleteRow).mockResolvedValue(
-        {} as Models.Document,
-      );
+      mockDeleteRow.mockResolvedValue({} as Models.Document);
 
       await repository.delete(validId);
 
-      expect(mockAccount.get).toHaveBeenCalled();
-      expect(mockTablesDb.deleteRow).toHaveBeenCalledWith({
+      expect(mockGet).toHaveBeenCalled();
+      expect(mockDeleteRow).toHaveBeenCalledWith({
         databaseId: config.databaseId,
         tableId: config.transactionsCollectionId,
         rowId: validId,
@@ -670,21 +653,19 @@ describe("AppwriteTransactionRepository", () => {
     });
 
     it("should handle 404 (silent success)", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(
-        new AppwriteException("Not found", 404),
-      );
+      mockDeleteRow.mockRejectedValue(new AppwriteException("Not found", 404));
 
       await expect(repository.delete(validId)).resolves.not.toThrow();
     });
 
     it("should rethrow non-404 errors", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
+      mockGet.mockResolvedValue({
         $id: validUserId,
       } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.deleteRow).mockRejectedValue(
+      mockDeleteRow.mockRejectedValue(
         new AppwriteException("Internal Server Error", 500),
       );
 

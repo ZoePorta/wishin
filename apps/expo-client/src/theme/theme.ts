@@ -7,45 +7,36 @@ import {
 import {
   DefaultTheme as NavigationDefaultTheme,
   DarkTheme as NavigationDarkTheme,
+  Theme as NavigationTheme,
 } from "@react-navigation/native";
 import materialTheme from "./material-theme.json";
 
 /**
- * Adapt the Material Design 3 theme from the JSON export to react-native-paper format.
+ * 1. Brand Logic Overrides
+ * Targets a "Joyful" aesthetic using chromatic palettes.
  */
-export const theme = {
-  light: {
-    ...MD3LightTheme,
-    colors: {
-      ...MD3LightTheme.colors,
-      ...materialTheme.schemes.light,
-      // BRAND OVERRIDES: Using Tonal Palettes instead of generated Schemes
-      // Background uses the secondary (lavender) hue at high luminance
-      background: materialTheme.palettes.secondary[98],
+const brandLightOverrides = {
+  // Soft lavender for the main background
+  background: materialTheme.palettes.secondary[95],
 
-      // Surfaces use pure white to pop against the tinted background
-      surface: materialTheme.palettes.neutral[100],
+  // Pure white for surfaces to make cards stand out
+  surface: materialTheme.palettes.neutral[100],
 
-      // Container colors forced to pastel instead of greyish-pink
-      surfaceVariant: materialTheme.palettes.primary[95],
-      secondaryContainer: materialTheme.palettes.secondary[90],
+  // Saturated pink for primary actions
+  primary: materialTheme.palettes.primary[50],
+  onPrimary: materialTheme.palettes.primary[100],
 
-      // Text and Outlines
-      onSurfaceVariant: materialTheme.palettes.primary[30],
-      outline: materialTheme.palettes.secondary[80],
-    },
-  },
-  dark: {
-    ...MD3DarkTheme,
-    colors: {
-      ...MD3DarkTheme.colors,
-      ...materialTheme.schemes.dark,
-    },
-  },
+  // Pastel variants for inputs and containers
+  surfaceVariant: materialTheme.palettes.primary[95],
+  secondaryContainer: materialTheme.palettes.secondary[90],
+
+  // UI details and outlines
+  outline: materialTheme.palettes.secondary[80],
+  onSurfaceVariant: materialTheme.palettes.secondary[30],
 };
 
 /**
- * Combined navigation and paper themes for seamless integration.
+ * 2. Navigation Adaptation
  */
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -53,64 +44,62 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 });
 
 /**
- * Type guard to check if an object satisfies the MD3Theme interface.
- */
-function isMD3Theme(obj: unknown): obj is MD3Theme {
-  if (typeof obj !== "object" || obj === null) return false;
-  const theme = obj as Record<string, unknown>;
-  return (
-    "colors" in theme &&
-    "fonts" in theme &&
-    "roundness" in theme &&
-    "version" in theme &&
-    "animation" in theme
-  );
-}
-
-/**
- * Merges Paper and Navigation themes with custom material schemes.
+ * 3. Theme Merging Logic
+ * Deeply merges Paper, Navigation and Material schemes.
+ * Order: Paper -> Navigation -> Material Scheme -> Brand Overrides
  */
 function mergeAndValidateTheme(
   paperTheme: MD3Theme,
-  navigationTheme: typeof LightTheme,
+  navigationTheme: NavigationTheme,
   materialScheme: Record<string, string>,
+  overrides: Record<string, string> = {},
 ): MD3Theme {
+  const finalSurface =
+    overrides.surface || materialScheme.surface || paperTheme.colors.surface;
+
   const merged = {
     ...paperTheme,
     ...navigationTheme,
     colors: {
       ...paperTheme.colors,
       ...navigationTheme.colors,
-      ...materialScheme,
+      ...materialScheme, // Raw M3 Schemes from JSON
+      ...overrides, // FINAL AUTHORITY: Your Joyful/Friendly overrides
+      elevation: {
+        ...paperTheme.colors.elevation,
+        // Override all elevation levels to use the intended surface color.
+        // This prevents MD3 from applying automatic tint overlays that
+        // make white surfaces look gray.
+        level1: finalSurface,
+        level2: finalSurface,
+        level3: finalSurface,
+        level4: finalSurface,
+        level5: finalSurface,
+      },
     },
-    // Ensure MD3 specific properties are preserved
+    // Preserve MD3 typography and structure
     fonts: paperTheme.fonts,
     animation: paperTheme.animation,
     roundness: paperTheme.roundness,
   };
 
-  if (!isMD3Theme(merged)) {
-    throw new Error("Invalid MD3Theme generated during merge");
-  }
-
-  return merged;
+  return merged as MD3Theme;
 }
 
 /**
- * Provides merged light and dark theme objects for the app.
- * Combines MD3LightTheme/MD3DarkTheme with navigation themes
- * and specific material design schemes.
- * Validation occurs in mergeAndValidateTheme.
+ * 4. Final Exports
  */
 export const combinedTheme = {
   light: mergeAndValidateTheme(
     MD3LightTheme,
     LightTheme,
     materialTheme.schemes.light,
+    brandLightOverrides,
   ),
   dark: mergeAndValidateTheme(
     MD3DarkTheme,
     DarkTheme,
     materialTheme.schemes.dark,
+    {}, // Add dark overrides here if needed
   ),
 };

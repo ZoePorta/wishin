@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from "react";
-import { StyleSheet, View, ActivityIndicator } from "react-native";
-import { Text, Surface } from "react-native-paper";
+import { StyleSheet, View } from "react-native";
+import { Text, Surface, ActivityIndicator, useTheme } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useUser } from "../src/contexts/UserContext";
 import { AuthPanel } from "../src/components/auth/AuthPanel";
@@ -14,6 +14,7 @@ import { useAuthRepository } from "../src/contexts/WishlistRepositoryContext";
  * @returns {JSX.Element} The root screen React element.
  */
 export default function Index() {
+  const theme = useTheme();
   const { sessionType, loading: userLoading, refetch } = useUser();
   const authRepo = useAuthRepository();
   const router = useRouter();
@@ -23,7 +24,6 @@ export default function Index() {
     async (email: string, password: string) => {
       setAuthLoading(true);
       try {
-        // We use the repo from context.
         await authRepo.login(email, password);
         await refetch();
       } finally {
@@ -38,8 +38,6 @@ export default function Index() {
       setAuthLoading(true);
       try {
         await authRepo.register(email, password);
-        // Note: Full registration with profile creation is handled in RegisterUserUseCase.
-        // For now, focusing on the Auth Panel UI as requested.
         await refetch();
       } finally {
         setAuthLoading(false);
@@ -58,7 +56,7 @@ export default function Index() {
   if (userLoading) {
     return (
       <Surface style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </Surface>
     );
   }
@@ -66,8 +64,10 @@ export default function Index() {
   if (sessionType === "registered") {
     return (
       <Surface style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
-        <Text style={{ marginTop: 16 }}>Redirecting to your dashboard...</Text>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text variant="bodyLarge" style={{ marginTop: 24 }}>
+          Redirecting to your dashboard...
+        </Text>
       </Surface>
     );
   }
@@ -75,25 +75,38 @@ export default function Index() {
   if (sessionType === "incomplete") {
     return (
       <Surface style={styles.container}>
-        <Text variant="headlineMedium" style={styles.title}>
-          Almost there!
-        </Text>
-        <Text variant="bodyLarge" style={styles.subtitle}>
-          Your registration is almost complete. Please wait for the profile
-          setup feature.
-        </Text>
+        <View style={styles.centerContent}>
+          <Text variant="headlineLarge" style={styles.title}>
+            Almost there!
+          </Text>
+          <Text variant="bodyLarge" style={styles.subtitle}>
+            Your registration is almost complete. Please wait for the profile
+            setup feature.
+          </Text>
+        </View>
       </Surface>
     );
   }
 
   return (
-    <Surface style={styles.container}>
+    <Surface
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <View style={styles.header}>
-        <Text variant="displayMedium" style={styles.brandTitle}>
+        <Text
+          variant="displayLarge"
+          style={[styles.brandTitle, { color: theme.colors.primary }]}
+        >
           Wishin
         </Text>
-        <Text variant="titleMedium" style={styles.brandSubtitle}>
-          Share your wishes with the world.
+        <Text
+          variant="titleMedium"
+          style={[
+            styles.brandSubtitle,
+            { color: theme.colors.onSurfaceVariant },
+          ]}
+        >
+          Share your wishes with the world
         </Text>
       </View>
 
@@ -119,19 +132,24 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: 48,
+    marginBottom: 64,
   },
   brandTitle: {
-    fontWeight: "bold",
-    color: "#6750A4", // MD3 Primary color roughly
+    fontWeight: "900",
+    letterSpacing: -1,
   },
   brandSubtitle: {
-    opacity: 0.7,
     marginTop: 8,
+    textAlign: "center",
+  },
+  centerContent: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     textAlign: "center",
     marginBottom: 16,
+    fontWeight: "700",
   },
   subtitle: {
     textAlign: "center",
