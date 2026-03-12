@@ -1,4 +1,7 @@
-import type { AuthResult } from "../use-cases/dtos/auth.dto";
+import type {
+  AuthenticatedAuthResult,
+  AnonymousAuthResult,
+} from "../use-cases/dtos/auth.dto";
 
 /**
  * Metadata required to initiate an OAuth2 flow and maintain state.
@@ -24,7 +27,7 @@ export interface AuthRepository {
    * @returns A Promise that resolves to the authentication result.
    * @throws {Error} If registration fails.
    */
-  register(email: string, password: string): Promise<AuthResult>;
+  register(email: string, password: string): Promise<AuthenticatedAuthResult>;
 
   /**
    * Logs in a user with email and password.
@@ -33,7 +36,7 @@ export interface AuthRepository {
    * @returns A Promise that resolves to the authentication result.
    * @throws {Error} If login fails.
    */
-  login(email: string, password: string): Promise<AuthResult>;
+  login(email: string, password: string): Promise<AuthenticatedAuthResult>;
 
   /**
    * Generates the URL and state to initiate Google OAuth2 flow.
@@ -52,7 +55,7 @@ export interface AuthRepository {
   completeGoogleOAuth(
     callbackUrl: string,
     expectedState: string,
-  ): Promise<AuthResult>;
+  ): Promise<AuthenticatedAuthResult>;
 
   /**
    * Logs out the current user session.
@@ -76,5 +79,5 @@ export interface AuthRepository {
    * @returns A Promise that resolves to the authentication result (anonymous userId, with no email).
    * @throws {Error} If session creation fails.
    */
-  loginAnonymously(): Promise<AuthResult>;
+  loginAnonymously(): Promise<AnonymousAuthResult>;
 }

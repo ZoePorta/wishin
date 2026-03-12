@@ -5,6 +5,7 @@ import { Profile } from "../aggregates/profile";
 import { IncompleteRegistrationError } from "../errors/domain-errors";
 import type { AuthRepository } from "../repositories/auth.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
+import type { AuthenticatedAuthResult } from "./dtos/auth.dto";
 
 describe("LoginUserUseCase", () => {
   let useCase: LoginUserUseCase;
@@ -27,7 +28,8 @@ describe("LoginUserUseCase", () => {
   };
 
   it("should return the AuthResult when login and profile check are successful", async () => {
-    const authResult = {
+    const authResult: AuthenticatedAuthResult = {
+      type: "authenticated",
       userId: "user-123",
       email: validLoginInput.email,
       isNewUser: false,
@@ -51,7 +53,8 @@ describe("LoginUserUseCase", () => {
   });
 
   it("should throw IncompleteRegistrationError if profile is missing after login", async () => {
-    const authResult = {
+    const authResult: AuthenticatedAuthResult = {
+      type: "authenticated",
       userId: "user-123",
       email: validLoginInput.email,
       isNewUser: false,

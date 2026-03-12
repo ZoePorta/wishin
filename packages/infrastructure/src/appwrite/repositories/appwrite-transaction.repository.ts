@@ -51,8 +51,12 @@ export class AppwriteTransactionRepository
   /**
    * Resolves the current session state.
    *
-   * @returns A Promise that resolves to the user object if a session is active/created, or null otherwise.
-   * @throws {PersistenceError} If the session resolution fails (e.g., network error).
+   * @remarks
+   * This method does not create a session if one does not exist; it only retrieves
+   * the current state from Appwrite.
+   *
+   * @returns A Promise that resolves to the user object if a session is active, or null if no session exists.
+   * @throws {PersistenceError} If the session resolution fails due to a network or server error.
    */
   async resolveSession(): Promise<Models.User<Models.Preferences> | null> {
     if (this.resolveSessionInFlight) {
@@ -86,8 +90,12 @@ export class AppwriteTransactionRepository
 
   /**
    * Retrieves the current user's unique identifier.
-   * @returns A Promise that resolves to the current user ID.
-   * @throws {PersistenceError} If the account cannot be retrieved.
+   *
+   * @remarks
+   * This method only returns the ID for an existing session and does not create one.
+   *
+   * @returns A Promise that resolves to the current user ID as a string, or null if no active session exists.
+   * @throws {PersistenceError} If the account cannot be retrieved due to a system error.
    */
   async getCurrentUserId(): Promise<string | null> {
     const session = await this.resolveSession();
@@ -268,7 +276,13 @@ export class AppwriteTransactionRepository
     limit?: number,
   ): Promise<Transaction[]> {
     const authenticatedUser = await this.resolveSession();
+
     if (!authenticatedUser) {
+      if (userId !== undefined) {
+        throw new PersistenceError(
+          "Unauthorized access: no active session for requested user",
+        );
+      }
       return [];
     }
     const targetUserId = userId ?? authenticatedUser.$id;

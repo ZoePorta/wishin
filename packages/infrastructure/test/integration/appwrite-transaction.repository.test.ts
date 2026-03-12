@@ -67,7 +67,21 @@ describe.skipIf(!shouldRun)(
       );
 
       // Create anonymous session to enable authenticated calls
-      await new Account(client).createAnonymousSession();
+      const session = await new Account(client).createAnonymousSession();
+      process.env.TEST_ANONYMOUS_USER_ID = session.userId;
+    });
+
+    afterAll(async () => {
+      const userId = process.env.TEST_ANONYMOUS_USER_ID;
+      if (userId) {
+        // Delete anonymous user using Server SDK (Users API)
+        const { Users } = await import("node-appwrite");
+        const users = new Users(serverClient);
+        // SDK uses object parameter style in recent versions (ADR 027)
+        await users.delete({ userId }).catch(() => {
+          /* ignore */
+        });
+      }
     });
 
     // Helper to seed required parent records
@@ -389,19 +403,15 @@ describe.skipIf(!shouldRun)(
       try {
         await vi.waitUntil(
           async () => {
-            const results = await repository.findByUserId(
-              currentUserId ?? undefined,
-            );
+            const results = await repository.findByUserId(currentUserId!);
             return results.length === 1;
           },
           { timeout: 5000, interval: 200 },
         );
 
-        const results = await repository.findByUserId(
-          currentUserId ?? undefined,
-        );
+        const results = await repository.findByUserId(currentUserId!);
         expect(results).toHaveLength(1);
-        expect(results[0].userId).toBe(currentUserId);
+        expect(results[0].userId).toBe(currentUserId!);
       } finally {
         await tablesDb
           .deleteRow({
@@ -447,6 +457,7 @@ describe.skipIf(!shouldRun)(
         const results = await repository.findByUserId();
         expect(results.length).toBeGreaterThanOrEqual(1);
         expect(results.some((r) => r.id === localId)).toBe(true);
+        expect(results.every((r) => r.userId === currentUserId!)).toBe(true);
       } finally {
         await tablesDb
           .deleteRow({

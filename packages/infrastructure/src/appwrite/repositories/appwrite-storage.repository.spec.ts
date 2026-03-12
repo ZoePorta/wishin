@@ -95,6 +95,18 @@ describe("AppwriteStorageRepository", () => {
       expect(user).toBeNull();
       expect(get).toHaveBeenCalled();
     });
+
+    it("should throw PersistenceError if a non-401 error occurs", async () => {
+      const unexpectedError = new Error("Network failure") as Error & {
+        code?: number;
+      };
+      unexpectedError.code = 500;
+      get.mockRejectedValue(unexpectedError);
+
+      await expect(repository.resolveSession()).rejects.toThrow(
+        PersistenceError,
+      );
+    });
   });
 
   describe("getCurrentUserId", () => {

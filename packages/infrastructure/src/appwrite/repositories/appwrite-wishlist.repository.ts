@@ -113,10 +113,7 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findById(id: string, includeItems = true): Promise<Wishlist | null> {
-    const session = await this.resolveSession();
-    if (!session) {
-      return null;
-    }
+    await this.resolveSession();
     try {
       // 1. Fetch Wishlist Document
       const wishlistDoc = await this.tablesDb.getRow({
@@ -173,10 +170,7 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
-    const session = await this.resolveSession();
-    if (!session) {
-      return [];
-    }
+    await this.resolveSession();
 
     // 1. Fetch all Wishlist Documents by ownerId
     // Business Rule: Maximum 20 wishlists per owner (Post-MVP scaling limit)

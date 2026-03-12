@@ -94,12 +94,20 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
   const repos = useMemo(() => createRepositories(), []);
 
   useEffect(() => {
+    let isMounted = true;
     const init = async () => {
       try {
         const wishlistRepo = repos.wishlistRepository;
 
+        // timeout to prevent slow network from blocking startup (ADR 027)
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => {
+            reject(new Error("Session resolution timeout"));
+          }, 5000),
+        );
+
         // attempt to restore session without forcing creation
-        await wishlistRepo.resolveSession();
+        await Promise.race([wishlistRepo.resolveSession(), timeoutPromise]);
       } catch (error) {
         // Log the error but do not block app initialization for transient session/network errors.
         // PersistenceError from resolveSession should not trigger onConfigError.
@@ -108,11 +116,17 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
           error,
         );
       } finally {
-        setIsInitialized(true);
+        if (isMounted) {
+          setIsInitialized(true);
+        }
       }
     };
 
     void init();
+
+    return () => {
+      isMounted = false;
+    };
   }, [onConfigError, repos]);
 
   if (!isInitialized) {

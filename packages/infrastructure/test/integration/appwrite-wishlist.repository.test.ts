@@ -10,6 +10,8 @@ import {
   Participation,
   Priority,
   TransactionStatus,
+  type Logger,
+  type ObservabilityService,
 } from "@wishin/domain";
 import "dotenv/config";
 
@@ -67,6 +69,28 @@ describe.skipIf(!shouldRun)(
         databaseId,
         wishlistCollectionId,
         wishlistItemsCollectionId,
+        {
+          debug: () => {
+            /* no-op */
+          },
+          info: () => {
+            /* no-op */
+          },
+          warn: () => {
+            /* no-op */
+          },
+          error: () => {
+            /* no-op */
+          },
+        } as unknown as Logger,
+        {
+          addBreadcrumb: () => {
+            /* no-op */
+          },
+          trackEvent: () => {
+            /* no-op */
+          },
+        } as unknown as ObservabilityService,
       );
 
       // Create anonymous session to enable authenticated calls

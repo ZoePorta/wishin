@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "../../src/appwrite/client";
 import { AppwriteAuthRepository } from "../../src/appwrite/repositories/appwrite-auth.repository";
 import { Account } from "appwrite";
-import type { AuthResult } from "@wishin/domain";
+import type { AuthResult, Logger } from "@wishin/domain";
 import "dotenv/config";
 
 const {
@@ -39,7 +39,20 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
 
     // Client SDK (Repository under test)
     client = createAppwriteClient(endpoint, projectId);
-    repository = new AppwriteAuthRepository(client);
+    repository = new AppwriteAuthRepository(client, {
+      debug: () => {
+        /* no-op */
+      },
+      info: () => {
+        /* no-op */
+      },
+      warn: () => {
+        /* no-op */
+      },
+      error: () => {
+        /* no-op */
+      },
+    } as unknown as Logger);
   });
 
   afterEach(async () => {
@@ -53,8 +66,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     // 2. Administrative cleanup (best effort)
     if (createdUserId) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
-        await usersService.delete(createdUserId);
+        await usersService.delete({ userId: createdUserId });
       } catch (_error) {
         // Ignore if user doesn't exist or already deleted
       }

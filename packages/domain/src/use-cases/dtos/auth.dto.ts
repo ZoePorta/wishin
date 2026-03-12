@@ -25,18 +25,35 @@ export interface LoginUserInput {
 }
 
 /**
- * Result of an authentication operation.
- * @property {string} userId - The unique identifier of the user.
- * @property {string} email - The user's email address.
- * @property {boolean | undefined} isNewUser - Whether a new user account was created (true) or an existing one was promoted/used (false). Can be undefined if the status is unknown (e.g., OAuth).
- * @returns {AuthResult} The result of the authentication operation.
- * @throws None
+ * Base properties for any authentication result.
  */
-export interface AuthResult {
+interface BaseAuthResult {
   /** The unique identifier of the user. */
   userId: string;
-  /** The user's email address. Optional for anonymous sessions. */
-  email?: string;
   /** Whether a new user account was created (true) or an existing one was promoted/used (false). Can be undefined if the status is unknown (e.g., OAuth). */
   isNewUser?: boolean;
 }
+
+/**
+ * Result of an authentication operation for a registered/authenticated user.
+ */
+export interface AuthenticatedAuthResult extends BaseAuthResult {
+  type: "authenticated";
+  /** The user's email address. */
+  email: string;
+}
+
+/**
+ * Result of an authentication operation for an anonymous user.
+ */
+export interface AnonymousAuthResult extends BaseAuthResult {
+  type: "anonymous";
+  /** Anonymous sessions do not have an email. */
+  email?: undefined;
+}
+
+/**
+ * Result of an authentication operation.
+ * Discriminated union between authenticated and anonymous results.
+ */
+export type AuthResult = AuthenticatedAuthResult | AnonymousAuthResult;
