@@ -100,12 +100,15 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
 
         // attempt to restore session without forcing creation
         await wishlistRepo.resolveSession();
-        setIsInitialized(true);
       } catch (error) {
-        console.error("Failed to initialize core infrastructure:", error);
-        onConfigError(
-          error instanceof Error ? error : new Error(String(error)),
+        // Log the error but do not block app initialization for transient session/network errors.
+        // PersistenceError from resolveSession should not trigger onConfigError.
+        console.error(
+          "Transient session resolution error during initialization:",
+          error,
         );
+      } finally {
+        setIsInitialized(true);
       }
     };
 

@@ -75,10 +75,6 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the session resolution fails (e.g., network error).
    */
   async resolveSession(): Promise<Models.User<Models.Preferences> | null> {
-    if (this._currentUser) {
-      return this._currentUser;
-    }
-
     if (this.resolveSessionInFlight) {
       return this.resolveSessionInFlight;
     }
@@ -117,7 +113,10 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findById(id: string, includeItems = true): Promise<Wishlist | null> {
-    await this.resolveSession();
+    const session = await this.resolveSession();
+    if (!session) {
+      return null;
+    }
     try {
       // 1. Fetch Wishlist Document
       const wishlistDoc = await this.tablesDb.getRow({
@@ -174,7 +173,10 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
-    await this.resolveSession();
+    const session = await this.resolveSession();
+    if (!session) {
+      return [];
+    }
 
     // 1. Fetch all Wishlist Documents by ownerId
     // Business Rule: Maximum 20 wishlists per owner (Post-MVP scaling limit)
@@ -190,7 +192,7 @@ export class AppwriteWishlistRepository
 
     const rows = toDocument<Models.Document[]>(response.rows);
 
-    // 2. Map docs to aggregates by fetching details for each
+    // 2. Map docs to aggregates by fetching details for each (using authenticated session)
     const wishlists = await Promise.all(
       rows.map((row) => this.findById(row.$id, false)),
     );
@@ -202,8 +204,7 @@ export class AppwriteWishlistRepository
   /**
    * Retrieves the current user's unique identifier.
    *
-   * @returns A Promise that resolves to the current user ID.
-   * @throws {PersistenceError} If the account cannot be retrieved.
+   * @returns A Promise that resolves to the current user ID, or null if no session is available.
    */
   async getCurrentUserId(): Promise<string | null> {
     const session = await this.resolveSession();
@@ -492,7 +493,12 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the deletion fails or session cannot be ensured.
    */
   async delete(id: string): Promise<void> {
-    await this.resolveSession();
+    const session = await this.resolveSession();
+    if (!session) {
+      throw new PersistenceError(
+        "Unauthorized: No active session for deleting",
+      );
+    }
     try {
       await this.tablesDb.deleteRow({
         databaseId: this.databaseId,

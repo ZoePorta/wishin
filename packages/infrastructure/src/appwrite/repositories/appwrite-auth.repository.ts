@@ -232,7 +232,6 @@ export class AppwriteAuthRepository implements AuthRepository {
     const user = await this.account.get();
     return {
       userId: user.$id,
-      email: user.email,
       isNewUser: true,
     };
   }

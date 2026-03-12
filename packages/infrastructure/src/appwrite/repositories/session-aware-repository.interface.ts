@@ -7,9 +7,10 @@ import type { Models } from "appwrite";
 export interface SessionAwareRepository {
   /**
    * Resolves the current active session.
-   * Returns null if no session is active.
-   * @returns A Promise that resolves to the session/user object if it exists, otherwise null.
-   * @throws {PersistenceError} If the session check fails unexpectedly.
+   *
+   * @returns A Promise that resolves to the current user for the active session (Models.User<Models.Preferences>),
+   * or null if no session is active.
+   * @throws {PersistenceError} If the session check fails due to unexpected errors (e.g., network failure).
    */
   resolveSession(): Promise<Models.User<Models.Preferences> | null>;
 

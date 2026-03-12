@@ -19,14 +19,19 @@ const WishlistRepositoryContext = createContext<
 >(undefined);
 
 /**
- * Provider component for the WishlistRepository.
+ * Provider component for the WishlistRepository and other core repositories.
+ *
+ * This provider initializes the repository context and makes it available
+ * to the rest of the application. It uses {@link useRepositories} internally.
  *
  * @param props - The component props.
- * @param props.wishlistRepository - The wishlist repository instance.
- * @param props.transactionRepository - The transaction repository instance.
- * @param props.userRepository - The user repository instance.
- * @param props.children - The child components.
- * @returns The React elements for the provider.
+ * @param props.wishlistRepository - The {@link WishlistRepository} instance.
+ * @param props.transactionRepository - The {@link TransactionRepository} instance.
+ * @param props.userRepository - The {@link UserRepository} instance.
+ * @param props.authRepository - The {@link AuthRepository} instance.
+ * @param props.children - The child components to be wrapped by the provider.
+ * @returns The React elements for the repository context provider.
+ * @throws {Error} If `useRepositories` is called outside of this provider.
  */
 export const WishlistRepositoryProvider: React.FC<{
   wishlistRepository: WishlistRepository;
@@ -59,10 +64,12 @@ export const WishlistRepositoryProvider: React.FC<{
 };
 
 /**
- * Hook to consume the repositories from context.
+ * Hook to consume all repositories from the {@link WishlistRepositoryContext}.
  *
- * @returns The repository interfaces.
- * @throws {Error} If the hook is used outside of a WishlistRepositoryProvider.
+ * This hook provides access to all initialized repositories.
+ *
+ * @returns An object containing all repository instances.
+ * @throws {Error} If the hook is used outside of a {@link WishlistRepositoryProvider}.
  */
 export const useRepositories = (): WishlistRepositoryContextProps => {
   const context = useContext(WishlistRepositoryContext);
@@ -105,9 +112,10 @@ export const useUserRepository = (): UserRepository => {
 };
 
 /**
- * Hook to consume only the AuthRepository from context.
+ * Hook to consume only the {@link AuthRepository} from context.
  *
  * @returns The auth repository instance.
+ * @throws {Error} If {@link useRepositories} fails (e.g. used outside of provider).
  */
 export const useAuthRepository = (): AuthRepository => {
   return useRepositories().authRepository;

@@ -45,10 +45,6 @@ export class AppwriteStorageRepository
    * @throws {PersistenceError} If the session resolution fails (e.g., network error).
    */
   async resolveSession(): Promise<Models.User<Models.Preferences> | null> {
-    if (this._currentUser) {
-      return this._currentUser;
-    }
-
     if (this.resolveSessionInFlight) {
       return this.resolveSessionInFlight;
     }

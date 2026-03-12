@@ -73,7 +73,7 @@ export interface AuthRepository {
 
   /**
    * Explicitly starts an anonymous session.
-   * @returns A Promise that resolves to the authentication result (anonymous userId).
+   * @returns A Promise that resolves to the authentication result (anonymous userId, with no email).
    * @throws {Error} If session creation fails.
    */
   loginAnonymously(): Promise<AuthResult>;

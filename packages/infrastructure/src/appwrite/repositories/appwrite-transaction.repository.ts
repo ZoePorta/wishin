@@ -55,10 +55,6 @@ export class AppwriteTransactionRepository
    * @throws {PersistenceError} If the session resolution fails (e.g., network error).
    */
   async resolveSession(): Promise<Models.User<Models.Preferences> | null> {
-    if (this._currentUser) {
-      return this._currentUser;
-    }
-
     if (this.resolveSessionInFlight) {
       return this.resolveSessionInFlight;
     }
@@ -200,7 +196,12 @@ export class AppwriteTransactionRepository
    * @throws {PersistenceError} If the cancellation operation fails.
    */
   async cancelByItemId(itemId: string): Promise<number> {
-    await this.resolveSession();
+    const session = await this.resolveSession();
+    if (!session) {
+      throw new PersistenceError(
+        "Unauthorized: No active session for cancelling transactions",
+      );
+    }
     let totalCancelled = 0;
     let hasMore = true;
 
@@ -397,7 +398,12 @@ export class AppwriteTransactionRepository
    * @throws {PersistenceError} If the deletion fails or session cannot be ensured.
    */
   async delete(id: string): Promise<void> {
-    await this.resolveSession();
+    const session = await this.resolveSession();
+    if (!session) {
+      throw new PersistenceError(
+        "Unauthorized: No active session for deleting transaction",
+      );
+    }
     try {
       await this.tablesDb.deleteRow({
         databaseId: this.databaseId,

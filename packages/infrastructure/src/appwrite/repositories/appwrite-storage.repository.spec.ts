@@ -144,7 +144,7 @@ describe("AppwriteStorageRepository", () => {
       });
     });
 
-    it("should throw PersistenceError if no session", async () => {
+    it("should throw PersistenceError if no session and not call storage", async () => {
       const fileData = {
         buffer: new Uint8Array([1, 2, 3]),
         filename: "test.png",
@@ -156,6 +156,7 @@ describe("AppwriteStorageRepository", () => {
       await expect(repository.upload(fileData)).rejects.toThrow(
         PersistenceError,
       );
+      expect(createFile).not.toHaveBeenCalled();
     });
   });
 
@@ -174,12 +175,13 @@ describe("AppwriteStorageRepository", () => {
       });
     });
 
-    it("should throw PersistenceError if no session", async () => {
+    it("should throw PersistenceError if no session and not call storage", async () => {
       get.mockRejectedValue({ code: 401 });
 
       await expect(repository.delete("file-123")).rejects.toThrow(
         PersistenceError,
       );
+      expect(deleteFile).not.toHaveBeenCalled();
     });
   });
 

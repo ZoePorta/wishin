@@ -35,8 +35,8 @@ export interface LoginUserInput {
 export interface AuthResult {
   /** The unique identifier of the user. */
   userId: string;
-  /** The user's email address. */
-  email: string;
+  /** The user's email address. Optional for anonymous sessions. */
+  email?: string;
   /** Whether a new user account was created (true) or an existing one was promoted/used (false). Can be undefined if the status is unknown (e.g., OAuth). */
   isNewUser?: boolean;
 }

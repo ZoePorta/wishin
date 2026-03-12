@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { Client as ServerClient, TablesDB } from "node-appwrite";
+import { Account } from "appwrite";
 import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "@wishin/infrastructure/appwrite/client";
 import { AppwriteTransactionRepository } from "@wishin/infrastructure/appwrite/repositories/appwrite-transaction.repository";
@@ -37,7 +38,7 @@ describe.skipIf(!shouldRun)(
     let wishlistsCollectionId: string;
     let profilesCollectionId: string;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       const endpoint = EXPO_PUBLIC_APPWRITE_ENDPOINT!;
       const projectId = EXPO_PUBLIC_APPWRITE_PROJECT_ID!;
       const apiKey = APPWRITE_API_SECRET!;
@@ -64,6 +65,9 @@ describe.skipIf(!shouldRun)(
         databaseId,
         transactionsCollectionId,
       );
+
+      // Create anonymous session to enable authenticated calls
+      await new Account(client).createAnonymousSession();
     });
 
     // Helper to seed required parent records
@@ -385,13 +389,17 @@ describe.skipIf(!shouldRun)(
       try {
         await vi.waitUntil(
           async () => {
-            const results = await repository.findByUserId(currentUserId);
+            const results = await repository.findByUserId(
+              currentUserId ?? undefined,
+            );
             return results.length === 1;
           },
           { timeout: 5000, interval: 200 },
         );
 
-        const results = await repository.findByUserId(currentUserId);
+        const results = await repository.findByUserId(
+          currentUserId ?? undefined,
+        );
         expect(results).toHaveLength(1);
         expect(results[0].userId).toBe(currentUserId);
       } finally {

@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { Client as ServerClient, TablesDB } from "node-appwrite";
+import { Account } from "appwrite";
 import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "@wishin/infrastructure/appwrite/client";
 import { AppwriteWishlistRepository } from "@wishin/infrastructure/appwrite/repositories/appwrite-wishlist.repository";
@@ -39,7 +40,7 @@ describe.skipIf(!shouldRun)(
     let profilesCollectionId: string;
     let transactionsCollectionId: string;
 
-    beforeAll(() => {
+    beforeAll(async () => {
       const endpoint = EXPO_PUBLIC_APPWRITE_ENDPOINT!;
       const projectId = EXPO_PUBLIC_APPWRITE_PROJECT_ID!;
       const apiKey = APPWRITE_API_SECRET!;
@@ -67,6 +68,9 @@ describe.skipIf(!shouldRun)(
         wishlistCollectionId,
         wishlistItemsCollectionId,
       );
+
+      // Create anonymous session to enable authenticated calls
+      await new Account(client).createAnonymousSession();
     });
 
     const wishlistId = randomUUID();

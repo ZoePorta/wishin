@@ -13,6 +13,9 @@ ADR 018 established that every participant (Guest or Member) should be treated a
 
 The "Mother Factor" still requires a low-friction guest purchase flow, but this can be achieved by deferring session creation until the user explicitly decides to "Continue as Guest" during the purchase process.
 
+> [!NOTE]
+> This decision amends ADR 018 by transitioning from "Eager Session Creation" to "Deferred Session Creation".
+
 ## Decision
 
 We will defer the creation of Appwrite Anonymous Sessions until they are strictly necessary for a state-changing operation (e.g., purchasing an item).
@@ -23,8 +26,9 @@ We will defer the creation of Appwrite Anonymous Sessions until they are strictl
     - Selecting "Continue as Guest" will explicitly trigger the creation of an Anonymous Session.
 3.  **Infrastructure Changes**:
     - `UserRepository.getCurrentUserId()` will now return `Promise<string | null>` instead of `Promise<string>`.
-    - `SessionAwareRepository.ensureSession()` is renamed to `resolveSession()` and will support an optional flag to create an anonymous session if missing (defaulting to `false`).
-4.  **UI Responsibility**: The UI layer (specifically the purchase flow) is responsible for ensuring a session exists before calling use cases that require a `userId`.
+    - `SessionAwareRepository.resolveSession()` is zero-arg and DOES NOT create sessions.
+4.  **UI Responsibility**: The UI layer (specifically the purchase flow) is responsible for calling `AuthRepository.loginAnonymously()` (or equivalent) to ensure a session exists before calling use cases that require a `userId`.
+5.  **Behavioral Consistency**: `UserRepository.getCurrentUserId()` returns `Promise<string | null>` and relies on the explicit session creation via `AuthRepository.loginAnonymously()` or a restored session via `SessionAwareRepository.resolveSession()`.
 
 ## Consequences
 

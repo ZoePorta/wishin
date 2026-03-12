@@ -339,7 +339,6 @@ describe("AppwriteAuthRepository", () => {
       expect(createAnonymousSessionSpy).toHaveBeenCalled();
       expect(result).toEqual({
         userId: "anonymous-123",
-        email: "",
         isNewUser: true,
       });
     });
