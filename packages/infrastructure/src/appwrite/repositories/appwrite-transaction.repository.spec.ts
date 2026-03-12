@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteTransactionRepository } from "./appwrite-transaction.repository";
 import {
@@ -86,7 +88,6 @@ vi.mock("appwrite", async (importActual) => {
 });
 
 describe("AppwriteTransactionRepository", () => {
-  /* eslint-disable @typescript-eslint/no-unsafe-assignment */
   let repository: AppwriteTransactionRepository;
   let mockClient: Client;
 
