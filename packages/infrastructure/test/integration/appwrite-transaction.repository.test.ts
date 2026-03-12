@@ -1,4 +1,12 @@
-import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  afterEach,
+  beforeAll,
+  afterAll,
+  vi,
+} from "vitest";
 import { Client as ServerClient, TablesDB } from "node-appwrite";
 import { Account } from "appwrite";
 import { randomUUID } from "node:crypto";
@@ -431,6 +439,11 @@ describe.skipIf(!shouldRun)(
 
     it("should default to current userId when findByUserId is called without arguments", async () => {
       const currentUserId = await repository.getCurrentUserId();
+      if (!currentUserId) {
+        throw new Error(
+          "Test failed: currentUserId is null. Check session initialization.",
+        );
+      }
       localId = randomUUID();
       const localItemId = randomUUID();
 
@@ -463,7 +476,7 @@ describe.skipIf(!shouldRun)(
         const results = await repository.findByUserId();
         expect(results.length).toBeGreaterThanOrEqual(1);
         expect(results.some((r) => r.id === localId)).toBe(true);
-        expect(results.every((r) => r.userId === currentUserId!)).toBe(true);
+        expect(results.every((r) => r.userId === currentUserId)).toBe(true);
       } finally {
         await tablesDb
           .deleteRow({

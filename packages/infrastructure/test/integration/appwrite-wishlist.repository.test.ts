@@ -1,6 +1,5 @@
 import { describe, it, expect, afterEach, beforeAll, vi } from "vitest";
 import { Client as ServerClient, TablesDB } from "node-appwrite";
-import { Account } from "appwrite";
 import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "@wishin/infrastructure/appwrite/client";
 import { AppwriteWishlistRepository } from "@wishin/infrastructure/appwrite/repositories/appwrite-wishlist.repository";
@@ -36,7 +35,6 @@ describe.skipIf(!shouldRun)(
     let tablesDb: TablesDB;
     let client: ReturnType<typeof createAppwriteClient>;
     let repository: AppwriteWishlistRepository;
-    let anonymousSessionId: string;
     let databaseId: string;
     let wishlistCollectionId: string;
     let wishlistItemsCollectionId: string;
@@ -93,22 +91,6 @@ describe.skipIf(!shouldRun)(
           },
         } as unknown as ObservabilityService,
       );
-
-      // Create anonymous session to enable authenticated calls
-      const anonymousSession = await new Account(
-        client,
-      ).createAnonymousSession();
-      anonymousSessionId = anonymousSession.$id;
-    });
-
-    afterAll(async () => {
-      if (anonymousSessionId) {
-        await new Account(client)
-          .deleteSession({ sessionId: anonymousSessionId })
-          .catch(() => {
-            /* ignore cleanup errors */
-          });
-      }
     });
 
     const wishlistId = randomUUID();

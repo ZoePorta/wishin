@@ -42,6 +42,7 @@ interface BaseAuthResult {
  * @property {string} userId - The unique identifier of the user.
  * @property {boolean} [isNewUser] - Whether a new user account was created.
  * @returns {AuthenticatedAuthResult} A result object representing a successful authenticated session.
+ * @throws None
  * @remarks This type is returned when a user logs in or registers with an email/password or OAuth.
  */
 export interface AuthenticatedAuthResult extends BaseAuthResult {
@@ -58,6 +59,7 @@ export interface AuthenticatedAuthResult extends BaseAuthResult {
  * @property {string} userId - The unique identifier of the user.
  * @property {boolean} [isNewUser] - Whether a new user account was created.
  * @returns {AnonymousAuthResult} A result object representing a guest session.
+ * @throws None
  * @remarks Anonymous sessions have restricted capabilities compared to authenticated ones.
  */
 export interface AnonymousAuthResult extends BaseAuthResult {
