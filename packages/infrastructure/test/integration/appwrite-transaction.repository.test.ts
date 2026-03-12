@@ -380,6 +380,12 @@ describe.skipIf(!shouldRun)(
 
     it("should find transactions by userId", async () => {
       const currentUserId = await repository.getCurrentUserId();
+      if (!currentUserId) {
+        throw new Error(
+          "Test failed: currentUserId is null. Check session initialization.",
+        );
+      }
+
       localId = randomUUID();
       const localItemId = randomUUID();
 
@@ -403,15 +409,15 @@ describe.skipIf(!shouldRun)(
       try {
         await vi.waitUntil(
           async () => {
-            const results = await repository.findByUserId(currentUserId!);
+            const results = await repository.findByUserId(currentUserId);
             return results.length === 1;
           },
           { timeout: 5000, interval: 200 },
         );
 
-        const results = await repository.findByUserId(currentUserId!);
+        const results = await repository.findByUserId(currentUserId);
         expect(results).toHaveLength(1);
-        expect(results[0].userId).toBe(currentUserId!);
+        expect(results[0].userId).toBe(currentUserId);
       } finally {
         await tablesDb
           .deleteRow({

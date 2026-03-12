@@ -36,6 +36,7 @@ describe.skipIf(!shouldRun)(
     let tablesDb: TablesDB;
     let client: ReturnType<typeof createAppwriteClient>;
     let repository: AppwriteWishlistRepository;
+    let anonymousSessionId: string;
     let databaseId: string;
     let wishlistCollectionId: string;
     let wishlistItemsCollectionId: string;
@@ -94,7 +95,20 @@ describe.skipIf(!shouldRun)(
       );
 
       // Create anonymous session to enable authenticated calls
-      await new Account(client).createAnonymousSession();
+      const anonymousSession = await new Account(
+        client,
+      ).createAnonymousSession();
+      anonymousSessionId = anonymousSession.$id;
+    });
+
+    afterAll(async () => {
+      if (anonymousSessionId) {
+        await new Account(client)
+          .deleteSession({ sessionId: anonymousSessionId })
+          .catch(() => {
+            /* ignore cleanup errors */
+          });
+      }
     });
 
     const wishlistId = randomUUID();

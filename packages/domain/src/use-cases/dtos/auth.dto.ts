@@ -36,6 +36,13 @@ interface BaseAuthResult {
 
 /**
  * Result of an authentication operation for a registered/authenticated user.
+ * @public
+ * @property {string} type - Discrimination field, always "authenticated".
+ * @property {string} email - The user's registered email address.
+ * @property {string} userId - The unique identifier of the user.
+ * @property {boolean} [isNewUser] - Whether a new user account was created.
+ * @returns {AuthenticatedAuthResult} A result object representing a successful authenticated session.
+ * @remarks This type is returned when a user logs in or registers with an email/password or OAuth.
  */
 export interface AuthenticatedAuthResult extends BaseAuthResult {
   type: "authenticated";
@@ -45,6 +52,13 @@ export interface AuthenticatedAuthResult extends BaseAuthResult {
 
 /**
  * Result of an authentication operation for an anonymous user.
+ * @public
+ * @property {string} type - Discrimination field, always "anonymous".
+ * @property {undefined} email - Anonymous sessions do not have an email.
+ * @property {string} userId - The unique identifier of the user.
+ * @property {boolean} [isNewUser] - Whether a new user account was created.
+ * @returns {AnonymousAuthResult} A result object representing a guest session.
+ * @remarks Anonymous sessions have restricted capabilities compared to authenticated ones.
  */
 export interface AnonymousAuthResult extends BaseAuthResult {
   type: "anonymous";
