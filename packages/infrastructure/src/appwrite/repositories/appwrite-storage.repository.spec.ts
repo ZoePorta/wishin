@@ -137,11 +137,11 @@ describe("AppwriteStorageRepository", () => {
       const result = await repository.upload(fileData);
 
       expect(result).toBe("file-123");
-      expect(createFile).toHaveBeenCalledWith(
+      expect(createFile).toHaveBeenCalledWith({
         bucketId,
-        "unique-id",
-        expect.any(File),
-      );
+        fileId: "unique-id",
+        file: expect.any(File) as unknown as File,
+      });
     });
 
     it("should throw PersistenceError if no session", async () => {
@@ -168,7 +168,10 @@ describe("AppwriteStorageRepository", () => {
 
       await repository.delete("file-123");
 
-      expect(deleteFile).toHaveBeenCalledWith(bucketId, "file-123");
+      expect(deleteFile).toHaveBeenCalledWith({
+        bucketId,
+        fileId: "file-123",
+      });
     });
 
     it("should throw PersistenceError if no session", async () => {
@@ -188,7 +191,10 @@ describe("AppwriteStorageRepository", () => {
       const result = await repository.getPreview("file-123");
 
       expect(result).toBe(mockUrl);
-      expect(getFilePreview).toHaveBeenCalledWith(bucketId, "file-123");
+      expect(getFilePreview).toHaveBeenCalledWith({
+        bucketId,
+        fileId: "file-123",
+      });
     });
 
     it("should return preview URL string from URL object return", async () => {
