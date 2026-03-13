@@ -26,9 +26,15 @@ interface MockRow extends Models.Document {
   ownerId?: string;
   title?: string;
   itemId?: string | Models.Document;
+  wishlistId?: string;
+  name?: string;
   userId?: string;
   status?: string;
-  quantity?: number;
+  priority?: string;
+  totalQuantity?: number;
+  reservedQuantity?: number;
+  purchasedQuantity?: number;
+  isUnlimited?: boolean;
   version?: number;
 }
 
@@ -569,15 +575,40 @@ describe("AppwriteWishlistRepository", () => {
         total: 1,
       } as MockRowList);
       vi.mocked(mockTablesDb.getRow).mockResolvedValue(mockDoc);
+      // Also mock listRows for the item fetch inside findById
+      vi.mocked(mockTablesDb.listRows).mockReset();
+      vi.mocked(mockTablesDb.listRows)
+        .mockResolvedValueOnce({
+          rows: [mockDoc], // Outer call
+          total: 1,
+        } as MockRowList)
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              ...createMockBase(
+                "550e8400-e29b-41d4-a716-446655440099",
+                config.wishlistItemsCollectionId,
+              ),
+              wishlistId: validId,
+              name: "Item 1",
+              priority: "medium",
+              totalQuantity: 1,
+              reservedQuantity: 0,
+              purchasedQuantity: 0,
+              isUnlimited: false,
+            },
+          ],
+          total: 1,
+        } as MockRowList);
 
       const findByIdSpy = vi.spyOn(repository, "findById");
 
       await repository.findByOwnerId("owner-id");
 
       expect(mockAccount.get).toHaveBeenCalled();
-      expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, false);
-      // The first call to listRows is in findByOwnerId
-      expect(mockTablesDb.listRows).toHaveBeenCalledTimes(1);
+      expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, true);
+      // Calls: 1 in findByOwnerId (list wishlists), 1 in findById (list items)
+      expect(mockTablesDb.listRows).toHaveBeenCalledTimes(2);
       // Assert hydration via internal findById calls by checking getRow
       expect(mockTablesDb.getRow).toHaveBeenCalledWith(
         expect.objectContaining({
