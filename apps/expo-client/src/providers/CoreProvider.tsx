@@ -93,15 +93,24 @@ interface CoreProviderProps {
 
 export const CoreProvider: React.FC<CoreProviderProps> = ({
   children,
-  onConfigError: _onConfigError,
+  onConfigError,
 }) => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   // useMemo ensures repositories are created once per mount/HMR cycle
-  const repos = useMemo(() => createRepositories(), []);
+  const repos = useMemo(() => {
+    try {
+      return createRepositories();
+    } catch (error: unknown) {
+      onConfigError(error instanceof Error ? error : new Error(String(error)));
+      return null;
+    }
+  }, [onConfigError]);
 
   useEffect(() => {
     let isMounted = true;
+    if (!repos) return;
+
     const init = async () => {
       try {
         const sessionAwareRepo: SessionAwareRepository =
@@ -138,7 +147,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     };
   }, [repos]);
 
-  if (!isInitialized) {
+  if (!isInitialized || !repos) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />

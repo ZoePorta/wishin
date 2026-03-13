@@ -45,6 +45,7 @@ export class AppwriteAuthRepository implements AuthRepository {
    *
    * @param email - The user's email address.
    * @param password - The user's password.
+   * @param username - The display or account username.
    * @returns A Promise that resolves to the authentication result.
    * @throws {AppwriteException} If user creation or promotion fails.
    */

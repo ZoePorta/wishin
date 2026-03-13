@@ -23,6 +23,10 @@ interface AuthPanelProps {
   ) => Promise<void>;
   /** Optional loading flag to indicate an ongoing authentication operation. */
   loading?: boolean;
+  /** Optional external login error message. */
+  loginError?: string | null;
+  /** Optional external register error message. */
+  registerError?: string | null;
 }
 
 /**
@@ -33,6 +37,8 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
   onLogin,
   onRegister,
   loading,
+  loginError,
+  registerError,
 }) => {
   const { width } = useWindowDimensions();
   const theme = useTheme();
@@ -50,6 +56,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
                 setShowLogin(false);
               }}
               loading={loading}
+              authError={loginError}
             />
           </View>
           <Divider style={styles.verticalDivider} />
@@ -60,6 +67,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
                 setShowLogin(true);
               }}
               loading={loading}
+              authError={registerError}
             />
           </View>
         </Surface>
@@ -79,6 +87,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
                 setShowLogin(false);
               }}
               loading={loading}
+              authError={loginError}
             />
           ) : (
             <RegisterForm
@@ -87,6 +96,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
                 setShowLogin(true);
               }}
               loading={loading}
+              authError={registerError}
             />
           )}
         </ScrollView>
@@ -140,5 +150,11 @@ const styles = StyleSheet.create({
     padding: 24,
     flexGrow: 1,
     justifyContent: "center",
+  },
+  errorText: {
+    marginBottom: 16,
+    textAlign: "center",
+    width: "90%",
+    maxWidth: 900,
   },
 });

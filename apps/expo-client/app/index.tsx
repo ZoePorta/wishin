@@ -19,13 +19,18 @@ export default function Index() {
   const authRepo = useAuthRepository();
   const router = useRouter();
   const [authLoading, setAuthLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [registerError, setRegisterError] = useState<string | null>(null);
 
   const handleLogin = useCallback(
     async (email: string, password: string) => {
       setAuthLoading(true);
+      setLoginError(null);
       try {
         await authRepo.login(email, password);
         await refetch();
+      } catch (error: unknown) {
+        setLoginError(error instanceof Error ? error.message : String(error));
       } finally {
         setAuthLoading(false);
       }
@@ -34,11 +39,16 @@ export default function Index() {
   );
 
   const handleRegister = useCallback(
-    async (email: string, password: string, _username: string) => {
+    async (email: string, password: string, username: string) => {
       setAuthLoading(true);
+      setRegisterError(null);
       try {
-        await authRepo.register(email, password, _username);
+        await authRepo.register(email, password, username);
         await refetch();
+      } catch (error: unknown) {
+        setRegisterError(
+          error instanceof Error ? error.message : String(error),
+        );
       } finally {
         setAuthLoading(false);
       }
@@ -114,6 +124,8 @@ export default function Index() {
         onLogin={handleLogin}
         onRegister={handleRegister}
         loading={authLoading}
+        loginError={loginError}
+        registerError={registerError}
       />
     </Surface>
   );

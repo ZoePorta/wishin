@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteTransactionRepository } from "./appwrite-transaction.repository";
 import {
@@ -16,6 +14,22 @@ import {
 } from "@wishin/domain";
 
 // TablesDB specific types from Appwrite SDK
+/**
+ * Interface representing a row in the Appwrite TablesDB.
+ * Extends Document to include standard Appwrite model properties.
+ *
+ * @property {string} $tableId - The ID of the table containing the row.
+ * @property {number} $sequence - The sequence number of the row.
+ * @property {string} [itemId] - Optional ID of the item.
+ * @property {string} [userId] - Optional ID of the user.
+ * @property {string|null} [itemName] - Optional name of the item.
+ * @property {number|null} [itemPrice] - Optional price of the item.
+ * @property {string|null} [itemCurrency] - Optional currency of the price.
+ * @property {string|null} [itemDescription] - Optional description of the item.
+ * @property {string|null} [ownerUsername] - Optional username of the owner.
+ * @property {TransactionStatus} [status] - Optional status of the transaction.
+ * @property {number} [quantity] - Optional quantity of items.
+ */
 interface MockRow extends Models.Document {
   $tableId: string;
   $sequence: number;
@@ -30,6 +44,12 @@ interface MockRow extends Models.Document {
   quantity?: number;
 }
 
+/**
+ * Interface representing a list of MockRow objects.
+ *
+ * @property {MockRow[]} rows - The array of rows retrieved.
+ * @property {number} total - The total count of rows matching the query.
+ */
 interface MockRowList {
   rows: MockRow[];
   total: number;
@@ -101,10 +121,18 @@ describe("AppwriteTransactionRepository", () => {
   const validUserId = "user-123";
 
   class TestAppwriteTransactionRepository extends AppwriteTransactionRepository {
+    /**
+     * Provides access to the private account service for testing.
+     * @returns {InstanceType<typeof Account>} The Appwrite Account service instance.
+     */
     public get accountAccess(): InstanceType<typeof Account> {
       return (this as unknown as { account: InstanceType<typeof Account> })
         .account;
     }
+    /**
+     * Provides access to the private TablesDB service for testing.
+     * @returns {InstanceType<typeof TablesDB>} The Appwrite TablesDB service instance.
+     */
     public get tablesDbAccess(): InstanceType<typeof TablesDB> {
       return (this as unknown as { tablesDb: InstanceType<typeof TablesDB> })
         .tablesDb;
@@ -196,6 +224,7 @@ describe("AppwriteTransactionRepository", () => {
         databaseId: config.databaseId,
         tableId: config.transactionsCollectionId,
         rowId: transaction.id,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         data: expect.objectContaining({
           itemId: transaction.itemId,
           userId: transaction.userId,
@@ -413,6 +442,7 @@ describe("AppwriteTransactionRepository", () => {
       expect(mockGet).toHaveBeenCalled();
       expect(mockListRows).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
           ]),
@@ -433,6 +463,7 @@ describe("AppwriteTransactionRepository", () => {
 
       expect(mockListRows).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
             expect.objectContaining({
@@ -524,6 +555,7 @@ describe("AppwriteTransactionRepository", () => {
       expect(mockListRows).toHaveBeenNthCalledWith(
         1,
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
             expect.objectContaining({ value: 100, type: "limit" }),
@@ -534,6 +566,7 @@ describe("AppwriteTransactionRepository", () => {
       expect(mockListRows).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
             expect.objectContaining({ value: 100, type: "limit" }),
@@ -560,6 +593,7 @@ describe("AppwriteTransactionRepository", () => {
       expect(results).toHaveLength(20);
       expect(mockListRows).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ value: 20, type: "limit" }),
           ]),
@@ -611,6 +645,7 @@ describe("AppwriteTransactionRepository", () => {
       expect(mockGet).toHaveBeenCalled();
       expect(mockListRows).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
             expect.objectContaining({ field: "itemId", value: validItemId }),
@@ -636,6 +671,7 @@ describe("AppwriteTransactionRepository", () => {
 
       expect(mockListRows).toHaveBeenCalledWith(
         expect.objectContaining({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           queries: expect.arrayContaining([
             expect.objectContaining({ field: "userId", value: validUserId }),
             expect.objectContaining({ field: "itemId", value: validItemId }),

@@ -35,6 +35,8 @@ interface RegisterFormProps {
    * Whether the form is currently submitting.
    */
   loading?: boolean;
+  /** Optional external authentication error message. */
+  authError?: string | null;
 }
 
 /**
@@ -48,10 +50,12 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   onRegister,
   onSwitchToLogin,
   loading,
+  authError,
 }) => {
   const theme = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -127,14 +131,26 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           if (error) setError(null);
         }}
         mode="outlined"
-        secureTextEntry
+        secureTextEntry={!showPassword}
         style={styles.input}
         left={<TextInput.Icon icon="lock-outline" />}
+        right={
+          <TextInput.Icon
+            icon={showPassword ? "eye-off" : "eye"}
+            onPress={() => {
+              setShowPassword(!showPassword);
+            }}
+          />
+        }
         error={!!error && !password}
       />
 
-      <HelperText type="error" visible={!!error} style={styles.errorText}>
-        {error}
+      <HelperText
+        type="error"
+        visible={!!(error ?? authError)}
+        style={styles.errorText}
+      >
+        {error ?? authError}
       </HelperText>
 
       <Button

@@ -190,14 +190,20 @@ describe("AppwriteAuthRepository", () => {
     });
 
     it("should restore anonymous session if login fails", async () => {
+      // 1. Initial guest session
       mockGet.mockResolvedValueOnce({ $id: "guest-123", email: "" } as any);
+      // 2. Login fails
       mockCreateEmailPasswordSession.mockRejectedValue(
         new AppwriteException("Unauthorized", 401),
       );
-      mockGet.mockResolvedValueOnce({ $id: "guest-123", email: "" } as any);
+      // 3. Simulated session loss during recovery (triggers catch block in repository.login)
+      mockGet.mockRejectedValueOnce(new AppwriteException("No session", 401));
+      mockCreateAnonymousSession.mockResolvedValue({} as any);
 
       await expect(repository.login("a@b.com", "p")).rejects.toThrow();
-      expect(mockGet).toHaveBeenCalled();
+
+      expect(mockGet).toHaveBeenCalledTimes(2);
+      expect(mockCreateAnonymousSession).toHaveBeenCalled();
     });
   });
 
