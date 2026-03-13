@@ -10,6 +10,7 @@ import {
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
+import { PersistenceError } from "@wishin/domain";
 
 /**
  * Adapter that maps console methods to the Logger interface.
@@ -89,8 +90,12 @@ interface CoreProviderProps {
 /**
  * High-level provider that orchestrates infrastructure initialization.
  * Decouples the UI routing from the repository lifecycle.
+ *
+ * @param props - The component properties.
+ * @param props.children - The children components to wrap.
+ * @param props.onConfigError - Callback for handled configuration errors.
+ * @returns {JSX.Element} The rendered CoreProvider.
  */
-
 export const CoreProvider: React.FC<CoreProviderProps> = ({
   children,
   onConfigError,
@@ -133,6 +138,13 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
           "Transient session resolution error during initialization:",
           error,
         );
+
+        // If it's a critical non-persistence error, we notify via onConfigError (as per review)
+        if (!(error instanceof PersistenceError)) {
+          onConfigError(
+            error instanceof Error ? error : new Error(String(error)),
+          );
+        }
       } finally {
         if (isMounted) {
           setIsInitialized(true);

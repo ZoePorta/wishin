@@ -226,6 +226,7 @@ export class AppwriteAuthRepository implements AuthRepository {
 
   /**
    * Completes the Google OAuth2 flow using the callback URL parameters.
+   *
    * @param callbackUrl - The full URL received from the OAuth2 redirect.
    * @param expectedState - The expected state to verify for CSRF protection.
    * @returns A Promise that resolves to the authentication result.
@@ -288,6 +289,11 @@ export class AppwriteAuthRepository implements AuthRepository {
     };
   }
 
+  /**
+   * Cleans up expired OAuth states from the memory cache to prevent leakage.
+   *
+   * @private
+   */
   private cleanupExpiredStates(): void {
     const now = Date.now();
     for (const [state, meta] of this.oauthStates.entries()) {

@@ -16,19 +16,20 @@ import {
 // TablesDB specific types from Appwrite SDK
 /**
  * Interface representing a row in the Appwrite TablesDB.
- * Extends Document to include standard Appwrite model properties.
+ * Extends Document from Appwrite Models to include metadata.
  *
+ * @interface MockRow
  * @property {string} $tableId - The ID of the table containing the row.
- * @property {number} $sequence - The sequence number of the row.
- * @property {string} [itemId] - Optional ID of the item.
- * @property {string} [userId] - Optional ID of the user.
- * @property {string|null} [itemName] - Optional name of the item.
- * @property {number|null} [itemPrice] - Optional price of the item.
- * @property {string|null} [itemCurrency] - Optional currency of the price.
- * @property {string|null} [itemDescription] - Optional description of the item.
- * @property {string|null} [ownerUsername] - Optional username of the owner.
- * @property {TransactionStatus} [status] - Optional status of the transaction.
- * @property {number} [quantity] - Optional quantity of items.
+ * @property {number} $sequence - The sequence number of the row for ordering.
+ * @property {string} [itemId] - Optional ID of the domain item associated.
+ * @property {string} [userId] - Optional ID of the user who performed the transaction.
+ * @property {string|null} [itemName] - Optional display name of the item.
+ * @property {number|null} [itemPrice] - Optional price value of the item.
+ * @property {string|null} [itemCurrency] - Optional currency code (e.g., "EUR").
+ * @property {string|null} [itemDescription] - Optional summary of the item.
+ * @property {string|null} [ownerUsername] - Optional username of the wishlist owner.
+ * @property {TransactionStatus} [status] - Current lifecycle status of the transaction.
+ * @property {number} [quantity] - Number of items involved in the transaction.
  */
 interface MockRow extends Models.Document {
   $tableId: string;
@@ -45,16 +46,16 @@ interface MockRow extends Models.Document {
 }
 
 /**
- * Interface representing a list of MockRow objects.
+ * Interface representing a collection of MockRow objects retrieved from the DB.
  *
- * @property {MockRow[]} rows - The array of rows retrieved.
- * @property {number} total - The total count of rows matching the query.
+ * @interface MockRowList
+ * @property {MockRow[]} rows - The array of row documents matching criteria.
+ * @property {number} total - The total count of such rows in the database.
  */
 interface MockRowList {
   rows: MockRow[];
   total: number;
 }
-
 // Mocks
 const {
   mockGet,
@@ -120,18 +121,26 @@ describe("AppwriteTransactionRepository", () => {
   const validItemId = "550e8400-e29b-41d4-a716-446655440002";
   const validUserId = "user-123";
 
+  /**
+   * Test-only subclass of AppwriteTransactionRepository to expose private services.
+   */
   class TestAppwriteTransactionRepository extends AppwriteTransactionRepository {
     /**
-     * Provides access to the private account service for testing.
-     * @returns {InstanceType<typeof Account>} The Appwrite Account service instance.
+     * Provides direct access to the private Appwrite Account service for granular verification.
+     *
+     * @returns {InstanceType<typeof Account>} The internal Appwrite Account instance.
+     * @throws {Error} Never explicitly, but depends on class state.
      */
     public get accountAccess(): InstanceType<typeof Account> {
       return (this as unknown as { account: InstanceType<typeof Account> })
         .account;
     }
+
     /**
-     * Provides access to the private TablesDB service for testing.
-     * @returns {InstanceType<typeof TablesDB>} The Appwrite TablesDB service instance.
+     * Provides direct access to the internal TablesDB service to mock row operations.
+     *
+     * @returns {InstanceType<typeof TablesDB>} The internal Appwrite TablesDB instance.
+     * @throws {Error} Never explicitly, but depends on class state.
      */
     public get tablesDbAccess(): InstanceType<typeof TablesDB> {
       return (this as unknown as { tablesDb: InstanceType<typeof TablesDB> })
