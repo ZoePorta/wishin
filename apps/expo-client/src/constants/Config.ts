@@ -3,10 +3,12 @@
  * Manages environment variables and database resource namespacing.
  */
 
-const endpoint = process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? "";
-const projectId = process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? "";
-const databaseId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID ?? "";
-const prefix = process.env.EXPO_PUBLIC_DB_PREFIX ?? "";
+const endpoint = (process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? "") as string;
+const projectId = (process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? "") as string;
+const databaseId = (process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID ??
+  "") as string;
+const prefix = (process.env.EXPO_PUBLIC_DB_PREFIX ?? "") as string;
+const baseUrl = (process.env.EXPO_PUBLIC_BASE_URL ?? "") as string;
 
 /**
  * Validates that all required Appwrite environment variables are set.
@@ -31,6 +33,7 @@ export const Config = {
     projectId,
     databaseId,
   },
+  baseUrl,
   collections: {
     wishlists: prefix ? `${prefix}_wishlists` : "wishlists",
     wishlistItems: prefix ? `${prefix}_wishlist_items` : "wishlist_items",

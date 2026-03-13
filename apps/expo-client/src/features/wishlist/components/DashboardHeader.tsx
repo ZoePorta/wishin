@@ -1,11 +1,10 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Text, IconButton, Surface } from "react-native-paper";
+import { Text, Surface } from "react-native-paper";
 import { type WishlistOutput } from "@wishin/domain";
 
 interface DashboardHeaderProps {
   wishlist: WishlistOutput;
-  onEdit?: () => void;
 }
 
 /**
@@ -19,7 +18,6 @@ interface DashboardHeaderProps {
  */
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   wishlist,
-  onEdit,
 }) => {
   return (
     <Surface style={styles.container}>
@@ -33,15 +31,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </Text>
         )}
       </View>
-      {onEdit && (
-        <IconButton
-          icon="pencil"
-          mode="contained-tonal"
-          onPress={onEdit}
-          size={32}
-          accessibilityLabel="Edit wishlist details"
-        />
-      )}
     </Surface>
   );
 };
