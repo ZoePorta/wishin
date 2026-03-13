@@ -103,14 +103,22 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
 
   // useMemo ensures repositories are created once per mount/HMR cycle
-  const repos = useMemo(() => {
+  const { repos, initError } = useMemo(() => {
     try {
-      return createRepositories();
+      return { repos: createRepositories(), initError: null };
     } catch (error: unknown) {
-      onConfigError(error instanceof Error ? error : new Error(String(error)));
-      return null;
+      return {
+        repos: null,
+        initError: error instanceof Error ? error : new Error(String(error)),
+      };
     }
-  }, [onConfigError]);
+  }, []);
+
+  useEffect(() => {
+    if (initError) {
+      onConfigError(initError);
+    }
+  }, [initError, onConfigError]);
 
   useEffect(() => {
     let isMounted = true;
@@ -133,14 +141,18 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
         await Promise.race([sessionAwareRepo.resolveSession(), timeoutPromise]);
       } catch (error) {
         // Log the error but do not block app initialization for transient session/network errors.
-        // PersistenceError from resolveSession should not trigger onConfigError.
+        // PersistenceError and TimeoutError should not trigger onConfigError.
         console.error(
           "Transient session resolution error during initialization:",
           error,
         );
 
+        const isTimeout =
+          error instanceof Error &&
+          error.message === "Session resolution timeout";
+
         // If it's a critical non-persistence error, we notify via onConfigError (as per review)
-        if (!(error instanceof PersistenceError)) {
+        if (!(error instanceof PersistenceError) && !isTimeout) {
           onConfigError(
             error instanceof Error ? error : new Error(String(error)),
           );

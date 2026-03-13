@@ -111,6 +111,7 @@ describe("AppwriteWishlistRepository", () => {
     databaseId: "db-id",
     wishlistCollectionId: "wishlists-id",
     wishlistItemsCollectionId: "items-id",
+    profileCollection: "profiles",
   };
 
   let mockLogger: Logger;
@@ -149,7 +150,7 @@ describe("AppwriteWishlistRepository", () => {
       config.databaseId,
       config.wishlistCollectionId,
       config.wishlistItemsCollectionId,
-      "profiles",
+      config.profileCollection,
       mockLogger,
       mockObservability,
     );
@@ -651,7 +652,7 @@ describe("AppwriteWishlistRepository", () => {
       expect(type).toBe("registered");
       expect(mockTablesDb.getRow).toHaveBeenCalledWith({
         databaseId: config.databaseId,
-        tableId: "profiles",
+        tableId: config.profileCollection,
         rowId: "user-id",
       });
     });
@@ -679,6 +680,26 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockTablesDb.getRow).mockRejectedValueOnce(error);
 
       await expect(repository.getSessionType()).rejects.toThrow(error);
+    });
+
+    it("should return 'no-session' outcome when account.get fails with 401", async () => {
+      vi.mocked(mockAccount.get).mockRejectedValueOnce(
+        new AppwriteException("Unauthorized", 401),
+      );
+
+      const type = await repository.getSessionType();
+
+      expect(type).toBe(null);
+      expect(mockTablesDb.getRow).not.toHaveBeenCalled();
+    });
+
+    it("should rethrow error when account.get fails with non-401 error", async () => {
+      const error = new AppwriteException("Server Error", 500);
+      vi.mocked(mockAccount.get).mockRejectedValueOnce(error);
+
+      await expect(repository.getSessionType()).rejects.toThrow(
+        PersistenceError,
+      );
     });
   });
 });

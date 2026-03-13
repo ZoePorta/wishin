@@ -112,7 +112,10 @@ describe("AppwriteAuthRepository", () => {
       const callbackUrl = `exp://localhost:8081?userId=user-123&secret=secret-456&state=${initiation.state}`;
       const mockUser = { $id: "user-123", email: "test@example.com" };
 
-      mockCreateSession.mockResolvedValue({} as any);
+      mockCreateSession.mockResolvedValue({
+        $id: "session-123",
+        userId: "user-123",
+      } as any);
       mockGet.mockResolvedValue(mockUser as any);
 
       const result = await repository.completeGoogleOAuth(

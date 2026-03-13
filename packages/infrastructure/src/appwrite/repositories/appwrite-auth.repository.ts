@@ -160,6 +160,13 @@ export class AppwriteAuthRepository implements AuthRepository {
     }
 
     // 3. Ensure the main account instance is logged in
+    /**
+     * @note Implicit Cookie-Sharing Contract
+     * The Appwrite SDK instances (probeClient/probeAccount and this.account) share authentication
+     * state via the platform's cookie jar or fallback storage (e.g., Expo SecureStore).
+     * This behavior is essential for the "probe" validation to effect the main instance.
+     * @see ADR 027 for session resolution strategy.
+     */
     try {
       const user = await this.account.get();
       if (user.email === email) {
@@ -176,10 +183,19 @@ export class AppwriteAuthRepository implements AuthRepository {
       // No session
     }
 
-    await this.account.createEmailPasswordSession({
-      email,
-      password,
-    });
+    try {
+      await this.account.createEmailPasswordSession({
+        email,
+        password,
+      });
+    } catch (error: unknown) {
+      // If deleting the session succeeded but creating the new one fails,
+      // and we had an anonymous session, try to recover it.
+      if (priorSessionIsAnonymous) {
+        await this.account.createAnonymousSession().catch(() => null);
+      }
+      throw error;
+    }
 
     const user = await this.account.get();
 
