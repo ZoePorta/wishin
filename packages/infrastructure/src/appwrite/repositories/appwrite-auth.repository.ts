@@ -97,10 +97,65 @@ export class AppwriteAuthRepository implements AuthRepository {
     email: string,
     password: string,
   ): Promise<AuthenticatedAuthResult> {
-    await this.account.createEmailPasswordSession({
-      email,
-      password,
-    });
+    // 1. Check if we need to logout current session BEFORE probing (ADR 027)
+    // Appwrite SDKs in shared environments (like Vitest or some browsers) might share cookies/headers.
+    // If the current session is guest, it might prevent the probe from succeeding due to scope conflicts.
+    let currentSessionId: string | null = null;
+    try {
+      const session = await this.account.getSession({ sessionId: "current" });
+      currentSessionId = session.$id;
+    } catch {
+      // No active session, safe to proceed
+    }
+
+    // 2. Validate credentials with a "probe" client
+    const probeClient = new Client()
+      .setEndpoint(this.client.config.endpoint)
+      .setProject(this.client.config.project);
+    const probeAccount = new Account(probeClient);
+
+    try {
+      // If we have a session, we must temporarily clear it for the probe to have the correct scope.
+      // Appwrite SDKs in shared environments might share state; clearing ensures the probe starts clean.
+      if (currentSessionId) {
+        await this.account.deleteSession({ sessionId: "current" });
+      }
+
+      await probeAccount.createEmailPasswordSession({
+        email,
+        password,
+      });
+      // Success! The probe succeeded.
+    } catch (error: unknown) {
+      // If validation fails, and we had an anonymous session, we MUST restore it (ADR 018/027)
+      if (currentSessionId) {
+        try {
+          await this.account.createAnonymousSession();
+        } catch (restoreError) {
+          this.logger.error(
+            "Failed to restore anonymous session after failed login probe",
+            { restoreError },
+          );
+        }
+      }
+      throw error;
+    }
+
+    // 3. Ensure the main account instance is also logged in
+    // In many environments, the probe login above already updated the shared cookies/storage.
+    // However, we call it explicitly to be sure.
+    try {
+      await this.account.createEmailPasswordSession({
+        email,
+        password,
+      });
+    } catch (error: unknown) {
+      // If it fails with "session active", it means the probe already logged us in globally.
+      if (!(error instanceof AppwriteException && error.code === 401)) {
+        throw error;
+      }
+    }
+
     const user = await this.account.get();
     return {
       type: "authenticated",
@@ -163,7 +218,6 @@ export class AppwriteAuthRepository implements AuthRepository {
     const parsedState = url.searchParams.get("state");
 
     // 2. Validate state
-    // Use expectedState as the source of truth for verification.
     if (!parsedState || parsedState !== expectedState) {
       throw new Error("Mismatched OAuth state: possible CSRF attempt");
     }
@@ -185,7 +239,18 @@ export class AppwriteAuthRepository implements AuthRepository {
       throw new Error("Invalid OAuth2 callback: missing userId or secret");
     }
 
-    await this.account.createSession({ userId, secret });
+    try {
+      await this.account.createSession({ userId, secret });
+    } catch (error: unknown) {
+      // If session is active, logout and retry (OAuth tokens are usually one-time use, but retry might work if session was the only issue)
+      if (error instanceof AppwriteException && error.code === 401) {
+        await this.logout();
+        await this.account.createSession({ userId, secret });
+      } else {
+        throw error;
+      }
+    }
+
     const user = await this.account.get();
     return {
       type: "authenticated",
@@ -241,6 +306,26 @@ export class AppwriteAuthRepository implements AuthRepository {
    * @throws {AppwriteException} If session creation fails.
    */
   async loginAnonymously(): Promise<AnonymousAuthResult> {
+    try {
+      // Idempotency: check if we already have an anonymous session (ADR 027)
+      const user = await this.account.get();
+      if (!user.email) {
+        return {
+          type: "anonymous",
+          userId: user.$id,
+          isNewUser: false,
+        };
+      }
+      // If already logged in with email, we might want to throw or logout.
+      // Per requirements, if they want guest login we should probably logout email session.
+      await this.logout();
+    } catch (error: unknown) {
+      // 401 is expected if no session
+      if (!(error instanceof AppwriteException && error.code === 401)) {
+        throw error;
+      }
+    }
+
     await this.account.createAnonymousSession();
     const user = await this.account.get();
     return {

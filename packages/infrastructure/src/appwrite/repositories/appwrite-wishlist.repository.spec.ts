@@ -143,6 +143,7 @@ describe("AppwriteWishlistRepository", () => {
       config.databaseId,
       config.wishlistCollectionId,
       config.wishlistItemsCollectionId,
+      "profiles",
       mockLogger,
       mockObservability,
     );

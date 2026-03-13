@@ -122,6 +122,58 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     await expect(account.get()).rejects.toThrow();
   });
 
-  // Note: Google OAuth2 integration test removed as requested to avoid white-boxing private internals.
-  // Observable behavior (redirection logic) is covered by unit tests.
+  describe("Session Preservation and Overlap", () => {
+    it("should allow idempotent anonymous login", async () => {
+      // 1. First anonymous login
+      const firstResult = await repository.loginAnonymously();
+      expect(firstResult.type).toBe("anonymous");
+      const firstId = firstResult.userId;
+
+      // 2. Second anonymous login should succeed and return the same ID
+      const secondResult = await repository.loginAnonymously();
+      expect(secondResult.type).toBe("anonymous");
+      expect(secondResult.userId).toBe(firstId);
+    });
+
+    it("should preserve anonymous session when email login fails", async () => {
+      // 1. Start as guest
+      const guestResult = await repository.loginAnonymously();
+      const guestId = guestResult.userId;
+
+      // 2. Attempt login with non-existent account
+      const wrongEmail = `wrong-${randomUUID()}@example.com`;
+      await expect(
+        repository.login(wrongEmail, "WrongPassword123!"),
+      ).rejects.toThrow();
+
+      // 3. Verify STILL guest with same ID
+      const account = new Account(client);
+      const currentUser = await account.get();
+      expect(currentUser.$id).toBe(guestId);
+      expect(currentUser.email).toBe("");
+    });
+
+    it("should replace anonymous session when email login succeeds", async () => {
+      // 1. Start as guest
+      const guestResult = await repository.loginAnonymously();
+      const guestId = guestResult.userId;
+
+      // 2. Register a user (different email)
+      const userEmail = `member-${randomUUID()}@example.com`;
+      const userPassword = "Password123!";
+      const registerResult = await repository.register(userEmail, userPassword);
+      createdUserId = registerResult.userId;
+
+      // 3. Login with the new user
+      const loginResult = await repository.login(userEmail, userPassword);
+      expect(loginResult.userId).not.toBe(guestId);
+      expect(loginResult.email).toBe(userEmail);
+
+      // 4. Verify guest session is gone
+      const account = new Account(client);
+      const currentUser = await account.get();
+      expect(currentUser.$id).toBe(loginResult.userId);
+      expect(currentUser.email).toBe(userEmail);
+    });
+  });
 });

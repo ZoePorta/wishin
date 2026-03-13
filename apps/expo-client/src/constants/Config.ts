@@ -35,6 +35,6 @@ export const Config = {
     wishlists: prefix ? `${prefix}_wishlists` : "wishlists",
     wishlistItems: prefix ? `${prefix}_wishlist_items` : "wishlist_items",
     transactions: prefix ? `${prefix}_transactions` : "transactions",
-    users: prefix ? `${prefix}_users` : "users",
+    profiles: prefix ? `${prefix}_profiles` : "profiles",
   },
 } as const;

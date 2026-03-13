@@ -49,6 +49,7 @@ function createRepositories() {
     Config.appwrite.databaseId,
     Config.collections.wishlists,
     Config.collections.wishlistItems,
+    Config.collections.profiles,
     consoleLogger,
     {
       addBreadcrumb: (message, category, data) => {

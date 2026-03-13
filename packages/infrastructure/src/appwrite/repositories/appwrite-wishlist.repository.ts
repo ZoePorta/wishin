@@ -43,6 +43,7 @@ export class AppwriteWishlistRepository
     private readonly databaseId: string,
     private readonly wishlistCollectionId: string,
     private readonly wishlistItemsCollectionId: string,
+    private readonly profileCollectionId: string,
     private readonly logger: Logger,
     private readonly observability: ObservabilityService,
   ) {
@@ -234,7 +235,7 @@ export class AppwriteWishlistRepository
       // or implement the check directly on the profiles collection.
       await this.tablesDb.getRow({
         databaseId: this.databaseId,
-        tableId: "profiles", // Hardcoded for now or we should pass it in constructor
+        tableId: this.profileCollectionId,
         rowId: user.$id,
       });
 
