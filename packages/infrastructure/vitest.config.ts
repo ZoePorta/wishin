@@ -5,5 +5,6 @@ export default mergeConfig(baseConfig, {
   test: {
     name: "@wishin/infrastructure",
     environment: "node",
+    setupFiles: ["test/integration/setup.ts"],
   },
 });

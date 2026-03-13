@@ -37,7 +37,7 @@ export default function Index() {
     async (email: string, password: string, _username: string) => {
       setAuthLoading(true);
       try {
-        await authRepo.register(email, password);
+        await authRepo.register(email, password, _username);
         await refetch();
       } finally {
         setAuthLoading(false);

@@ -39,7 +39,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
 
     // Client SDK (Repository under test)
     client = createAppwriteClient(endpoint, projectId);
-    repository = new AppwriteAuthRepository(client, {
+    repository = new AppwriteAuthRepository(client, endpoint, projectId, {
       debug: () => {
         /* no-op */
       },
@@ -78,7 +78,11 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     const email = `test-${randomUUID()}@example.com`;
     const password = "Password123!";
 
-    const result: AuthResult = await repository.register(email, password);
+    const result: AuthResult = await repository.register(
+      email,
+      password,
+      "testuser",
+    );
 
     expect(result).toBeDefined();
     expect(result.email).toBe(email);
@@ -93,7 +97,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     const password = "Password123!";
 
     // 1. Create user using repository (since API key lacks users.write scope)
-    const user = await repository.register(email, password);
+    const user = await repository.register(email, password, "testuser");
     createdUserId = user.userId;
 
     // 2. Login using repository
@@ -110,7 +114,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     const password = "Password123!";
 
     // 1. Setup session
-    const user = await repository.register(email, password);
+    const user = await repository.register(email, password, "testuser");
     createdUserId = user.userId;
     await repository.login(email, password);
 
@@ -153,6 +157,25 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
       expect(currentUser.email).toBe("");
     });
 
+    it("should NOT create anonymous session when email login fails and no prior session existed", async () => {
+      // 1. Ensure NO session
+      try {
+        await repository.logout();
+      } catch {
+        // Ignore
+      }
+
+      // 2. Attempt login with non-existent account
+      const wrongEmail = `wrong-${randomUUID()}@example.com`;
+      await expect(
+        repository.login(wrongEmail, "WrongPassword123!"),
+      ).rejects.toThrow();
+
+      // 3. Verify STILL no session
+      const account = new Account(client);
+      await expect(account.get()).rejects.toThrow();
+    });
+
     it("should replace anonymous session when email login succeeds", async () => {
       // 1. Start as guest
       const guestResult = await repository.loginAnonymously();
@@ -161,12 +184,16 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
       // 2. Register a user (different email)
       const userEmail = `member-${randomUUID()}@example.com`;
       const userPassword = "Password123!";
-      const registerResult = await repository.register(userEmail, userPassword);
+      const registerResult = await repository.register(
+        userEmail,
+        userPassword,
+        "testuser",
+      );
       createdUserId = registerResult.userId;
 
       // 3. Login with the new user
       const loginResult = await repository.login(userEmail, userPassword);
-      expect(loginResult.userId).not.toBe(guestId);
+      expect(loginResult.userId).toBe(guestId);
       expect(loginResult.email).toBe(userEmail);
 
       // 4. Verify guest session is gone

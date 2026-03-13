@@ -35,6 +35,7 @@ export class AppwriteWishlistRepository
    * @param databaseId - The ID of the Appwrite database.
    * @param wishlistCollectionId - The ID of the wishlists collection.
    * @param wishlistItemsCollectionId - The ID of the wishlist items collection.
+   * @param profileCollectionId - The ID of the profiles collection.
    * @param logger - Logger for technical/operational logs.
    * @param observability - Service for breadcrumbs and telemetry events.
    */
@@ -213,6 +214,8 @@ export class AppwriteWishlistRepository
    * - 'anonymous': Guest user with no registered account.
    * - 'incomplete': Registered account but missing profile record.
    * - 'registered': Fully registered user with a profile.
+   * - null: If no session is active.
+   * @throws {AppwriteException} For non-404 errors from Appwrite client calls (e.g., network or server errors).
    */
   async getSessionType(): Promise<
     "anonymous" | "incomplete" | "registered" | null

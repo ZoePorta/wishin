@@ -9,13 +9,19 @@ import { Surface, Divider, useTheme } from "react-native-paper";
 import { LoginForm } from "./LoginForm";
 import { RegisterForm } from "./RegisterForm";
 
+/**
+ * Props for the AuthPanel component.
+ */
 interface AuthPanelProps {
+  /** Callback function called when the user attempts to log in. Accepts email and password. */
   onLogin: (email: string, password: string) => Promise<void>;
+  /** Callback function called when the user attempts to register. Accepts email, password, and username. */
   onRegister: (
     email: string,
     password: string,
     username: string,
   ) => Promise<void>;
+  /** Optional loading flag to indicate an ongoing authentication operation. */
   loading?: boolean;
 }
 

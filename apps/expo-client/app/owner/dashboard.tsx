@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import {
   Portal,
   Modal,
@@ -15,6 +15,7 @@ import {
 import { type WishlistItemOutput } from "@wishin/domain";
 import { commonStyles } from "../../src/theme/common-styles";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
+import { useUser } from "../../src/contexts/UserContext";
 import { WishlistForm } from "../../src/features/wishlist/components/WishlistForm";
 import { AddItemForm } from "../../src/features/wishlist/components/AddItemForm";
 import { DashboardHeader } from "../../src/features/wishlist/components/DashboardHeader";
@@ -28,6 +29,7 @@ import { DashboardContent } from "../../src/features/wishlist/components/Dashboa
  */
 export default function OwnerDashboard() {
   const theme = useTheme();
+  const { sessionType } = useUser();
   const {
     userId,
     wishlist,
@@ -42,6 +44,21 @@ export default function OwnerDashboard() {
     handleRemoveItem,
     refetch,
   } = useOwnerDashboard();
+
+  // Route-level guard: only registered owners can access this dashboard
+  React.useEffect(() => {
+    if (sessionType !== null && sessionType !== "registered") {
+      router.replace("/");
+    }
+  }, [sessionType]);
+
+  if (sessionType !== "registered") {
+    return (
+      <Surface style={styles.centerContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </Surface>
+    );
+  }
 
   const [isEditing, setIsEditing] = useState(false);
   const [isItemModalVisible, setIsItemModalVisible] = useState(false);

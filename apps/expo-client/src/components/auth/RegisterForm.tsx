@@ -10,18 +10,39 @@ import {
   HelperText,
 } from "react-native-paper";
 
+/**
+ * Properties for the RegisterForm component.
+ */
 interface RegisterFormProps {
+  /**
+   * Callback fired when the user submits the registration form.
+   * @param email - The user's email address.
+   * @param password - The user's chosen password.
+   * @param username - The user's chosen username.
+   * @returns A Promise that resolves if registration succeeds.
+   * @throws {Error} If registration fails (e.g., email already in use).
+   */
   onRegister: (
     email: string,
     password: string,
     username: string,
   ) => Promise<void>;
+  /**
+   * Callback to navigate back to the login screen.
+   */
   onSwitchToLogin: () => void;
+  /**
+   * Whether the form is currently submitting.
+   */
   loading?: boolean;
 }
 
 /**
  * Premium RegisterForm component designed with Material Design 3.
+ * Handles user input and validation for new account creation.
+ *
+ * @param props - The component properties.
+ * @returns {JSX.Element} The rendered registration form.
  */
 export const RegisterForm: React.FC<RegisterFormProps> = ({
   onRegister,

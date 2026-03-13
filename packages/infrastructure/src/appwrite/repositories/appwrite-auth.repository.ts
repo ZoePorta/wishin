@@ -26,10 +26,14 @@ export class AppwriteAuthRepository implements AuthRepository {
   /**
    * Initializes the repository with an Appwrite Client and a Logger.
    * @param client - The Appwrite Client SDK instance.
+   * @param endpoint - The Appwrite API endpoint.
+   * @param projectId - The Appwrite Project ID.
    * @param logger - The domain logger for infrastructure events.
    */
   constructor(
     private readonly client: Client,
+    private readonly endpoint: string,
+    private readonly projectId: string,
     private readonly logger: Logger,
   ) {
     this.account = new Account(this.client);
@@ -47,6 +51,7 @@ export class AppwriteAuthRepository implements AuthRepository {
   async register(
     email: string,
     password: string,
+    username: string,
   ): Promise<AuthenticatedAuthResult> {
     let isAnonymous = false;
     let userId: string = ID.unique();
@@ -75,6 +80,7 @@ export class AppwriteAuthRepository implements AuthRepository {
       userId,
       email,
       password,
+      name: username,
     });
 
     return {
@@ -100,24 +106,26 @@ export class AppwriteAuthRepository implements AuthRepository {
     // 1. Check if we need to logout current session BEFORE probing (ADR 027)
     // Appwrite SDKs in shared environments (like Vitest or some browsers) might share cookies/headers.
     // If the current session is guest, it might prevent the probe from succeeding due to scope conflicts.
-    let currentSessionId: string | null = null;
+    let priorSessionIsAnonymous = false;
+    let hadSession = false;
     try {
-      const session = await this.account.getSession({ sessionId: "current" });
-      currentSessionId = session.$id;
+      const user = await this.account.get();
+      hadSession = true;
+      priorSessionIsAnonymous = !user.email;
     } catch {
       // No active session, safe to proceed
     }
 
     // 2. Validate credentials with a "probe" client
     const probeClient = new Client()
-      .setEndpoint(this.client.config.endpoint)
-      .setProject(this.client.config.project);
+      .setEndpoint(this.endpoint)
+      .setProject(this.projectId);
     const probeAccount = new Account(probeClient);
 
     try {
       // If we have a session, we must temporarily clear it for the probe to have the correct scope.
       // Appwrite SDKs in shared environments might share state; clearing ensures the probe starts clean.
-      if (currentSessionId) {
+      if (hadSession) {
         await this.account.deleteSession({ sessionId: "current" });
       }
 
@@ -128,7 +136,7 @@ export class AppwriteAuthRepository implements AuthRepository {
       // Success! The probe succeeded.
     } catch (error: unknown) {
       // If validation fails, and we had an anonymous session, we MUST restore it (ADR 018/027)
-      if (currentSessionId) {
+      if (priorSessionIsAnonymous) {
         try {
           await this.account.createAnonymousSession();
         } catch (restoreError) {

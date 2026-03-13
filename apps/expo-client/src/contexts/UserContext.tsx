@@ -68,6 +68,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       const message =
         err instanceof Error ? err.message : "Failed to fetch user session";
       setError(message);
+      setUserId(null);
+      setSessionType(null);
       console.error("UserProvider error:", message);
       return null;
     } finally {

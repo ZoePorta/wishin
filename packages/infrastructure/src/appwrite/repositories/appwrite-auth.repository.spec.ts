@@ -68,7 +68,12 @@ describe("AppwriteAuthRepository", () => {
       warn: vi.fn(),
       error: vi.fn(),
     };
-    repository = new AppwriteAuthRepository(client, logger);
+    repository = new AppwriteAuthRepository(
+      client,
+      "https://api.appwrite.io/v1",
+      "project",
+      logger,
+    );
     // Access private for testing
     account = (repository as unknown as { account: Account }).account;
   });
@@ -229,12 +234,13 @@ describe("AppwriteAuthRepository", () => {
         email,
       } as Models.User<Models.Preferences>);
 
-      const result = await repository.register(email, password);
+      const result = await repository.register(email, password, "testuser");
 
       expect(createSpy).toHaveBeenCalledWith({
         userId: "unique-id",
         email,
         password,
+        name: "testuser",
       });
       expect(result).toEqual({
         type: "authenticated",
@@ -262,12 +268,13 @@ describe("AppwriteAuthRepository", () => {
         email,
       } as Models.User<Models.Preferences>);
 
-      const result = await repository.register(email, password);
+      const result = await repository.register(email, password, "testuser");
 
       expect(createSpy).toHaveBeenCalledWith({
         userId,
         email,
         password,
+        name: "testuser",
       });
       expect(result).toEqual({
         type: "authenticated",
@@ -310,6 +317,65 @@ describe("AppwriteAuthRepository", () => {
         isNewUser: false,
       });
     });
+
+    it("should restore anonymous session if login fails", async () => {
+      const email = "test@example.com";
+      const password = "wrong-password";
+
+      const getSpy = vi.spyOn(account, "get");
+      const deleteSessionSpy = vi.spyOn(account, "deleteSession");
+      const createEmailPasswordSessionSpy = vi.spyOn(
+        account,
+        "createEmailPasswordSession",
+      );
+      const createAnonymousSessionSpy = vi.spyOn(
+        account,
+        "createAnonymousSession",
+      );
+
+      // 1. Initial check: existing anonymous session
+      getSpy.mockResolvedValueOnce({
+        $id: "guest-123",
+        email: "",
+      } as Models.User<Models.Preferences>);
+
+      // 2. Probe fails
+      createEmailPasswordSessionSpy.mockRejectedValue(
+        new AppwriteException("Invalid credentials", 401),
+      );
+
+      await expect(repository.login(email, password)).rejects.toThrow();
+
+      expect(deleteSessionSpy).toHaveBeenCalledWith({ sessionId: "current" });
+      expect(createAnonymousSessionSpy).toHaveBeenCalled();
+    });
+
+    it("should NOT create anonymous session if login fails and no previous session existed", async () => {
+      const email = "test@example.com";
+      const password = "wrong-password";
+
+      const getSpy = vi.spyOn(account, "get");
+      const createEmailPasswordSessionSpy = vi.spyOn(
+        account,
+        "createEmailPasswordSession",
+      );
+      const createAnonymousSessionSpy = vi.spyOn(
+        account,
+        "createAnonymousSession",
+      );
+
+      // 1. Initial check: NO session
+      getSpy.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
+
+      // 2. Probe fails
+      createEmailPasswordSessionSpy.mockRejectedValue(
+        new AppwriteException("Invalid credentials", 401),
+      );
+
+      await expect(repository.login(email, password)).rejects.toThrow();
+
+      expect(createAnonymousSessionSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe("logout", () => {
@@ -340,7 +406,7 @@ describe("AppwriteAuthRepository", () => {
   });
 
   describe("loginAnonymously", () => {
-    it("should create an anonymous session and return AuthResult", async () => {
+    it("should create an anonymous session if none exists", async () => {
       const mockUser = {
         $id: "anonymous-123",
         email: "",
@@ -349,7 +415,12 @@ describe("AppwriteAuthRepository", () => {
       const createAnonymousSessionSpy = vi
         .spyOn(account, "createAnonymousSession")
         .mockResolvedValue({} as Models.Session);
-      vi.spyOn(account, "get").mockResolvedValue(mockUser);
+      const getSpy = vi.spyOn(account, "get");
+
+      // 1. Initial check (no session)
+      getSpy.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
+      // 2. Resolve result
+      getSpy.mockResolvedValueOnce(mockUser);
 
       const result = await repository.loginAnonymously();
 
@@ -358,6 +429,28 @@ describe("AppwriteAuthRepository", () => {
         type: "anonymous",
         userId: "anonymous-123",
         isNewUser: true,
+      });
+    });
+
+    it("should return existing session if already anonymous", async () => {
+      const mockUser = {
+        $id: "existing-anon",
+        email: "",
+      } as Models.User<Models.Preferences>;
+
+      const createAnonymousSessionSpy = vi.spyOn(
+        account,
+        "createAnonymousSession",
+      );
+      vi.spyOn(account, "get").mockResolvedValue(mockUser);
+
+      const result = await repository.loginAnonymously();
+
+      expect(createAnonymousSessionSpy).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        type: "anonymous",
+        userId: "existing-anon",
+        isNewUser: false,
       });
     });
   });

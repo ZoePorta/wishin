@@ -357,7 +357,20 @@ describe("AppwriteTransactionRepository", () => {
 
       expect(cancelledCount).toBe(2);
       expect(mockGet).toHaveBeenCalled();
+      expect(mockListRows).toHaveBeenCalledTimes(1);
       expect(mockUpdateRow).toHaveBeenCalledTimes(2);
+      expect(mockUpdateRow).toHaveBeenCalledWith({
+        databaseId: config.databaseId,
+        tableId: config.transactionsCollectionId,
+        rowId: "550e8400-e29b-41d4-a716-446655440004",
+        data: { status: TransactionStatus.CANCELLED_BY_OWNER },
+      });
+      expect(mockUpdateRow).toHaveBeenCalledWith({
+        databaseId: config.databaseId,
+        tableId: config.transactionsCollectionId,
+        rowId: "550e8400-e29b-41d4-a716-446655440005",
+        data: { status: TransactionStatus.CANCELLED_BY_OWNER },
+      });
     });
   });
 
@@ -670,7 +683,9 @@ describe("AppwriteTransactionRepository", () => {
         new AppwriteException("Internal Server Error", 500),
       );
 
-      await expect(repository.delete(validId)).rejects.toThrow();
+      await expect(repository.delete(validId)).rejects.toThrow(
+        PersistenceError,
+      );
     });
   });
 });

@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Text, Button, Surface, useTheme, Icon } from "react-native-paper";
 import { createSharedErrorStyles } from "./error-screen.styles";
 
@@ -45,7 +45,7 @@ export function ConfigErrorScreen({ onRetry }: Props) {
             mode="contained"
             onPress={onRetry}
             style={styles.button}
-            contentStyle={{ height: 48 }}
+            contentStyle={localStyles.buttonContent}
             accessibilityLabel="Try Again"
           >
             Try Again
@@ -55,3 +55,9 @@ export function ConfigErrorScreen({ onRetry }: Props) {
     </Surface>
   );
 }
+
+const localStyles = StyleSheet.create({
+  buttonContent: {
+    height: 48,
+  },
+});

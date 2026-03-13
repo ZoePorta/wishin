@@ -10,9 +10,15 @@ import {
   HelperText,
 } from "react-native-paper";
 
+/**
+ * Props for the LoginForm component.
+ */
 interface LoginFormProps {
+  /** Callback function called when the user submits their credentials. Accepts email and password. */
   onLogin: (email: string, password: string) => Promise<void>;
+  /** Callback function to switch the view to the registration form. */
   onSwitchToRegister: () => void;
+  /** Optional loading flag to indicate an ongoing login attempt. */
   loading?: boolean;
 }
 

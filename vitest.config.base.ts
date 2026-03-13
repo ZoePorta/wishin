@@ -10,6 +10,9 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
     globals: true,
-    exclude: [...defaultExclude],
+    exclude: [
+      ...defaultExclude,
+      "packages/infrastructure/test/integration/**/*.test.ts",
+    ],
   },
 });

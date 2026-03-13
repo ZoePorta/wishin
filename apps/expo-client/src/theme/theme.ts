@@ -7,8 +7,8 @@ import {
 import {
   DefaultTheme as NavigationDefaultTheme,
   DarkTheme as NavigationDarkTheme,
-  Theme as NavigationTheme,
 } from "@react-navigation/native";
+import type { Theme as NavigationTheme } from "@react-navigation/native";
 import materialTheme from "./material-theme.json";
 
 /**
@@ -48,14 +48,29 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
  * Deeply merges Paper, Navigation and Material schemes.
  * Order: Paper -> Navigation -> Material Scheme -> Brand Overrides
  */
+/**
+ * Merges MD3 Paper, Navigation, and Material schemes into a final application theme.
+ *
+ * @param paperTheme - The base MD3 Paper theme (Light or Dark).
+ * @param navigationTheme - The adapted Navigation theme.
+ * @param materialScheme - Raw Material Design 3 color tokens from JSON.
+ * @param overrides - High-priority brand color overrides.
+ *
+ * @remarks
+ * Merge Precedence: Paper < Navigation < Material Scheme < Overrides.
+ * This function also forces elevation tokens to match the resolve surface color
+ * to prevent MD3's automatic tinting for elevated cards.
+ *
+ * @returns {MD3Theme} The fully merged and validated theme object.
+ */
 function mergeAndValidateTheme(
   paperTheme: MD3Theme,
   navigationTheme: NavigationTheme,
-  materialScheme: Record<string, string>,
-  overrides: Record<string, string> = {},
+  materialScheme: Partial<MD3Theme["colors"]>,
+  overrides: Partial<MD3Theme["colors"]> = {},
 ): MD3Theme {
   const finalSurface =
-    overrides.surface || materialScheme.surface || paperTheme.colors.surface;
+    overrides.surface ?? materialScheme.surface ?? paperTheme.colors.surface;
 
   const merged = {
     ...paperTheme,

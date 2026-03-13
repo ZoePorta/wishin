@@ -67,7 +67,12 @@ function createRepositories() {
     Config.collections.transactions,
   );
 
-  const authRepository = new AppwriteAuthRepository(client, consoleLogger);
+  const authRepository = new AppwriteAuthRepository(
+    client,
+    Config.appwrite.endpoint,
+    Config.appwrite.projectId,
+    consoleLogger,
+  );
 
   return {
     wishlistRepository,
@@ -99,9 +104,8 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     let isMounted = true;
     const init = async () => {
       try {
-        const wishlistRepo = repos.wishlistRepository;
-        const sessionAwareRepo =
-          wishlistRepo as unknown as SessionAwareRepository;
+        const sessionAwareRepo: SessionAwareRepository =
+          repos.wishlistRepository;
 
         // timeout to prevent slow network from blocking startup (ADR 027)
         const timeoutPromise = new Promise((_, reject) =>
