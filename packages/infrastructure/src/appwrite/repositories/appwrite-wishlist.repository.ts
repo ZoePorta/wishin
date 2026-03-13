@@ -188,7 +188,7 @@ export class AppwriteWishlistRepository
 
     // 2. Map docs to aggregates by fetching details for each (using authenticated session)
     const wishlists = await Promise.all(
-      rows.map((row) => this.findById(row.$id, false)),
+      rows.map((row) => this.findById(row.$id, true)),
     );
 
     // Filter out any nulls if findById could potentially return null
