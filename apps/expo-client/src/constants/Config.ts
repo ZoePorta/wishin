@@ -8,7 +8,10 @@ const projectId = (process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? "") as string;
 const databaseId = (process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID ??
   "") as string;
 const prefix = (process.env.EXPO_PUBLIC_DB_PREFIX ?? "") as string;
-const baseUrl = (process.env.EXPO_PUBLIC_BASE_URL ?? "") as string;
+const baseUrl = (
+  (process.env.EXPO_PUBLIC_BASE_URL as string | undefined) ??
+  "http://localhost:8081"
+).replace(/\/+$/, "");
 
 /**
  * Validates that all required Appwrite environment variables are set.

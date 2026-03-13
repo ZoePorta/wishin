@@ -13,7 +13,6 @@ interface DashboardHeaderProps {
  *
  * @param {DashboardHeaderProps} props - The component props.
  * @param {WishlistOutput} props.wishlist - The wishlist object whose title and description are shown.
- * @param {function} [props.onEdit] - Optional callback to trigger the edit wishlist modal.
  * @returns {JSX.Element} The rendered dashboard header.
  */
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({

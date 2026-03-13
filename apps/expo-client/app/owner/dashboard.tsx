@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Alert } from "react-native";
 import { Stack } from "expo-router";
 import {
   Portal,
@@ -59,12 +59,20 @@ export default function OwnerDashboard() {
   const handleShare = async () => {
     if (!wishlist) return;
 
-    const url = Config.baseUrl
-      ? `${Config.baseUrl}/wishlist/${wishlist.id}`
-      : Linking.createURL(`wishlist/${wishlist.id}`);
+    try {
+      const url = Config.baseUrl
+        ? `${Config.baseUrl}/wishlist/${wishlist.id}`
+        : Linking.createURL(`wishlist/${wishlist.id}`);
 
-    await Clipboard.setStringAsync(url);
-    setIsShareSnackbarVisible(true);
+      await Clipboard.setStringAsync(url);
+      setIsShareSnackbarVisible(true);
+    } catch (err) {
+      console.error("Failed to share wishlist:", err);
+      Alert.alert(
+        "Share Failed",
+        "Could not copy the wishlist link to your clipboard. Please try again.",
+      );
+    }
   };
 
   if (loading) {
