@@ -45,21 +45,6 @@ export default function OwnerDashboard() {
     refetch,
   } = useOwnerDashboard();
 
-  // Route-level guard: only registered owners can access this dashboard
-  React.useEffect(() => {
-    if (sessionType !== null && sessionType !== "registered") {
-      router.replace("/");
-    }
-  }, [sessionType]);
-
-  if (sessionType !== "registered") {
-    return (
-      <Surface style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </Surface>
-    );
-  }
-
   const [isEditing, setIsEditing] = useState(false);
   const [isItemModalVisible, setIsItemModalVisible] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -67,7 +52,14 @@ export default function OwnerDashboard() {
     WishlistItemOutput | undefined
   >();
 
-  if (loading) {
+  // Route-level guard: only registered owners can access this dashboard
+  React.useEffect(() => {
+    if (!loading && sessionType !== null && sessionType !== "registered") {
+      router.replace("/");
+    }
+  }, [sessionType, loading]);
+
+  if (loading || (sessionType !== null && sessionType !== "registered")) {
     return (
       <Surface style={styles.centerContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />

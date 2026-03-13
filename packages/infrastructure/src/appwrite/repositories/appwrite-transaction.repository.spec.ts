@@ -444,6 +444,18 @@ describe("AppwriteTransactionRepository", () => {
       );
     });
 
+    it("should throw PersistenceError if userId does not match authenticated user", async () => {
+      mockGet.mockResolvedValue({
+        $id: "different-user",
+      } as Models.User<Models.Preferences>);
+
+      await expect(repository.findByUserId(validUserId)).rejects.toThrow(
+        PersistenceError,
+      );
+
+      expect(mockListRows).not.toHaveBeenCalled();
+    });
+
     it("should aggregate all pages when there are more than 100 results", async () => {
       mockGet.mockResolvedValue({
         $id: validUserId,

@@ -244,12 +244,7 @@ export class AppwriteWishlistRepository
 
       return "registered";
     } catch (error) {
-      if (
-        error &&
-        typeof error === "object" &&
-        "code" in error &&
-        error.code === 404
-      ) {
+      if (error instanceof AppwriteException && error.code === 404) {
         return "incomplete";
       }
       throw error;

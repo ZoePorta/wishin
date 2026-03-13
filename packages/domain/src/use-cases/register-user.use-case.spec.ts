@@ -57,6 +57,7 @@ describe("RegisterUserUseCase", () => {
     expect(authRepo.register).toHaveBeenCalledWith(
       validRegistrationInput.email,
       validRegistrationInput.password,
+      validRegistrationInput.username,
     );
     expect(profileRepo.save).toHaveBeenCalledWith(expect.any(Profile));
 

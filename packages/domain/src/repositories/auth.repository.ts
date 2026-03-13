@@ -24,6 +24,7 @@ export interface AuthRepository {
    * Registers a new user with email and password.
    * @param email The user's email address.
    * @param password The user's password.
+   * @param username The user's display name or username.
    * @returns A Promise that resolves to the authentication result.
    * @throws {Error} If registration fails.
    */

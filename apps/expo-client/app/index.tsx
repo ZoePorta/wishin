@@ -65,7 +65,7 @@ export default function Index() {
     return (
       <Surface style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text variant="bodyLarge" style={{ marginTop: 24 }}>
+        <Text variant="bodyLarge" style={styles.redirectText}>
           Redirecting to your dashboard...
         </Text>
       </Surface>
@@ -129,6 +129,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  redirectText: {
+    marginTop: 24,
   },
   header: {
     alignItems: "center",

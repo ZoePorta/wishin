@@ -93,7 +93,7 @@ interface CoreProviderProps {
 
 export const CoreProvider: React.FC<CoreProviderProps> = ({
   children,
-  onConfigError,
+  onConfigError: _onConfigError,
 }) => {
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -136,7 +136,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [onConfigError, repos]);
+  }, [repos]);
 
   if (!isInitialized) {
     return (
