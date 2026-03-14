@@ -16,6 +16,14 @@ import {
 interface UserContextValue {
   /** The unique identifier of the current user, or null if not loaded yet. */
   userId: string | null;
+  /**
+   * The type of the current session.
+   * - 'anonymous': Guest user with no registered account.
+   * - 'incomplete': Registered account but missing profile record.
+   * - 'registered': Fully registered user with a profile.
+   * - null: Not loaded yet.
+   */
+  sessionType: "anonymous" | "incomplete" | "registered" | null;
   /** Whether the user ID is currently being fetched. */
   loading: boolean;
   /** Error message if the user ID could not be fetched. */
@@ -40,6 +48,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const repository = useUserRepository();
   const authRepository = useAuthRepository();
   const [userId, setUserId] = useState<string | null>(null);
+  const [sessionType, setSessionType] =
+    useState<UserContextValue["sessionType"]>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,13 +57,19 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const id = await repository.getCurrentUserId();
+      const [id, type] = await Promise.all([
+        repository.getCurrentUserId(),
+        repository.getSessionType(),
+      ]);
       setUserId(id);
+      setSessionType(type);
       return id;
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to fetch user session";
       setError(message);
+      setUserId(null);
+      setSessionType(null);
       console.error("UserProvider error:", message);
       return null;
     } finally {
@@ -92,12 +108,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const value = useMemo(
     () => ({
       userId,
+      sessionType,
       loading,
       error,
       refetch: fetchUser,
       loginAsGuest,
     }),
-    [userId, loading, error, fetchUser, loginAsGuest],
+    [userId, sessionType, loading, error, fetchUser, loginAsGuest],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Alert } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import {
   Portal,
   Modal,
@@ -19,6 +19,7 @@ import { type WishlistItemOutput } from "@wishin/domain";
 import { Config } from "../../src/constants/Config";
 import { commonStyles } from "../../src/theme/common-styles";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
+import { useUser } from "../../src/contexts/UserContext";
 import { WishlistForm } from "../../src/features/wishlist/components/WishlistForm";
 import { AddItemForm } from "../../src/features/wishlist/components/AddItemForm";
 import { DashboardHeader } from "../../src/features/wishlist/components/DashboardHeader";
@@ -32,6 +33,7 @@ import { DashboardContent } from "../../src/features/wishlist/components/Dashboa
  */
 export default function OwnerDashboard() {
   const theme = useTheme();
+  const { sessionType } = useUser();
   const {
     userId,
     wishlist,
@@ -75,10 +77,17 @@ export default function OwnerDashboard() {
     }
   };
 
-  if (loading) {
+  // Route-level guard: only registered owners can access this dashboard
+  React.useEffect(() => {
+    if (!loading && sessionType !== null && sessionType !== "registered") {
+      router.replace("/");
+    }
+  }, [sessionType, loading]);
+
+  if (loading || (sessionType !== null && sessionType !== "registered")) {
     return (
       <Surface style={styles.centerContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </Surface>
     );
   }
@@ -105,12 +114,23 @@ export default function OwnerDashboard() {
 
   return (
     <Portal.Host>
-      <Surface style={styles.container}>
-        <Stack.Screen options={{ title: "My Dashboard" }} />
+      <Surface
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+      >
+        <Stack.Screen
+          options={{
+            title: "My Dashboard",
+            headerStyle: { backgroundColor: theme.colors.surface },
+            headerTintColor: theme.colors.onSurface,
+          }}
+        />
 
         {!wishlist ? (
           <View style={styles.formContainer}>
-            <PaperText variant="headlineSmall" style={styles.sectionTitle}>
+            <PaperText
+              variant="headlineSmall"
+              style={[styles.sectionTitle, { color: theme.colors.onSurface }]}
+            >
               Create Your Wishlist
             </PaperText>
             <WishlistForm
@@ -183,7 +203,11 @@ export default function OwnerDashboard() {
                 ]}
               >
                 <View style={styles.modalHeader}>
-                  <PaperText variant="headlineSmall" accessibilityRole="header">
+                  <PaperText
+                    variant="headlineSmall"
+                    accessibilityRole="header"
+                    style={{ color: theme.colors.onSurface }}
+                  >
                     {editingItem ? "Edit Item" : "Add Item"}
                   </PaperText>
                   <IconButton
@@ -229,7 +253,11 @@ export default function OwnerDashboard() {
                 ]}
               >
                 <View style={styles.modalHeader}>
-                  <PaperText variant="headlineSmall" accessibilityRole="header">
+                  <PaperText
+                    variant="headlineSmall"
+                    accessibilityRole="header"
+                    style={{ color: theme.colors.onSurface }}
+                  >
                     Edit Wishlist
                   </PaperText>
                   <IconButton
@@ -299,25 +327,28 @@ const styles = StyleSheet.create({
   errorText: {
     marginBottom: 16,
     textAlign: "center",
+    fontWeight: "600",
   },
   formContainer: {
     flex: 1,
-    padding: 16,
+    padding: 24,
   },
   sectionTitle: {
-    marginVertical: 16,
+    marginBottom: 24,
+    fontWeight: "700",
   },
+
   modalContent: {
     margin: 20,
-    padding: 20,
+    padding: 24,
     borderRadius: 28,
-    maxHeight: "80%",
+    maxHeight: "85%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 24,
   },
   mainContent: {
     flex: 1,

@@ -31,6 +31,7 @@ export class RegisterUserUseCase {
     const authResult = await this.authRepo.register(
       input.email,
       input.password,
+      normalizedUsername,
     );
 
     try {

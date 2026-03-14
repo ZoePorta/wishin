@@ -68,10 +68,23 @@ export class MockWishlistRepository
    *
    * @returns A promise that resolves to the current user ID.
    */
-  async getCurrentUserId(): Promise<string> {
+  async getCurrentUserId(): Promise<string | null> {
     // Simulate network delay
     await this.delay();
     return MOCK_WISHLIST_DATA.ownerId;
+  }
+
+  /**
+   * Determines the current session type to distinguish between guests and members.
+   *
+   * @returns A Promise that resolves to the session type.
+   */
+  async getSessionType(): Promise<
+    "anonymous" | "incomplete" | "registered" | null
+  > {
+    await this.delay();
+    // For mock purposes, we return 'registered' as the mock identity is a member with profile
+    return "registered";
   }
 
   /**

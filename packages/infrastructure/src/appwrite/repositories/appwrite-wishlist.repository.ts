@@ -35,6 +35,7 @@ export class AppwriteWishlistRepository
    * @param databaseId - The ID of the Appwrite database.
    * @param wishlistCollectionId - The ID of the wishlists collection.
    * @param wishlistItemsCollectionId - The ID of the wishlist items collection.
+   * @param profileCollectionId - The ID of the profiles collection.
    * @param logger - Logger for technical/operational logs.
    * @param observability - Service for breadcrumbs and telemetry events.
    */
@@ -43,6 +44,7 @@ export class AppwriteWishlistRepository
     private readonly databaseId: string,
     private readonly wishlistCollectionId: string,
     private readonly wishlistItemsCollectionId: string,
+    private readonly profileCollectionId: string,
     private readonly logger: Logger,
     private readonly observability: ObservabilityService,
   ) {
@@ -203,6 +205,50 @@ export class AppwriteWishlistRepository
   async getCurrentUserId(): Promise<string | null> {
     const session = await this.resolveSession();
     return session?.$id ?? null;
+  }
+
+  /**
+   * Determines the current session type to distinguish between guests and members.
+   *
+   * @returns A Promise that resolves to the session type:
+   * - 'anonymous': Guest user with no registered account.
+   * - 'incomplete': Registered account but missing profile record.
+   * - 'registered': Fully registered user with a profile.
+   * - null: If no session is active.
+   * @throws {AppwriteException} For non-404 errors from Appwrite client calls (e.g., network or server errors).
+   */
+  async getSessionType(): Promise<
+    "anonymous" | "incomplete" | "registered" | null
+  > {
+    const user = await this.resolveSession();
+
+    if (!user) {
+      return null;
+    }
+
+    if (!user.email) {
+      return "anonymous";
+    }
+
+    // If it has email, it's a member. Check if they have a profile (ADR 026)
+    try {
+      // We use a query instead of findById to avoid unnecessary errors if possible,
+      // but findById is already implemented with 404 handling in most repositories.
+      // For AppwriteWishlistRepository, we'll need to use the profile repository if available
+      // or implement the check directly on the profiles collection.
+      await this.tablesDb.getRow({
+        databaseId: this.databaseId,
+        tableId: this.profileCollectionId,
+        rowId: user.$id,
+      });
+
+      return "registered";
+    } catch (error) {
+      if (error instanceof AppwriteException && error.code === 404) {
+        return "incomplete";
+      }
+      throw error;
+    }
   }
 
   /**

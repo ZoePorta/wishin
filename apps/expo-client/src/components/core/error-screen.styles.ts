@@ -33,16 +33,16 @@ export function createSharedErrorStyles(theme: MD3Theme): ErrorScreenStyles {
     },
     card: {
       padding: 32,
-      borderRadius: 16, // MD3 standard for cards/surfaces
+      borderRadius: 28, // Updated to MD3 standard for large surfaces
       width: "100%",
       maxWidth: 400,
       alignItems: "center",
       backgroundColor: theme.colors.surface,
     },
     iconContainer: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: 72,
+      height: 72,
+      borderRadius: 36,
       justifyContent: "center",
       alignItems: "center",
       marginBottom: 24,
@@ -51,24 +51,25 @@ export function createSharedErrorStyles(theme: MD3Theme): ErrorScreenStyles {
       backgroundColor: theme.colors.errorContainer,
     },
     icon: {
-      fontSize: 32,
+      fontSize: 40,
     },
     title: {
       fontSize: 24,
-      fontWeight: "bold",
-      marginBottom: 12,
+      fontWeight: "700",
+      marginBottom: 8,
       textAlign: "center",
       color: theme.colors.onSurface,
     },
     message: {
       fontSize: 16,
-      lineHeight: 20,
+      lineHeight: 24,
       textAlign: "center",
       color: theme.colors.onSurfaceVariant,
       marginBottom: 32,
     },
     button: {
       width: "100%",
+      borderRadius: 12,
     },
   });
 }

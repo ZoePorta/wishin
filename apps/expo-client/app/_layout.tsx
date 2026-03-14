@@ -9,6 +9,7 @@ import { ConfigErrorScreen } from "../src/components/core/ConfigErrorScreen";
 import { GeneralErrorScreen } from "../src/components/core/GeneralErrorScreen";
 
 import { CoreProvider } from "../src/providers/CoreProvider";
+import { AuthButtons } from "../src/components/common/AuthButtons";
 
 /**
  * Root orchestrator component that manages dependencies and routing.
@@ -62,6 +63,7 @@ function RootLayout() {
           headerTitleStyle: {
             fontWeight: "bold",
           },
+          headerRight: () => <AuthButtons />,
           contentStyle: {
             backgroundColor: theme.colors.background,
           },

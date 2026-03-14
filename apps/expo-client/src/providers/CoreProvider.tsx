@@ -7,8 +7,10 @@ import {
   AppwriteTransactionRepository,
   AppwriteAuthRepository,
   createAppwriteClient,
+  type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
+import { PersistenceError } from "@wishin/domain";
 
 /**
  * Adapter that maps console methods to the Logger interface.
@@ -48,6 +50,7 @@ function createRepositories() {
     Config.appwrite.databaseId,
     Config.collections.wishlists,
     Config.collections.wishlistItems,
+    Config.collections.profiles,
     consoleLogger,
     {
       addBreadcrumb: (message, category, data) => {
@@ -65,7 +68,12 @@ function createRepositories() {
     Config.collections.transactions,
   );
 
-  const authRepository = new AppwriteAuthRepository(client, consoleLogger);
+  const authRepository = new AppwriteAuthRepository(
+    client,
+    Config.appwrite.endpoint,
+    Config.appwrite.projectId,
+    consoleLogger,
+  );
 
   return {
     wishlistRepository,
@@ -82,8 +90,12 @@ interface CoreProviderProps {
 /**
  * High-level provider that orchestrates infrastructure initialization.
  * Decouples the UI routing from the repository lifecycle.
+ *
+ * @param props - The component properties.
+ * @param props.children - The children components to wrap.
+ * @param props.onConfigError - Callback for handled configuration errors.
+ * @returns {JSX.Element} The rendered CoreProvider.
  */
-
 export const CoreProvider: React.FC<CoreProviderProps> = ({
   children,
   onConfigError,
@@ -91,23 +103,31 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
 
   // useMemo ensures repositories are created once per mount/HMR cycle
-  const repos = useMemo(() => {
+  const { repos, initError } = useMemo(() => {
     try {
-      return createRepositories();
-    } catch (error) {
-      if (error instanceof Error) {
-        onConfigError(error);
-      }
-      return null;
+      return { repos: createRepositories(), initError: null };
+    } catch (error: unknown) {
+      return {
+        repos: null,
+        initError: error instanceof Error ? error : new Error(String(error)),
+      };
     }
-  }, [onConfigError]);
+  }, []);
+
+  useEffect(() => {
+    if (initError) {
+      onConfigError(initError);
+    }
+  }, [initError, onConfigError]);
 
   useEffect(() => {
     if (!repos) return;
     let isMounted = true;
+
     const init = async () => {
       try {
-        const wishlistRepo = repos.wishlistRepository;
+        const sessionAwareRepo: SessionAwareRepository =
+          repos.wishlistRepository;
 
         // timeout to prevent slow network from blocking startup (ADR 027)
         const timeoutPromise = new Promise((_, reject) =>
@@ -117,14 +137,26 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
         );
 
         // attempt to restore session without forcing creation
-        await Promise.race([wishlistRepo.resolveSession(), timeoutPromise]);
+
+        await Promise.race([sessionAwareRepo.resolveSession(), timeoutPromise]);
       } catch (error) {
         // Log the error but do not block app initialization for transient session/network errors.
-        // PersistenceError from resolveSession should not trigger onConfigError.
+        // PersistenceError and TimeoutError should not trigger onConfigError.
         console.error(
           "Transient session resolution error during initialization:",
           error,
         );
+
+        const isTimeout =
+          error instanceof Error &&
+          error.message === "Session resolution timeout";
+
+        // If it's a critical non-persistence error, we notify via onConfigError (as per review)
+        if (!(error instanceof PersistenceError) && !isTimeout) {
+          onConfigError(
+            error instanceof Error ? error : new Error(String(error)),
+          );
+        }
       } finally {
         if (isMounted) {
           setIsInitialized(true);
@@ -137,7 +169,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [onConfigError, repos]);
+  }, [repos, onConfigError]);
 
   if (!isInitialized || !repos) {
     return (

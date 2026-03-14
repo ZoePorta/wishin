@@ -1,6 +1,6 @@
 import React from "react";
-import { View } from "react-native";
-import { Text, Button, Surface, useTheme } from "react-native-paper";
+import { View, StyleSheet } from "react-native";
+import { Text, Button, Surface, useTheme, Icon } from "react-native-paper";
 import { createSharedErrorStyles } from "./error-screen.styles";
 
 interface Props {
@@ -23,9 +23,13 @@ export function ConfigErrorScreen({ onRetry }: Props) {
 
   return (
     <Surface style={styles.container}>
-      <Surface style={styles.card} elevation={1}>
+      <Surface style={styles.card} elevation={2}>
         <View style={[styles.iconContainer, styles.iconBackground]}>
-          <Text style={styles.icon}>⚠️</Text>
+          <Icon
+            source="alert-circle-outline"
+            size={40}
+            color={theme.colors.error}
+          />
         </View>
         <Text variant="headlineSmall" style={styles.title}>
           Configuration Error
@@ -41,6 +45,7 @@ export function ConfigErrorScreen({ onRetry }: Props) {
             mode="contained"
             onPress={onRetry}
             style={styles.button}
+            contentStyle={localStyles.buttonContent}
             accessibilityLabel="Try Again"
           >
             Try Again
@@ -50,3 +55,9 @@ export function ConfigErrorScreen({ onRetry }: Props) {
     </Surface>
   );
 }
+
+const localStyles = StyleSheet.create({
+  buttonContent: {
+    height: 48,
+  },
+});
