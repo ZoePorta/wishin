@@ -42,29 +42,35 @@ describe("Config", () => {
   });
 
   it("should throw error if EXPO_PUBLIC_BASE_URL is missing in production", async () => {
-    // We need to bypass the top-level assignment which happens on import
     vi.stubEnv("EXPO_PUBLIC_BASE_URL", "");
     vi.stubEnv("NODE_ENV", "production");
 
-    await expect(import("./Config")).rejects.toThrow(
-      "Missing EXPO_PUBLIC_BASE_URL",
-    );
+    const { Config } = await import("./Config");
+    expect(() => Config.baseUrl).toThrow("Missing EXPO_PUBLIC_BASE_URL");
+  });
+
+  it("should treat whitespace-only EXPO_PUBLIC_BASE_URL as missing in production", async () => {
+    vi.stubEnv("EXPO_PUBLIC_BASE_URL", "   ");
+    vi.stubEnv("NODE_ENV", "production");
+
+    const { Config } = await import("./Config");
+    expect(() => Config.baseUrl).toThrow("Missing EXPO_PUBLIC_BASE_URL");
   });
 
   it("should throw error for invalid URL", async () => {
     vi.stubEnv("EXPO_PUBLIC_BASE_URL", "not-a-url");
     vi.stubEnv("NODE_ENV", "production");
 
-    await expect(import("./Config")).rejects.toThrow(
-      "Invalid EXPO_PUBLIC_BASE_URL",
-    );
+    const { Config } = await import("./Config");
+    expect(() => Config.baseUrl).toThrow("Invalid EXPO_PUBLIC_BASE_URL");
   });
 
   it("should throw error for insecure URL in production", async () => {
     vi.stubEnv("EXPO_PUBLIC_BASE_URL", "http://example.com");
     vi.stubEnv("NODE_ENV", "production");
 
-    await expect(import("./Config")).rejects.toThrow(
+    const { Config } = await import("./Config");
+    expect(() => Config.baseUrl).toThrow(
       "Insecure EXPO_PUBLIC_BASE_URL detected",
     );
   });

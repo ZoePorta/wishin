@@ -15,10 +15,11 @@ const prefix = (process.env.EXPO_PUBLIC_DB_PREFIX ?? "") as string;
  * @throws {Error} If EXPO_PUBLIC_BASE_URL is invalid or insecure in non-development environments.
  */
 function getValidatedBaseUrl(): string {
-  const envUrl = process.env.EXPO_PUBLIC_BASE_URL as string | undefined;
+  const rawEnvUrl = process.env.EXPO_PUBLIC_BASE_URL as string | undefined;
+  const trimmedEnvUrl = rawEnvUrl?.trim();
   const isDev = process.env.NODE_ENV === "development";
 
-  if (!envUrl) {
+  if (!trimmedEnvUrl) {
     if (isDev) {
       return "http://localhost:8081";
     }
@@ -30,7 +31,7 @@ function getValidatedBaseUrl(): string {
   }
 
   try {
-    const url = new URL(envUrl);
+    const url = new URL(trimmedEnvUrl);
 
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       throw new Error(
@@ -48,16 +49,18 @@ function getValidatedBaseUrl(): string {
     const normalizedPathname = url.pathname.replace(/\/+$/, "");
     return `${url.origin}${normalizedPathname}`;
   } catch (error: unknown) {
-    if (error instanceof Error && error.message.includes("Invalid URL")) {
+    if (error instanceof Error && error.name === "TypeError") {
       throw new Error(
-        `Invalid EXPO_PUBLIC_BASE_URL: "${envUrl}". It must be a valid absolute URL.`,
+        `Invalid EXPO_PUBLIC_BASE_URL: "${trimmedEnvUrl}". It must be a valid absolute URL.`,
       );
     }
     throw error;
   }
 }
 
-const baseUrl = getValidatedBaseUrl();
+let cachedBaseUrl: string | undefined;
+
+// Defer initialization to avoid top-level side effects
 
 /**
  * Validates that all required Appwrite environment variables are set.
@@ -74,6 +77,8 @@ export function ensureAppwriteConfig() {
         "and EXPO_PUBLIC_APPWRITE_DATABASE_ID are set in your .env file.",
     );
   }
+
+  cachedBaseUrl ??= getValidatedBaseUrl();
 }
 
 export const Config = {
@@ -82,7 +87,10 @@ export const Config = {
     projectId,
     databaseId,
   },
-  baseUrl,
+  get baseUrl(): string {
+    cachedBaseUrl ??= getValidatedBaseUrl();
+    return cachedBaseUrl;
+  },
   collections: {
     wishlists: prefix ? `${prefix}_wishlists` : "wishlists",
     wishlistItems: prefix ? `${prefix}_wishlist_items` : "wishlist_items",

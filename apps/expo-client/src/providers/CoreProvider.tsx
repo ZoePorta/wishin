@@ -91,9 +91,19 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
 
   // useMemo ensures repositories are created once per mount/HMR cycle
-  const repos = useMemo(() => createRepositories(), []);
+  const repos = useMemo(() => {
+    try {
+      return createRepositories();
+    } catch (error) {
+      if (error instanceof Error) {
+        onConfigError(error);
+      }
+      return null;
+    }
+  }, [onConfigError]);
 
   useEffect(() => {
+    if (!repos) return;
     let isMounted = true;
     const init = async () => {
       try {
@@ -129,7 +139,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     };
   }, [onConfigError, repos]);
 
-  if (!isInitialized) {
+  if (!isInitialized || !repos) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" />
