@@ -3,6 +3,7 @@ import { View, Linking, Alert, StyleSheet } from "react-native";
 import { Card, Text, Button, Badge, useTheme } from "react-native-paper";
 import { type WishlistItemOutput } from "@wishin/domain";
 import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
+import { commonStyles } from "../../../theme/common-styles";
 
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
@@ -92,6 +93,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
             onPress={() => {
               void handleOpenUrl(item.url);
             }}
+            contentStyle={commonStyles.minimumTouchTarget}
           >
             Link
           </Button>
@@ -101,6 +103,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
           onPress={() => {
             onEdit(item);
           }}
+          contentStyle={commonStyles.minimumTouchTarget}
         >
           Edit
         </Button>
@@ -110,6 +113,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
             onRemove(item.id);
           }}
           textColor={theme.colors.error}
+          contentStyle={commonStyles.minimumTouchTarget}
         >
           Delete
         </Button>

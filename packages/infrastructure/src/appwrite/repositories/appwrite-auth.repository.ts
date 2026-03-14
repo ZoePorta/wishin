@@ -162,8 +162,25 @@ export class AppwriteAuthRepository implements AuthRepository {
           if (current.email) {
             await this.account.createAnonymousSession();
           }
-        } catch {
-          await this.account.createAnonymousSession().catch(() => null);
+        } catch (innerError: unknown) {
+          try {
+            await this.account.createAnonymousSession();
+          } catch (recoveryError: unknown) {
+            this.logger.error(
+              "Failed to recover anonymous session in login() after probe failure",
+              {
+                originalError:
+                  innerError instanceof Error
+                    ? innerError.message
+                    : String(innerError),
+                recoveryError:
+                  recoveryError instanceof Error
+                    ? recoveryError.message
+                    : String(recoveryError),
+              },
+            );
+            throw recoveryError;
+          }
         }
       }
       throw error;
@@ -171,9 +188,20 @@ export class AppwriteAuthRepository implements AuthRepository {
       // Only delete the probe session if it was successfully created.
       // Unconditional deletion here would destroy pre-existing anonymous sessions if probe failed. (ADR 027)
       if (probeSessionCreated) {
-        await probeAccount
-          .deleteSession({ sessionId: "current" })
-          .catch(() => null);
+        try {
+          await probeAccount.deleteSession({ sessionId: "current" });
+        } catch (cleanupError: unknown) {
+          // We log the cleanup error but do not rethrow to avoid shadowing probe errors (ADR 027)
+          this.logger.error(
+            "Failed to delete probe session in login() cleanup",
+            {
+              error:
+                cleanupError instanceof Error
+                  ? cleanupError.message
+                  : String(cleanupError),
+            },
+          );
+        }
       }
     }
 
@@ -218,7 +246,19 @@ export class AppwriteAuthRepository implements AuthRepository {
       // If deleting the session succeeded but creating the new one fails,
       // and we had an anonymous session, try to recover it.
       if (priorSessionIsAnonymous) {
-        await this.account.createAnonymousSession().catch(() => null);
+        try {
+          await this.account.createAnonymousSession();
+        } catch (recoveryError: unknown) {
+          this.logger.error(
+            "Failed to recover anonymous session in login() after session creation failure",
+            {
+              error:
+                recoveryError instanceof Error
+                  ? recoveryError.message
+                  : String(recoveryError),
+            },
+          );
+        }
       }
       throw error;
     }
@@ -319,7 +359,19 @@ export class AppwriteAuthRepository implements AuthRepository {
             errorDetails: error.message,
           },
         );
-        await this.logout().catch(() => null);
+        try {
+          await this.logout();
+        } catch (logoutError: unknown) {
+          this.logger.error(
+            "Failed to logout in completeGoogleOAuth() after 401 error",
+            {
+              error:
+                logoutError instanceof Error
+                  ? logoutError.message
+                  : String(logoutError),
+            },
+          );
+        }
         throw error;
       }
       throw error;
