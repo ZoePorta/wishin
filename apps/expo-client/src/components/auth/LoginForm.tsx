@@ -54,7 +54,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     try {
       await onLogin(email, password);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to login");
+      // Secure logging for developers
+      console.error("Login attempt failed:", err);
+      // Friendly, non-revealing error message for the user
+      setError(
+        "We couldn't log you in just now. Please check your details or try again in a moment!",
+      );
     }
   };
 

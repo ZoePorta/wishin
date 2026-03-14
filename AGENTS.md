@@ -74,3 +74,7 @@
 - **Material Design 3 (MD3):** Strictly prioritize MD3 principles and style rules for the `expo-client`.
 - **Component Usage:** Always use components from `react-native-paper` (MD3) instead of raw React Native components where a surfaced equivalent exists.
 - **Theming:** Exclusively use the `useTheme()` hook and MD3 design tokens (e.g., `theme.colors.surface`, `theme.colors.onPrimary`) for all styling. Hardcoded hex colors and legacy color palettes are strictly forbidden.
+
+## 10. User Communication Standards
+
+- **Friendly Language:** Use close, friendly, and approachable language for all user-facing texts (labels, messages, errors). Avoid overly formal or robotic messaging.

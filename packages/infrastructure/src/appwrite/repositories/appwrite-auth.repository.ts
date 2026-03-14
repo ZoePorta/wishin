@@ -128,8 +128,16 @@ export class AppwriteAuthRepository implements AuthRepository {
           isNewUser: false,
         };
       }
-    } catch {
-      // No active session, safe to proceed
+    } catch (error: unknown) {
+      // 401 (Unauthorized) means there is no active session, which is fine.
+      // We re-throw any other error (network, server error) to avoid silent failures.
+      if (error instanceof AppwriteException && error.code !== 401) {
+        throw error;
+      }
+
+      if (!(error instanceof AppwriteException)) {
+        throw error;
+      }
     }
 
     // 2. Validate credentials with a "probe" client
@@ -189,8 +197,16 @@ export class AppwriteAuthRepository implements AuthRepository {
       }
       // Different user or guest, switch
       await this.account.deleteSession({ sessionId: "current" });
-    } catch {
-      // No session
+    } catch (error: unknown) {
+      // 401 (Unauthorized) means there is no active session, which is fine.
+      // We re-throw any other error (network, server error) to avoid silent failures.
+      if (error instanceof AppwriteException && error.code !== 401) {
+        throw error;
+      }
+
+      if (!(error instanceof AppwriteException)) {
+        throw error;
+      }
     }
 
     try {
@@ -349,8 +365,8 @@ export class AppwriteAuthRepository implements AuthRepository {
         .join("")
         .substring(0, 8);
     } catch {
-      // Safe fallback if crypto is unavailable: simple truncation
-      return id.length <= 4 ? "****" : id.substring(0, 4) + "****";
+      // Safe fallback if crypto is unavailable: full redaction
+      return "****";
     }
   }
 
