@@ -9,6 +9,7 @@ import {
   Avatar,
   HelperText,
 } from "react-native-paper";
+import { commonStyles } from "../../theme/common-styles";
 
 /**
  * Props for the LoginForm component.
@@ -58,10 +59,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <Surface
-      elevation={0}
-      style={[styles.container, { backgroundColor: "transparent" }]}
-    >
+    <Surface elevation={0} style={styles.container}>
       <Avatar.Icon
         icon="account-lock"
         size={64}
@@ -142,6 +140,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         onPress={onSwitchToRegister}
         style={styles.switchButton}
         labelStyle={styles.switchButtonLabel}
+        contentStyle={commonStyles.minimumTouchTarget}
       >
         Don't have an account yet? Join us!
       </Button>

@@ -138,11 +138,13 @@ export class AppwriteAuthRepository implements AuthRepository {
       .setProject(this.projectId);
     const probeAccount = new Account(probeClient);
 
+    let probeSessionCreated = false;
     try {
       await probeAccount.createEmailPasswordSession({
         email,
         password,
       });
+      probeSessionCreated = true;
     } catch (error: unknown) {
       // If validation fails, and we had an anonymous session, ensure it's still there
       if (priorSessionIsAnonymous) {
@@ -158,12 +160,13 @@ export class AppwriteAuthRepository implements AuthRepository {
       }
       throw error;
     } finally {
-      // Always delete the probe session to avoid quota leakage (ADR 027)
-      // Note: deleteSession('current') works because Appwrite SDKs share session state
-      // via cookies/storage, and the probe session would have become 'current'.
-      await probeAccount
-        .deleteSession({ sessionId: "current" })
-        .catch(() => null);
+      // Only delete the probe session if it was successfully created.
+      // Unconditional deletion here would destroy pre-existing anonymous sessions if probe failed. (ADR 027)
+      if (probeSessionCreated) {
+        await probeAccount
+          .deleteSession({ sessionId: "current" })
+          .catch(() => null);
+      }
     }
 
     // 3. Ensure the main account instance is logged in
@@ -296,7 +299,7 @@ export class AppwriteAuthRepository implements AuthRepository {
         this.logger.error(
           "OAuth session creation failed with 401. Clearing potentially inconsistent local session state.",
           {
-            userId: this.hashIdentifier(userId),
+            userId: await this.hashIdentifier(userId),
             errorDetails: error.message,
           },
         );
@@ -330,14 +333,25 @@ export class AppwriteAuthRepository implements AuthRepository {
   }
 
   /**
-   * Deterministically obfuscates an identifier for safe logging (ADR 018).
+   * Deterministically obfuscates an identifier for safe logging using SHA-256 (ADR 018).
    * @param id - The raw identifier to obfuscate.
-   * @returns A masked string representation of the identifier.
+   * @returns A Promise that resolves to a masked string representation (first 8 hex chars).
    * @private
    */
-  private hashIdentifier(id: string): string {
-    if (id.length <= 4) return "****";
-    return id.substring(0, 4) + "****";
+  private async hashIdentifier(id: string): Promise<string> {
+    if (!id) return "****";
+    try {
+      const msgBuffer = new TextEncoder().encode(id);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+        .substring(0, 8);
+    } catch {
+      // Safe fallback if crypto is unavailable: simple truncation
+      return id.length <= 4 ? "****" : id.substring(0, 4) + "****";
+    }
   }
 
   /**
@@ -367,7 +381,7 @@ export class AppwriteAuthRepository implements AuthRepository {
     // We log the attempt for observability as requested, redacting the full userId.
     this.logger.warn(
       `cleanupAuthAfterFailedRegistration called for user [REDACTED]. "Incomplete Account" strategy active: Auth account is preserved even if profile fails.`,
-      { userIdObfuscated: userId.substring(0, 4) + "****" },
+      { userIdObfuscated: await this.hashIdentifier(userId) },
     );
   }
 

@@ -9,6 +9,7 @@ import {
   Avatar,
   HelperText,
 } from "react-native-paper";
+import { commonStyles } from "../../theme/common-styles";
 
 /**
  * Properties for the RegisterForm component.
@@ -73,10 +74,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   };
 
   return (
-    <Surface
-      elevation={0}
-      style={[styles.container, { backgroundColor: "transparent" }]}
-    >
+    <Surface elevation={0} style={styles.container}>
       <Avatar.Icon
         icon="account-plus"
         size={64}
@@ -171,6 +169,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         onPress={onSwitchToLogin}
         style={styles.switchButton}
         labelStyle={styles.switchButtonLabel}
+        contentStyle={commonStyles.minimumTouchTarget}
       >
         Already have an account? Log in!
       </Button>
