@@ -12,20 +12,25 @@ import {
 
 /**
  * Props for the LoginForm component.
+ *
+ * @param onLogin - Callback function called when the user submits their credentials. Accepts email and password. Returns a promise that resolves when login is successful.
+ * @param onSwitchToRegister - Callback function to switch the view to the registration form.
+ * @param loading - Optional loading flag to indicate an ongoing login attempt.
+ * @param authError - Optional external authentication error message.
  */
 interface LoginFormProps {
-  /** Callback function called when the user submits their credentials. Accepts email and password. */
   onLogin: (email: string, password: string) => Promise<void>;
-  /** Callback function to switch the view to the registration form. */
   onSwitchToRegister: () => void;
-  /** Optional loading flag to indicate an ongoing login attempt. */
   loading?: boolean;
-  /** Optional external authentication error message. */
   authError?: string | null;
 }
 
 /**
  * Premium LoginForm component designed with Material Design 3.
+ *
+ * @param props - The properties for the LoginForm component.
+ * @returns The rendered React element for the login form.
+ * @throws {Error} Throws an error if the onLogin callback fails or if required validation logic fails.
  */
 export const LoginForm: React.FC<LoginFormProps> = ({
   onLogin,

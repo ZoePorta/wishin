@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteAuthRepository } from "./appwrite-auth.repository";
-import { Client, OAuthProvider, AppwriteException } from "appwrite";
+import { Client, OAuthProvider, AppwriteException, Models } from "appwrite";
 
 // 1. Hoisted mocks for sharing across factory and tests
 const {
@@ -19,7 +19,7 @@ const {
   mockGet: vi.fn(),
   mockCreateOAuth2Token: vi.fn(),
   mockCreateSession: vi.fn(),
-  mockDeleteSession: vi.fn(),
+  mockDeleteSession: vi.fn().mockResolvedValue({}),
   mockCreateAnonymousSession: vi.fn(),
   mockUpdateEmail: vi.fn(),
   mockUpdateName: vi.fn(),
@@ -115,8 +115,8 @@ describe("AppwriteAuthRepository", () => {
       mockCreateSession.mockResolvedValue({
         $id: "session-123",
         userId: "user-123",
-      } as any);
-      mockGet.mockResolvedValue(mockUser as any);
+      } as Models.Session);
+      mockGet.mockResolvedValue(mockUser as Models.User<Models.Preferences>);
 
       const result = await repository.completeGoogleOAuth(
         callbackUrl,
@@ -142,7 +142,10 @@ describe("AppwriteAuthRepository", () => {
       const password = "Password123!";
 
       mockGet.mockRejectedValue(new AppwriteException("No session", 401));
-      mockCreate.mockResolvedValue({ $id: "user-123", email } as any);
+      mockCreate.mockResolvedValue({
+        $id: "user-123",
+        email,
+      } as Models.User<Models.Preferences>);
 
       const result = await repository.register(email, password, "testuser");
 
@@ -160,9 +163,15 @@ describe("AppwriteAuthRepository", () => {
       const password = "Password123!";
       const userId = "anonymous-123";
 
-      mockGet.mockResolvedValueOnce({ $id: userId, email: "" } as any);
-      mockUpdateEmail.mockResolvedValue({ $id: userId, email } as any);
-      mockUpdateName.mockResolvedValue({} as any);
+      mockGet.mockResolvedValueOnce({
+        $id: userId,
+        email: "",
+      } as Models.User<Models.Preferences>);
+      mockUpdateEmail.mockResolvedValue({
+        $id: userId,
+        email,
+      } as Models.User<Models.Preferences>);
+      mockUpdateName.mockResolvedValue({} as Models.User<Models.Preferences>);
 
       const result = await repository.register(email, password, "testuser");
 
@@ -181,10 +190,17 @@ describe("AppwriteAuthRepository", () => {
       const password = "Password123!";
 
       mockGet.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
-      mockCreateEmailPasswordSession.mockResolvedValueOnce({} as any);
+      mockCreateEmailPasswordSession.mockResolvedValueOnce(
+        {} as Models.Session,
+      );
       mockGet.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
-      mockCreateEmailPasswordSession.mockResolvedValueOnce({} as any);
-      mockGet.mockResolvedValueOnce({ $id: "user-123", email } as any);
+      mockCreateEmailPasswordSession.mockResolvedValueOnce(
+        {} as Models.Session,
+      );
+      mockGet.mockResolvedValueOnce({
+        $id: "user-123",
+        email,
+      } as Models.User<Models.Preferences>);
 
       const result = await repository.login(email, password);
 
@@ -194,7 +210,10 @@ describe("AppwriteAuthRepository", () => {
 
     it("should restore anonymous session if login fails", async () => {
       // 1. Initial guest session state (priorSessionIsAnonymous = true)
-      mockGet.mockResolvedValueOnce({ $id: "guest-123", email: "" } as any);
+      mockGet.mockResolvedValueOnce({
+        $id: "guest-123",
+        email: "",
+      } as Models.User<Models.Preferences>);
       // 2. Login fails on probe client
       mockCreateEmailPasswordSession.mockRejectedValue(
         new AppwriteException("Unauthorized", 401),
@@ -205,7 +224,7 @@ describe("AppwriteAuthRepository", () => {
       mockGet.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
 
       // 4. Verification: mockCreateAnonymousSession is called in the catch block
-      mockCreateAnonymousSession.mockResolvedValue({} as any);
+      mockCreateAnonymousSession.mockResolvedValue({} as Models.Session);
 
       await expect(repository.login("a@b.com", "p")).rejects.toThrow();
 
@@ -217,8 +236,11 @@ describe("AppwriteAuthRepository", () => {
   describe("loginAnonymously", () => {
     it("should create an anonymous session if none exists", async () => {
       mockGet.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
-      mockGet.mockResolvedValueOnce({ $id: "anon-123", email: "" } as any);
-      mockCreateAnonymousSession.mockResolvedValue({} as any);
+      mockGet.mockResolvedValueOnce({
+        $id: "anon-123",
+        email: "",
+      } as Models.User<Models.Preferences>);
+      mockCreateAnonymousSession.mockResolvedValue({} as Models.Session);
 
       const result = await repository.loginAnonymously();
       expect(mockCreateAnonymousSession).toHaveBeenCalled();
@@ -227,7 +249,7 @@ describe("AppwriteAuthRepository", () => {
 
     it("should return existing session if already anonymous", async () => {
       const mockUser = { $id: "existing-anon", email: "" };
-      mockGet.mockResolvedValue(mockUser as any);
+      mockGet.mockResolvedValue(mockUser as Models.User<Models.Preferences>);
 
       const result = await repository.loginAnonymously();
 
@@ -238,7 +260,7 @@ describe("AppwriteAuthRepository", () => {
 
   describe("logout", () => {
     it("should delete the current session", async () => {
-      mockDeleteSession.mockResolvedValue({} as any);
+      mockDeleteSession.mockResolvedValue({} as Models.Session);
       await repository.logout();
       expect(mockDeleteSession).toHaveBeenCalledWith({ sessionId: "current" });
     });

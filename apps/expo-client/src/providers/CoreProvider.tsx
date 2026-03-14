@@ -169,7 +169,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [repos]);
+  }, [repos, onConfigError]);
 
   if (!isInitialized || !repos) {
     return (

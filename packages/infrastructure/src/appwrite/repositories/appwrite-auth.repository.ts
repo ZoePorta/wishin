@@ -157,6 +157,13 @@ export class AppwriteAuthRepository implements AuthRepository {
         }
       }
       throw error;
+    } finally {
+      // Always delete the probe session to avoid quota leakage (ADR 027)
+      // Note: deleteSession('current') works because Appwrite SDKs share session state
+      // via cookies/storage, and the probe session would have become 'current'.
+      await probeAccount
+        .deleteSession({ sessionId: "current" })
+        .catch(() => null);
     }
 
     // 3. Ensure the main account instance is logged in
@@ -288,7 +295,10 @@ export class AppwriteAuthRepository implements AuthRepository {
       if (error instanceof AppwriteException && error.code === 401) {
         this.logger.error(
           "OAuth session creation failed with 401. Clearing potentially inconsistent local session state.",
-          { userId, errorDetails: error.message },
+          {
+            userId: this.hashIdentifier(userId),
+            errorDetails: error.message,
+          },
         );
         await this.logout().catch(() => null);
         throw error;
@@ -317,6 +327,17 @@ export class AppwriteAuthRepository implements AuthRepository {
         this.oauthStates.delete(state);
       }
     }
+  }
+
+  /**
+   * Deterministically obfuscates an identifier for safe logging (ADR 018).
+   * @param id - The raw identifier to obfuscate.
+   * @returns A masked string representation of the identifier.
+   * @private
+   */
+  private hashIdentifier(id: string): string {
+    if (id.length <= 4) return "****";
+    return id.substring(0, 4) + "****";
   }
 
   /**

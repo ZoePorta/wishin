@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteTransactionRepository } from "./appwrite-transaction.repository";
-import { Client, TablesDB, AppwriteException, type Models } from "appwrite";
+import {
+  Client,
+  TablesDB,
+  Account,
+  AppwriteException,
+  type Models,
+} from "appwrite";
 import {
   Transaction,
   TransactionStatus,
@@ -119,6 +125,9 @@ describe("AppwriteTransactionRepository", () => {
     /**
      * Provides direct access to the private Appwrite Account service for granular verification.
      *
+     * @returns {InstanceType<typeof Account>} The internal Appwrite Account service instance.
+     * @throws {Error} If underlying property is undefined.
+     */
     public get accountAccess(): InstanceType<typeof Account> {
       return (this as unknown as { account: InstanceType<typeof Account> })
         .account;

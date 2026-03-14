@@ -4,6 +4,7 @@ import { Button, IconButton, useTheme } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useUser } from "../../contexts/UserContext";
 import { useAuthRepository } from "../../contexts/WishlistRepositoryContext";
+import { commonStyles } from "../../theme/common-styles";
 
 /**
  * Component that displays authentication buttons in the header.
@@ -55,7 +56,7 @@ export const AuthButtons: React.FC = () => {
           onPress={() => {
             router.push("/");
           }}
-          compact
+          contentStyle={commonStyles.minimumTouchTarget}
           labelStyle={{ color: theme.colors.primary }}
         >
           Login
@@ -65,7 +66,7 @@ export const AuthButtons: React.FC = () => {
           onPress={() => {
             router.push("/");
           }}
-          compact
+          contentStyle={commonStyles.minimumTouchTarget}
           labelStyle={{ color: theme.colors.primary }}
         >
           Register
