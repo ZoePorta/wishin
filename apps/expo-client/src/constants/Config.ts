@@ -45,7 +45,8 @@ function getValidatedBaseUrl(): string {
       );
     }
 
-    return envUrl.replace(/\/+$/, "");
+    const normalizedPathname = url.pathname.replace(/\/+$/, "");
+    return `${url.origin}${normalizedPathname}`;
   } catch (error: unknown) {
     if (error instanceof Error && error.message.includes("Invalid URL")) {
       throw new Error(
