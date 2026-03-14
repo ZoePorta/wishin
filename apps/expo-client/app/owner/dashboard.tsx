@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Alert } from "react-native";
 import { Stack, router } from "expo-router";
 import {
   Portal,
@@ -11,8 +11,12 @@ import {
   Button,
   useTheme,
   Surface,
+  Snackbar,
 } from "react-native-paper";
+import * as Clipboard from "expo-clipboard";
+import * as Linking from "expo-linking";
 import { type WishlistItemOutput } from "@wishin/domain";
+import { Config } from "../../src/constants/Config";
 import { commonStyles } from "../../src/theme/common-styles";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
 import { useUser } from "../../src/contexts/UserContext";
@@ -51,6 +55,27 @@ export default function OwnerDashboard() {
   const [editingItem, setEditingItem] = useState<
     WishlistItemOutput | undefined
   >();
+  const [isShareSnackbarVisible, setIsShareSnackbarVisible] = useState(false);
+  const [fabOpen, setFabOpen] = useState(false);
+
+  const handleShare = async () => {
+    if (!wishlist) return;
+
+    try {
+      const url = Config.baseUrl
+        ? `${Config.baseUrl}/wishlist/${wishlist.id}`
+        : Linking.createURL(`wishlist/${wishlist.id}`);
+
+      await Clipboard.setStringAsync(url);
+      setIsShareSnackbarVisible(true);
+    } catch (err) {
+      console.error("Failed to share wishlist:", err);
+      Alert.alert(
+        "Share Failed",
+        "Could not copy the wishlist link to your clipboard. Please try again.",
+      );
+    }
+  };
 
   // Route-level guard: only registered owners can access this dashboard
   React.useEffect(() => {
@@ -118,12 +143,7 @@ export default function OwnerDashboard() {
           </View>
         ) : (
           <View style={styles.mainContent}>
-            <DashboardHeader
-              wishlist={wishlist}
-              onEdit={() => {
-                setIsEditing(true);
-              }}
-            />
+            <DashboardHeader wishlist={wishlist} />
 
             <DashboardContent
               wishlist={wishlist}
@@ -134,20 +154,41 @@ export default function OwnerDashboard() {
               }}
             />
 
-            <FAB
-              icon="plus"
-              label={wishlist.items.length === 0 ? "Add Item" : ""}
-              onPress={() => {
-                setEditingItem(undefined);
-                setIsItemModalVisible(true);
-              }}
-              style={[
-                styles.fab,
-                { backgroundColor: theme.colors.primaryContainer },
-              ]}
-              color={theme.colors.onPrimaryContainer}
-              accessibilityLabel="Add item to wishlist"
-            />
+            <Portal>
+              <FAB.Group
+                open={fabOpen}
+                visible
+                icon={fabOpen ? "close" : "dots-vertical"}
+                actions={[
+                  {
+                    icon: "plus",
+                    label: "Add Item",
+                    onPress: () => {
+                      setEditingItem(undefined);
+                      setIsItemModalVisible(true);
+                    },
+                  },
+                  {
+                    icon: "share-variant",
+                    label: "Share Wishlist",
+                    onPress: () => {
+                      void handleShare();
+                    },
+                  },
+                  {
+                    icon: "pencil",
+                    label: "Edit Wishlist",
+                    onPress: () => {
+                      setIsEditing(true);
+                    },
+                  },
+                ]}
+                onStateChange={({ open }) => {
+                  setFabOpen(open);
+                }}
+                accessibilityLabel="Wishlist actions"
+              />
+            </Portal>
 
             <Portal>
               <Modal
@@ -250,6 +291,22 @@ export default function OwnerDashboard() {
                 />
               </Modal>
             </Portal>
+
+            <Snackbar
+              visible={isShareSnackbarVisible}
+              onDismiss={() => {
+                setIsShareSnackbarVisible(false);
+              }}
+              duration={3000}
+              action={{
+                label: "OK",
+                onPress: () => {
+                  setIsShareSnackbarVisible(false);
+                },
+              }}
+            >
+              Link copied to clipboard
+            </Snackbar>
           </View>
         )}
       </Surface>
@@ -280,13 +337,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     fontWeight: "700",
   },
-  fab: {
-    position: "absolute",
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    borderRadius: 16,
-  },
+
   modalContent: {
     margin: 20,
     padding: 24,

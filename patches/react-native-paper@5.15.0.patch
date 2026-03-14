@@ -1,0 +1,54 @@
+diff --git a/lib/commonjs/components/FAB/FABGroup.js b/lib/commonjs/components/FAB/FABGroup.js
+index 84b52941be28466ab8ecc838d32eac8356ce8d27..69f816561fa41cb78804d9fe5832ae00b2660c88 100644
+--- a/lib/commonjs/components/FAB/FABGroup.js
++++ b/lib/commonjs/components/FAB/FABGroup.js
+@@ -236,7 +236,7 @@ const FABGroup = ({
+         marginHorizontal
+       }, it.wrapperStyle],
+       pointerEvents: open ? 'box-none' : 'none',
+-      accessibilityRole: "button",
++      accessibilityRole: _reactNative.Platform.OS === "web" ? "none" : "button",
+       importantForAccessibility: open ? 'yes' : 'no-hide-descendants',
+       accessibilityElementsHidden: !open,
+       accessible: open,
+diff --git a/lib/module/components/FAB/FABGroup.js b/lib/module/components/FAB/FABGroup.js
+index 8497714ed57bf82eeb0d1eb5e45e6046f03a727c..8cfb7516afba8005053ebd2d3a7d3920c9ab21fe 100644
+--- a/lib/module/components/FAB/FABGroup.js
++++ b/lib/module/components/FAB/FABGroup.js
+@@ -1,5 +1,5 @@
+ import * as React from 'react';
+-import { Animated, Pressable, StyleSheet, View } from 'react-native';
++import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
+ import { useSafeAreaInsets } from 'react-native-safe-area-context';
+ import FAB from './FAB';
+ import { getFABGroupColors } from './utils';
+@@ -228,7 +228,7 @@ const FABGroup = ({
+         marginHorizontal
+       }, it.wrapperStyle],
+       pointerEvents: open ? 'box-none' : 'none',
+-      accessibilityRole: "button",
++      accessibilityRole: Platform.OS === "web" ? "none" : "button",
+       importantForAccessibility: open ? 'yes' : 'no-hide-descendants',
+       accessibilityElementsHidden: !open,
+       accessible: open,
+diff --git a/src/components/FAB/FABGroup.tsx b/src/components/FAB/FABGroup.tsx
+index ca263e3499ff846d7c0869c0697bd1ffc93d6bf5..a3ab541f54258fc43b8c1a7a2907aefc2ec91314 100644
+--- a/src/components/FAB/FABGroup.tsx
++++ b/src/components/FAB/FABGroup.tsx
+@@ -7,6 +7,7 @@ import {
+   StyleProp,
+   StyleSheet,
+   TextStyle,
++  Platform,
+   View,
+   ViewStyle,
+ } from 'react-native';
+@@ -421,7 +422,7 @@ const FABGroup = ({
+                   it.wrapperStyle,
+                 ]}
+                 pointerEvents={open ? 'box-none' : 'none'}
+-                accessibilityRole="button"
++                accessibilityRole={Platform.OS === "web" ? "none" : "button"}
+                 importantForAccessibility={open ? 'yes' : 'no-hide-descendants'}
+                 accessibilityElementsHidden={!open}
+                 accessible={open}

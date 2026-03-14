@@ -4,3 +4,6 @@ packages:
 
 onlyBuiltDependencies:
   - esbuild
+
+patchedDependencies:
+  react-native-paper@5.15.0: patches/react-native-paper@5.15.0.patch

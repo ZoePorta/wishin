@@ -121,8 +121,8 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
   }, [initError, onConfigError]);
 
   useEffect(() => {
-    let isMounted = true;
     if (!repos) return;
+    let isMounted = true;
 
     const init = async () => {
       try {
