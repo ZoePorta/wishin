@@ -8,10 +8,55 @@ const projectId = (process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? "") as string;
 const databaseId = (process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID ??
   "") as string;
 const prefix = (process.env.EXPO_PUBLIC_DB_PREFIX ?? "") as string;
-const baseUrl = (
-  (process.env.EXPO_PUBLIC_BASE_URL as string | undefined) ??
-  "http://localhost:8081"
-).replace(/\/+$/, "");
+/**
+ * Resolves and validates the base URL for the application.
+ *
+ * @returns {string} The validated base URL without trailing slashes.
+ * @throws {Error} If EXPO_PUBLIC_BASE_URL is invalid or insecure in non-development environments.
+ */
+function getValidatedBaseUrl(): string {
+  const envUrl = process.env.EXPO_PUBLIC_BASE_URL as string | undefined;
+  const isDev = process.env.NODE_ENV === "development";
+
+  if (!envUrl) {
+    if (isDev) {
+      return "http://localhost:8081";
+    }
+    throw new Error(
+      "Missing EXPO_PUBLIC_BASE_URL. " +
+        "This environment variable is required in non-development environments to generate valid share URLs. " +
+        "Check your .env file.",
+    );
+  }
+
+  try {
+    const url = new URL(envUrl);
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error(
+        `Invalid protocol for EXPO_PUBLIC_BASE_URL: "${url.protocol}". Only http: and https: are allowed.`,
+      );
+    }
+
+    if (!isDev && url.protocol !== "https:") {
+      throw new Error(
+        "Insecure EXPO_PUBLIC_BASE_URL detected. " +
+          "HTTPS is required in non-development environments for security.",
+      );
+    }
+
+    return envUrl.replace(/\/+$/, "");
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message.includes("Invalid URL")) {
+      throw new Error(
+        `Invalid EXPO_PUBLIC_BASE_URL: "${envUrl}". It must be a valid absolute URL.`,
+      );
+    }
+    throw error;
+  }
+}
+
+const baseUrl = getValidatedBaseUrl();
 
 /**
  * Validates that all required Appwrite environment variables are set.
