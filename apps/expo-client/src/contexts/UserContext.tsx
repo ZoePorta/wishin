@@ -31,7 +31,7 @@ interface UserContextValue {
   /** Refetch the current user ID. */
   refetch: () => Promise<string | null>;
   /** Explicitly login as a guest. */
-  loginAsGuest: () => Promise<void>;
+  loginAsGuest: () => Promise<string | null>;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -90,6 +90,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         console.error("loginAsGuest error:", message);
         throw new Error(message);
       }
+      return id;
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to login as guest";

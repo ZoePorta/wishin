@@ -17,6 +17,7 @@ describe("Transaction Aggregate", () => {
   const DUMMY_ITEM_CURRENCY = "EUR";
   const DUMMY_ITEM_DESCRIPTION = "A test item description";
   const DUMMY_OWNER_USERNAME = "testuser";
+  const DUMMY_OWNER_ID = "owner-id-123";
 
   // Invalid UUID v1 (for testing rejection)
   const INVALID_UUID_V1 = "123e4567-e89b-12d3-a456-426614174000";
@@ -31,6 +32,7 @@ describe("Transaction Aggregate", () => {
       itemCurrency: DUMMY_ITEM_CURRENCY,
       itemDescription: DUMMY_ITEM_DESCRIPTION,
       ownerUsername: DUMMY_OWNER_USERNAME,
+      ownerId: DUMMY_OWNER_ID,
     };
 
     it("should create a valid reservation", () => {
@@ -138,6 +140,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
       });
       expect(transaction.status).toBe(TransactionStatus.PURCHASED);
       expect(transaction.id).toBe(VALID_TRANSACTION_ID);
@@ -157,6 +160,7 @@ describe("Transaction Aggregate", () => {
           itemCurrency: DUMMY_ITEM_CURRENCY,
           itemDescription: DUMMY_ITEM_DESCRIPTION,
           ownerUsername: DUMMY_OWNER_USERNAME,
+          ownerId: DUMMY_OWNER_ID,
         }),
       ).toThrow(InvalidAttributeError);
     });
@@ -173,6 +177,7 @@ describe("Transaction Aggregate", () => {
           itemCurrency: DUMMY_ITEM_CURRENCY,
           itemDescription: DUMMY_ITEM_DESCRIPTION,
           ownerUsername: DUMMY_OWNER_USERNAME,
+          ownerId: DUMMY_OWNER_ID,
         }),
       ).toThrow(InvalidAttributeError);
       expect(() =>
@@ -186,6 +191,7 @@ describe("Transaction Aggregate", () => {
           itemCurrency: DUMMY_ITEM_CURRENCY,
           itemDescription: DUMMY_ITEM_DESCRIPTION,
           ownerUsername: DUMMY_OWNER_USERNAME,
+          ownerId: DUMMY_OWNER_ID,
         }),
       ).toThrow(InvalidAttributeError);
     });
@@ -202,6 +208,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),
@@ -226,6 +233,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.PURCHASED,
         quantity: 1,
         createdAt: new Date(),
@@ -245,6 +253,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),
@@ -265,6 +274,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.PURCHASED,
         quantity: 1,
         createdAt: new Date(),
@@ -285,6 +295,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.PURCHASED,
         quantity: 1,
         createdAt: new Date(),
@@ -305,6 +316,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.CANCELLED,
         quantity: 1,
         createdAt: new Date(),
@@ -325,6 +337,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.CANCELLED_BY_OWNER,
         quantity: 1,
         createdAt: new Date(),
@@ -347,6 +360,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),
@@ -368,6 +382,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.PURCHASED,
         quantity: 1,
         createdAt: new Date(),
@@ -387,6 +402,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),
@@ -414,6 +430,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.CANCELLED,
         quantity: 1,
         createdAt: new Date(),
@@ -433,6 +450,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.CANCELLED_BY_OWNER,
         quantity: 1,
         createdAt: new Date(),
@@ -456,6 +474,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),
@@ -477,6 +496,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),
@@ -498,6 +518,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),
@@ -519,6 +540,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),
@@ -542,6 +564,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.PURCHASED,
         quantity: 1,
         createdAt: new Date(),
@@ -560,6 +583,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),
@@ -579,6 +603,7 @@ describe("Transaction Aggregate", () => {
           itemCurrency: DUMMY_ITEM_CURRENCY,
           itemDescription: DUMMY_ITEM_DESCRIPTION,
           ownerUsername: DUMMY_OWNER_USERNAME,
+          ownerId: DUMMY_OWNER_ID,
           status: TransactionStatus.RESERVED,
           quantity: 1,
           createdAt: new Date(),
@@ -598,6 +623,7 @@ describe("Transaction Aggregate", () => {
           itemCurrency: DUMMY_ITEM_CURRENCY,
           itemDescription: DUMMY_ITEM_DESCRIPTION,
           ownerUsername: DUMMY_OWNER_USERNAME,
+          ownerId: DUMMY_OWNER_ID,
           status: TransactionStatus.RESERVED,
           quantity: 1,
           createdAt: new Date(),
@@ -617,6 +643,7 @@ describe("Transaction Aggregate", () => {
           itemCurrency: DUMMY_ITEM_CURRENCY,
           itemDescription: DUMMY_ITEM_DESCRIPTION,
           ownerUsername: DUMMY_OWNER_USERNAME,
+          ownerId: DUMMY_OWNER_ID,
           status: TransactionStatus.PURCHASED,
           quantity: 1,
           createdAt: new Date(),
@@ -636,6 +663,7 @@ describe("Transaction Aggregate", () => {
           itemCurrency: DUMMY_ITEM_CURRENCY,
           itemDescription: DUMMY_ITEM_DESCRIPTION,
           ownerUsername: DUMMY_OWNER_USERNAME,
+          ownerId: DUMMY_OWNER_ID,
           status: TransactionStatus.PURCHASED,
           quantity: 1,
           createdAt: new Date(),
@@ -656,6 +684,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),
@@ -679,6 +708,7 @@ describe("Transaction Aggregate", () => {
         itemCurrency: DUMMY_ITEM_CURRENCY,
         itemDescription: DUMMY_ITEM_DESCRIPTION,
         ownerUsername: DUMMY_OWNER_USERNAME,
+        ownerId: DUMMY_OWNER_ID,
         status: TransactionStatus.RESERVED,
         quantity: 1,
         createdAt: new Date(),

@@ -33,6 +33,7 @@ export interface TransactionProps {
   itemCurrency: string | null;
   itemDescription: string | null;
   ownerUsername: string | null;
+  ownerId: string | null;
   status: TransactionStatus;
   quantity: number;
   createdAt: Date;
@@ -140,6 +141,14 @@ export class Transaction {
   }
 
   /**
+   * The ID of the wishlist owner.
+   * @returns {string | null}
+   */
+  public get ownerId(): string | null {
+    return this.props.ownerId;
+  }
+
+  /**
    * Lifecycle state (RESERVED, PURCHASED, CANCELLED).
    * @returns {TransactionStatus}
    */
@@ -181,6 +190,7 @@ export class Transaction {
       itemCurrency: props.itemCurrency ?? null,
       itemDescription: props.itemDescription ?? null,
       ownerUsername: props.ownerUsername ?? null,
+      ownerId: props.ownerId ?? null,
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),
     };
@@ -222,6 +232,7 @@ export class Transaction {
       itemCurrency: string | null;
       itemDescription: string | null;
       ownerUsername: string;
+      ownerId: string;
     },
   ): Transaction {
     const now = new Date();
@@ -240,12 +251,13 @@ export class Transaction {
    *
    * **Validation Mode:** STRICT
    *
-   * @param {TransactionCreatePurchaseProps & { itemName: string; itemPrice: number | null; itemCurrency: string | null; itemDescription: string | null; ownerUsername: string; }} props
+   * @param {TransactionCreatePurchaseProps & { itemName: string; itemPrice: number | null; itemCurrency: string | null; itemDescription: string | null; ownerUsername: string; ownerId: string; }} props
    * @param {string} props.itemName - The item title.
    * @param {number|null} props.itemPrice - The item price.
    * @param {string|null} props.itemCurrency - The currency code.
    * @param {string|null} props.itemDescription - The item details.
    * @param {string} props.ownerUsername - The owner's username.
+   * @param {string} props.ownerId - The owner's ID.
    * @returns {Transaction}
    * @throws {InvalidAttributeError} If validation fails.
    */
@@ -256,6 +268,7 @@ export class Transaction {
       itemCurrency: string | null;
       itemDescription: string | null;
       ownerUsername: string;
+      ownerId: string;
     },
   ): Transaction {
     const now = new Date();
@@ -443,6 +456,9 @@ export class Transaction {
       throw new InvalidAttributeError(
         "Invalid ownerUsername: Must be a string",
       );
+    }
+    if (this.ownerId !== null && typeof this.ownerId !== "string") {
+      throw new InvalidAttributeError("Invalid ownerId: Must be a string");
     }
     if (!(this.createdAt instanceof Date) || isNaN(this.createdAt.getTime())) {
       throw new InvalidAttributeError(

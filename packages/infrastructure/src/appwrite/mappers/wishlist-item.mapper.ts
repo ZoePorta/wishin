@@ -44,6 +44,7 @@ export const WishlistItemMapper = {
   /**
    * Converts a WishlistItem domain entity to a plain object for Appwrite persistence.
    * @param item - The WishlistItem domain entity.
+   * @param permissions - Optional Appwrite permissions to set on the document.
    * @returns A plain object compatible with Appwrite's wishlist_items collection.
    */
   toPersistence(item: WishlistItem): WishlistItemPersistence {
@@ -57,6 +58,7 @@ export const WishlistItemMapper = {
       currency: props.currency,
       url: props.url,
       imageUrl: props.imageUrl,
+      // ...
       isUnlimited: props.isUnlimited,
       totalQuantity: props.totalQuantity,
       reservedQuantity: props.reservedQuantity,

@@ -10,6 +10,7 @@ export * from "./use-cases/create-wishlist.use-case";
 export * from "./use-cases/update-wishlist.use-case";
 export * from "./use-cases/add-wishlist-item.use-case";
 export * from "./use-cases/reserve-item.use-case";
+export * from "./use-cases/purchase-item.use-case";
 export * from "./use-cases/update-wishlist-item.use-case";
 export * from "./use-cases/remove-wishlist-item.use-case";
 export * from "./use-cases/upload-image.use-case";

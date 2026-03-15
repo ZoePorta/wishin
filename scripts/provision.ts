@@ -407,12 +407,14 @@ async function provision() {
 
           if (isDevOpenPermissions) {
             permissions.push('create("any")', 'update("any")', 'delete("any")');
-          } else if (coll.id === "transactions") {
-            // Guest transactions require public create/read, but restricted update/delete (Phase 5)
-            // For now, keep guest access for transactions to avoid breaking the MVP flow
+          } else if (
+            coll.id === "transactions" ||
+            coll.id === "wishlist_items"
+          ) {
+            // Guest transactions and wishlist items (for purchase) require public create/read/update
             permissions.push('create("any")', 'update("any")', 'delete("any")');
           } else {
-            // Other collections (profiles, wishlists, items) restricted to members by default
+            // Other collections (profiles, wishlists) restricted to members by default
             permissions.push(
               'create("users")',
               'update("users")',

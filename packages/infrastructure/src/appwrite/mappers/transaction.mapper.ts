@@ -12,6 +12,8 @@ export interface TransactionDocument extends Models.Document {
   itemCurrency: string | null;
   itemDescription: string | null;
   ownerUsername: string | null;
+  /** ownerId is present in domain but not in DB schema for now */
+  ownerId?: string | null;
   status: TransactionStatus;
   quantity: number;
 }
@@ -32,6 +34,7 @@ export const TransactionMapper = {
   /**
    * Converts a Transaction aggregate root to a plain object for Appwrite persistence.
    * @param transaction - The Transaction aggregate root.
+   * @param permissions - Optional Appwrite permissions/roles to set.
    * @returns A plain object compatible with Appwrite's transactions collection.
    */
   toPersistence(transaction: Transaction): TransactionPersistence {
@@ -71,6 +74,7 @@ export const TransactionMapper = {
       itemCurrency: data.itemCurrency,
       itemDescription: data.itemDescription,
       ownerUsername: data.ownerUsername,
+      ownerId: data.ownerId ?? null,
       status: data.status,
       quantity: data.quantity,
       createdAt: new Date(doc.$createdAt),

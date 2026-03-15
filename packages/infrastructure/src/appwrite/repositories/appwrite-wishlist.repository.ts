@@ -21,6 +21,7 @@ import type { SessionAwareRepository } from "./session-aware-repository.interfac
 
 /**
  * Appwrite implementation of the WishlistRepository and UserRepository.
+ *
  */
 export class AppwriteWishlistRepository
   implements WishlistRepository, UserRepository, SessionAwareRepository
@@ -341,14 +342,14 @@ export class AppwriteWishlistRepository
     let attempt = 0;
     while (attempt <= MAX_RETRIES) {
       try {
-        const upsertPromises = currentItems.map((item) =>
-          this.tablesDb.upsertRow({
+        const upsertPromises = currentItems.map((item) => {
+          return this.tablesDb.upsertRow({
             databaseId: this.databaseId,
             tableId: this.wishlistItemsCollectionId,
             rowId: item.id,
             data: WishlistItemMapper.toPersistence(item),
-          }),
-        );
+          });
+        });
 
         const deletePromises = itemIdsToDelete.map(async (id) => {
           try {

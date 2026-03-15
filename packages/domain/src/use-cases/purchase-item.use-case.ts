@@ -97,6 +97,7 @@ export class PurchaseItemUseCase {
       itemCurrency: item.currency ?? null,
       itemDescription: item.description ?? null,
       ownerUsername,
+      ownerId: wishlist.ownerId,
     });
 
     // 3. Persistence (Sequential saves for MVP)

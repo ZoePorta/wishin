@@ -6,6 +6,7 @@ import {
   AppwriteWishlistRepository,
   AppwriteTransactionRepository,
   AppwriteAuthRepository,
+  AppwriteProfileRepository,
   createAppwriteClient,
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
@@ -15,7 +16,7 @@ import { PersistenceError } from "@wishin/domain";
 /**
  * Adapter that maps console methods to the Logger interface.
  */
-const consoleLogger = {
+export const consoleLogger = {
   debug: (msg: string, ctx?: Record<string, unknown>) => {
     // eslint-disable-next-line no-console
     console.debug(msg, ctx);
@@ -29,6 +30,22 @@ const consoleLogger = {
   },
   error: (msg: string, ctx?: Record<string, unknown>) => {
     console.error(msg, ctx);
+  },
+};
+
+/**
+ * Simple Observability implementation using console for now.
+ */
+export const consoleObservability = {
+  addBreadcrumb: (
+    message: string,
+    category?: string,
+    data?: Record<string, unknown>,
+  ) => {
+    console.warn(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
+  },
+  trackEvent: (name: string, props?: Record<string, unknown>) => {
+    console.warn(`[Event] ${name}`, props);
   },
 };
 
@@ -52,14 +69,7 @@ function createRepositories() {
     Config.collections.wishlistItems,
     Config.collections.profiles,
     consoleLogger,
-    {
-      addBreadcrumb: (message, category, data) => {
-        console.warn(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
-      },
-      trackEvent: (name, props) => {
-        console.warn(`[Event] ${name}`, props);
-      },
-    }, // Simple Observability implementation using console for now
+    consoleObservability,
   );
 
   const transactionRepository = new AppwriteTransactionRepository(
@@ -75,10 +85,17 @@ function createRepositories() {
     consoleLogger,
   );
 
+  const profileRepository = new AppwriteProfileRepository(
+    client,
+    Config.appwrite.databaseId,
+    Config.collections.profiles,
+  );
+
   return {
     wishlistRepository,
     transactionRepository,
     authRepository,
+    profileRepository,
   };
 }
 
@@ -185,6 +202,9 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
       transactionRepository={repos.transactionRepository}
       userRepository={repos.wishlistRepository}
       authRepository={repos.authRepository}
+      profileRepository={repos.profileRepository}
+      logger={consoleLogger}
+      observability={consoleObservability}
     >
       <UserProvider>{children}</UserProvider>
     </WishlistRepositoryProvider>

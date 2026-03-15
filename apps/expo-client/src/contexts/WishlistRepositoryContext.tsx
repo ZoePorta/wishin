@@ -5,6 +5,9 @@ import type {
   TransactionRepository,
   UserRepository,
   AuthRepository,
+  ProfileRepository,
+  Logger,
+  ObservabilityService,
 } from "@wishin/domain";
 
 interface WishlistRepositoryContextProps {
@@ -12,6 +15,9 @@ interface WishlistRepositoryContextProps {
   transactionRepository: TransactionRepository;
   userRepository: UserRepository;
   authRepository: AuthRepository;
+  profileRepository: ProfileRepository;
+  logger: Logger;
+  observability: ObservabilityService;
 }
 
 const WishlistRepositoryContext = createContext<
@@ -38,12 +44,18 @@ export const WishlistRepositoryProvider: React.FC<{
   transactionRepository: TransactionRepository;
   userRepository: UserRepository;
   authRepository: AuthRepository;
+  profileRepository: ProfileRepository;
+  logger: Logger;
+  observability: ObservabilityService;
   children: ReactNode;
 }> = ({
   wishlistRepository,
   transactionRepository,
   userRepository,
   authRepository,
+  profileRepository,
+  logger,
+  observability,
   children,
 }) => {
   const value = useMemo(
@@ -52,8 +64,19 @@ export const WishlistRepositoryProvider: React.FC<{
       transactionRepository,
       userRepository,
       authRepository,
+      profileRepository,
+      logger,
+      observability,
     }),
-    [wishlistRepository, transactionRepository, userRepository, authRepository],
+    [
+      wishlistRepository,
+      transactionRepository,
+      userRepository,
+      authRepository,
+      profileRepository,
+      logger,
+      observability,
+    ],
   );
 
   return (
@@ -119,4 +142,34 @@ export const useUserRepository = (): UserRepository => {
  */
 export const useAuthRepository = (): AuthRepository => {
   return useRepositories().authRepository;
+};
+
+/**
+ * Hook to consume only the ProfileRepository from context.
+ *
+ * @returns The profile repository instance.
+ * @throws {Error} If useRepositories fails (e.g. used outside of provider).
+ */
+export const useProfileRepository = (): ProfileRepository => {
+  return useRepositories().profileRepository;
+};
+
+/**
+ * Hook to consume only the Logger from context.
+ *
+ * @returns The logger instance.
+ * @throws {Error} If useRepositories fails (e.g. used outside of provider).
+ */
+export const useLogger = (): Logger => {
+  return useRepositories().logger;
+};
+
+/**
+ * Hook to consume only the ObservabilityService from context.
+ *
+ * @returns The observability service instance.
+ * @throws {Error} If useRepositories fails (e.g. used outside of provider).
+ */
+export const useObservability = (): ObservabilityService => {
+  return useRepositories().observability;
 };

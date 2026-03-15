@@ -4,16 +4,21 @@ import { useAsyncAction } from "../../../hooks/useAsyncAction";
 import {
   useWishlistRepository,
   useTransactionRepository,
+  useProfileRepository,
+  useLogger,
+  useObservability,
 } from "../../../contexts/WishlistRepositoryContext";
 import {
   AddWishlistItemUseCase,
   UpdateWishlistItemUseCase,
   RemoveWishlistItemUseCase,
+  PurchaseItemUseCase,
 } from "@wishin/domain";
 import type {
   AddWishlistItemInput,
   UpdateWishlistItemInput,
   RemoveWishlistItemInput,
+  PurchaseItemInput,
 } from "@wishin/domain";
 
 /**
@@ -24,6 +29,9 @@ import type {
 export function useWishlistItemActions() {
   const wishlistRepository = useWishlistRepository();
   const transactionRepository = useTransactionRepository();
+  const profileRepository = useProfileRepository();
+  const logger = useLogger();
+  const observability = useObservability();
   const { loading, error, wrapAsyncAction } = useAsyncAction();
 
   const addItem = useCallback(
@@ -53,10 +61,32 @@ export function useWishlistItemActions() {
     [wishlistRepository, wrapAsyncAction],
   );
 
+  const purchaseItem = useCallback(
+    wrapAsyncAction("purchaseItem", async (input: PurchaseItemInput) => {
+      const useCase = new PurchaseItemUseCase(
+        wishlistRepository,
+        profileRepository,
+        transactionRepository,
+        logger,
+        observability,
+      );
+      return await useCase.execute(input);
+    }),
+    [
+      wishlistRepository,
+      profileRepository,
+      transactionRepository,
+      logger,
+      observability,
+      wrapAsyncAction,
+    ],
+  );
+
   return {
     addItem,
     updateItem,
     removeItem,
+    purchaseItem,
     loading,
     error,
   };

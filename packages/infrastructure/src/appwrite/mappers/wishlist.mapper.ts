@@ -16,7 +16,7 @@ interface WishlistDocument extends Models.Document {
 
 /**
  * Type representing the data object sent to Appwrite for persistence.
- * This omits internal Appwrite document fields.
+ * This omits internal Appwrite document fields but allows passing permissions.
  */
 export type WishlistPersistence = Omit<WishlistDocument, keyof Models.Document>;
 
@@ -28,6 +28,7 @@ export const WishlistMapper = {
    * Converts a Wishlist aggregate root to a plain object for Appwrite persistence.
    * Note: This does not include items as they are stored in a separate collection.
    * @param wishlist - The Wishlist aggregate root.
+   * @param permissions - Optional Appwrite roles/permissions to set.
    * @returns A plain object compatible with Appwrite's wishlists collection.
    */
   toPersistence(wishlist: Wishlist): WishlistPersistence {
