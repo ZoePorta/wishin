@@ -52,7 +52,9 @@ function isUpsertCall(
 
 // Mock Appwrite SDK
 vi.mock("appwrite", () => {
-  const AccountMock = vi.fn().mockImplementation(function (this: Account) {});
+  const AccountMock = vi.fn().mockImplementation(function (this: Account) {
+    // Mock implementation for Account
+  });
 
   const getRow = vi.fn();
   const listRows = vi.fn();
@@ -73,9 +75,11 @@ vi.mock("appwrite", () => {
     Account: AccountMock,
     TablesDB: TablesDBMock,
     Query: {
-      equal: vi.fn(),
-      limit: vi.fn(),
-      cursorAfter: vi.fn(),
+      equal: vi.fn(
+        (key: string, value: string) => `equal("${key}", "${value}")`,
+      ),
+      limit: vi.fn((limitValue: number) => `limit(${String(limitValue)})`),
+      cursorAfter: vi.fn((id: string) => `cursorAfter("${id}")`),
     },
     AppwriteException: class extends Error {
       constructor(
@@ -148,10 +152,10 @@ describe("AppwriteWishlistRepository", () => {
   });
 
   describe("delete", () => {
-    it("should call deleteRow correctly", async () => {
+    it("should call deleteRow correctly for the wishlist header", async () => {
       vi.mocked(mockTablesDb.deleteRow).mockResolvedValue(
         {} as Models.Document,
-      ); // deleteRow returns a document in Appwrite SDK mock
+      );
 
       await repository.delete("wishlist-id");
 
@@ -160,6 +164,8 @@ describe("AppwriteWishlistRepository", () => {
         tableId: config.wishlistCollectionId,
         rowId: "wishlist-id",
       });
+      // Should NOT call listRows or extra deleteRow for items anymore
+      expect(mockTablesDb.listRows).not.toHaveBeenCalled();
     });
 
     it("should handle 404 error during deletion (silent success)", async () => {

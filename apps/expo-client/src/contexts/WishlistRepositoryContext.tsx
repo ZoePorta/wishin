@@ -31,6 +31,7 @@ const WishlistRepositoryContext = createContext<
  * @param props.transactionRepository - The {@link TransactionRepository} instance.
  * @param props.userRepository - The {@link UserRepository} instance.
  * @param props.authRepository - The {@link AuthRepository} instance.
+ * @param props.profileRepository - The {@link ProfileRepository} instance (required for the provider to function).
  * @param props.children - The child components to be wrapped by the provider.
  * @returns The React elements for the repository context provider.
  * @throws {Error} If `useRepositories` is called outside of this provider.

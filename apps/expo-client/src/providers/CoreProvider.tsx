@@ -193,6 +193,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
       transactionRepository={repos.transactionRepository}
       profileRepository={repos.profileRepository}
       userRepository={repos.authRepository}
+      authRepository={repos.authRepository}
     >
       <UserProvider>{children}</UserProvider>
     </WishlistRepositoryProvider>

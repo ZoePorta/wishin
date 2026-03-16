@@ -419,7 +419,7 @@ export class AppwriteWishlistRepository implements WishlistRepository {
       });
     } catch (error) {
       if (error instanceof AppwriteException && error.code === 404) {
-        return; // Already deleted
+        return; // Already deleted or handled by Cascade
       }
       throw error;
     }
