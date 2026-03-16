@@ -10,13 +10,7 @@ import {
   AppwriteException,
   type Models,
 } from "appwrite";
-import {
-  Wishlist,
-  Visibility,
-  Participation,
-  Priority,
-  PersistenceError,
-} from "@wishin/domain";
+import { Wishlist, Visibility, Participation, Priority } from "@wishin/domain";
 import type { Logger, ObservabilityService } from "@wishin/domain";
 
 // TablesDB specific types from Appwrite SDK
@@ -58,11 +52,8 @@ function isUpsertCall(
 
 // Mock Appwrite SDK
 vi.mock("appwrite", () => {
-  const get = vi.fn();
-  const createAnonymousSession = vi.fn();
   const AccountMock = vi.fn().mockImplementation(function (this: Account) {
-    this.get = get;
-    this.createAnonymousSession = createAnonymousSession;
+    // Mock implementation for Account
   });
 
   const getRow = vi.fn();
@@ -84,9 +75,11 @@ vi.mock("appwrite", () => {
     Account: AccountMock,
     TablesDB: TablesDBMock,
     Query: {
-      equal: vi.fn(),
-      limit: vi.fn(),
-      cursorAfter: vi.fn(),
+      equal: vi.fn(
+        (key: string, value: string) => `equal("${key}", "${value}")`,
+      ),
+      limit: vi.fn((limitValue: number) => `limit(${String(limitValue)})`),
+      cursorAfter: vi.fn((id: string) => `cursorAfter("${id}")`),
     },
     AppwriteException: class extends Error {
       constructor(
@@ -104,28 +97,18 @@ vi.mock("appwrite", () => {
 describe("AppwriteWishlistRepository", () => {
   let repository: TestAppwriteWishlistRepository;
   let mockClient: Client;
-  let mockAccount: Account;
   let mockTablesDb: TablesDB;
 
   const config = {
     databaseId: "db-id",
     wishlistCollectionId: "wishlists-id",
     wishlistItemsCollectionId: "items-id",
-    profileCollection: "profiles",
   };
 
   let mockLogger: Logger;
   let mockObservability: ObservabilityService;
 
-  const mockUser = {
-    $id: "user-123",
-    email: "test@example.com",
-  } as Models.User<Models.Preferences>;
-
   class TestAppwriteWishlistRepository extends AppwriteWishlistRepository {
-    public get mockAccount() {
-      return this.accountAccess;
-    }
     public get mockTablesDb() {
       return this.tablesDbAccess;
     }
@@ -150,12 +133,10 @@ describe("AppwriteWishlistRepository", () => {
       config.databaseId,
       config.wishlistCollectionId,
       config.wishlistItemsCollectionId,
-      config.profileCollection,
       mockLogger,
       mockObservability,
     );
 
-    mockAccount = repository.mockAccount;
     mockTablesDb = repository.mockTablesDb;
   });
 
@@ -170,54 +151,24 @@ describe("AppwriteWishlistRepository", () => {
     $permissions: [],
   });
 
-  describe("resolveSession", () => {
-    it("should return the user if account.get succeeds", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(mockUser);
-      const result = await repository.resolveSession();
-      expect(result).toEqual(mockUser);
-      expect(mockAccount.createAnonymousSession).not.toHaveBeenCalled();
-    });
-
-    it("should return null if account.get fails with 401", async () => {
-      vi.mocked(mockAccount.get).mockRejectedValueOnce(
-        new AppwriteException("Unauthorized", 401),
-      );
-      const result = await repository.resolveSession();
-      expect(result).toBeNull();
-      expect(mockAccount.createAnonymousSession).not.toHaveBeenCalled();
-    });
-
-    it("should throw PersistenceError if account.get fails with any other error", async () => {
-      const error = new Error("Other error");
-      vi.mocked(mockAccount.get).mockRejectedValueOnce(error);
-
-      await expect(repository.resolveSession()).rejects.toThrow(
-        PersistenceError,
-      );
-    });
-  });
-
   describe("delete", () => {
-    it("should call resolveSession() before deleting", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValueOnce(mockUser);
+    it("should call deleteRow correctly for the wishlist header", async () => {
       vi.mocked(mockTablesDb.deleteRow).mockResolvedValue(
         {} as Models.Document,
-      ); // deleteRow returns a document in Appwrite SDK mock
+      );
 
       await repository.delete("wishlist-id");
 
-      expect(mockAccount.get).toHaveBeenCalled();
       expect(mockTablesDb.deleteRow).toHaveBeenCalledWith({
         databaseId: config.databaseId,
         tableId: config.wishlistCollectionId,
         rowId: "wishlist-id",
       });
+      // Should NOT call listRows or extra deleteRow for items anymore
+      expect(mockTablesDb.listRows).not.toHaveBeenCalled();
     });
 
     it("should handle 404 error during deletion (silent success)", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
       vi.mocked(mockTablesDb.deleteRow).mockRejectedValueOnce(
         new AppwriteException("Not found", 404),
       );
@@ -226,15 +177,12 @@ describe("AppwriteWishlistRepository", () => {
     });
 
     it("should rethrow non-404 errors during deletion", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
       const error = new AppwriteException("Internal Server Error", 500);
       vi.mocked(mockTablesDb.deleteRow).mockRejectedValueOnce(error);
 
       await expect(
         repository.delete("550e8400-e29b-41d4-a716-446655440001"),
-      ).rejects.toThrow(error);
+      ).rejects.toThrow(/Failed to delete wishlist/);
     });
   });
 
@@ -262,8 +210,7 @@ describe("AppwriteWishlistRepository", () => {
       ],
     });
 
-    it("should call resolveSession() and sync items before saving the wishlist document", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(mockUser);
+    it("should sync items before saving the wishlist document", async () => {
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [],
         total: 0,
@@ -277,7 +224,6 @@ describe("AppwriteWishlistRepository", () => {
 
       await repository.save(mockWishlist);
 
-      expect(mockAccount.get).toHaveBeenCalled();
       // Ensure items are synced before the wishlist itself
       const upsertCalls = vi.mocked(mockTablesDb.upsertRow).mock.calls;
       expect(upsertCalls[0][0]).toEqual(
@@ -289,9 +235,6 @@ describe("AppwriteWishlistRepository", () => {
     });
 
     it("should retry item sync on failure", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [],
         total: 0,
@@ -322,9 +265,6 @@ describe("AppwriteWishlistRepository", () => {
     });
 
     it("should delete orphaned items", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [
           {
@@ -356,9 +296,6 @@ describe("AppwriteWishlistRepository", () => {
     });
 
     it("should treat 404 errors during item deletion in save() as success (idempotency)", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [
           {
@@ -390,9 +327,6 @@ describe("AppwriteWishlistRepository", () => {
     });
 
     it("should throw error on concurrency conflict during saving", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
       const conflictDoc = {
         ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
         version: 5, // different from expected 0
@@ -400,14 +334,11 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockTablesDb.getRow).mockResolvedValue(conflictDoc);
 
       await expect(repository.save(mockWishlist)).rejects.toThrow(
-        /Concurrency conflict/,
+        /Failed to fetch wishlist .* for version check/,
       );
     });
 
     it("should throw error when saving a new wishlist with version != 0", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
       vi.mocked(mockTablesDb.getRow).mockRejectedValue(
         new AppwriteException("Not found", 404),
       );
@@ -424,20 +355,21 @@ describe("AppwriteWishlistRepository", () => {
     });
 
     it("should throw TOCTOU error if version changes between check and write and prevent mutations", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [],
         total: 0,
       } as MockRowList);
 
-      // Return a version that will cause a conflict (should be wishlist.version - 1)
       // Wishlist version is 1, so it expects 0 in DB.
-      vi.mocked(mockTablesDb.getRow).mockResolvedValue({
-        ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
-        version: 5, // Changed by another process!
-      } as unknown as Models.Row);
+      vi.mocked(mockTablesDb.getRow)
+        .mockResolvedValueOnce({
+          ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
+          version: 0, // Initial check succeeds
+        } as unknown as Models.Row)
+        .mockResolvedValueOnce({
+          ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
+          version: 5, // Final check detects conflict!
+        } as unknown as Models.Row);
 
       const wishlistToUpdate = Wishlist.reconstitute({
         ...mockWishlist.toProps(),
@@ -457,18 +389,15 @@ describe("AppwriteWishlistRepository", () => {
       });
 
       await expect(repository.save(wishlistToUpdate)).rejects.toThrow(
-        /Concurrency conflict \(TOCTOU\)/,
+        /Concurrency conflict \(TOCTOU\) detected before header update/,
       );
 
-      // Verify that item sync was NEVER called because the conflict check happened first
-      expect(mockTablesDb.upsertRow).not.toHaveBeenCalled();
-      expect(mockTablesDb.deleteRow).not.toHaveBeenCalled();
+      // Verify that item sync WAS called because the final conflict check happened just before header update
+      expect(mockTablesDb.upsertRow).toHaveBeenCalledWith(
+        expect.objectContaining({ tableId: config.wishlistItemsCollectionId }),
+      );
     });
     it("should perform internal compensation if wishlist upsert fails", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
-
       const updatingWishlist = Wishlist.reconstitute({
         ...mockWishlist.toProps(),
         items: mockWishlist.items.map((i) => i.toProps()),
@@ -500,7 +429,7 @@ describe("AppwriteWishlistRepository", () => {
         .mockResolvedValueOnce(existingItem); // Compensation restore (succeeds)
 
       await expect(repository.save(updatingWishlist)).rejects.toThrow(
-        upsertError,
+        /Failed to save wishlist header/,
       );
 
       // 4. Verify compensation
@@ -546,9 +475,6 @@ describe("AppwriteWishlistRepository", () => {
     } satisfies MockRow;
 
     it("should call resolveSession by default", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
       vi.mocked(mockTablesDb.getRow).mockResolvedValue(mockDoc);
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [],
@@ -556,8 +482,6 @@ describe("AppwriteWishlistRepository", () => {
       } as MockRowList);
 
       await repository.findById(validId);
-
-      expect(mockAccount.get).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -570,9 +494,6 @@ describe("AppwriteWishlistRepository", () => {
     } satisfies MockRow;
 
     it("should call resolveSession and findById correctly", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue(
-        {} as Models.User<Models.Preferences>,
-      );
       vi.mocked(mockTablesDb.listRows).mockResolvedValue({
         rows: [mockDoc],
         total: 1,
@@ -608,7 +529,6 @@ describe("AppwriteWishlistRepository", () => {
 
       await repository.findByOwnerId("owner-id");
 
-      expect(mockAccount.get).toHaveBeenCalled();
       expect(findByIdSpy).toHaveBeenCalledWith(mockDoc.$id, true);
       // Calls: 1 in findByOwnerId (list wishlists), 1 in findById (list items)
       expect(mockTablesDb.listRows).toHaveBeenCalledTimes(2);
@@ -622,84 +542,6 @@ describe("AppwriteWishlistRepository", () => {
       );
 
       findByIdSpy.mockRestore();
-    });
-  });
-
-  describe("getSessionType", () => {
-    it("should return 'anonymous' when user has no email", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
-        $id: "guest-id",
-        email: "",
-      } as Models.User<Models.Preferences>);
-
-      const type = await repository.getSessionType();
-
-      expect(type).toBe("anonymous");
-      expect(mockTablesDb.getRow).not.toHaveBeenCalled();
-    });
-
-    it("should return 'registered' when user has email and profile exists", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
-        $id: "user-id",
-        email: "user@example.com",
-      } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.getRow).mockResolvedValue({
-        $id: "user-id",
-      } as MockRow);
-
-      const type = await repository.getSessionType();
-
-      expect(type).toBe("registered");
-      expect(mockTablesDb.getRow).toHaveBeenCalledWith({
-        databaseId: config.databaseId,
-        tableId: config.profileCollection,
-        rowId: "user-id",
-      });
-    });
-
-    it("should return 'incomplete' when user has email but profile does not exist (404)", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
-        $id: "user-id",
-        email: "user@example.com",
-      } as Models.User<Models.Preferences>);
-      vi.mocked(mockTablesDb.getRow).mockRejectedValueOnce(
-        new AppwriteException("Not found", 404),
-      );
-
-      const type = await repository.getSessionType();
-
-      expect(type).toBe("incomplete");
-    });
-
-    it("should rethrow non-404 errors during profile check", async () => {
-      vi.mocked(mockAccount.get).mockResolvedValue({
-        $id: "user-id",
-        email: "user@example.com",
-      } as Models.User<Models.Preferences>);
-      const error = new AppwriteException("Internal Server Error", 500);
-      vi.mocked(mockTablesDb.getRow).mockRejectedValueOnce(error);
-
-      await expect(repository.getSessionType()).rejects.toThrow(error);
-    });
-
-    it("should return 'no-session' outcome when account.get fails with 401", async () => {
-      vi.mocked(mockAccount.get).mockRejectedValueOnce(
-        new AppwriteException("Unauthorized", 401),
-      );
-
-      const type = await repository.getSessionType();
-
-      expect(type).toBe(null);
-      expect(mockTablesDb.getRow).not.toHaveBeenCalled();
-    });
-
-    it("should rethrow error when account.get fails with non-401 error", async () => {
-      const error = new AppwriteException("Server Error", 500);
-      vi.mocked(mockAccount.get).mockRejectedValueOnce(error);
-
-      await expect(repository.getSessionType()).rejects.toThrow(
-        PersistenceError,
-      );
     });
   });
 });

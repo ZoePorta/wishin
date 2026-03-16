@@ -6,7 +6,9 @@ import {
   AppwriteWishlistRepository,
   AppwriteTransactionRepository,
   AppwriteAuthRepository,
+  AppwriteProfileRepository,
   createAppwriteClient,
+  AppwriteException,
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
@@ -50,7 +52,6 @@ function createRepositories() {
     Config.appwrite.databaseId,
     Config.collections.wishlists,
     Config.collections.wishlistItems,
-    Config.collections.profiles,
     consoleLogger,
     {
       addBreadcrumb: (message, category, data) => {
@@ -72,13 +73,22 @@ function createRepositories() {
     client,
     Config.appwrite.endpoint,
     Config.appwrite.projectId,
+    Config.appwrite.databaseId,
+    Config.collections.profiles,
     consoleLogger,
+  );
+
+  const profileRepository = new AppwriteProfileRepository(
+    client,
+    Config.appwrite.databaseId,
+    Config.collections.profiles,
   );
 
   return {
     wishlistRepository,
     transactionRepository,
     authRepository,
+    profileRepository,
   };
 }
 
@@ -126,8 +136,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
 
     const init = async () => {
       try {
-        const sessionAwareRepo: SessionAwareRepository =
-          repos.wishlistRepository;
+        const sessionAwareRepo: SessionAwareRepository = repos.authRepository;
 
         // timeout to prevent slow network from blocking startup (ADR 027)
         const timeoutPromise = new Promise((_, reject) =>
@@ -151,8 +160,19 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
           error instanceof Error &&
           error.message === "Session resolution timeout";
 
-        // If it's a critical non-persistence error, we notify via onConfigError (as per review)
-        if (!(error instanceof PersistenceError) && !isTimeout) {
+        const isAppwriteTransient =
+          error instanceof AppwriteException ||
+          (error instanceof Error &&
+            (error.message.includes("Network request failed") ||
+              error.message.includes("network error") ||
+              error.name === "AppwriteException"));
+
+        // If it's a critical error (not persistence, not timeout, not transient appwrite), we notify via onConfigError
+        if (
+          !(error instanceof PersistenceError) &&
+          !isTimeout &&
+          !isAppwriteTransient
+        ) {
           onConfigError(
             error instanceof Error ? error : new Error(String(error)),
           );
@@ -183,7 +203,8 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     <WishlistRepositoryProvider
       wishlistRepository={repos.wishlistRepository}
       transactionRepository={repos.transactionRepository}
-      userRepository={repos.wishlistRepository}
+      profileRepository={repos.profileRepository}
+      userRepository={repos.authRepository}
       authRepository={repos.authRepository}
     >
       <UserProvider>{children}</UserProvider>

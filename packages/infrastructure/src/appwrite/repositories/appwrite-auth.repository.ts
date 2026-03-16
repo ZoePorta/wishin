@@ -3,20 +3,34 @@ import {
   Account,
   ID,
   OAuthProvider,
+  TablesDB,
   AppwriteException,
+  type Models,
 } from "appwrite";
-import type { AuthRepository, OAuthInitiation } from "@wishin/domain";
+import type {
+  AuthRepository,
+  OAuthInitiation,
+  UserRepository,
+  Logger,
+} from "@wishin/domain";
 import type {
   AuthenticatedAuthResult,
   AnonymousAuthResult,
-  Logger,
 } from "@wishin/domain";
+import type { SessionAwareRepository } from "./session-aware-repository.interface";
 
 /**
- * Appwrite implementation of the AuthRepository.
+ * Appwrite implementation of the AuthRepository and UserRepository.
  */
-export class AppwriteAuthRepository implements AuthRepository {
+export class AppwriteAuthRepository
+  implements AuthRepository, UserRepository, SessionAwareRepository
+{
   private readonly account: Account;
+  private readonly tablesDb: TablesDB;
+  private resolveSessionInFlight: Promise<Models.User<Models.Preferences> | null> | null =
+    null;
+  private _currentUser: Models.User<Models.Preferences> | null = null;
+
   private readonly oauthStates: Map<string, { timestamp: number }> = new Map<
     string,
     { timestamp: number }
@@ -28,15 +42,102 @@ export class AppwriteAuthRepository implements AuthRepository {
    * @param client - The Appwrite Client SDK instance.
    * @param endpoint - The Appwrite API endpoint.
    * @param projectId - The Appwrite Project ID.
+   * @param databaseId - The ID of the Appwrite database.
+   * @param profileCollectionId - The ID of the profiles collection.
    * @param logger - The domain logger for infrastructure events.
    */
   constructor(
     private readonly client: Client,
     private readonly endpoint: string,
     private readonly projectId: string,
+    private readonly databaseId: string,
+    private readonly profileCollectionId: string,
     private readonly logger: Logger,
   ) {
     this.account = new Account(this.client);
+    this.tablesDb = new TablesDB(this.client);
+  }
+
+  /**
+   * Resolves the current session state with memoization.
+   *
+   * @returns A Promise that resolves to the user object if a session is active, or null otherwise.
+   */
+  async resolveSession(): Promise<Models.User<Models.Preferences> | null> {
+    if (this.resolveSessionInFlight) {
+      return this.resolveSessionInFlight;
+    }
+
+    this.resolveSessionInFlight = (async () => {
+      try {
+        this._currentUser = await this.account.get();
+        return this._currentUser;
+      } catch (error: unknown) {
+        if (error instanceof AppwriteException && error.code === 401) {
+          this._currentUser = null;
+          return null;
+        }
+        throw error;
+      } finally {
+        this.resolveSessionInFlight = null;
+      }
+    })();
+
+    return this.resolveSessionInFlight;
+  }
+
+  /**
+   * Invalidates the local session cache.
+   * Should be called after operations that change session state (login, logout, register).
+   */
+  private invalidateSessionCache(): void {
+    this._currentUser = null;
+    this.resolveSessionInFlight = null;
+  }
+
+  /**
+   * Retrieves the current user's unique identifier.
+   *
+   * @returns A Promise that resolves to the current user ID, or null if no session is active.
+   */
+  async getCurrentUserId(): Promise<string | null> {
+    const user = await this.resolveSession();
+    return user?.$id ?? null;
+  }
+
+  /**
+   * Determines the current session type to distinguish between guests and members.
+   *
+   * @returns A Promise that resolves to the session type or null if no session is active.
+   * @throws {AppwriteException} For non-404 errors from Appwrite client calls.
+   */
+  async getSessionType(): Promise<
+    "anonymous" | "incomplete" | "registered" | null
+  > {
+    const user = await this.resolveSession();
+
+    if (!user) {
+      return null;
+    }
+
+    if (!user.email) {
+      return "anonymous";
+    }
+
+    try {
+      await this.tablesDb.getRow({
+        databaseId: this.databaseId,
+        tableId: this.profileCollectionId,
+        rowId: user.$id,
+      });
+
+      return "registered";
+    } catch (error) {
+      if (error instanceof AppwriteException && error.code === 404) {
+        return "incomplete";
+      }
+      throw error;
+    }
   }
 
   /**
@@ -58,19 +159,15 @@ export class AppwriteAuthRepository implements AuthRepository {
     let userId: string = ID.unique();
     try {
       // Check if there is an active anonymous session to promote (ADR 018)
-      const currentUser = await this.account.get();
-      isAnonymous = !currentUser.email;
-      if (isAnonymous) {
+      const currentUser = await this.resolveSession();
+      isAnonymous = currentUser !== null && !currentUser.email;
+      if (isAnonymous && currentUser) {
         userId = currentUser.$id;
       }
     } catch (error: unknown) {
       // 401 (Unauthorized) means there is no active session, which is fine.
       // We re-throw any other error (network, server error) to avoid silent failures.
       if (error instanceof AppwriteException && error.code !== 401) {
-        throw error;
-      }
-
-      if (!(error instanceof AppwriteException)) {
         throw error;
       }
     }
@@ -93,6 +190,8 @@ export class AppwriteAuthRepository implements AuthRepository {
         name: username,
       });
     }
+
+    this.invalidateSessionCache();
 
     return {
       type: "authenticated",
@@ -117,16 +216,18 @@ export class AppwriteAuthRepository implements AuthRepository {
     // 1. Check current session state (ADR 027)
     let priorSessionIsAnonymous = false;
     try {
-      const user = await this.account.get();
-      priorSessionIsAnonymous = !user.email;
-      if (user.email === email) {
-        // Already logged in as the correct user
-        return {
-          type: "authenticated",
-          userId: user.$id,
-          email: user.email,
-          isNewUser: false,
-        };
+      const user = await this.resolveSession();
+      if (user) {
+        priorSessionIsAnonymous = !user.email;
+        if (user.email === email) {
+          // Already logged in as the correct user
+          return {
+            type: "authenticated",
+            userId: user.$id,
+            email: user.email,
+            isNewUser: false,
+          };
+        }
       }
     } catch (error: unknown) {
       // 401 (Unauthorized) means there is no active session, which is fine.
@@ -157,9 +258,12 @@ export class AppwriteAuthRepository implements AuthRepository {
       // If validation fails, and we had an anonymous session, ensure it's still there
       if (priorSessionIsAnonymous) {
         try {
-          const current = await this.account.get();
+          this.invalidateSessionCache();
+          const current = await this.resolveSession();
 
-          if (current.email) {
+          // If session is lost (null) or morphed into a different user (!current.email falsy check)
+          // We need to restore/ensure an anonymous session.
+          if (!current || (current.email && current.email.length > 0)) {
             await this.account.createAnonymousSession();
           }
         } catch (innerError: unknown) {
@@ -214,8 +318,8 @@ export class AppwriteAuthRepository implements AuthRepository {
      * @see ADR 027 for session resolution strategy.
      */
     try {
-      const user = await this.account.get();
-      if (user.email === email) {
+      const user = await this.resolveSession();
+      if (user?.email === email) {
         return {
           type: "authenticated",
           userId: user.$id,
@@ -225,6 +329,7 @@ export class AppwriteAuthRepository implements AuthRepository {
       }
       // Different user or guest, switch
       await this.account.deleteSession({ sessionId: "current" });
+      this.invalidateSessionCache();
     } catch (error: unknown) {
       // 401 (Unauthorized) means there is no active session, which is fine.
       // We re-throw any other error (network, server error) to avoid silent failures.
@@ -263,7 +368,11 @@ export class AppwriteAuthRepository implements AuthRepository {
       throw error;
     }
 
-    const user = await this.account.get();
+    this.invalidateSessionCache();
+    const user = await this.resolveSession();
+    if (!user) {
+      throw new Error("Failed to resolve session after login");
+    }
 
     return {
       type: "authenticated",
@@ -377,7 +486,12 @@ export class AppwriteAuthRepository implements AuthRepository {
       throw error;
     }
 
-    const user = await this.account.get();
+    this.invalidateSessionCache();
+    const user = await this.resolveSession();
+    if (!user) {
+      throw new Error("Failed to resolve session after OAuth completion");
+    }
+
     return {
       type: "authenticated",
       userId: user.$id,
@@ -432,6 +546,7 @@ export class AppwriteAuthRepository implements AuthRepository {
     await this.account.deleteSession({
       sessionId: "current",
     });
+    this.invalidateSessionCache();
   }
 
   /**
@@ -461,8 +576,8 @@ export class AppwriteAuthRepository implements AuthRepository {
   async loginAnonymously(): Promise<AnonymousAuthResult> {
     try {
       // Idempotency: check if we already have an anonymous session (ADR 027)
-      const user = await this.account.get();
-      if (!user.email) {
+      const user = await this.resolveSession();
+      if (user && !user.email) {
         return {
           type: "anonymous",
           userId: user.$id,
@@ -471,7 +586,9 @@ export class AppwriteAuthRepository implements AuthRepository {
       }
       // If already logged in with email, we might want to throw or logout.
       // Per requirements, if they want guest login we should probably logout email session.
-      await this.logout();
+      if (user) {
+        await this.logout();
+      }
     } catch (error: unknown) {
       // 401 is expected if no session
       if (!(error instanceof AppwriteException && error.code === 401)) {
@@ -480,7 +597,12 @@ export class AppwriteAuthRepository implements AuthRepository {
     }
 
     await this.account.createAnonymousSession();
-    const user = await this.account.get();
+    this.invalidateSessionCache();
+    const user = await this.resolveSession();
+    if (!user) {
+      throw new Error("Failed to resolve session after anonymous login");
+    }
+
     return {
       type: "anonymous",
       userId: user.$id,
