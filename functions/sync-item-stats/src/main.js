@@ -8,31 +8,39 @@ export default async ({ req, res, log, error }) => {
 
   const databases = new Databases(client);
 
-  // Appwrite triggers send the document in req.body
+  // req.body is the transaction document that was just created
   const transaction = req.body;
+  const itemId = transaction.itemId; // Ensure this matches your column name exactly
+  const addedQuantity = transaction.quantity;
 
-  if (!transaction.itemId || !transaction.quantity) {
-    error("Invalid transaction data.");
-    return res.json({ success: false }, 400);
+  // Debugging logs to see what's happening in the Appwrite Console
+  log(`Transaction received. ItemID: ${itemId}, Quantity: ${addedQuantity}`);
+
+  if (!itemId) {
+    error("Error: itemId is missing in the transaction document.");
+    return res.json({ success: false, message: "Missing itemId" }, 400);
   }
 
   try {
-    const item = await databases.getDocument(
-      process.env.DATABASE_ID,
-      process.env.ITEMS_COLLECTION_ID,
-      transaction.itemId,
-    );
+    // Correct v14 syntax: parameters as a single object
+    const item = await databases.getDocument({
+      databaseId: process.env.DATABASE_ID,
+      collectionId: process.env.ITEMS_COLLECTION_ID,
+      documentId: itemId,
+    });
 
-    const newQuantity = (item.purchasedQuantity || 0) + transaction.quantity;
+    const newPurchasedQuantity = (item.purchasedQuantity || 0) + addedQuantity;
 
-    await databases.updateDocument(
-      process.env.DATABASE_ID,
-      process.env.ITEMS_COLLECTION_ID,
-      transaction.itemId,
-      { purchasedQuantity: newQuantity },
-    );
+    await databases.updateDocument({
+      databaseId: process.env.DATABASE_ID,
+      collectionId: process.env.ITEMS_COLLECTION_ID,
+      documentId: itemId,
+      data: {
+        purchasedQuantity: newPurchasedQuantity,
+      },
+    });
 
-    log(`Updated item ${transaction.itemId} to ${newQuantity}`);
+    log(`Success: Updated item ${itemId} new total: ${newPurchasedQuantity}`);
     return res.json({ success: true });
   } catch (err) {
     error(`Failed to update item: ${err.message}`);
