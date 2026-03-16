@@ -43,6 +43,16 @@ export default async ({ req, res, log, error }) => {
     return res.json({ success: false, message: "Invalid quantity" }, 400);
   }
 
+  if (transaction.status !== "PURCHASED") {
+    log(
+      `Skipping transaction ${transaction.$id}: status is ${transaction.status}, not PURCHASED`,
+    );
+    return res.json({
+      success: true,
+      message: "No sync needed for this status",
+    });
+  }
+
   try {
     // 1. Fetch item to get totalQuantity for capping
     const item = await tablesDb.getRow({

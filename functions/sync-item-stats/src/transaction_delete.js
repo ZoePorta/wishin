@@ -45,6 +45,16 @@ export default async ({ req, res, log, error }) => {
     return res.json({ success: false, message: "Invalid quantity" }, 400);
   }
 
+  if (transaction.status !== "PURCHASED") {
+    log(
+      `Skipping deletion of transaction ${transaction.$id}: status was ${transaction.status}, not PURCHASED`,
+    );
+    return res.json({
+      success: true,
+      message: "No sync needed for this status",
+    });
+  }
+
   try {
     // 1. Perform Atomic Decrement
     // Business Invariant: Purchased quantity cannot be negative
