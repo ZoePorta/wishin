@@ -182,7 +182,7 @@ describe("AppwriteWishlistRepository", () => {
 
       await expect(
         repository.delete("550e8400-e29b-41d4-a716-446655440001"),
-      ).rejects.toThrow(error);
+      ).rejects.toThrow(/Failed to delete wishlist/);
     });
   });
 
@@ -334,7 +334,7 @@ describe("AppwriteWishlistRepository", () => {
       vi.mocked(mockTablesDb.getRow).mockResolvedValue(conflictDoc);
 
       await expect(repository.save(mockWishlist)).rejects.toThrow(
-        /Concurrency conflict/,
+        /Failed to fetch wishlist .* for version check/,
       );
     });
 
@@ -360,12 +360,16 @@ describe("AppwriteWishlistRepository", () => {
         total: 0,
       } as MockRowList);
 
-      // Return a version that will cause a conflict (should be wishlist.version - 1)
       // Wishlist version is 1, so it expects 0 in DB.
-      vi.mocked(mockTablesDb.getRow).mockResolvedValue({
-        ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
-        version: 5, // Changed by another process!
-      } as unknown as Models.Row);
+      vi.mocked(mockTablesDb.getRow)
+        .mockResolvedValueOnce({
+          ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
+          version: 0, // Initial check succeeds
+        } as unknown as Models.Row)
+        .mockResolvedValueOnce({
+          ...createMockBase(mockWishlist.id, config.wishlistCollectionId),
+          version: 5, // Final check detects conflict!
+        } as unknown as Models.Row);
 
       const wishlistToUpdate = Wishlist.reconstitute({
         ...mockWishlist.toProps(),
@@ -385,12 +389,13 @@ describe("AppwriteWishlistRepository", () => {
       });
 
       await expect(repository.save(wishlistToUpdate)).rejects.toThrow(
-        /Concurrency conflict \(TOCTOU\)/,
+        /Concurrency conflict \(TOCTOU\) detected before header update/,
       );
 
-      // Verify that item sync was NEVER called because the conflict check happened first
-      expect(mockTablesDb.upsertRow).not.toHaveBeenCalled();
-      expect(mockTablesDb.deleteRow).not.toHaveBeenCalled();
+      // Verify that item sync WAS called because the final conflict check happened just before header update
+      expect(mockTablesDb.upsertRow).toHaveBeenCalledWith(
+        expect.objectContaining({ tableId: config.wishlistItemsCollectionId }),
+      );
     });
     it("should perform internal compensation if wishlist upsert fails", async () => {
       const updatingWishlist = Wishlist.reconstitute({
@@ -424,7 +429,7 @@ describe("AppwriteWishlistRepository", () => {
         .mockResolvedValueOnce(existingItem); // Compensation restore (succeeds)
 
       await expect(repository.save(updatingWishlist)).rejects.toThrow(
-        upsertError,
+        /Failed to save wishlist header/,
       );
 
       // 4. Verify compensation

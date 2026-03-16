@@ -10,6 +10,7 @@ import {
   type Logger,
   type ObservabilityService,
   Wishlist,
+  PersistenceError,
 } from "@wishin/domain";
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
@@ -177,7 +178,9 @@ export class AppwriteWishlistRepository implements WishlistRepository {
           );
         }
       } else {
-        throw error;
+        throw new PersistenceError(
+          `Failed to fetch wishlist ${wishlist.id} for version check: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
@@ -272,8 +275,26 @@ export class AppwriteWishlistRepository implements WishlistRepository {
     }
 
     // 3. Upsert Wishlist Document AFTER successful items sync
-    // (Version check already performed at step 2 to prevent TOCTOU)
+    // Double-check version immediately before write to prevent TOCTOU (ADR 023)
     try {
+      const finalCheckDoc = await this.tablesDb.getRow({
+        databaseId: this.databaseId,
+        tableId: this.wishlistCollectionId,
+        rowId: wishlist.id,
+      });
+      const finalData = finalCheckDoc as unknown as { version?: number };
+      const finalVersion = finalData.version ?? 0;
+
+      if (finalVersion !== wishlist.version - 1) {
+        throw new PersistenceError(
+          `Concurrency conflict (TOCTOU) detected before header update: Wishlist ${
+            wishlist.id
+          } version mismatch (DB: ${String(finalVersion)}, Expecting: ${String(
+            wishlist.version - 1,
+          )})`,
+        );
+      }
+
       await this.tablesDb.upsertRow({
         databaseId: this.databaseId,
         tableId: this.wishlistCollectionId,
@@ -281,6 +302,21 @@ export class AppwriteWishlistRepository implements WishlistRepository {
         data: WishlistMapper.toPersistence(wishlist),
       });
     } catch (saveError: unknown) {
+      if (saveError instanceof AppwriteException && saveError.code === 404) {
+        // If it was supposed to be a new wishlist, version mismatch check above would have caught it
+        // unless it was deleted exactly between the check and the upsert.
+        // Proceed with upsert if it's new (version 0)
+        if (wishlist.version === 0) {
+          await this.tablesDb.upsertRow({
+            databaseId: this.databaseId,
+            tableId: this.wishlistCollectionId,
+            rowId: wishlist.id,
+            data: WishlistMapper.toPersistence(wishlist),
+          });
+          return;
+        }
+      }
+
       // 4. COMPENSATION: Best-effort rollback of item changes (ADR 023)
       const saveErrorMessage =
         saveError instanceof Error ? saveError.message : String(saveError);
@@ -299,7 +335,13 @@ export class AppwriteWishlistRepository implements WishlistRepository {
         saveErrorMessage,
       );
 
-      throw saveError;
+      if (saveError instanceof PersistenceError) {
+        throw saveError;
+      }
+
+      throw new PersistenceError(
+        `Failed to save wishlist header ${wishlist.id}: ${saveErrorMessage}`,
+      );
     }
   }
 
@@ -406,8 +448,10 @@ export class AppwriteWishlistRepository implements WishlistRepository {
   }
 
   /**
+   * Deletes a wishlist and its associated items.
+   *
    * @param id - The wishlist UUID.
-   * @returns A Promise that resolves when the wishlist (and its items) is deleted.
+   * @returns A Promise that resolves when the wishlist is deleted.
    * @throws {PersistenceError} If the deletion fails.
    */
   async delete(id: string): Promise<void> {
@@ -421,7 +465,9 @@ export class AppwriteWishlistRepository implements WishlistRepository {
       if (error instanceof AppwriteException && error.code === 404) {
         return; // Already deleted or handled by Cascade
       }
-      throw error;
+      throw new PersistenceError(
+        `Failed to delete wishlist ${id}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }

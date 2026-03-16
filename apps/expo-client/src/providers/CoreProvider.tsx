@@ -8,6 +8,7 @@ import {
   AppwriteAuthRepository,
   AppwriteProfileRepository,
   createAppwriteClient,
+  AppwriteException,
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
@@ -159,8 +160,19 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
           error instanceof Error &&
           error.message === "Session resolution timeout";
 
-        // If it's a critical non-persistence error, we notify via onConfigError (as per review)
-        if (!(error instanceof PersistenceError) && !isTimeout) {
+        const isAppwriteTransient =
+          error instanceof AppwriteException ||
+          (error instanceof Error &&
+            (error.message.includes("Network request failed") ||
+              error.message.includes("network error") ||
+              error.name === "AppwriteException"));
+
+        // If it's a critical error (not persistence, not timeout, not transient appwrite), we notify via onConfigError
+        if (
+          !(error instanceof PersistenceError) &&
+          !isTimeout &&
+          !isAppwriteTransient
+        ) {
           onConfigError(
             error instanceof Error ? error : new Error(String(error)),
           );

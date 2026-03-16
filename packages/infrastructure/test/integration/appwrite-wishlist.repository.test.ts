@@ -68,7 +68,6 @@ describe.skipIf(!shouldRun)(
         databaseId,
         wishlistCollectionId,
         wishlistItemsCollectionId,
-        profilesCollectionId,
         {
           debug: () => {
             /* no-op */
