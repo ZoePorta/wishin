@@ -1,5 +1,4 @@
 import {
-  WishlistNotFoundError,
   TransactionNotFoundError,
   InvalidOperationError,
 } from "../errors/domain-errors";
@@ -36,7 +35,6 @@ export class UndoPurchaseUseCase {
    * @param {UndoPurchaseInput} input - The payload containing wishlistId, transactionId, and userId.
    * @returns {Promise<void>}
    * @throws {TransactionNotFoundError} If the transaction is not found.
-   * @throws {WishlistNotFoundError} If the wishlist is not found.
    * @throws {InvalidOperationError} If the user is unauthorized or transaction status is invalid.
    */
   async execute(input: UndoPurchaseInput): Promise<void> {
@@ -57,9 +55,6 @@ export class UndoPurchaseUseCase {
         `Cannot undo a transaction in ${transaction.status} status`,
       );
     }
-
-    const wishlist = await this.wishlistRepository.findById(wishlistId);
-    if (!wishlist) throw new WishlistNotFoundError(wishlistId);
 
     const itemId = transaction.itemId;
     if (!itemId) {

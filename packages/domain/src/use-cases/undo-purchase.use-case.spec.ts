@@ -6,12 +6,8 @@ import type { TransactionRepository } from "../repositories/transaction.reposito
 import type { Logger } from "../common/logger";
 import type { ObservabilityService } from "../common/observability";
 import { Transaction } from "../aggregates/transaction";
-import { Wishlist } from "../aggregates/wishlist";
-import { WishlistItem } from "../entities/wishlist-item";
-import { Priority, Visibility, Participation } from "../value-objects";
 import { TransactionStatus } from "../value-objects/transaction-status";
 import {
-  WishlistNotFoundError,
   TransactionNotFoundError,
   InvalidOperationError,
 } from "../errors/domain-errors";
@@ -109,29 +105,6 @@ describe("UndoPurchaseUseCase", () => {
     ).rejects.toThrow(InvalidOperationError);
   });
 
-  it("should fail if wishlist is not found", async () => {
-    const transaction = Transaction.reconstitute({
-      id: transactionId,
-      itemId,
-      userId,
-      itemName: "Test Item",
-      itemPrice: 10,
-      itemCurrency: "EUR",
-      itemDescription: "Desc",
-      ownerUsername: "owner",
-      status: TransactionStatus.PURCHASED,
-      quantity: 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    transactionRepo.findById.mockResolvedValue(transaction);
-    wishlistRepo.findById.mockResolvedValue(null);
-
-    await expect(
-      useCase.execute({ wishlistId, transactionId, userId }),
-    ).rejects.toThrow(WishlistNotFoundError);
-  });
-
   it("should successfully undo a purchase", async () => {
     const transaction = Transaction.reconstitute({
       id: transactionId,
@@ -148,31 +121,7 @@ describe("UndoPurchaseUseCase", () => {
       updatedAt: new Date(),
     });
 
-    const item = WishlistItem.reconstitute({
-      id: itemId,
-      wishlistId,
-      name: "Test Item",
-      priority: Priority.MEDIUM,
-      isUnlimited: false,
-      totalQuantity: 5,
-      reservedQuantity: 0,
-      purchasedQuantity: 1,
-    });
-
-    const wishlist = Wishlist.reconstitute({
-      id: wishlistId,
-      ownerId: "owner-id",
-      title: "Title",
-      visibility: Visibility.LINK,
-      participation: Participation.ANYONE,
-      items: [item.toProps()],
-      version: 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
     transactionRepo.findById.mockResolvedValue(transaction);
-    wishlistRepo.findById.mockResolvedValue(wishlist);
 
     await useCase.execute({ wishlistId, transactionId, userId });
 
@@ -200,31 +149,7 @@ describe("UndoPurchaseUseCase", () => {
       updatedAt: new Date(),
     });
 
-    const item = WishlistItem.reconstitute({
-      id: itemId,
-      wishlistId,
-      name: "Test Item",
-      priority: Priority.MEDIUM,
-      isUnlimited: false,
-      totalQuantity: 5,
-      reservedQuantity: 0,
-      purchasedQuantity: 1,
-    });
-
-    const wishlist = Wishlist.reconstitute({
-      id: wishlistId,
-      ownerId: "owner-id",
-      title: "Title",
-      visibility: Visibility.LINK,
-      participation: Participation.ANYONE,
-      items: [item.toProps()],
-      version: 1,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
     transactionRepo.findById.mockResolvedValue(transaction);
-    wishlistRepo.findById.mockResolvedValueOnce(wishlist);
 
     const deletionError = new Error("Deletion failed");
     transactionRepo.delete.mockRejectedValue(deletionError);

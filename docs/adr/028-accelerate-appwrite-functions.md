@@ -4,12 +4,12 @@
 
 Accepted (2026-03-16)
 
-Supersedes [ADR 023](file:///home/zoe/Documents/wishin/docs/adr/023-non-atomic-sequential-saves.md)
-Amends [ADR 025](file:///home/zoe/Documents/wishin/docs/adr/025-defer-reservations-post-mvp.md)
+Supersedes [ADR 023](023-non-atomic-sequential-saves.md)
+Amends [ADR 025](025-defer-reservations-post-mvp.md)
 
 ## Context
 
-In [ADR 023](file:///home/zoe/Documents/wishin/docs/adr/023-non-atomic-sequential-saves.md), we accepted non-atomic sequential saves in the Application Layer to speed up MVP development, deferring Appwrite Functions to Phase 6.
+In [ADR 023](023-non-atomic-sequential-saves.md), we accepted non-atomic sequential saves in the Application Layer to speed up MVP development, deferring Appwrite Functions to Phase 6.
 
 However, during implementation and testing of the guest purchase flow, a critical blocker was identified: **Guest users (anonymous sessions) do not have write permissions** on the `WishlistItems` collection for security reasons. Allowing direct client-side updates would expose the inventory to manipulation.
 

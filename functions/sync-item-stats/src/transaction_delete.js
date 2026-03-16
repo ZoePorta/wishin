@@ -39,30 +39,56 @@ export default async ({ req, res, log, error }) => {
   }
 
   try {
-    // getRow signature in node-appwrite v22 (TablesDB) uses tableId and rowId
-    const item = await tablesDb.getRow({
-      databaseId: process.env.DATABASE_ID,
-      tableId: process.env.ITEMS_COLLECTION_ID,
-      rowId: itemId,
-    });
+    // Retry logic for optimistic concurrency/atomic decrement simulation
+    let attempts = 0;
+    const MAX_ATTEMPTS = 3;
+    let lastError = null;
 
-    const currentPurchasedQuantity = item.purchasedQuantity || 0;
-    const newPurchasedQuantity = currentPurchasedQuantity - removedQuantity;
+    while (attempts < MAX_ATTEMPTS) {
+      try {
+        // 1. Read current state
+        const item = await tablesDb.getRow({
+          databaseId: process.env.DATABASE_ID,
+          tableId: process.env.ITEMS_COLLECTION_ID,
+          rowId: itemId,
+        });
 
-    // updateRow signature in node-appwrite v22 (TablesDB) uses tableId and rowId
-    await tablesDb.updateRow({
-      databaseId: process.env.DATABASE_ID,
-      tableId: process.env.ITEMS_COLLECTION_ID,
-      rowId: itemId,
-      data: {
-        purchasedQuantity: newPurchasedQuantity,
-      },
-    });
+        const currentPurchasedQuantity = item.purchasedQuantity || 0;
+        // Business Invariant: Purchased quantity cannot be negative
+        const newPurchasedQuantity = Math.max(
+          0,
+          currentPurchasedQuantity - removedQuantity,
+        );
 
-    log(
-      `Success: Updated item ${itemId} after transaction deletion. Old total: ${currentPurchasedQuantity}, New total: ${newPurchasedQuantity}`,
-    );
-    return res.json({ success: true });
+        // 2. Perform Update
+        await tablesDb.updateRow({
+          databaseId: process.env.DATABASE_ID,
+          tableId: process.env.ITEMS_COLLECTION_ID,
+          rowId: itemId,
+          data: {
+            purchasedQuantity: newPurchasedQuantity,
+          },
+        });
+
+        log(
+          `Success: Updated item ${itemId} after transaction deletion. Old total: ${currentPurchasedQuantity}, New total: ${newPurchasedQuantity} (Attempt ${attempts + 1})`,
+        );
+        return res.json({ success: true });
+      } catch (err) {
+        lastError = err;
+        attempts++;
+        if (attempts < MAX_ATTEMPTS) {
+          error(
+            `Retry attempt ${attempts} failed for item ${itemId} during deletion: ${err.message}`,
+          );
+          // Exponential backoff with jitter
+          const delay = Math.pow(2, attempts) * 100 + Math.random() * 100;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw lastError || new Error("Failed to update item after maximum retries");
   } catch (err) {
     error(
       `Failed to update item ${itemId} on transaction deletion: ${err.message}`,
