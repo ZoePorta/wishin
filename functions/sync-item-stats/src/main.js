@@ -8,17 +8,13 @@ export default async ({ req, res, log, error }) => {
 
   const databases = new Databases(client);
 
-  console.log("req", req);
-  console.log("databases", databases);
-
   // req.body is the transaction document that was just created
   const transaction = req.body;
-  const itemId = transaction.itemId; // Ensure this matches your column name exactly
+  const itemId = transaction.itemId.$id;
   const addedQuantity = transaction.quantity;
 
-  console.log("transaction", transaction);
-  console.log("itemId", itemId);
-  console.log("addedQuantity", addedQuantity);
+  log("transaction", transaction);
+  log("itemId", itemId);
 
   if (!itemId) {
     error("Error: itemId is missing in the transaction document.");
