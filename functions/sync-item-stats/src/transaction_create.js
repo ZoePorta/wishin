@@ -29,13 +29,18 @@ export default async ({ req, res, log, error }) => {
 
   const transaction = req.body;
   const itemId = transaction.itemId?.$id;
-  const addedQuantity = transaction.quantity;
+  const addedQuantity = Number(transaction.quantity);
 
   log(`Processing transaction for Item ID: ${itemId}`);
 
   if (!itemId) {
     error("Error: itemId is missing in the transaction document.");
     return res.json({ success: false, message: "Missing itemId" }, 400);
+  }
+
+  if (!Number.isInteger(addedQuantity) || addedQuantity <= 0) {
+    error(`Error: Invalid quantity: ${transaction.quantity}`);
+    return res.json({ success: false, message: "Invalid quantity" }, 400);
   }
 
   try {
@@ -48,7 +53,7 @@ export default async ({ req, res, log, error }) => {
 
     // If isUnlimited is true, it's considered infinite.
     // Otherwise, totalQuantity defaults to 1 for non-unlimited items.
-    const max = item.isUnlimited ? null : item.totalQuantity || 1;
+    const max = item.isUnlimited ? null : (item.totalQuantity ?? 1);
 
     // 2. Perform Atomic Increment
     // Business Invariant: Purchased quantity cannot exceed totalQuantity (if finite)

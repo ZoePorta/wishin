@@ -29,13 +29,20 @@ export default async ({ req, res, log, error }) => {
 
   const transaction = req.body;
   const itemId = transaction.itemId?.$id;
-  const removedQuantity = transaction.quantity;
+  const removedQuantity = Number(transaction.quantity);
 
-  log(`Processing deletion of transaction for Item ID: ${itemId}`);
+  log(
+    `Processing deletion of transaction for Item ID: ${itemId}. Quantity: ${removedQuantity}`,
+  );
 
   if (!itemId) {
     error("Error: itemId is missing in the deleted transaction document.");
     return res.json({ success: false, message: "Missing itemId" }, 400);
+  }
+
+  if (!Number.isInteger(removedQuantity) || removedQuantity <= 0) {
+    error(`Error: Invalid quantity: ${transaction.quantity}`);
+    return res.json({ success: false, message: "Invalid quantity" }, 400);
   }
 
   try {
