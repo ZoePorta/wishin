@@ -1,6 +1,5 @@
 import {
   Client,
-  Account,
   TablesDB,
   Query,
   AppwriteException,
@@ -8,8 +7,6 @@ import {
 } from "appwrite";
 import {
   type WishlistRepository,
-  PersistenceError,
-  type UserRepository,
   type Logger,
   type ObservabilityService,
   Wishlist,
@@ -17,16 +14,12 @@ import {
 import { WishlistMapper } from "../mappers/wishlist.mapper";
 import { WishlistItemMapper } from "../mappers/wishlist-item.mapper";
 import { toDocument } from "../utils/to-document";
-import type { SessionAwareRepository } from "./session-aware-repository.interface";
 
 /**
- * Appwrite implementation of the WishlistRepository and UserRepository.
+ * Appwrite implementation of the WishlistRepository.
  */
-export class AppwriteWishlistRepository
-  implements WishlistRepository, UserRepository, SessionAwareRepository
-{
+export class AppwriteWishlistRepository implements WishlistRepository {
   private readonly tablesDb: TablesDB;
-  private readonly account: Account;
 
   /**
    * Initializes the repository.
@@ -35,7 +28,6 @@ export class AppwriteWishlistRepository
    * @param databaseId - The ID of the Appwrite database.
    * @param wishlistCollectionId - The ID of the wishlists collection.
    * @param wishlistItemsCollectionId - The ID of the wishlist items collection.
-   * @param profileCollectionId - The ID of the profiles collection.
    * @param logger - Logger for technical/operational logs.
    * @param observability - Service for breadcrumbs and telemetry events.
    */
@@ -44,19 +36,10 @@ export class AppwriteWishlistRepository
     private readonly databaseId: string,
     private readonly wishlistCollectionId: string,
     private readonly wishlistItemsCollectionId: string,
-    private readonly profileCollectionId: string,
     private readonly logger: Logger,
     private readonly observability: ObservabilityService,
   ) {
     this.tablesDb = new TablesDB(this.client);
-    this.account = new Account(this.client);
-  }
-
-  /**
-   * Protected access for testing.
-   */
-  protected get accountAccess(): Account {
-    return this.account;
   }
 
   /**
@@ -66,56 +49,15 @@ export class AppwriteWishlistRepository
     return this.tablesDb;
   }
 
-  private resolveSessionInFlight: Promise<Models.User<Models.Preferences> | null> | null =
-    null;
-  private _currentUser: Models.User<Models.Preferences> | null = null;
-
-  /**
-   * Resolves the current session state.
-   *
-   * @returns A Promise that resolves to the user object if a session is active/created, or null otherwise.
-   * @throws {PersistenceError} If the session resolution fails (e.g., network error).
-   */
-  async resolveSession(): Promise<Models.User<Models.Preferences> | null> {
-    if (this.resolveSessionInFlight) {
-      return this.resolveSessionInFlight;
-    }
-
-    this.resolveSessionInFlight = (async () => {
-      try {
-        this._currentUser = await this.account.get();
-        return this._currentUser;
-      } catch (error: unknown) {
-        if (
-          error &&
-          typeof error === "object" &&
-          "code" in error &&
-          error.code === 401
-        ) {
-          this._currentUser = null;
-          return null;
-        }
-        throw new PersistenceError("Failed to get current account", {
-          cause: error instanceof Error ? error : String(error),
-        });
-      } finally {
-        this.resolveSessionInFlight = null;
-      }
-    })();
-
-    return this.resolveSessionInFlight;
-  }
-
   /**
    * Finds a wishlist by its unique ID.
    *
    * @param id - The wishlist UUID.
    * @param includeItems - Whether to fetch and include children items (default: true).
    * @returns A Promise that resolves to the Wishlist aggregate or null if not found.
-   * @throws {PersistenceError} If the query fails or session cannot be ensured.
+   * @throws {PersistenceError} If the query fails.
    */
   async findById(id: string, includeItems = true): Promise<Wishlist | null> {
-    await this.resolveSession();
     try {
       // 1. Fetch Wishlist Document
       const wishlistDoc = await this.tablesDb.getRow({
@@ -172,8 +114,6 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the query fails or session cannot be ensured.
    */
   async findByOwnerId(ownerId: string): Promise<Wishlist[]> {
-    await this.resolveSession();
-
     // 1. Fetch all Wishlist Documents by ownerId
     // Business Rule: Maximum 20 wishlists per owner (Post-MVP scaling limit)
     const response = await this.tablesDb.listRows({
@@ -198,60 +138,6 @@ export class AppwriteWishlistRepository
   }
 
   /**
-   * Retrieves the current user's unique identifier.
-   *
-   * @returns A Promise that resolves to the current user ID, or null if no session is available.
-   */
-  async getCurrentUserId(): Promise<string | null> {
-    const session = await this.resolveSession();
-    return session?.$id ?? null;
-  }
-
-  /**
-   * Determines the current session type to distinguish between guests and members.
-   *
-   * @returns A Promise that resolves to the session type:
-   * - 'anonymous': Guest user with no registered account.
-   * - 'incomplete': Registered account but missing profile record.
-   * - 'registered': Fully registered user with a profile.
-   * - null: If no session is active.
-   * @throws {AppwriteException} For non-404 errors from Appwrite client calls (e.g., network or server errors).
-   */
-  async getSessionType(): Promise<
-    "anonymous" | "incomplete" | "registered" | null
-  > {
-    const user = await this.resolveSession();
-
-    if (!user) {
-      return null;
-    }
-
-    if (!user.email) {
-      return "anonymous";
-    }
-
-    // If it has email, it's a member. Check if they have a profile (ADR 026)
-    try {
-      // We use a query instead of findById to avoid unnecessary errors if possible,
-      // but findById is already implemented with 404 handling in most repositories.
-      // For AppwriteWishlistRepository, we'll need to use the profile repository if available
-      // or implement the check directly on the profiles collection.
-      await this.tablesDb.getRow({
-        databaseId: this.databaseId,
-        tableId: this.profileCollectionId,
-        rowId: user.$id,
-      });
-
-      return "registered";
-    } catch (error) {
-      if (error instanceof AppwriteException && error.code === 404) {
-        return "incomplete";
-      }
-      throw error;
-    }
-  }
-
-  /**
    * Persists a wishlist aggregate with optimistic locking.
    *
    * @param wishlist - The wishlist aggregate to save.
@@ -259,13 +145,7 @@ export class AppwriteWishlistRepository
    * @throws {PersistenceError} If the save operation fails, session cannot be ensured, or a concurrency conflict occurs.
    */
   async save(wishlist: Wishlist): Promise<void> {
-    // 1. Ensure active session (Must have identity to act)
-    const user = await this.resolveSession();
-    if (!user) {
-      throw new PersistenceError("Unauthorized: No active session for saving");
-    }
-
-    // 2. Fetch current version for optimistic locking (ADR 022)
+    // 1. Fetch current version for optimistic locking (ADR 022)
     // Double-check version immediately before write to prevent TOCTOU (ADR 023)
     try {
       const existingDoc = await this.tablesDb.getRow({
@@ -301,8 +181,8 @@ export class AppwriteWishlistRepository
       }
     }
 
-    // 3. Sync Wishlist Items First (Atomicity step)
-    // 3a. Get existing items for compensation backup
+    // 2. Sync Wishlist Items First (Atomicity step)
+    // 2a. Get existing items for compensation backup
     const existingItems: Models.Document[] = [];
     let existingCursor: string | undefined = undefined;
     do {
@@ -329,14 +209,14 @@ export class AppwriteWishlistRepository
 
     const existingItemIds = existingItems.map((row) => row.$id);
 
-    // 3b. Prepare upserts and deletes
+    // 2b. Prepare upserts and deletes
     const currentItems = wishlist.items;
     const currentItemIds = new Set(currentItems.map((item) => item.id));
     const itemIdsToDelete = existingItemIds.filter(
       (id) => !currentItemIds.has(id),
     );
 
-    // 3c. Execute sync with retry logic
+    // 2c. Execute sync with retry logic
     const MAX_RETRIES = 2;
     let attempt = 0;
     while (attempt <= MAX_RETRIES) {
@@ -526,19 +406,11 @@ export class AppwriteWishlistRepository
   }
 
   /**
-   * Deletes a wishlist and all its items (hard delete).
-   *
    * @param id - The wishlist UUID.
    * @returns A Promise that resolves when the wishlist (and its items) is deleted.
-   * @throws {PersistenceError} If the deletion fails or session cannot be ensured.
+   * @throws {PersistenceError} If the deletion fails.
    */
   async delete(id: string): Promise<void> {
-    const session = await this.resolveSession();
-    if (!session) {
-      throw new PersistenceError(
-        "Unauthorized: No active session for deleting",
-      );
-    }
     try {
       await this.tablesDb.deleteRow({
         databaseId: this.databaseId,

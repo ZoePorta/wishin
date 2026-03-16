@@ -13,6 +13,7 @@ const {
   mockCreateAnonymousSession,
   mockUpdateEmail,
   mockUpdateName,
+  mockGetRow,
 } = vi.hoisted(() => ({
   mockCreate: vi.fn(),
   mockCreateEmailPasswordSession: vi.fn(),
@@ -23,6 +24,7 @@ const {
   mockCreateAnonymousSession: vi.fn(),
   mockUpdateEmail: vi.fn(),
   mockUpdateName: vi.fn(),
+  mockGetRow: vi.fn(),
 }));
 
 // 2. Mock Appwrite SDK
@@ -52,6 +54,9 @@ vi.mock("appwrite", () => {
         this.name = "AppwriteException";
       }
     },
+    TablesDB: class {
+      getRow = mockGetRow;
+    },
     ID: { unique: () => "unique-id" },
     OAuthProvider: { Google: "google" },
   };
@@ -74,6 +79,8 @@ describe("AppwriteAuthRepository", () => {
       mockClient,
       "https://api.appwrite.io/v1",
       "project",
+      "database",
+      "profiles",
       logger,
     );
   });
@@ -263,6 +270,66 @@ describe("AppwriteAuthRepository", () => {
       mockDeleteSession.mockResolvedValue({} as Models.Session);
       await repository.logout();
       expect(mockDeleteSession).toHaveBeenCalledWith({ sessionId: "current" });
+    });
+  });
+
+  describe("getCurrentUserId", () => {
+    it("should return userId if session is active", async () => {
+      mockGet.mockResolvedValue({
+        $id: "user-123",
+      } as Models.User<Models.Preferences>);
+      const id = await repository.getCurrentUserId();
+      expect(id).toBe("user-123");
+    });
+
+    it("should return null if no session", async () => {
+      mockGet.mockRejectedValue(new AppwriteException("Unauthorized", 401));
+      const id = await repository.getCurrentUserId();
+      expect(id).toBeNull();
+    });
+  });
+
+  describe("getSessionType", () => {
+    it("should return 'anonymous' for email-less user", async () => {
+      mockGet.mockResolvedValue({
+        $id: "guest-123",
+        email: "",
+      } as Models.User<Models.Preferences>);
+      const type = await repository.getSessionType();
+      expect(type).toBe("anonymous");
+    });
+
+    it("should return 'registered' if profile exists", async () => {
+      mockGet.mockResolvedValue({
+        $id: "user-123",
+        email: "a@b.com",
+      } as Models.User<Models.Preferences>);
+      mockGetRow.mockResolvedValue({ $id: "user-123" });
+
+      const type = await repository.getSessionType();
+      expect(type).toBe("registered");
+      expect(mockGetRow).toHaveBeenCalledWith({
+        databaseId: "database",
+        tableId: "profiles",
+        rowId: "user-123",
+      });
+    });
+
+    it("should return 'incomplete' if profile does not exist (404)", async () => {
+      mockGet.mockResolvedValue({
+        $id: "user-123",
+        email: "a@b.com",
+      } as Models.User<Models.Preferences>);
+      mockGetRow.mockRejectedValue(new AppwriteException("Not found", 404));
+
+      const type = await repository.getSessionType();
+      expect(type).toBe("incomplete");
+    });
+
+    it("should return null if no session", async () => {
+      mockGet.mockRejectedValue(new AppwriteException("Unauthorized", 401));
+      const type = await repository.getSessionType();
+      expect(type).toBeNull();
     });
   });
 });

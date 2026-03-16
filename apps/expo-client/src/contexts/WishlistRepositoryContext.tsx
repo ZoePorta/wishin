@@ -5,6 +5,7 @@ import type {
   TransactionRepository,
   UserRepository,
   AuthRepository,
+  ProfileRepository,
 } from "@wishin/domain";
 
 interface WishlistRepositoryContextProps {
@@ -12,6 +13,7 @@ interface WishlistRepositoryContextProps {
   transactionRepository: TransactionRepository;
   userRepository: UserRepository;
   authRepository: AuthRepository;
+  profileRepository: ProfileRepository;
 }
 
 const WishlistRepositoryContext = createContext<
@@ -38,12 +40,14 @@ export const WishlistRepositoryProvider: React.FC<{
   transactionRepository: TransactionRepository;
   userRepository: UserRepository;
   authRepository: AuthRepository;
+  profileRepository: ProfileRepository;
   children: ReactNode;
 }> = ({
   wishlistRepository,
   transactionRepository,
   userRepository,
   authRepository,
+  profileRepository,
   children,
 }) => {
   const value = useMemo(
@@ -52,8 +56,15 @@ export const WishlistRepositoryProvider: React.FC<{
       transactionRepository,
       userRepository,
       authRepository,
+      profileRepository,
     }),
-    [wishlistRepository, transactionRepository, userRepository, authRepository],
+    [
+      wishlistRepository,
+      transactionRepository,
+      userRepository,
+      authRepository,
+      profileRepository,
+    ],
   );
 
   return (
@@ -119,4 +130,14 @@ export const useUserRepository = (): UserRepository => {
  */
 export const useAuthRepository = (): AuthRepository => {
   return useRepositories().authRepository;
+};
+
+/**
+ * Hook to consume only the {@link ProfileRepository} from context.
+ *
+ * @returns The profile repository instance.
+ * @throws {Error} If {@link useRepositories} fails (e.g. used outside of provider).
+ */
+export const useProfileRepository = (): ProfileRepository => {
+  return useRepositories().profileRepository;
 };

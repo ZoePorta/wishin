@@ -6,6 +6,7 @@ import {
   AppwriteWishlistRepository,
   AppwriteTransactionRepository,
   AppwriteAuthRepository,
+  AppwriteProfileRepository,
   createAppwriteClient,
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
@@ -50,7 +51,6 @@ function createRepositories() {
     Config.appwrite.databaseId,
     Config.collections.wishlists,
     Config.collections.wishlistItems,
-    Config.collections.profiles,
     consoleLogger,
     {
       addBreadcrumb: (message, category, data) => {
@@ -72,13 +72,22 @@ function createRepositories() {
     client,
     Config.appwrite.endpoint,
     Config.appwrite.projectId,
+    Config.appwrite.databaseId,
+    Config.collections.profiles,
     consoleLogger,
+  );
+
+  const profileRepository = new AppwriteProfileRepository(
+    client,
+    Config.appwrite.databaseId,
+    Config.collections.profiles,
   );
 
   return {
     wishlistRepository,
     transactionRepository,
     authRepository,
+    profileRepository,
   };
 }
 
@@ -126,8 +135,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
 
     const init = async () => {
       try {
-        const sessionAwareRepo: SessionAwareRepository =
-          repos.wishlistRepository;
+        const sessionAwareRepo: SessionAwareRepository = repos.authRepository;
 
         // timeout to prevent slow network from blocking startup (ADR 027)
         const timeoutPromise = new Promise((_, reject) =>
@@ -183,8 +191,8 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     <WishlistRepositoryProvider
       wishlistRepository={repos.wishlistRepository}
       transactionRepository={repos.transactionRepository}
-      userRepository={repos.wishlistRepository}
-      authRepository={repos.authRepository}
+      profileRepository={repos.profileRepository}
+      userRepository={repos.authRepository}
     >
       <UserProvider>{children}</UserProvider>
     </WishlistRepositoryProvider>
