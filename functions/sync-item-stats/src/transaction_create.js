@@ -46,8 +46,9 @@ export default async ({ req, res, log, error }) => {
       rowId: itemId,
     });
 
-    // If totalQuantity is missing or falsy, it's considered infinite
-    const max = item.totalQuantity || null;
+    // If isUnlimited is true, it's considered infinite.
+    // Otherwise, totalQuantity defaults to 1 for non-unlimited items.
+    const max = item.isUnlimited ? null : item.totalQuantity || 1;
 
     // 2. Perform Atomic Increment
     // Business Invariant: Purchased quantity cannot exceed totalQuantity (if finite)
