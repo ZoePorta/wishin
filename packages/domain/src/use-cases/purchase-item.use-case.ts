@@ -2,7 +2,6 @@ import {
   WishlistNotFoundError,
   InvalidOperationError,
 } from "../errors/domain-errors";
-import { Wishlist } from "../aggregates/wishlist";
 import { Transaction } from "../aggregates/transaction";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
@@ -18,14 +17,11 @@ import type { WishlistOutput } from "./dtos/get-wishlist.dto";
  *
  * This coordinates:
  * 1. Fetching the wishlist.
- * 2. Updating the wishlist item's purchased quantity.
+ * 2. Performing domain validation for the purchase.
  * 3. Recording a purchase transaction.
  *
- * NOTE: Advanced reservation promotion and "Smart Consumption" (ADR 024)
- * are deferred per ADR 025. This use-case only handles direct purchases.
- *
- * FIXME: Sequential saves below break atomicity (ADR 023).
- * Mitigation: Multi-stage compensating rollback.
+ * NOTE: Item statistics updates (purchasedQuantity) are handled automatically
+ * by Appwrite functions triggered by transaction creation/deletion.
  *
  * @throws {WishlistNotFoundError} If the wishlist is not found.
  * @throws {InvalidOperationError} If the item is missing.
@@ -34,7 +30,7 @@ import type { WishlistOutput } from "./dtos/get-wishlist.dto";
  */
 export class PurchaseItemUseCase {
   /**
-   * @param {WishlistRepository} wishlistRepository - Repository for wishlist persistence/retrieval.
+   * @param {WishlistRepository} wishlistRepository - Repository for wishlist retrieval.
    * @param {ProfileRepository} profileRepository - Repository for user profile data.
    * @param {TransactionRepository} transactionRepository - Repository for recording purchase transactions.
    * @param {Logger} logger - Logger for technical/operational logs.
@@ -52,16 +48,15 @@ export class PurchaseItemUseCase {
   ) {}
 
   /**
-   * Performs a direct purchase flow for an item and updates the wishlist.
+   * Performs a direct purchase flow for an item.
    *
    * This method coordinates:
    * 1. Fetching the wishlist and owner profile.
-   * 2. Updating the wishlist item's purchased quantity.
-   * 3. Persisting the updated wishlist.
-   * 4. Recording a new purchase transaction.
+   * 2. Performing domain validation for the purchase.
+   * 3. Recording a new purchase transaction.
    *
    * @param {PurchaseItemInput} input - The payload containing wishlistId, itemId, userId, and quantity.
-   * @returns {Promise<WishlistOutput>} A promise that resolves to the updated wishlist data.
+   * @returns {Promise<WishlistOutput>} A promise that resolves to the updated wishlist data (optimistic DTO).
    * @throws {WishlistNotFoundError} If the wishlist is not found.
    * @throws {InvalidOperationError} If the item is missing or quantity is invalid.
    * @throws {Error} If persistence or other operations fail.
@@ -82,11 +77,12 @@ export class PurchaseItemUseCase {
       throw new InvalidOperationError(`Item ${itemId} not found in wishlist`);
     }
 
-    // 1. Update Wishlist (Direct Purchase only for MVP - ADR 025)
-    // We pass 0 to consumeFromReserved as reservations are deferred.
+    // 1. Domain Validation and Optimistic State (ADR 025)
+    // We update the domain object to validate logic and return the updated state,
+    // but we NO LONGER persist the wishlist here. Appwrite functions will handle it.
     const updatedWishlist = wishlist.purchaseItem(itemId, quantity, 0);
 
-    // 2. Prepare Transaction (Always a new purchase)
+    // 2. Prepare Transaction
     const transaction = Transaction.createPurchase({
       id: this.uuidFn(),
       itemId: itemId,
@@ -99,16 +95,8 @@ export class PurchaseItemUseCase {
       ownerUsername,
     });
 
-    // 3. Persistence (Sequential saves for MVP)
-    await this.wishlistRepository.save(updatedWishlist);
-
-    const rollbackPlan = {
-      wishlist: wishlist, // Original state (version check will use this)
-      pendingTransactions: [] as Transaction[],
-    };
-
+    // 3. Persistence (Transaction save triggers item stats update via Appwrite Function)
     try {
-      rollbackPlan.pendingTransactions.push(transaction);
       await this.transactionRepository.save(transaction);
     } catch (error: unknown) {
       const errorMessage =
@@ -129,8 +117,6 @@ export class PurchaseItemUseCase {
           wishlistId: wishlist.id,
           itemId: itemId,
           itemQuantity: quantity,
-          wishlistVersion: wishlist.version,
-          pendingTransactionCount: rollbackPlan.pendingTransactions.length,
           error: errorMessage,
         },
       );
@@ -141,11 +127,11 @@ export class PurchaseItemUseCase {
         reason: "transaction_save_failure",
       });
 
-      await this.rollback(rollbackPlan, input);
+      await this.rollback(transaction.id, input);
       throw error;
     }
 
-    // Success telemetry signal (ADR 023 / Review Comment)
+    // Success telemetry signal
     this.observability.addBreadcrumb(
       "Purchase completion successful",
       "transaction",
@@ -165,95 +151,48 @@ export class PurchaseItemUseCase {
     return WishlistOutputMapper.toDTO(updatedWishlist);
   }
 
+  /**
+   * Performs a compensating rollback by deleting the partially saved transaction.
+   *
+   * @param {string} transactionId - The ID of the transaction to delete.
+   * @param {PurchaseItemInput} input - Original input for context.
+   */
   private async rollback(
-    plan: { wishlist: Wishlist; pendingTransactions: Transaction[] },
+    transactionId: string,
     input: PurchaseItemInput,
   ): Promise<void> {
     try {
-      // 1. Revert Wishlist (optimistic re-fetch)
-      try {
-        const fresh = await this.wishlistRepository.findById(plan.wishlist.id);
-        if (fresh) {
-          // Optimistic version check: ensure it's exactly one version ahead (ours)
-          if (fresh.version === plan.wishlist.version + 1) {
-            const rolledBackWishlist = fresh.cancelItemPurchase(
-              input.itemId,
-              input.quantity,
-            );
-            await this.wishlistRepository.save(rolledBackWishlist);
-          } else {
-            this.logger.warn(
-              "Rollback skipped: Wishlist version mismatch (concurrent change detected).",
-              {
-                wishlistId: plan.wishlist.id,
-                itemId: input.itemId,
-                originalVersion: plan.wishlist.version,
-                freshVersion: fresh.version,
-              },
-            );
-
-            this.observability.addBreadcrumb(
-              "Rollback skipped due to version mismatch",
-              "transaction",
-              {
-                wishlistId: plan.wishlist.id,
-                originalVersion: plan.wishlist.version,
-                freshVersion: fresh.version,
-              },
-            );
-          }
-        }
-      } catch (wishlistError) {
-        const wishlistErrorMessage =
-          wishlistError instanceof Error
-            ? wishlistError.message
-            : String(wishlistError);
-        this.logger.error("Failed to revert wishlist during rollback", {
-          wishlistId: plan.wishlist.id,
-          error: wishlistErrorMessage,
-        });
-      }
-
-      // 2. Revert Transactions
-      for (const tx of plan.pendingTransactions) {
-        try {
-          await this.transactionRepository.delete(tx.id);
-        } catch (txError) {
-          const txErrorMessage =
-            txError instanceof Error ? txError.message : String(txError);
-          this.logger.error("Failed to delete transaction during rollback", {
-            transactionId: tx.id,
-            error: txErrorMessage,
-          });
-        }
-      }
+      await this.transactionRepository.delete(transactionId);
 
       this.logger.info("Compensating rollback finished.", {
-        wishlistId: plan.wishlist.id,
+        wishlistId: input.wishlistId,
+        transactionId,
       });
 
       this.observability.addBreadcrumb(
         "Compensating rollback finished",
         "transaction",
         {
-          wishlistId: plan.wishlist.id,
+          wishlistId: input.wishlistId,
           itemId: input.itemId,
+          transactionId,
         },
       );
 
       this.observability.trackEvent("purchase_rollback_completed", {
-        wishlistId: plan.wishlist.id,
+        wishlistId: input.wishlistId,
         itemId: input.itemId,
       });
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : String(e);
       this.logger.error("CRITICAL: Rollback failed", {
-        wishlistId: plan.wishlist.id,
+        wishlistId: input.wishlistId,
+        transactionId,
         error: errorMessage,
       });
 
       this.observability.trackEvent("purchase_rollback_failed", {
-        wishlistId: plan.wishlist.id,
+        wishlistId: input.wishlistId,
         itemId: input.itemId,
         error: errorMessage,
       });

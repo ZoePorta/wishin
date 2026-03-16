@@ -20,12 +20,11 @@ import type { WishlistOutput } from "./dtos/get-wishlist.dto";
  * 1. Fetching the wishlist.
  * 2. Verifying the performing user is registered.
  * 3. Fetching the wishlist owner's username for denormalization.
- * 4. Updating the wishlist item's reserved quantity.
+ * 4. Performing domain validation for the reservation.
  * 5. Creating and persisting a reservation transaction.
  *
- * FIXME: Sequential saves below break atomicity (ADR 023).
- * Current mitigation: Compensating rollback for MVP.
- * Long-term fix: Move to Appwrite Functions (Phase 6) for server-side atomic multi-entity updates.
+ * NOTE: Item statistics updates (reservedQuantity) are handled automatically
+ * by Appwrite functions triggered by transaction creation/deletion.
  *
  * @throws {WishlistNotFoundError} If the wishlist is not found.
  * @throws {InvalidOperationError} If the user is not registered or the item is missing.
@@ -36,7 +35,7 @@ export class ReserveItemUseCase {
   /**
    * Initializes the use case with dependencies.
    *
-   * @param wishlistRepository - Repository for wishlist operations.
+   * @param wishlistRepository - Repository for wishlist retrieval.
    * @param profileRepository - Repository for profile metadata.
    * @param transactionRepository - Repository for transaction persistence.
    * @param logger - Logger for operational telemetry.
@@ -55,7 +54,7 @@ export class ReserveItemUseCase {
    * Executes the reservation logic.
    *
    * @param input - Reservation details.
-   * @returns {Promise<WishlistOutput>} The updated wishlist as a DTO.
+   * @returns {Promise<WishlistOutput>} The updated wishlist as a DTO (optimistic).
    * @throws {WishlistNotFoundError} If the wishlist id does not exist.
    * @throws {InvalidOperationError} If the user is not registered or the item is missing.
    * @throws {InsufficientStockError} If the requested quantity exceeds available stock.
@@ -91,7 +90,8 @@ export class ReserveItemUseCase {
       );
     }
 
-    // 1. Update Wishlist state (Inventory check happens inside aggregate)
+    // 1. Domain Validation and Optimistic State
+    // We update the aggregate to validate rules, but NO LONGER persist it here.
     let updatedWishlist: Wishlist;
     try {
       updatedWishlist = wishlist.reserveItem(input.itemId, input.quantity);
@@ -119,34 +119,22 @@ export class ReserveItemUseCase {
       ownerUsername: ownerUsername,
     });
 
-    // 3. Persist Changes (Non-atomic sequential saves for MVP)
-    // TODO: Upgrade to server-side atomicity in Phase 6.
-    await this.wishlistRepository.save(updatedWishlist);
-
+    // 3. Persist Changes (Transaction save triggers item stats update)
     try {
       await this.transactionRepository.save(transaction);
     } catch (error: unknown) {
-      // Compensating Rollback: Attempt to undo the reservation in the wishlist
+      // Compensating Rollback: Attempt to delete the partially saved transaction
       this.logger.error(
-        "Transaction save failed after wishlist update. Attempting compensating rollback.",
+        "Transaction save failed. Attempting compensating rollback.",
         { wishlistId: wishlist.id, itemId: input.itemId },
       );
 
       try {
-        // Re-fetch to get the latest version and prevent optimistic lock failure (ADR 022)
-        const freshWishlist = await this.wishlistRepository.findById(
-          wishlist.id,
-        );
-        if (freshWishlist) {
-          const rollbackWishlist = freshWishlist.cancelItemReservation(
-            input.itemId,
-            input.quantity,
-          );
-          await this.wishlistRepository.save(rollbackWishlist);
-          this.logger.info("Compensating rollback successful", {
-            wishlistId: wishlist.id,
-          });
-        }
+        await this.transactionRepository.delete(transaction.id);
+        this.logger.info("Compensating rollback successful", {
+          wishlistId: wishlist.id,
+          transactionId: transaction.id,
+        });
       } catch (rollbackError: unknown) {
         this.logger.error("CRITICAL: Compensating rollback failed", {
           originalError: error instanceof Error ? error.message : String(error),
@@ -155,6 +143,7 @@ export class ReserveItemUseCase {
               ? rollbackError.message
               : String(rollbackError),
           wishlistId: wishlist.id,
+          transactionId: transaction.id,
         });
       }
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Superseded by [ADR 028](028-accelerate-appwrite-functions.md) (2026-03-16)
 
 ## Context
 
