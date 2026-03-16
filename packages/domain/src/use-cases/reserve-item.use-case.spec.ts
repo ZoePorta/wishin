@@ -38,6 +38,7 @@ describe("ReserveItemUseCase", () => {
     } as unknown as Mocked<ProfileRepository>;
     transactionRepo = {
       save: vi.fn(),
+      delete: vi.fn(),
     } as unknown as Mocked<TransactionRepository>;
     logger = {
       debug: vi.fn(),
@@ -207,7 +208,7 @@ describe("ReserveItemUseCase", () => {
       quantity: 2,
     });
 
-    expect(wishlistRepo.save).toHaveBeenCalled();
+    expect(wishlistRepo.save).not.toHaveBeenCalled();
     expect(transactionRepo.save).toHaveBeenCalled();
     const savedTransaction = transactionRepo.save.mock.calls[0][0];
     expect(savedTransaction.toProps().ownerUsername).toBe("owner");
@@ -259,7 +260,7 @@ describe("ReserveItemUseCase", () => {
     expect(savedTransaction.toProps().ownerUsername).toBe("Unknown User");
   });
 
-  it("should attempt compensating rollback if transaction save fails", async () => {
+  it("should attempt rollback (transaction delete) if transaction save fails", async () => {
     const item = WishlistItem.reconstitute({
       id: itemId,
       wishlistId,
@@ -301,12 +302,6 @@ describe("ReserveItemUseCase", () => {
     const transactionError = new Error("Database error");
     transactionRepo.save.mockRejectedValue(transactionError);
 
-    // Mock the second findById call during rollback
-    // Note: The second findById returns the "fresh" state. In this test, we assume no concurrent modifications.
-    // However, after the first wishlistRepo.save, the DB would have version 1.
-    const wishlistWithReservation = wishlist.reserveItem(itemId, 1);
-    wishlistRepo.findById.mockResolvedValueOnce(wishlistWithReservation);
-
     await expect(
       useCase.execute({
         wishlistId,
@@ -316,29 +311,14 @@ describe("ReserveItemUseCase", () => {
       }),
     ).rejects.toThrow(transactionError);
 
-    // Verify 1st save (reservation) and 2nd save (rollback)
-    expect(wishlistRepo.save).toHaveBeenCalledTimes(2);
+    // Verify wishlist save was NOT called
+    expect(wishlistRepo.save).not.toHaveBeenCalled();
 
-    // Initial save: version 1 (reconstituted with 0, reserveItem increments to 1)
-    const firstSave = wishlistRepo.save.mock.calls[0][0];
-    expect(firstSave.version).toBe(1);
-    expect(firstSave.items[0].reservedQuantity).toBe(1);
-
-    /**
-     * NOTE: This test assumes no concurrent modifications between the failed transaction save
-     * and the compensating rollback. The mocked repository does not enforce optimistic-locking,
-     * so the observed rollback version (secondSave.version === 2) succeeds by coincidence.
-     * In the real repository (appwrite-wishlist repository behavior) a concurrent update
-     * could cause the rollback to be rejected due to version mismatch if findById is not used
-     * to fetch the latest state.
-     */
-    // Rollback save: version 2
-    const secondSave = wishlistRepo.save.mock.calls[1][0];
-    expect(secondSave.version).toBe(2);
-    expect(secondSave.items[0].reservedQuantity).toBe(0);
+    // Verify transaction delete WAS called for rollback
+    expect(transactionRepo.delete).toHaveBeenCalledWith(transactionId);
 
     expect(logger.error).toHaveBeenCalledWith(
-      "Transaction save failed after wishlist update. Attempting compensating rollback.",
+      "Transaction save failed. Attempting compensating rollback.",
       expect.any(Object),
     );
     expect(logger.info).toHaveBeenCalledWith(

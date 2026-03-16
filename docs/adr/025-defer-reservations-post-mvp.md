@@ -3,6 +3,7 @@
 ## Status
 
 Accepted (2026-03-09)
+Amended by [ADR 028](file:///home/zoe/Documents/wishin/docs/adr/028-accelerate-appwrite-functions.md) (2026-03-16)
 
 Accepted after implementation was merged and validated as part of the MVP consolidation.
 

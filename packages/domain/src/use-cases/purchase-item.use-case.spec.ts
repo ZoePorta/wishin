@@ -134,14 +134,14 @@ describe("PurchaseItemUseCase", () => {
       quantity: 2,
     });
 
-    expect(wishlistRepo.save).toHaveBeenCalled();
+    expect(wishlistRepo.save).not.toHaveBeenCalled();
     expect(transactionRepo.save).toHaveBeenCalled();
     const savedTransaction = transactionRepo.save.mock.calls[0][0];
     expect(savedTransaction.toProps().status).toBe(TransactionStatus.PURCHASED);
     expect(savedTransaction.toProps().quantity).toBe(2);
     expect(result.items[0].purchasedQuantity).toBe(2);
 
-    // Verify Observability (Review Comment)
+    // Verify Observability
     expect(observability.trackEvent).toHaveBeenCalledWith(
       "purchase_completed",
       {
@@ -162,7 +162,7 @@ describe("PurchaseItemUseCase", () => {
     );
   });
 
-  it("should attempt rollback if transaction save fails", async () => {
+  it("should attempt rollback (transaction delete) if transaction save fails", async () => {
     const item = WishlistItem.reconstitute({
       id: itemId,
       wishlistId,
@@ -191,17 +191,13 @@ describe("PurchaseItemUseCase", () => {
     const transactionError = new Error("Persistence error");
     transactionRepo.save.mockRejectedValue(transactionError);
 
-    // Mock rollback re-fetch
-    const wishlistWithPurchase = wishlist.purchaseItem(itemId, 1, 0);
-    wishlistRepo.findById.mockResolvedValueOnce(wishlistWithPurchase);
-
     await expect(
       useCase.execute({ wishlistId, itemId, userId, quantity: 1 }),
     ).rejects.toThrow(transactionError);
 
-    expect(wishlistRepo.save).toHaveBeenCalledTimes(2); // 1. Purchase 2. Rollback
-    const rollbackSave = wishlistRepo.save.mock.calls[1][0];
-    expect(rollbackSave.items[0].purchasedQuantity).toBe(0);
+    // Should NOT call wishlist save
+    expect(wishlistRepo.save).not.toHaveBeenCalled();
+    // Should call transaction delete for rollback
     expect(transactionRepo.delete).toHaveBeenCalledWith(transactionId);
 
     // Verify Observability
@@ -219,60 +215,5 @@ describe("PurchaseItemUseCase", () => {
       itemId,
       reason: "transaction_save_failure",
     });
-  });
-
-  it("should record breadcrumb when rollback skip occurs due to version mismatch", async () => {
-    const item = WishlistItem.reconstitute({
-      id: itemId,
-      wishlistId,
-      name: "Test Item",
-      isUnlimited: false,
-      totalQuantity: 5,
-      reservedQuantity: 0,
-      purchasedQuantity: 0,
-      priority: Priority.MEDIUM,
-    });
-    const wishlist = Wishlist.reconstitute({
-      id: wishlistId,
-      ownerId,
-      title: "My Wishlist",
-      visibility: Visibility.LINK,
-      participation: Participation.ANYONE,
-      items: [item.toProps()],
-      version: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    wishlistRepo.findById.mockResolvedValueOnce(wishlist);
-    profileRepo.findById.mockResolvedValue(null);
-
-    const transactionError = new Error("Persistence error");
-    transactionRepo.save.mockRejectedValue(transactionError);
-
-    // Mock version mismatch on rollback: fetch returns version 2 (expecting 1)
-    const wishlistMismatch = Wishlist.reconstitute({
-      ...wishlist.toProps(),
-      items: wishlist.items.map((i) => i.toProps()),
-      version: 2,
-    });
-    wishlistRepo.findById.mockResolvedValueOnce(wishlistMismatch);
-
-    await expect(
-      useCase.execute({ wishlistId, itemId, userId, quantity: 1 }),
-    ).rejects.toThrow(transactionError);
-
-    expect(observability.addBreadcrumb).toHaveBeenCalledWith(
-      "Rollback skipped due to version mismatch",
-      "transaction",
-      expect.objectContaining({
-        wishlistId,
-        originalVersion: 0,
-        freshVersion: 2,
-      }),
-    );
-
-    // Verify that compensating delete still ran for the transaction (Duplicate Comment / ADR 023)
-    expect(transactionRepo.delete).toHaveBeenCalledWith(transactionId);
   });
 });

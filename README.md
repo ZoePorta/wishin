@@ -108,6 +108,7 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 - [ADR 025: Deferring Reservation Feature for Post-MVP](docs/adr/025-defer-reservations-post-mvp.md)
 - [ADR 026: Incomplete Account Strategy](docs/adr/026-incomplete-account-strategy.md)
 - [ADR 027: Defer Anonymous Session Creation](docs/adr/027-defer-anonymous-session-creation.md)
+- [ADR 028: Accelerate Appwrite Functions for Atomicity and Permission Resolution](docs/adr/028-accelerate-appwrite-functions.md)
 
 ## [Project Roadmap](docs/roadmap.md)
 
