@@ -39,57 +39,33 @@ export default async ({ req, res, log, error }) => {
   }
 
   try {
-    // Retry logic for optimistic concurrency/atomic increment simulation
-    let attempts = 0;
-    const MAX_ATTEMPTS = 3;
-    let lastError = null;
+    // 1. Fetch item to get totalQuantity for capping
+    const item = await tablesDb.getRow({
+      databaseId: process.env.DATABASE_ID,
+      tableId: process.env.ITEMS_COLLECTION_ID,
+      rowId: itemId,
+    });
 
-    while (attempts < MAX_ATTEMPTS) {
-      try {
-        // 1. Read current state
-        const item = await tablesDb.getRow({
-          databaseId: process.env.DATABASE_ID,
-          tableId: process.env.ITEMS_COLLECTION_ID,
-          rowId: itemId,
-        });
+    // If totalQuantity is missing or falsy, it's considered infinite
+    const max = item.totalQuantity || null;
 
-        const currentPurchasedQuantity = item.purchasedQuantity || 0;
-        const newPurchasedQuantity = currentPurchasedQuantity + addedQuantity;
+    // 2. Perform Atomic Increment
+    // Business Invariant: Purchased quantity cannot exceed totalQuantity (if finite)
+    const result = await tablesDb.incrementRowColumn({
+      databaseId: process.env.DATABASE_ID,
+      tableId: process.env.ITEMS_COLLECTION_ID,
+      rowId: itemId,
+      column: "purchasedQuantity",
+      value: addedQuantity,
+      max: max,
+    });
 
-        // 2. Perform Update
-        // Note: Appwrite's updateRow doesn't natively support conditional writes (optimistic locking)
-        // in the standard SDK, but by re-reading inside the retry loop and doing it quickly,
-        // we minimize the race window.
-        await tablesDb.updateRow({
-          databaseId: process.env.DATABASE_ID,
-          tableId: process.env.ITEMS_COLLECTION_ID,
-          rowId: itemId,
-          data: {
-            purchasedQuantity: newPurchasedQuantity,
-          },
-        });
-
-        log(
-          `Success: Updated item ${itemId}. Old total: ${currentPurchasedQuantity}, New total: ${newPurchasedQuantity} (Attempt ${attempts + 1})`,
-        );
-        return res.json({ success: true });
-      } catch (err) {
-        lastError = err;
-        attempts++;
-        if (attempts < MAX_ATTEMPTS) {
-          error(
-            `Retry attempt ${attempts} failed for item ${itemId}: ${err.message}`,
-          );
-          // Exponential backoff with jitter
-          const delay = Math.pow(2, attempts) * 100 + Math.random() * 100;
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-    }
-
-    throw lastError || new Error("Failed to update item after maximum retries");
+    log(
+      `Success: Atomically incremented item ${itemId}. New purchasedQuantity: ${result.purchasedQuantity}`,
+    );
+    return res.json({ success: true });
   } catch (err) {
-    error(`Failed to update item ${itemId}: ${err.message}`);
+    error(`Failed to update item ${itemId} during increment: ${err.message}`);
     return res.json({ success: false, error: err.message }, 500);
   }
 };

@@ -39,59 +39,25 @@ export default async ({ req, res, log, error }) => {
   }
 
   try {
-    // Retry logic for optimistic concurrency/atomic decrement simulation
-    let attempts = 0;
-    const MAX_ATTEMPTS = 3;
-    let lastError = null;
+    // 1. Perform Atomic Decrement
+    // Business Invariant: Purchased quantity cannot be negative
+    const result = await tablesDb.decrementRowColumn({
+      databaseId: process.env.DATABASE_ID,
+      tableId: process.env.ITEMS_COLLECTION_ID,
+      rowId: itemId,
+      column: "purchasedQuantity",
+      value: removedQuantity,
+      min: 0,
+    });
 
-    while (attempts < MAX_ATTEMPTS) {
-      try {
-        // 1. Read current state
-        const item = await tablesDb.getRow({
-          databaseId: process.env.DATABASE_ID,
-          tableId: process.env.ITEMS_COLLECTION_ID,
-          rowId: itemId,
-        });
-
-        const currentPurchasedQuantity = item.purchasedQuantity || 0;
-        // Business Invariant: Purchased quantity cannot be negative
-        const newPurchasedQuantity = Math.max(
-          0,
-          currentPurchasedQuantity - removedQuantity,
-        );
-
-        // 2. Perform Update
-        await tablesDb.updateRow({
-          databaseId: process.env.DATABASE_ID,
-          tableId: process.env.ITEMS_COLLECTION_ID,
-          rowId: itemId,
-          data: {
-            purchasedQuantity: newPurchasedQuantity,
-          },
-        });
-
-        log(
-          `Success: Updated item ${itemId} after transaction deletion. Old total: ${currentPurchasedQuantity}, New total: ${newPurchasedQuantity} (Attempt ${attempts + 1})`,
-        );
-        return res.json({ success: true });
-      } catch (err) {
-        lastError = err;
-        attempts++;
-        if (attempts < MAX_ATTEMPTS) {
-          error(
-            `Retry attempt ${attempts} failed for item ${itemId} during deletion: ${err.message}`,
-          );
-          // Exponential backoff with jitter
-          const delay = Math.pow(2, attempts) * 100 + Math.random() * 100;
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-    }
-
-    throw lastError || new Error("Failed to update item after maximum retries");
+    log(
+      `Success: Atomically decremented item ${itemId}. New purchasedQuantity: ${result.purchasedQuantity}`,
+    );
+    return res.json({ success: true });
   } catch (err) {
+    // Improve observability with full error details and context
     error(
-      `Failed to update item ${itemId} on transaction deletion: ${err.message}`,
+      `Failed to update item ${itemId} during decrement. Removed: ${removedQuantity}. Error: ${err.stack || err.message || err}`,
     );
     return res.json({ success: false, error: err.message }, 500);
   }

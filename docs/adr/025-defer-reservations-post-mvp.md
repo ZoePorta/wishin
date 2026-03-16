@@ -9,7 +9,7 @@ Accepted after implementation was merged and validated as part of the MVP consol
 
 ## Context
 
-The initial design included a dual flow for wishlist interactions: Direct Purchase and Reservation. Implementing a robust "Smart Consumption" logic that merges these flows (FIFO consumption, consolidation, etc.) as described in [ADR 024](file:///home/zoe/Documents/wishin/docs/adr/024-smart-purchase-consumption.md) has introduced significant complexity in the Use Case layer. This decision pauses the implementation described in ADR 024 (Smart Purchase Consumption) for post-MVP. Additionally, the UI/UX requirements for managing and notifying users about existing reservations add further friction to the MVP development.
+The initial design included a dual flow for wishlist interactions: Direct Purchase and Reservation. Implementing a robust "Smart Consumption" logic that merges these flows (FIFO consumption, consolidation, etc.) as described in [ADR 024](024-smart-purchase-consumption.md) has introduced significant complexity in the Use Case layer. This decision pauses the implementation described in ADR 024 (Smart Purchase Consumption) for post-MVP. Additionally, the UI/UX requirements for managing and notifying users about existing reservations add further friction to the MVP development.
 
 ## Decision
 
