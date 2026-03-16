@@ -75,4 +75,8 @@ export default tseslint.config(
       "no-console": "off",
     },
   },
+  {
+    files: ["functions/**/*.js"],
+    ...tseslint.configs.disableTypeChecked,
+  },
 );
