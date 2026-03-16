@@ -28,7 +28,7 @@ export default async ({ req, res, log, error }) => {
   const tablesDb = new TablesDB(client);
 
   const transaction = req.body;
-  const itemId = transaction.itemId?.$id;
+  const itemId = transaction?.itemId?.$id;
   const removedQuantity = Number(transaction.quantity);
 
   log(
