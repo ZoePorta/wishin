@@ -8,13 +8,17 @@ export default async ({ req, res, log, error }) => {
 
   const databases = new Databases(client);
 
+  context.log("req", req);
+  context.log("databases", databases);
+
   // req.body is the transaction document that was just created
   const transaction = req.body;
   const itemId = transaction.itemId; // Ensure this matches your column name exactly
   const addedQuantity = transaction.quantity;
 
-  // Debugging logs to see what's happening in the Appwrite Console
-  log(`Transaction received. ItemID: ${itemId}, Quantity: ${addedQuantity}`);
+  context.log("transaction", transaction);
+  context.log("itemId", itemId);
+  context.log("addedQuantity", addedQuantity);
 
   if (!itemId) {
     error("Error: itemId is missing in the transaction document.");
