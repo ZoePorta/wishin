@@ -161,6 +161,7 @@ export const useProfileRepository = (): ProfileRepository => {
  * Hook to consume the Logger from context.
  *
  * @returns The Logger instance.
+ * @throws {Error} When used outside the provider.
  */
 export const useLogger = (): Logger => {
   return useRepositories().logger;
@@ -170,6 +171,7 @@ export const useLogger = (): Logger => {
  * Hook to consume the ObservabilityService from context.
  *
  * @returns The ObservabilityService instance.
+ * @throws {Error} When used outside the provider.
  */
 export const useObservability = (): ObservabilityService => {
   return useRepositories().observability;

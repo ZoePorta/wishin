@@ -31,6 +31,8 @@ interface PublicItemCardProps {
  * @param {PublicItemCardProps} props - The component props.
  * @param {WishlistItemOutput} props.item - The wishlist item object to display.
  * @param {string} props.wishlistId - The ID of the wishlist this item belongs to.
+ * @param {boolean} props.hasShownSuggestion - Whether the guest suggestion has been shown.
+ * @param {() => void} props.onSuggestionShown - Callback when the guest suggestion is shown.
  * @returns {JSX.Element} The rendered public item card.
  */
 export const PublicItemCard: React.FC<PublicItemCardProps> = ({
@@ -90,6 +92,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         });
         setSuccessVisible(true);
       } catch (err: unknown) {
+        // usePurchaseItem (via useAsyncActionEx) re-throws errors, so we catch them here
         Alert.alert(
           "Purchase Failed",
           err instanceof Error ? err.message : "Something went wrong",

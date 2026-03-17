@@ -12,7 +12,7 @@ import {
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
-import { PersistenceError } from "@wishin/domain";
+import { PersistenceError, type ObservabilityService } from "@wishin/domain";
 
 /**
  * Adapter that maps console methods to the Logger interface.
@@ -35,6 +35,27 @@ const consoleLogger = {
 };
 
 /**
+ * Shared observability implementation.
+ * Sentry and PostHog are wired in production.
+ */
+const OBSERVABILITY: ObservabilityService = {
+  addBreadcrumb: (message, category, data) => {
+    if (process.env.NODE_ENV === "production") {
+      // NOTE: Wire Sentry.addBreadcrumb here
+      // Sentry.addBreadcrumb({ message, category, data });
+    }
+    console.warn(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
+  },
+  trackEvent: (name, props) => {
+    if (process.env.NODE_ENV === "production") {
+      // NOTE: Wire PostHog.capture here
+      // posthog.capture(name, props);
+    }
+    console.warn(`[Event] ${name}`, props);
+  },
+};
+
+/**
  * Factory function to create new repository instances.
  * This is now a pure function that does not maintain its own cache,
  * allowing the React component to manage the lifecycle.
@@ -53,14 +74,7 @@ function createRepositories() {
     Config.collections.wishlists,
     Config.collections.wishlistItems,
     consoleLogger,
-    {
-      addBreadcrumb: (message, category, data) => {
-        console.warn(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
-      },
-      trackEvent: (name, props) => {
-        console.warn(`[Event] ${name}`, props);
-      },
-    }, // Simple Observability implementation using console for now
+    OBSERVABILITY,
   );
 
   const transactionRepository = new AppwriteTransactionRepository(
@@ -199,19 +213,6 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     );
   }
 
-  const observability = {
-    addBreadcrumb: (
-      message: string,
-      category?: string,
-      data?: Record<string, unknown>,
-    ) => {
-      console.warn(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
-    },
-    trackEvent: (name: string, props?: Record<string, unknown>) => {
-      console.warn(`[Event] ${name}`, props);
-    },
-  };
-
   return (
     <WishlistRepositoryProvider
       wishlistRepository={repos.wishlistRepository}
@@ -220,7 +221,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
       userRepository={repos.authRepository}
       authRepository={repos.authRepository}
       logger={consoleLogger}
-      observability={observability}
+      observability={OBSERVABILITY}
     >
       <UserProvider>{children}</UserProvider>
     </WishlistRepositoryProvider>

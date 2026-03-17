@@ -13,6 +13,11 @@ import type { PurchaseItemInput } from "@wishin/domain";
 /**
  * Custom hook to coordinate the purchase item use case.
  *
+ * @param {PurchaseItemInput} purchaseItem - The input object for the purchase operation.
+ * @param {string} purchaseItem.wishlistId - The ID of the wishlist.
+ * @param {string} purchaseItem.itemId - The ID of the item to purchase.
+ * @param {string} purchaseItem.userId - The ID of the user (purchaser).
+ * @param {number} purchaseItem.quantity - The quantity to purchase.
  * @returns An object containing the purchase action, loading state, and error.
  */
 export function usePurchaseItem() {
@@ -21,10 +26,10 @@ export function usePurchaseItem() {
   const transactionRepository = useTransactionRepository();
   const logger = useLogger();
   const observability = useObservability();
-  const { loading, error, wrapAsyncAction } = useAsyncAction();
+  const { loading, error, wrapAsyncActionEx } = useAsyncAction();
 
   const purchaseItem = useCallback(
-    wrapAsyncAction("purchaseItem", async (input: PurchaseItemInput) => {
+    wrapAsyncActionEx("purchaseItem", async (input: PurchaseItemInput) => {
       const useCase = new PurchaseItemUseCase(
         wishlistRepository,
         profileRepository,
@@ -40,7 +45,7 @@ export function usePurchaseItem() {
       transactionRepository,
       logger,
       observability,
-      wrapAsyncAction,
+      wrapAsyncActionEx,
     ],
   );
 
