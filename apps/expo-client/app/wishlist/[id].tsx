@@ -1,5 +1,5 @@
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
 import {
   Text,
@@ -25,6 +25,11 @@ export default function WishlistDetail() {
   const { wishlist, loading, error, refetch }: UseWishlistReturn =
     useWishlist(id);
   const theme = useTheme();
+  const [hasShownSuggestion, setHasShownSuggestion] = useState(false);
+
+  const handleSuggestionShown = useCallback(() => {
+    setHasShownSuggestion(true);
+  }, []);
 
   const ListHeader = useMemo(() => {
     if (!wishlist) return null;
@@ -53,8 +58,15 @@ export default function WishlistDetail() {
   }, [wishlist, theme]);
 
   const renderItem = useCallback(
-    ({ item }: { item: WishlistItemOutput }) => <PublicItemCard item={item} />,
-    [],
+    ({ item }: { item: WishlistItemOutput }) => (
+      <PublicItemCard
+        item={item}
+        wishlistId={wishlist?.id ?? ""}
+        hasShownSuggestion={hasShownSuggestion}
+        onSuggestionShown={handleSuggestionShown}
+      />
+    ),
+    [wishlist, hasShownSuggestion, handleSuggestionShown],
   );
 
   if (loading) {

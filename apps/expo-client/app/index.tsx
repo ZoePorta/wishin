@@ -1,10 +1,11 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { Text, Surface, ActivityIndicator, useTheme } from "react-native-paper";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useUser } from "../src/contexts/UserContext";
 import { AuthPanel } from "../src/components/auth/AuthPanel";
 import { useAuthRepository } from "../src/contexts/WishlistRepositoryContext";
+import { validateRedirect } from "../src/utils/url";
 
 /**
  * Root screen for the Expo client.
@@ -18,9 +19,14 @@ export default function Index() {
   const { sessionType, loading: userLoading, refetch } = useUser();
   const authRepo = useAuthRepository();
   const router = useRouter();
+  const { redirect } = useLocalSearchParams<{
+    redirect?: string | string[];
+  }>();
   const [authLoading, setAuthLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
+
+  const normalizedRedirect = Array.isArray(redirect) ? redirect[0] : redirect;
 
   const handleLogin = useCallback(
     async (email: string, password: string) => {
@@ -59,9 +65,13 @@ export default function Index() {
   // Redirection logic
   useEffect(() => {
     if (!userLoading && sessionType === "registered") {
-      router.replace("/owner/dashboard");
+      if (normalizedRedirect) {
+        router.replace(validateRedirect(normalizedRedirect));
+      } else {
+        router.replace("/owner/dashboard");
+      }
     }
-  }, [userLoading, sessionType, router]);
+  }, [userLoading, sessionType, router, normalizedRedirect]);
 
   if (userLoading) {
     return (

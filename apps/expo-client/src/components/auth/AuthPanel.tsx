@@ -27,6 +27,8 @@ interface AuthPanelProps {
   loginError?: string | null;
   /** Optional external register error message. */
   registerError?: string | null;
+  /** Optional initial mode to show ('login' or 'register'). Defaults to 'login'. */
+  initialMode?: "login" | "register";
 }
 
 /**
@@ -39,11 +41,16 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
   loading,
   loginError,
   registerError,
+  initialMode = "login",
 }) => {
   const { width } = useWindowDimensions();
   const theme = useTheme();
   const isDesktop = width >= 768;
-  const [showLogin, setShowLogin] = useState(true);
+  const [showLogin, setShowLogin] = useState(initialMode === "login");
+
+  React.useEffect(() => {
+    setShowLogin(initialMode === "login");
+  }, [initialMode]);
 
   const renderForms = () => {
     if (isDesktop) {
