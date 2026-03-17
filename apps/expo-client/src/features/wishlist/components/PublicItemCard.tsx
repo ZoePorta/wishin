@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { View, Linking, Alert, StyleSheet } from "react-native";
 import {
   Card,
@@ -20,6 +20,8 @@ import { commonStyles } from "../../../theme/common-styles";
 interface PublicItemCardProps {
   item: WishlistItemOutput;
   wishlistId: string;
+  hasShownSuggestion: boolean;
+  onSuggestionShown: () => void;
 }
 
 /**
@@ -34,6 +36,8 @@ interface PublicItemCardProps {
 export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   item,
   wishlistId,
+  hasShownSuggestion,
+  onSuggestionShown,
 }) => {
   const theme = useTheme();
   const router = useRouter();
@@ -43,6 +47,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   const [modalVisible, setModalVisible] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [pendingPurchase, setPendingPurchase] = useState(false);
 
   const isCompleted =
     !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
@@ -94,6 +99,13 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     [purchaseItem, wishlistId, item.id],
   );
 
+  useEffect(() => {
+    if (pendingPurchase && userId && !purchaseLoading) {
+      setPendingPurchase(false);
+      void executePurchase(userId);
+    }
+  }, [pendingPurchase, userId, purchaseLoading, executePurchase]);
+
   const handlePurchasePress = useCallback(async () => {
     // 1. If no session, show suggestion modal
     if (!userId || !sessionType) {
@@ -101,29 +113,33 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
       return;
     }
 
-    // 2. If session exists (guest or real), proceed
+    // 2. If anonymous session, show suggestion modal ONLY ONCE per view
+    if (sessionType === "anonymous" && !hasShownSuggestion) {
+      setModalVisible(true);
+      return;
+    }
+
+    // 3. If session exists (registered or already suggested guest), proceed
     await executePurchase(userId);
-  }, [userId, sessionType, executePurchase]);
+  }, [userId, sessionType, executePurchase, hasShownSuggestion]);
 
   const handleContinueAsGuest = useCallback(async () => {
     setGuestLoading(true);
+    setPendingPurchase(true);
+    setModalVisible(false);
+    onSuggestionShown();
     try {
-      await loginAsGuest();
-      // loginAsGuest() updates the UserContext, which triggers re-render.
-      // But we need the NEW userId to proceed immediately if possible,
-      // however UserContext doesn't return it.
-      // We rely on the fact that useEffect/Context update will happen.
-      // For simplicity in this callback:
-      setModalVisible(false);
-      // The user will need to press "got it!" again OR we can try to auto-trigger
-      // if we had the ID. Since we don't return it from loginAsGuest easily here,
-      // we just close the modal and they can press again.
+      if (!userId) {
+        await loginAsGuest();
+      }
+      // If we already have userId, useEffect will trigger the purchase
     } catch (_err: unknown) {
+      setPendingPurchase(false);
       Alert.alert("Error", "Failed to create guest session.");
     } finally {
       setGuestLoading(false);
     }
-  }, [loginAsGuest]);
+  }, [loginAsGuest, userId, onSuggestionShown]);
 
   return (
     <>
