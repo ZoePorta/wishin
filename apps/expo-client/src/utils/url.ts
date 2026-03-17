@@ -31,7 +31,10 @@ export function validateRedirect(path: string | undefined): string {
     return path;
   }
 
-  // Allow sub-paths of safe routes if needed (e.g., /owner/dashboard/profile)
-  // For now, strict matching as requested
+  // 5. Allow wishlist routes (e.g., /wishlist or /wishlist/123)
+  if (path === "/wishlist" || path.startsWith("/wishlist/")) {
+    return path;
+  }
+
   return FALLBACK;
 }
