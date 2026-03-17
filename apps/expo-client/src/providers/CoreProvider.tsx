@@ -169,6 +169,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
         const sessionAwareRepo: SessionAwareRepository = repos.authRepository;
 
         // timeout to prevent slow network from blocking startup (ADR 027)
+        // Reset to 5000ms to provide more buffer during Appwrite Cloud instability.
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => {
             reject(new Error("Session resolution timeout"));
@@ -179,13 +180,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
 
         await Promise.race([sessionAwareRepo.resolveSession(), timeoutPromise]);
       } catch (error) {
-        // Log the error but do not block app initialization for transient session/network errors.
-        // PersistenceError and TimeoutError should not trigger onConfigError.
-        console.error(
-          "Transient session resolution error during initialization:",
-          error,
-        );
-
+        // Log as warning for transient/timeout errors as they are handled by proceeding in unauthenticated state.
         const isTimeout =
           error instanceof Error &&
           error.message === "Session resolution timeout";
@@ -196,6 +191,17 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
             (error.message.includes("Network request failed") ||
               error.message.includes("network error") ||
               error.name === "AppwriteException"));
+
+        if (isTimeout || isAppwriteTransient) {
+          console.warn(
+            `Session resolution deferred due to ${isTimeout ? "timeout" : "transient network error"}. Proceeding in unauthenticated state.`,
+          );
+        } else {
+          console.error(
+            "Persistent session resolution error during initialization:",
+            error,
+          );
+        }
 
         // If it's a critical error (not persistence, not timeout, not transient appwrite), we notify via onConfigError
         if (

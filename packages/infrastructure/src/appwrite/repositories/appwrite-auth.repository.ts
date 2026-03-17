@@ -228,6 +228,12 @@ export class AppwriteAuthRepository
             isNewUser: false,
           };
         }
+
+        // Different user or guest, delete session before creating a new one.
+        // We delete the session here because Appwrite does not allow multiple active sessions
+        // on the same platform/storage (cookies/SecureStore). (ADR 027)
+        await this.account.deleteSession({ sessionId: "current" });
+        this.invalidateSessionCache();
       }
     } catch (error: unknown) {
       // 401 (Unauthorized) means there is no active session, which is fine.
@@ -241,115 +247,16 @@ export class AppwriteAuthRepository
       }
     }
 
-    // 2. Validate credentials with a "probe" client
-    const probeClient = new Client()
-      .setEndpoint(this.endpoint)
-      .setProject(this.projectId);
-    const probeAccount = new Account(probeClient);
-
-    let probeSessionCreated = false;
-    try {
-      await probeAccount.createEmailPasswordSession({
-        email,
-        password,
-      });
-      probeSessionCreated = true;
-    } catch (error: unknown) {
-      // If validation fails, and we had an anonymous session, ensure it's still there
-      if (priorSessionIsAnonymous) {
-        try {
-          this.invalidateSessionCache();
-          const current = await this.resolveSession();
-
-          // If session is lost (null) or morphed into a different user (!current.email falsy check)
-          // We need to restore/ensure an anonymous session.
-          if (!current || (current.email && current.email.length > 0)) {
-            await this.account.createAnonymousSession();
-          }
-        } catch (innerError: unknown) {
-          try {
-            await this.account.createAnonymousSession();
-          } catch (recoveryError: unknown) {
-            this.logger.error(
-              "Failed to recover anonymous session in login() after probe failure",
-              {
-                originalError:
-                  innerError instanceof Error
-                    ? innerError.message
-                    : String(innerError),
-                recoveryError:
-                  recoveryError instanceof Error
-                    ? recoveryError.message
-                    : String(recoveryError),
-              },
-            );
-            throw recoveryError;
-          }
-        }
-      }
-      throw error;
-    } finally {
-      // Only delete the probe session if it was successfully created.
-      // Unconditional deletion here would destroy pre-existing anonymous sessions if probe failed. (ADR 027)
-      if (probeSessionCreated) {
-        try {
-          await probeAccount.deleteSession({ sessionId: "current" });
-        } catch (cleanupError: unknown) {
-          // We log the cleanup error but do not rethrow to avoid shadowing probe errors (ADR 027)
-          this.logger.error(
-            "Failed to delete probe session in login() cleanup",
-            {
-              error:
-                cleanupError instanceof Error
-                  ? cleanupError.message
-                  : String(cleanupError),
-            },
-          );
-        }
-      }
-    }
-
-    // 3. Ensure the main account instance is logged in
-    /**
-     * @note Implicit Cookie-Sharing Contract
-     * The Appwrite SDK instances (probeClient/probeAccount and this.account) share authentication
-     * state via the platform's cookie jar or fallback storage (e.g., Expo SecureStore).
-     * This behavior is essential for the "probe" validation to effect the main instance.
-     * @see ADR 027 for session resolution strategy.
-     */
-    try {
-      const user = await this.resolveSession();
-      if (user?.email === email) {
-        return {
-          type: "authenticated",
-          userId: user.$id,
-          email: user.email,
-          isNewUser: false,
-        };
-      }
-      // Different user or guest, switch
-      await this.account.deleteSession({ sessionId: "current" });
-      this.invalidateSessionCache();
-    } catch (error: unknown) {
-      // 401 (Unauthorized) means there is no active session, which is fine.
-      // We re-throw any other error (network, server error) to avoid silent failures.
-      if (error instanceof AppwriteException && error.code !== 401) {
-        throw error;
-      }
-
-      if (!(error instanceof AppwriteException)) {
-        throw error;
-      }
-    }
-
+    // 2. Create the new session
     try {
       await this.account.createEmailPasswordSession({
         email,
         password,
       });
     } catch (error: unknown) {
-      // If deleting the session succeeded but creating the new one fails,
+      // If creating the new session fails (e.g., wrong credentials),
       // and we had an anonymous session, try to recover it.
+      // NOTE: This will result in a NEW anonymous userId.
       if (priorSessionIsAnonymous) {
         try {
           await this.account.createAnonymousSession();

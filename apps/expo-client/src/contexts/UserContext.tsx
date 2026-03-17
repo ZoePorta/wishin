@@ -57,9 +57,19 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const [id, type] = await Promise.all([
-        repository.getCurrentUserId(),
-        repository.getSessionType(),
+      // Protective timeout to prevent UI from hanging indefinitely if the repository is stuck (e.g. 503 errors)
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => {
+          reject(new Error("User resolution timeout"));
+        }, 10000),
+      );
+
+      const [id, type] = await Promise.race([
+        Promise.all([
+          repository.getCurrentUserId(),
+          repository.getSessionType(),
+        ]),
+        timeoutPromise,
       ]);
       setUserId(id);
       setSessionType(type);
