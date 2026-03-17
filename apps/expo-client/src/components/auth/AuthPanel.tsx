@@ -48,6 +48,10 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
   const isDesktop = width >= 768;
   const [showLogin, setShowLogin] = useState(initialMode === "login");
 
+  React.useEffect(() => {
+    setShowLogin(initialMode === "login");
+  }, [initialMode]);
+
   const renderForms = () => {
     if (isDesktop) {
       return (

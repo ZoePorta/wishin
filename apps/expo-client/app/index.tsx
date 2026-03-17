@@ -19,10 +19,14 @@ export default function Index() {
   const { sessionType, loading: userLoading, refetch } = useUser();
   const authRepo = useAuthRepository();
   const router = useRouter();
-  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
+  const { redirect } = useLocalSearchParams<{
+    redirect?: string | string[];
+  }>();
   const [authLoading, setAuthLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
+
+  const normalizedRedirect = Array.isArray(redirect) ? redirect[0] : redirect;
 
   const handleLogin = useCallback(
     async (email: string, password: string) => {
@@ -61,13 +65,13 @@ export default function Index() {
   // Redirection logic
   useEffect(() => {
     if (!userLoading && sessionType === "registered") {
-      if (redirect) {
-        router.replace(validateRedirect(redirect));
+      if (normalizedRedirect) {
+        router.replace(validateRedirect(normalizedRedirect));
       } else {
         router.replace("/owner/dashboard");
       }
     }
-  }, [userLoading, sessionType, router, redirect]);
+  }, [userLoading, sessionType, router, normalizedRedirect]);
 
   if (userLoading) {
     return (

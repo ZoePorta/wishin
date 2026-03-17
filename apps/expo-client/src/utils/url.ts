@@ -2,7 +2,8 @@
  * Validates a redirect path to ensure it is an internal relative path.
  *
  * @param path - The redirection path to validate.
- * @returns {string} The validated path or a default safe fallback.
+ * @returns {string} The validated path or a default safe fallback ("/owner/dashboard").
+ * @throws Never throws; it always returns a safe default if validation fails or input is missing.
  */
 export function validateRedirect(path: string | undefined): string {
   const FALLBACK = "/owner/dashboard";

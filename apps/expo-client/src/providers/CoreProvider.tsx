@@ -45,10 +45,7 @@ const OBSERVABILITY: ObservabilityService = {
         if (typeof Sentry !== "undefined") {
           Sentry.addBreadcrumb({ message, category, data });
         } else {
-          console.warn(
-            `[Sentry Missing] ${category ?? "info"}: ${message}`,
-            data,
-          );
+          console.warn(`[Sentry Missing] ${category ?? "info"}: ${message}`);
         }
       } catch (err) {
         console.warn("[Sentry Error] failed to add breadcrumb", err);
@@ -63,7 +60,7 @@ const OBSERVABILITY: ObservabilityService = {
         if (typeof posthog !== "undefined") {
           posthog.capture(name, props);
         } else {
-          console.warn(`[PostHog Missing] ${name}`, props);
+          console.warn(`[PostHog Missing] ${name}`);
         }
       } catch (err) {
         console.warn("[PostHog Error] failed to track event", err);
