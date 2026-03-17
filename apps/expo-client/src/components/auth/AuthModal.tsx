@@ -5,21 +5,43 @@ import { AuthPanel } from "./AuthPanel";
 import { useAuthRepository } from "../../contexts/WishlistRepositoryContext";
 import { useUser } from "../../contexts/UserContext";
 
+/**
+ * Props for the authentication modal.
+ */
 interface AuthModalProps {
+  /** Indicates whether the modal is visible. */
   visible: boolean;
+  /** Called when the modal should be dismissed. */
   onDismiss: () => void;
+  /** Optional initial mode to show ('login' or 'register'). */
+  initialMode?: "login" | "register";
 }
 
 /**
  * Modal that wraps AuthPanel to allow login/registration without page navigation.
  */
-export const AuthModal: React.FC<AuthModalProps> = ({ visible, onDismiss }) => {
+export const AuthModal: React.FC<AuthModalProps> = ({
+  visible,
+  onDismiss,
+  initialMode = "login",
+}) => {
   const theme = useTheme();
   const authRepo = useAuthRepository();
   const { refetch } = useUser();
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [lastVisible, setLastVisible] = useState(false);
+
+  // Reset state when visibility changes
+  React.useEffect(() => {
+    if (visible && !lastVisible) {
+      setLoginError(null);
+      setRegisterError(null);
+      setLoading(false);
+    }
+    setLastVisible(visible);
+  }, [visible, lastVisible]);
 
   const handleLogin = useCallback(
     async (email: string, password: string) => {
@@ -79,6 +101,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ visible, onDismiss }) => {
           loading={loading}
           loginError={loginError}
           registerError={registerError}
+          initialMode={initialMode}
         />
       </Modal>
     </Portal>
@@ -98,5 +121,10 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
     zIndex: 10,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    margin: 0,
   },
 });

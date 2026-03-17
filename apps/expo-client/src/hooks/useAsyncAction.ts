@@ -1,10 +1,30 @@
 import { useState, useCallback } from "react";
 
 /**
+ * Return type for the useAsyncAction hook.
+ */
+export interface UseAsyncActionReturn {
+  /** Whether an action is currently in progress. */
+  loading: boolean;
+  /** The error message from the last failed action, or null. */
+  error: string | null;
+  /** Wraps an action, manages loading/error, returns result or null. */
+  wrapAsyncAction: <TArgs extends unknown[], TResult>(
+    actionName: string,
+    action: (...args: TArgs) => Promise<TResult>,
+  ) => (...args: TArgs) => Promise<TResult | null>;
+  /** Wraps an action, manages loading/error, and re-throws errors. */
+  wrapAsyncActionEx: <TArgs extends unknown[], TResult>(
+    actionName: string,
+    action: (...args: TArgs) => Promise<TResult>,
+  ) => (...args: TArgs) => Promise<TResult>;
+}
+
+/**
  * Hook to manage loading and error states for asynchronous actions.
  * @returns An object containing the loading state, error state, and a wrapper for async actions.
  */
-export function useAsyncAction() {
+export function useAsyncAction(): UseAsyncActionReturn {
   const [loadingCount, setLoadingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 

@@ -14,19 +14,6 @@ import {
 import { Config, ensureAppwriteConfig } from "../constants/Config";
 import { PersistenceError, type ObservabilityService } from "@wishin/domain";
 
-declare global {
-  const Sentry: {
-    addBreadcrumb: (breadcrumb: {
-      message: string;
-      category?: string;
-      data?: Record<string, unknown>;
-    }) => void;
-  };
-  const posthog: {
-    capture: (event: string, properties?: Record<string, unknown>) => void;
-  };
-}
-
 /**
  * Adapter that maps console methods to the Logger interface.
  */
@@ -54,14 +41,33 @@ const consoleLogger = {
 const OBSERVABILITY: ObservabilityService = {
   addBreadcrumb: (message, category, data) => {
     if (process.env.NODE_ENV === "production") {
-      Sentry.addBreadcrumb({ message, category, data });
+      try {
+        if (typeof Sentry !== "undefined") {
+          Sentry.addBreadcrumb({ message, category, data });
+        } else {
+          console.warn(
+            `[Sentry Missing] ${category ?? "info"}: ${message}`,
+            data,
+          );
+        }
+      } catch (err) {
+        console.warn("[Sentry Error] failed to add breadcrumb", err);
+      }
     } else {
       console.warn(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
     }
   },
   trackEvent: (name, props) => {
     if (process.env.NODE_ENV === "production") {
-      posthog.capture(name, props);
+      try {
+        if (typeof posthog !== "undefined") {
+          posthog.capture(name, props);
+        } else {
+          console.warn(`[PostHog Missing] ${name}`, props);
+        }
+      } catch (err) {
+        console.warn("[PostHog Error] failed to track event", err);
+      }
     } else {
       console.warn(`[Event] ${name}`, props);
     }

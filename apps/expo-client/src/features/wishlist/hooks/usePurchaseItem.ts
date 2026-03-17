@@ -8,19 +8,26 @@ import {
   useObservability,
 } from "../../../contexts/WishlistRepositoryContext";
 import { PurchaseItemUseCase } from "@wishin/domain";
-import type { PurchaseItemInput } from "@wishin/domain";
+import type { PurchaseItemInput, WishlistOutput } from "@wishin/domain";
+
+/**
+ * Return type for the usePurchaseItem hook.
+ */
+export interface UsePurchaseItemReturn {
+  /** The function to execute the purchase. */
+  purchaseItem: (input: PurchaseItemInput) => Promise<WishlistOutput>;
+  /** Whether the purchase is in progress. */
+  loading: boolean;
+  /** The error message if the purchase failed, or null. */
+  error: string | null;
+}
 
 /**
  * Custom hook to coordinate the purchase item use case.
  *
- * @param {PurchaseItemInput} purchaseItem - The input object for the purchase operation.
- * @param {string} purchaseItem.wishlistId - The ID of the wishlist.
- * @param {string} purchaseItem.itemId - The ID of the item to purchase.
- * @param {string} purchaseItem.userId - The ID of the user (purchaser).
- * @param {number} purchaseItem.quantity - The quantity to purchase.
- * @returns An object containing the purchase action, loading state, and error.
+ * @returns {UsePurchaseItemReturn} An object containing the purchase action, loading state, and error.
  */
-export function usePurchaseItem() {
+export function usePurchaseItem(): UsePurchaseItemReturn {
   const wishlistRepository = useWishlistRepository();
   const profileRepository = useProfileRepository();
   const transactionRepository = useTransactionRepository();

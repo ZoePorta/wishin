@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useUser } from "../src/contexts/UserContext";
 import { AuthPanel } from "../src/components/auth/AuthPanel";
 import { useAuthRepository } from "../src/contexts/WishlistRepositoryContext";
+import { validateRedirect } from "../src/utils/url";
 
 /**
  * Root screen for the Expo client.
@@ -61,7 +62,7 @@ export default function Index() {
   useEffect(() => {
     if (!userLoading && sessionType === "registered") {
       if (redirect) {
-        router.replace(redirect);
+        router.replace(validateRedirect(redirect));
       } else {
         router.replace("/owner/dashboard");
       }

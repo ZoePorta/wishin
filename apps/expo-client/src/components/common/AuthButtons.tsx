@@ -20,6 +20,7 @@ export const AuthButtons: React.FC = () => {
   const { sessionType, refetch } = useUser();
   const authRepo = useAuthRepository();
   const [authModalVisible, setAuthModalVisible] = React.useState(false);
+  const [authMode, setAuthMode] = React.useState<"login" | "register">("login");
 
   const handleLogout = async () => {
     try {
@@ -58,6 +59,7 @@ export const AuthButtons: React.FC = () => {
             <Button
               mode="text"
               onPress={() => {
+                setAuthMode("login");
                 setAuthModalVisible(true);
               }}
               contentStyle={commonStyles.minimumTouchTarget}
@@ -68,6 +70,7 @@ export const AuthButtons: React.FC = () => {
             <Button
               mode="text"
               onPress={() => {
+                setAuthMode("register");
                 setAuthModalVisible(true);
               }}
               contentStyle={commonStyles.minimumTouchTarget}
@@ -84,6 +87,7 @@ export const AuthButtons: React.FC = () => {
         onDismiss={() => {
           setAuthModalVisible(false);
         }}
+        initialMode={authMode}
       />
     </>
   );

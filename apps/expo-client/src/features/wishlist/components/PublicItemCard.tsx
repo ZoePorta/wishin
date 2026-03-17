@@ -9,7 +9,6 @@ import {
   useTheme,
   Snackbar,
 } from "react-native-paper";
-import { View, Linking, Alert, StyleSheet } from "react-native";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { useUser } from "../../../contexts/UserContext";
 import { usePurchaseItem } from "../hooks/usePurchaseItem";
@@ -127,13 +126,18 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
 
     // 3. If session exists (registered or already suggested guest), proceed
     await executePurchase(userId);
-  }, [userId, sessionType, executePurchase, hasShownSuggestion]);
+  }, [
+    userId,
+    sessionType,
+    executePurchase,
+    hasShownSuggestion,
+    onSuggestionShown,
+  ]);
 
   const handleContinueAsGuest = useCallback(async () => {
     setGuestLoading(true);
     setPendingPurchase(true);
     setModalVisible(false);
-    onSuggestionShown();
     try {
       if (!userId) {
         await loginAsGuest();
