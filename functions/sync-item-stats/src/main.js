@@ -53,7 +53,7 @@ export default async ({ req, res, log, error }) => {
   }
 
   try {
-    if (event.includes(".create")) {
+    if (event.includes(".create") || event.includes(".upsert")) {
       log(`Incrementing purchasedQuantity for item ${itemId} by ${quantity}`);
 
       // Fetch item to get totalQuantity for capping
