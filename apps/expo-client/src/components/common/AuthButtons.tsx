@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { Button, IconButton, useTheme } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useUser } from "../../contexts/UserContext";
+import { AuthModal } from "../auth/AuthModal";
 import { useAuthRepository } from "../../contexts/WishlistRepositoryContext";
 import { commonStyles } from "../../theme/common-styles";
 
@@ -18,6 +19,7 @@ export const AuthButtons: React.FC = () => {
   const router = useRouter();
   const { sessionType, refetch } = useUser();
   const authRepo = useAuthRepository();
+  const [authModalVisible, setAuthModalVisible] = React.useState(false);
 
   const handleLogout = async () => {
     try {
@@ -48,34 +50,43 @@ export const AuthButtons: React.FC = () => {
     );
   }
 
-  if (isGuest) {
-    return (
+  return (
+    <>
       <View style={styles.container}>
-        <Button
-          mode="text"
-          onPress={() => {
-            router.push("/");
-          }}
-          contentStyle={commonStyles.minimumTouchTarget}
-          labelStyle={{ color: theme.colors.primary }}
-        >
-          Login
-        </Button>
-        <Button
-          mode="text"
-          onPress={() => {
-            router.push("/");
-          }}
-          contentStyle={commonStyles.minimumTouchTarget}
-          labelStyle={{ color: theme.colors.primary }}
-        >
-          Register
-        </Button>
+        {isGuest && (
+          <>
+            <Button
+              mode="text"
+              onPress={() => {
+                setAuthModalVisible(true);
+              }}
+              contentStyle={commonStyles.minimumTouchTarget}
+              labelStyle={{ color: theme.colors.primary }}
+            >
+              Login
+            </Button>
+            <Button
+              mode="text"
+              onPress={() => {
+                setAuthModalVisible(true);
+              }}
+              contentStyle={commonStyles.minimumTouchTarget}
+              labelStyle={{ color: theme.colors.primary }}
+            >
+              Register
+            </Button>
+          </>
+        )}
       </View>
-    );
-  }
 
-  return null;
+      <AuthModal
+        visible={authModalVisible}
+        onDismiss={() => {
+          setAuthModalVisible(false);
+        }}
+      />
+    </>
+  );
 };
 
 const styles = StyleSheet.create({

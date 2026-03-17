@@ -9,11 +9,12 @@ import {
   useTheme,
   Snackbar,
 } from "react-native-paper";
-import { useRouter } from "expo-router";
+import { View, Linking, Alert, StyleSheet } from "react-native";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { useUser } from "../../../contexts/UserContext";
 import { usePurchaseItem } from "../hooks/usePurchaseItem";
 import { LoginSuggestionModal } from "./LoginSuggestionModal";
+import { AuthModal } from "../../../components/auth/AuthModal";
 import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
 import { commonStyles } from "../../../theme/common-styles";
 
@@ -42,11 +43,11 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   onSuggestionShown,
 }) => {
   const theme = useTheme();
-  const router = useRouter();
   const { userId, sessionType, loginAsGuest } = useUser();
   const { purchaseItem, loading: purchaseLoading } = usePurchaseItem();
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [authModalVisible, setAuthModalVisible] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const [pendingPurchase, setPendingPurchase] = useState(false);
@@ -113,12 +114,14 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     // 1. If no session, show suggestion modal
     if (!userId || !sessionType) {
       setModalVisible(true);
+      onSuggestionShown();
       return;
     }
 
     // 2. If anonymous session, show suggestion modal ONLY ONCE per view
     if (sessionType === "anonymous" && !hasShownSuggestion) {
       setModalVisible(true);
+      onSuggestionShown();
       return;
     }
 
@@ -247,7 +250,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         }}
         onLogin={() => {
           setModalVisible(false);
-          router.push("/(auth)/login");
+          setAuthModalVisible(true);
         }}
         onGuest={() => {
           void handleContinueAsGuest();
@@ -270,6 +273,13 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
       >
         Item marked as purchased!
       </Snackbar>
+
+      <AuthModal
+        visible={authModalVisible}
+        onDismiss={() => {
+          setAuthModalVisible(false);
+        }}
+      />
     </>
   );
 };

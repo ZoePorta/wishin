@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { Text, Surface, ActivityIndicator, useTheme } from "react-native-paper";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useUser } from "../src/contexts/UserContext";
 import { AuthPanel } from "../src/components/auth/AuthPanel";
 import { useAuthRepository } from "../src/contexts/WishlistRepositoryContext";
@@ -18,6 +18,7 @@ export default function Index() {
   const { sessionType, loading: userLoading, refetch } = useUser();
   const authRepo = useAuthRepository();
   const router = useRouter();
+  const { redirect } = useLocalSearchParams<{ redirect?: string }>();
   const [authLoading, setAuthLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
@@ -59,9 +60,13 @@ export default function Index() {
   // Redirection logic
   useEffect(() => {
     if (!userLoading && sessionType === "registered") {
-      router.replace("/owner/dashboard");
+      if (redirect) {
+        router.replace(redirect);
+      } else {
+        router.replace("/owner/dashboard");
+      }
     }
-  }, [userLoading, sessionType, router]);
+  }, [userLoading, sessionType, router, redirect]);
 
   if (userLoading) {
     return (

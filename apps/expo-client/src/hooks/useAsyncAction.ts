@@ -53,6 +53,7 @@ export function useAsyncAction() {
    * @param actionName - The name of the action for logging purposes.
    * @param action - The asynchronous action to execute.
    * @returns A version of the action that manages loading/error states and re-throws.
+   * @throws {Error} Throws Error when the wrapped action rejects; error is re-thrown to caller.
    */
   const wrapAsyncActionEx = useCallback(
     <TArgs extends unknown[], TResult>(
