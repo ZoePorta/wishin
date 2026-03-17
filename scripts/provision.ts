@@ -240,6 +240,11 @@ const schema: CollectionSchema[] = [
       { key: "ownerUsername", type: "string", required: false, size: 30 },
     ],
   },
+  {
+    id: "processed_events",
+    name: "Processed Events",
+    attributes: [{ key: "processedAt", type: "datetime", required: true }],
+  },
 ];
 
 /**
