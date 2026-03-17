@@ -62,27 +62,25 @@ export default async ({ req, res, log, error }) => {
     .update(`${transaction.$id}-${action}-${transaction.status}-${quantity}`)
     .digest("hex");
 
+  // Preliminary check to see if we already processed this
   try {
-    await tablesDb.createRow({
+    await tablesDb.getRow({
       databaseId: process.env.DATABASE_ID,
       tableId: process.env.PROCESSED_EVENTS_COLLECTION_ID,
       rowId: idempotencyKey,
-      data: {
-        processedAt: new Date().toISOString(),
-      },
+    });
+    log(`Transaction ${transaction.$id} already processed. Skipping sync.`);
+    return res.json({
+      success: true,
+      message: "Transaction already processed",
     });
   } catch (err) {
-    // Appwrite returns 409 error if document already exists
-    if (err.code === 409) {
-      log(`Transaction ${transaction.$id} already processed. Skipping sync.`);
-      return res.json({
-        success: true,
-        message: "Transaction already processed",
-      });
+    if (err?.code !== 404) {
+      // Log unexpected errors but bubbling them will trigger a retry
+      error(`Error checking idempotency status: ${err?.message || err}`);
+      throw err;
     }
-    // Log unexpected errors but don't stop execution if it's just a collision check failure?
-    // Actually, if we can't record the event, we might want to fail the sync to retry.
-    throw err;
+    // 404 means not processed yet, proceed to update
   }
 
   try {
@@ -134,11 +132,40 @@ export default async ({ req, res, log, error }) => {
       return res.json({ success: true, message: "Event ignored" });
     }
 
+    // Mark as processed ONLY after successful update
+    try {
+      await tablesDb.createRow({
+        databaseId: process.env.DATABASE_ID,
+        tableId: process.env.PROCESSED_EVENTS_COLLECTION_ID,
+        rowId: idempotencyKey,
+        data: {
+          processedAt: new Date().toISOString(),
+        },
+      });
+    } catch (err) {
+      // Appwrite returns 409 error if document already exists (e.g. concurrent success)
+      if (err?.code === 409) {
+        log(
+          `Transaction ${transaction.$id} idempotency record already exists (concurrent processing).`,
+        );
+        return res.json({
+          success: true,
+          message: "Transaction already processed",
+        });
+      }
+      // Rethrow other errors to trigger retry of the whole function
+      throw err;
+    }
+
     return res.json({ success: true });
   } catch (err) {
     error(
-      `Failed to update item ${itemId}: ${err.stack || err.message || err}`,
+      `Failed to update item ${itemId}: ${err?.stack || err?.message || err}`,
     );
-    return res.json({ success: false, error: err.message }, 500);
+    // Use safe property access for error code here too
+    if (res && typeof res.json === "function") {
+      return res.json({ success: false, error: err?.message }, 500);
+    }
+    throw err;
   }
 };
