@@ -1,4 +1,5 @@
 import { Client, TablesDB } from "node-appwrite";
+import { createHash } from "node:crypto";
 
 /**
  * Appwrite Function to sync item statistics when a transaction is created or deleted.
@@ -52,6 +53,38 @@ export default async ({ req, res, log, error }) => {
     });
   }
 
+  // Idempotency: skip if this transaction was already processed for this specific state.
+  // We use a composite key: hash(transactionId + action + status + quantity).
+  // This allows processing different statuses or quantity updates for the same transaction,
+  // but prevents duplicate processing of the exact same update.
+  const action = event.includes(".delete") ? "undo" : "sync";
+  const idempotencyKey = createHash("md5")
+    .update(`${transaction.$id}-${action}-${transaction.status}-${quantity}`)
+    .digest("hex");
+
+  try {
+    await tablesDb.createRow({
+      databaseId: process.env.DATABASE_ID,
+      tableId: process.env.PROCESSED_EVENTS_COLLECTION_ID,
+      rowId: idempotencyKey,
+      data: {
+        processedAt: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    // Appwrite returns 409 error if document already exists
+    if (err.code === 409) {
+      log(`Transaction ${transaction.$id} already processed. Skipping sync.`);
+      return res.json({
+        success: true,
+        message: "Transaction already processed",
+      });
+    }
+    // Log unexpected errors but don't stop execution if it's just a collision check failure?
+    // Actually, if we can't record the event, we might want to fail the sync to retry.
+    throw err;
+  }
+
   try {
     if (event.includes(".create") || event.includes(".upsert")) {
       log(`Incrementing purchasedQuantity for item ${itemId} by ${quantity}`);
@@ -63,16 +96,20 @@ export default async ({ req, res, log, error }) => {
         rowId: itemId,
       });
 
-      const max = item.isUnlimited ? null : (item.totalQuantity ?? 1);
-
-      const result = await tablesDb.incrementRowColumn({
+      // Increment purchasedQuantity
+      const incrementPayload = {
         databaseId: process.env.DATABASE_ID,
         tableId: process.env.ITEMS_COLLECTION_ID,
         rowId: itemId,
         column: "purchasedQuantity",
         value: quantity,
-        max: max,
-      });
+      };
+
+      if (!item.isUnlimited) {
+        incrementPayload.max = item.totalQuantity ?? 1;
+      }
+
+      const result = await tablesDb.incrementRowColumn(incrementPayload);
 
       log(
         `Success: Atomically incremented item ${itemId}. New purchasedQuantity: ${result.purchasedQuantity}`,
