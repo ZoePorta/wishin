@@ -53,8 +53,10 @@ export default function WishlistDetail() {
   }, [wishlist, theme]);
 
   const renderItem = useCallback(
-    ({ item }: { item: WishlistItemOutput }) => <PublicItemCard item={item} />,
-    [],
+    ({ item }: { item: WishlistItemOutput }) => (
+      <PublicItemCard item={item} wishlistId={wishlist?.id ?? ""} />
+    ),
+    [wishlist],
   );
 
   if (loading) {

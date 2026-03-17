@@ -199,6 +199,19 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     );
   }
 
+  const observability = {
+    addBreadcrumb: (
+      message: string,
+      category?: string,
+      data?: Record<string, unknown>,
+    ) => {
+      console.warn(`[Breadcrumb] ${category ?? "info"}: ${message}`, data);
+    },
+    trackEvent: (name: string, props?: Record<string, unknown>) => {
+      console.warn(`[Event] ${name}`, props);
+    },
+  };
+
   return (
     <WishlistRepositoryProvider
       wishlistRepository={repos.wishlistRepository}
@@ -206,6 +219,8 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
       profileRepository={repos.profileRepository}
       userRepository={repos.authRepository}
       authRepository={repos.authRepository}
+      logger={consoleLogger}
+      observability={observability}
     >
       <UserProvider>{children}</UserProvider>
     </WishlistRepositoryProvider>

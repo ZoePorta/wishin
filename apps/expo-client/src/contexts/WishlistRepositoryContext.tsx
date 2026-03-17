@@ -6,6 +6,8 @@ import type {
   UserRepository,
   AuthRepository,
   ProfileRepository,
+  Logger,
+  ObservabilityService,
 } from "@wishin/domain";
 
 interface WishlistRepositoryContextProps {
@@ -14,6 +16,8 @@ interface WishlistRepositoryContextProps {
   userRepository: UserRepository;
   authRepository: AuthRepository;
   profileRepository: ProfileRepository;
+  logger: Logger;
+  observability: ObservabilityService;
 }
 
 const WishlistRepositoryContext = createContext<
@@ -32,6 +36,8 @@ const WishlistRepositoryContext = createContext<
  * @param props.userRepository - The {@link UserRepository} instance.
  * @param props.authRepository - The {@link AuthRepository} instance.
  * @param props.profileRepository - The {@link ProfileRepository} instance (required for the provider to function).
+ * @param props.logger - The {@link Logger} instance.
+ * @param props.observability - The {@link ObservabilityService} instance.
  * @param props.children - The child components to be wrapped by the provider.
  * @returns The React elements for the repository context provider.
  * @throws {Error} If `useRepositories` is called outside of this provider.
@@ -42,6 +48,8 @@ export const WishlistRepositoryProvider: React.FC<{
   userRepository: UserRepository;
   authRepository: AuthRepository;
   profileRepository: ProfileRepository;
+  logger: Logger;
+  observability: ObservabilityService;
   children: ReactNode;
 }> = ({
   wishlistRepository,
@@ -49,6 +57,8 @@ export const WishlistRepositoryProvider: React.FC<{
   userRepository,
   authRepository,
   profileRepository,
+  logger,
+  observability,
   children,
 }) => {
   const value = useMemo(
@@ -58,6 +68,8 @@ export const WishlistRepositoryProvider: React.FC<{
       userRepository,
       authRepository,
       profileRepository,
+      logger,
+      observability,
     }),
     [
       wishlistRepository,
@@ -65,6 +77,8 @@ export const WishlistRepositoryProvider: React.FC<{
       userRepository,
       authRepository,
       profileRepository,
+      logger,
+      observability,
     ],
   );
 
@@ -141,4 +155,22 @@ export const useAuthRepository = (): AuthRepository => {
  */
 export const useProfileRepository = (): ProfileRepository => {
   return useRepositories().profileRepository;
+};
+
+/**
+ * Hook to consume the Logger from context.
+ *
+ * @returns The Logger instance.
+ */
+export const useLogger = (): Logger => {
+  return useRepositories().logger;
+};
+
+/**
+ * Hook to consume the ObservabilityService from context.
+ *
+ * @returns The ObservabilityService instance.
+ */
+export const useObservability = (): ObservabilityService => {
+  return useRepositories().observability;
 };
