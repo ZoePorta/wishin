@@ -46,26 +46,29 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
 
     // Client SDK (Repository under test)
     client = createAppwriteClient(endpoint, projectId);
+
+    const logger: Logger = {
+      debug: (_message: string, _context?: Record<string, unknown>) => {
+        /* no-op */
+      },
+      info: (_message: string, _context?: Record<string, unknown>) => {
+        /* no-op */
+      },
+      warn: (_message: string, _context?: Record<string, unknown>) => {
+        /* no-op */
+      },
+      error: (_message: string, _context?: Record<string, unknown>) => {
+        /* no-op */
+      },
+    };
+
     repository = new AppwriteAuthRepository(
       client,
       endpoint,
       projectId,
       databaseId,
       profileCollectionId,
-      {
-        debug: () => {
-          /* no-op */
-        },
-        info: () => {
-          /* no-op */
-        },
-        warn: () => {
-          /* no-op */
-        },
-        error: () => {
-          /* no-op */
-        },
-      } as unknown as Logger,
+      logger,
     );
   });
 
