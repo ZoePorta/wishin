@@ -42,7 +42,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   onSuggestionShown,
 }) => {
   const theme = useTheme();
-  const { userId, sessionType, loginAsGuest } = useUser();
+  const { userId, sessionType, loginAsGuest, isSessionReliable } = useUser();
   const { purchaseItem, loading: purchaseLoading } = usePurchaseItem();
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -110,6 +110,9 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   }, [pendingPurchase, userId, purchaseLoading, executePurchase]);
 
   const handlePurchasePress = useCallback(async () => {
+    // Guard: if session is not reliable (loading or indeterminate), wait.
+    if (!isSessionReliable) return;
+
     // 1. If no session, show suggestion modal
     if (!userId || !sessionType) {
       setModalVisible(true);
@@ -135,6 +138,8 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   ]);
 
   const handleContinueAsGuest = useCallback(async () => {
+    if (!isSessionReliable) return;
+
     setGuestLoading(true);
     setPendingPurchase(true);
     setModalVisible(false);

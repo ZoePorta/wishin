@@ -153,7 +153,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
       expect(secondResult.userId).toBe(firstId);
     });
 
-    it("should recover an anonymous session when email login fails (even if ID changes)", async () => {
+    it("should NOT recover an anonymous session when email login fails", async () => {
       // 1. Start as guest
       await repository.loginAnonymously();
 
@@ -163,11 +163,9 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
         repository.login(wrongEmail, "WrongPassword123!"),
       ).rejects.toThrow();
 
-      // 3. Verify STILL guest (ID may change due to session deletion/recreation on limited platforms)
+      // 3. Verify NO session exists (it was deleted to avoid conflict and not recovered)
       const account = new Account(client);
-      const currentUser = await account.get();
-      expect(currentUser.email).toBe("");
-      expect(currentUser.$id).toBeDefined();
+      await expect(account.get()).rejects.toThrow();
     });
 
     it("should NOT create anonymous session when email login fails and no prior session existed", async () => {

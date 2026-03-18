@@ -15,7 +15,12 @@ import { useWishlistItemActions } from "./useWishlistItemActions";
  * @throws {Error} If called outside of a UserProvider.
  */
 export function useOwnerDashboard() {
-  const { userId, loading: userLoading, error: userError } = useUser();
+  const {
+    userId,
+    loading: userLoading,
+    error: userError,
+    isSessionReliable,
+  } = useUser();
   const {
     wishlist,
     loading: wishlistLoading,
@@ -114,7 +119,8 @@ export function useOwnerDashboard() {
   return {
     userId,
     wishlist,
-    loading: userLoading || (wishlistLoading && userId !== null),
+    loading:
+      userLoading || !isSessionReliable || (wishlistLoading && userId !== null),
     error: userError ?? wishlistError,
     creating: creating || updating,
     itemActionLoading,

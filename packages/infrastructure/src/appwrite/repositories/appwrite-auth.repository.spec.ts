@@ -247,14 +247,15 @@ describe("AppwriteAuthRepository", () => {
       expect(result.isNewUser).toBe(true);
     });
 
-    it("should return existing session if already anonymous", async () => {
+    it("should throw if a session is already active", async () => {
       const mockUser = { $id: "existing-anon", email: "" };
       mockGet.mockResolvedValue(mockUser as Models.User<Models.Preferences>);
 
-      const result = await repository.loginAnonymously();
+      await expect(repository.loginAnonymously()).rejects.toThrow(
+        "Creation of an anonymous session is prohibited when a session is active.",
+      );
 
       expect(mockCreateAnonymousSession).not.toHaveBeenCalled();
-      expect(result.userId).toBe("existing-anon");
     });
   });
 

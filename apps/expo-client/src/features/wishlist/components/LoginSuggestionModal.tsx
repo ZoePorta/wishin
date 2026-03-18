@@ -93,11 +93,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 20,
   },
-  warningText: {
-    marginBottom: 16,
-    fontStyle: "italic",
-    opacity: 0.7,
-  },
   actions: {
     justifyContent: "space-between",
     paddingHorizontal: 8,

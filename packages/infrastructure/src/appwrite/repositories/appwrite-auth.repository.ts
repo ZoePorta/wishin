@@ -487,17 +487,18 @@ export class AppwriteAuthRepository
    */
   async loginAnonymously(): Promise<AnonymousAuthResult> {
     try {
-      // Idempotency: check if we already have Any session (ADR 027)
-      // As per feedback, we maintain the existing session if present.
+      // Safeguard: Check if we already have Any session.
+      // loginAnonymously should only be called if no session is active.
       const user = await this.resolveSession();
       if (user) {
-        return {
-          type: "anonymous",
-          userId: user.$id,
-          isNewUser: false,
-        };
+        throw new Error(
+          "Creation of an anonymous session is prohibited when a session is active.",
+        );
       }
     } catch (error: unknown) {
+      if (error instanceof Error && error.message.includes("prohibited")) {
+        throw error;
+      }
       // 401 is expected if no session
       if (!(error instanceof AppwriteException && error.code === 401)) {
         throw error;

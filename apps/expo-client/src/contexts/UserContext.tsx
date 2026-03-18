@@ -13,6 +13,7 @@ import {
   useAuthRepository,
 } from "./WishlistRepositoryContext";
 import { Config } from "../constants/Config";
+import { AppwriteException, isNetworkError } from "@wishin/infrastructure";
 
 interface UserContextValue {
   /** The unique identifier of the current user, or null if not loaded yet. */
@@ -35,6 +36,11 @@ interface UserContextValue {
   loginAsGuest: () => Promise<void>;
   /** Whether the session resolution is indeterminate (due to transient errors). */
   sessionIndeterminate: boolean;
+  /**
+   * Whether the current session identity is reliable.
+   * True if not loading and not indeterminate.
+   */
+  isSessionReliable: boolean;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -82,14 +88,20 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       return id;
     } catch (err: unknown) {
       const isTransient =
-        err instanceof Error && /timeout|network/i.test(err.message);
+        (err instanceof AppwriteException &&
+          (/timeout|network/i.test(err.message) ||
+            err.code === 429 ||
+            err.code >= 500)) ||
+        isNetworkError(err) ||
+        (err instanceof Error && err.message === "User resolution timeout");
+
       const message =
         err instanceof Error ? err.message : "Failed to fetch user session";
       setError(message);
 
       if (isTransient) {
         setSessionIndeterminate(true);
-        // Keep last known userId and sessionType
+        // Keep last known userId and sessionType (ADR 027)
       } else {
         setUserId(null);
         setSessionType(null);
@@ -108,6 +120,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   }, [repository]);
 
   const loginAsGuest = useCallback(async () => {
+    if (userId) return;
+
     setLoading(true);
     setError(null);
     try {
@@ -144,6 +158,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       refetch: fetchUser,
       loginAsGuest,
       sessionIndeterminate,
+      isSessionReliable: !loading && !sessionIndeterminate,
     }),
     [
       userId,
