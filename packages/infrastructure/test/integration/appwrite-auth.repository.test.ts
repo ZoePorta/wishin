@@ -27,7 +27,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
   let usersService: Users;
   let client: ReturnType<typeof createAppwriteClient>;
   let repository: AppwriteAuthRepository;
-  let createdUserId: string | null = null;
+  const createdUserIds: string[] = [];
   let profileCollectionId: string;
 
   beforeAll(() => {
@@ -81,14 +81,14 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     }
 
     // 2. Administrative cleanup (best effort)
-    if (createdUserId) {
+    for (const userId of createdUserIds) {
       try {
-        await usersService.delete({ userId: createdUserId });
+        await usersService.delete({ userId });
       } catch (_error) {
         // Ignore if user doesn't exist or already deleted
       }
-      createdUserId = null;
     }
+    createdUserIds.length = 0;
   });
 
   it("should register a new user successfully", async () => {
@@ -106,7 +106,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     expect(result.userId).toBeDefined();
     expect(result.isNewUser).toBe(true);
 
-    createdUserId = result.userId;
+    createdUserIds.push(result.userId);
   });
 
   it("should login a user successfully", async () => {
@@ -115,14 +115,14 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
 
     // 1. Create user using repository (since API key lacks users.write scope)
     const user = await repository.register(email, password, "testuser");
-    createdUserId = user.userId;
+    createdUserIds.push(user.userId);
 
     // 2. Login using repository
     const result: AuthResult = await repository.login(email, password);
 
     expect(result).toBeDefined();
     expect(result.email).toBe(email);
-    expect(result.userId).toBe(createdUserId);
+    expect(result.userId).toBe(user.userId);
     expect(result.isNewUser).toBe(false);
   });
 
@@ -132,7 +132,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
 
     // 1. Setup session
     const user = await repository.register(email, password, "testuser");
-    createdUserId = user.userId;
+    createdUserIds.push(user.userId);
     await repository.login(email, password);
 
     // 2. Logout
@@ -147,6 +147,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     it("should throw error when loginAnonymously is called with an active session", async () => {
       // 1. First anonymous login
       const firstResult = await repository.loginAnonymously();
+      createdUserIds.push(firstResult.userId);
       expect(firstResult.type).toBe("anonymous");
 
       // 2. Second anonymous login should fail because a session is active
@@ -157,7 +158,8 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
 
     it("should NOT recover an anonymous session when email login fails", async () => {
       // 1. Start as guest
-      await repository.loginAnonymously();
+      const guestResult = await repository.loginAnonymously();
+      createdUserIds.push(guestResult.userId);
 
       // 2. Attempt login with non-existent account
       const wrongEmail = `wrong-${randomUUID()}@example.com`;
@@ -192,6 +194,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     it("should replace anonymous session when email login succeeds", async () => {
       // 1. Start as guest
       const guestResult = await repository.loginAnonymously();
+      createdUserIds.push(guestResult.userId);
       const guestId = guestResult.userId;
 
       // 2. Register a user (different email)
@@ -202,7 +205,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
         userPassword,
         "testuser",
       );
-      createdUserId = registerResult.userId;
+      createdUserIds.push(registerResult.userId);
 
       // 3. Login with the new user
       const loginResult = await repository.login(userEmail, userPassword);
