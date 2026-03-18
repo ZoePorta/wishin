@@ -17,7 +17,7 @@ import { commonStyles } from "../../theme/common-styles";
 export const AuthButtons: React.FC = () => {
   const theme = useTheme();
   const router = useRouter();
-  const { sessionType, refetch } = useUser();
+  const { sessionType, refetch, isSessionReliable } = useUser();
   const authRepo = useAuthRepository();
   const [authModalVisible, setAuthModalVisible] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<"login" | "register">("login");
@@ -31,8 +31,10 @@ export const AuthButtons: React.FC = () => {
       console.error("Logout failed:", error);
     }
   };
+
   const isAuthenticated =
-    sessionType === "registered" || sessionType === "incomplete";
+    isSessionReliable &&
+    (sessionType === "registered" || sessionType === "incomplete");
 
   if (isAuthenticated) {
     return (

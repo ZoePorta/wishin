@@ -212,45 +212,56 @@ export class AppwriteTransactionRepository
     }
     let totalCancelled = 0;
     let hasMore = true;
+    let cursor: string | undefined;
 
+    const processedIds = new Set<string>();
     try {
       while (hasMore) {
         // 1. Fetch a page of RESERVED transactions for the item
+        const queries = [
+          Query.equal("itemId", itemId),
+          Query.equal("status", TransactionStatus.RESERVED),
+          Query.limit(100),
+        ];
+
+        if (cursor) {
+          queries.push(Query.cursorAfter(cursor));
+        }
+
         const response = await this.tablesDb.listRows({
           databaseId: this.databaseId,
           tableId: this.transactionsCollectionId,
-          queries: [
-            Query.equal("itemId", itemId),
-            Query.equal("status", TransactionStatus.RESERVED),
-            Query.limit(100),
-          ],
+          queries,
         });
 
         const docs = toDocument<TransactionDocument[]>(response.rows);
 
-        if (docs.length === 0) {
-          hasMore = false;
-          break;
+        // Filter out those already processed in this call (handles stale index cases)
+        const newDocs = docs.filter((doc) => !processedIds.has(doc.$id));
+
+        if (newDocs.length > 0) {
+          // 2. Transition this page to CANCELLED_BY_OWNER
+          const updates = newDocs.map((doc) => {
+            processedIds.add(doc.$id);
+            return this.tablesDb.updateRow({
+              databaseId: this.databaseId,
+              tableId: this.transactionsCollectionId,
+              rowId: doc.$id,
+              data: {
+                status: TransactionStatus.CANCELLED_BY_OWNER,
+              },
+            });
+          });
+
+          await Promise.all(updates);
+          totalCancelled += newDocs.length;
         }
 
-        // 2. Transition this page to CANCELLED_BY_OWNER
-        const updates = docs.map((doc) =>
-          this.tablesDb.updateRow({
-            databaseId: this.databaseId,
-            tableId: this.transactionsCollectionId,
-            rowId: doc.$id,
-            data: {
-              status: TransactionStatus.CANCELLED_BY_OWNER,
-            },
-          }),
-        );
-
-        await Promise.all(updates);
-        totalCancelled += docs.length;
-
-        // If we got fewer than 100 docs, we know we've reached the end
+        // Advance the cursor to the last document seen in this page
         if (docs.length < 100) {
           hasMore = false;
+        } else {
+          cursor = docs[docs.length - 1].$id;
         }
       }
     } catch (error) {

@@ -141,6 +141,31 @@ export class AppwriteAuthRepository
   }
 
   /**
+   * Resolves the current session with retries and exponential backoff (ADR 027).
+   *
+   * @param maxRetries - The maximum number of retries.
+   * @returns A Promise that resolves to the user object or null.
+   * @private
+   */
+  private async resolveSessionWithRetry(
+    maxRetries = 2,
+  ): Promise<Models.User<Models.Preferences> | null> {
+    let attempt = 0;
+    while (attempt <= maxRetries) {
+      const user = await this.resolveSession();
+      if (user) return user;
+
+      attempt++;
+      if (attempt <= maxRetries) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, attempt - 1) * 100),
+        );
+      }
+    }
+    return null;
+  }
+
+  /**
    * Registers a new user with email and password.
    * Supports promoting an existing anonymous session if active.
    *
@@ -214,162 +239,46 @@ export class AppwriteAuthRepository
     password: string,
   ): Promise<AuthenticatedAuthResult> {
     // 1. Check current session state (ADR 027)
-    let priorSessionIsAnonymous = false;
+    let priorSession: Models.User<Models.Preferences> | null = null;
     try {
-      const user = await this.resolveSession();
-      if (user) {
-        priorSessionIsAnonymous = !user.email;
-        if (user.email === email) {
-          // Already logged in as the correct user
-          return {
-            type: "authenticated",
-            userId: user.$id,
-            email: user.email,
-            isNewUser: false,
-          };
-        }
-      }
-    } catch (error: unknown) {
-      // 401 (Unauthorized) means there is no active session, which is fine.
-      // We re-throw any other error (network, server error) to avoid silent failures.
-      if (error instanceof AppwriteException && error.code !== 401) {
-        throw error;
-      }
-
-      if (!(error instanceof AppwriteException)) {
-        throw error;
-      }
-    }
-
-    // 2. Validate credentials with a "probe" client
-    const probeClient = new Client()
-      .setEndpoint(this.endpoint)
-      .setProject(this.projectId);
-    const probeAccount = new Account(probeClient);
-
-    let probeSessionCreated = false;
-    try {
-      await probeAccount.createEmailPasswordSession({
-        email,
-        password,
-      });
-      probeSessionCreated = true;
-    } catch (error: unknown) {
-      // If validation fails, and we had an anonymous session, ensure it's still there
-      if (priorSessionIsAnonymous) {
-        try {
-          this.invalidateSessionCache();
-          const current = await this.resolveSession();
-
-          // If session is lost (null) or morphed into a different user (!current.email falsy check)
-          // We need to restore/ensure an anonymous session.
-          if (!current || (current.email && current.email.length > 0)) {
-            await this.account.createAnonymousSession();
-          }
-        } catch (innerError: unknown) {
-          try {
-            await this.account.createAnonymousSession();
-          } catch (recoveryError: unknown) {
-            this.logger.error(
-              "Failed to recover anonymous session in login() after probe failure",
-              {
-                originalError:
-                  innerError instanceof Error
-                    ? innerError.message
-                    : String(innerError),
-                recoveryError:
-                  recoveryError instanceof Error
-                    ? recoveryError.message
-                    : String(recoveryError),
-              },
-            );
-            throw recoveryError;
-          }
-        }
-      }
-      throw error;
-    } finally {
-      // Only delete the probe session if it was successfully created.
-      // Unconditional deletion here would destroy pre-existing anonymous sessions if probe failed. (ADR 027)
-      if (probeSessionCreated) {
-        try {
-          await probeAccount.deleteSession({ sessionId: "current" });
-        } catch (cleanupError: unknown) {
-          // We log the cleanup error but do not rethrow to avoid shadowing probe errors (ADR 027)
-          this.logger.error(
-            "Failed to delete probe session in login() cleanup",
-            {
-              error:
-                cleanupError instanceof Error
-                  ? cleanupError.message
-                  : String(cleanupError),
-            },
-          );
-        }
-      }
-    }
-
-    // 3. Ensure the main account instance is logged in
-    /**
-     * @note Implicit Cookie-Sharing Contract
-     * The Appwrite SDK instances (probeClient/probeAccount and this.account) share authentication
-     * state via the platform's cookie jar or fallback storage (e.g., Expo SecureStore).
-     * This behavior is essential for the "probe" validation to effect the main instance.
-     * @see ADR 027 for session resolution strategy.
-     */
-    try {
-      const user = await this.resolveSession();
-      if (user?.email === email) {
+      priorSession = await this.resolveSession();
+      if (priorSession?.email === email) {
+        // Already logged in as the correct user
         return {
           type: "authenticated",
-          userId: user.$id,
-          email: user.email,
+          userId: priorSession.$id,
+          email: priorSession.email,
           isNewUser: false,
         };
       }
-      // Different user or guest, switch
+    } catch (error: unknown) {
+      // 401 is fine, other errors re-thrown
+      if (!(error instanceof AppwriteException && error.code === 401)) {
+        throw error;
+      }
+    }
+
+    // 2. Aggressively attempt to delete any existing session before creating a new one (ADR 027)
+    // This is the only way to reliably avoid "prohibited when session is active" errors
+    // if the SDK's internal state is out of sync with our cached priorSession.
+    try {
       await this.account.deleteSession({ sessionId: "current" });
       this.invalidateSessionCache();
-    } catch (error: unknown) {
-      // 401 (Unauthorized) means there is no active session, which is fine.
-      // We re-throw any other error (network, server error) to avoid silent failures.
-      if (error instanceof AppwriteException && error.code !== 401) {
-        throw error;
-      }
-
-      if (!(error instanceof AppwriteException)) {
-        throw error;
-      }
+    } catch {
+      // Ignore errors (like 401) if no session actually existed
     }
 
-    try {
-      await this.account.createEmailPasswordSession({
-        email,
-        password,
-      });
-    } catch (error: unknown) {
-      // If deleting the session succeeded but creating the new one fails,
-      // and we had an anonymous session, try to recover it.
-      if (priorSessionIsAnonymous) {
-        try {
-          await this.account.createAnonymousSession();
-        } catch (recoveryError: unknown) {
-          this.logger.error(
-            "Failed to recover anonymous session in login() after session creation failure",
-            {
-              error:
-                recoveryError instanceof Error
-                  ? recoveryError.message
-                  : String(recoveryError),
-            },
-          );
-        }
-      }
-      throw error;
-    }
+    // 3. Create the new session
+    await this.account.createEmailPasswordSession({
+      email,
+      password,
+    });
 
     this.invalidateSessionCache();
-    const user = await this.resolveSession();
+
+    // 4. Resolve session with retry (ADR 027)
+    const user = await this.resolveSessionWithRetry();
+
     if (!user) {
       throw new Error("Failed to resolve session after login");
     }
@@ -487,7 +396,10 @@ export class AppwriteAuthRepository
     }
 
     this.invalidateSessionCache();
-    const user = await this.resolveSession();
+
+    // 4. Resolve session with retry (ADR 027)
+    const user = await this.resolveSessionWithRetry();
+
     if (!user) {
       throw new Error("Failed to resolve session after OAuth completion");
     }
@@ -575,21 +487,18 @@ export class AppwriteAuthRepository
    */
   async loginAnonymously(): Promise<AnonymousAuthResult> {
     try {
-      // Idempotency: check if we already have an anonymous session (ADR 027)
+      // Safeguard: Check if we already have Any session.
+      // loginAnonymously should only be called if no session is active.
       const user = await this.resolveSession();
-      if (user && !user.email) {
-        return {
-          type: "anonymous",
-          userId: user.$id,
-          isNewUser: false,
-        };
-      }
-      // If already logged in with email, we might want to throw or logout.
-      // Per requirements, if they want guest login we should probably logout email session.
       if (user) {
-        await this.logout();
+        throw new Error(
+          "Creation of an anonymous session is prohibited when a session is active.",
+        );
       }
     } catch (error: unknown) {
+      if (error instanceof Error && error.message.includes("prohibited")) {
+        throw error;
+      }
       // 401 is expected if no session
       if (!(error instanceof AppwriteException && error.code === 401)) {
         throw error;
@@ -598,7 +507,10 @@ export class AppwriteAuthRepository
 
     await this.account.createAnonymousSession();
     this.invalidateSessionCache();
-    const user = await this.resolveSession();
+
+    // 3. Resolve session with retry (ADR 027)
+    const user = await this.resolveSessionWithRetry();
+
     if (!user) {
       throw new Error("Failed to resolve session after anonymous login");
     }

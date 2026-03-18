@@ -31,15 +31,19 @@ export const LoginSuggestionModal: React.FC<LoginSuggestionModalProps> = ({
       >
         <Card style={styles.card} mode="elevated">
           <Card.Title
-            title="Claim this item!"
+            title="Almost there!"
             titleVariant="titleLarge"
-            subtitle="Wait, who's getting this?"
+            subtitle="Ready to gift?"
             subtitleVariant="bodyMedium"
           />
           <Card.Content>
+            <Text variant="titleMedium" style={styles.text}>
+              Don't lose your progress!
+            </Text>
             <Text variant="bodyMedium" style={styles.text}>
-              To avoid duplicates, we need to know who is buying this. You can
-              sign in to keep track of your gifts, or just continue as a guest.
+              Your gift will be counted for the stats! However, guest info stays
+              only on this device. Sign in to make sure you don't lose your
+              history or the chance to change your mind later.
             </Text>
           </Card.Content>
           <Card.Actions style={styles.actions}>
@@ -86,7 +90,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   text: {
-    marginBottom: 16,
+    marginBottom: 8,
     lineHeight: 20,
   },
   actions: {

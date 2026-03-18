@@ -12,6 +12,8 @@ import {
   useUserRepository,
   useAuthRepository,
 } from "./WishlistRepositoryContext";
+import { Config } from "../constants/Config";
+import { AppwriteException, isNetworkError } from "@wishin/infrastructure";
 
 interface UserContextValue {
   /** The unique identifier of the current user, or null if not loaded yet. */
@@ -32,6 +34,13 @@ interface UserContextValue {
   refetch: () => Promise<string | null>;
   /** Explicitly login as a guest. */
   loginAsGuest: () => Promise<void>;
+  /** Whether the session resolution is indeterminate (due to transient errors). */
+  sessionIndeterminate: boolean;
+  /**
+   * Whether the current session identity is reliable.
+   * True if not loading and not indeterminate.
+   */
+  isSessionReliable: boolean;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -52,32 +61,67 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     useState<UserContextValue["sessionType"]>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionIndeterminate, setSessionIndeterminate] = useState(false);
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
     setError(null);
+    let timeoutId: NodeJS.Timeout | null = null;
     try {
-      const [id, type] = await Promise.all([
-        repository.getCurrentUserId(),
-        repository.getSessionType(),
+      // Protective timeout to prevent UI from hanging indefinitely if the repository is stuck (e.g. 503 errors) (ADR 027)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(new Error("User resolution timeout"));
+        }, Config.SESSION_TIMEOUT_MS);
+      });
+
+      const [id, type] = await Promise.race([
+        Promise.all([
+          repository.getCurrentUserId(),
+          repository.getSessionType(),
+        ]),
+        timeoutPromise,
       ]);
       setUserId(id);
       setSessionType(type);
+      setSessionIndeterminate(false);
       return id;
     } catch (err: unknown) {
+      const isTransient =
+        (err instanceof AppwriteException &&
+          (/timeout|network/i.test(err.message) ||
+            err.code === 429 ||
+            err.code >= 500)) ||
+        isNetworkError(err) ||
+        (err instanceof Error && err.message === "User resolution timeout");
+
       const message =
         err instanceof Error ? err.message : "Failed to fetch user session";
       setError(message);
-      setUserId(null);
-      setSessionType(null);
+
+      if (isTransient) {
+        setSessionIndeterminate(true);
+        // Keep last known userId and sessionType (ADR 027)
+      } else {
+        setUserId(null);
+        setSessionType(null);
+        setSessionIndeterminate(false);
+      }
+
       console.error("UserProvider error:", message);
       return null;
     } finally {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
       setLoading(false);
     }
   }, [repository]);
 
   const loginAsGuest = useCallback(async () => {
+    if (userId) return;
+
     setLoading(true);
     setError(null);
     try {
@@ -113,8 +157,18 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       error,
       refetch: fetchUser,
       loginAsGuest,
+      sessionIndeterminate,
+      isSessionReliable: !loading && !sessionIndeterminate,
     }),
-    [userId, sessionType, loading, error, fetchUser, loginAsGuest],
+    [
+      userId,
+      sessionType,
+      loading,
+      error,
+      fetchUser,
+      loginAsGuest,
+      sessionIndeterminate,
+    ],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

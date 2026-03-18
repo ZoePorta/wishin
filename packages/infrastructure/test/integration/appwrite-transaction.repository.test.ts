@@ -384,7 +384,7 @@ describe.skipIf(!shouldRun)(
           .catch(() => void 0);
         await cleanupParentRecords(localItemId, wishlistId, profileId);
       }
-    });
+    }, 10000);
 
     it("should find transactions by userId", async () => {
       const currentUserId = await repository.getCurrentUserId();
