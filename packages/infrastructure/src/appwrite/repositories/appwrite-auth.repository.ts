@@ -269,30 +269,10 @@ export class AppwriteAuthRepository
     }
 
     // 3. Create the new session
-    try {
-      await this.account.createEmailPasswordSession({
-        email,
-        password,
-      });
-    } catch (error: unknown) {
-      // Recovery logic: if login fails and we had an anonymous session, try to restore it.
-      if (priorSession && !priorSession.email) {
-        try {
-          await this.account.createAnonymousSession();
-        } catch (recoveryError: unknown) {
-          this.logger.error(
-            "Failed to recover anonymous session in login() after session creation failure",
-            {
-              error:
-                recoveryError instanceof Error
-                  ? recoveryError.message
-                  : String(recoveryError),
-            },
-          );
-        }
-      }
-      throw error;
-    }
+    await this.account.createEmailPasswordSession({
+      email,
+      password,
+    });
 
     this.invalidateSessionCache();
 

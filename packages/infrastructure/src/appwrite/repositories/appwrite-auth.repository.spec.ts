@@ -212,7 +212,7 @@ describe("AppwriteAuthRepository", () => {
       expect(result.email).toBe(email);
     });
 
-    it("should recover with a new anonymous session if login fails", async () => {
+    it("should not recover with a new anonymous session if login fails", async () => {
       // 1. Initial guest session state
       mockGet.mockResolvedValueOnce({
         $id: "guest-123",
@@ -224,12 +224,12 @@ describe("AppwriteAuthRepository", () => {
       );
       mockCreateAnonymousSession.mockResolvedValue({} as Models.Session);
 
-      // 3. Verification: Deletion then recovery
+      // 3. Verification: Deletion happens, but no recovery attempt
       await expect(repository.login("a@b.com", "p")).rejects.toThrow();
 
       expect(mockGet).toHaveBeenCalledTimes(1);
       expect(mockDeleteSession).toHaveBeenCalledWith({ sessionId: "current" });
-      expect(mockCreateAnonymousSession).toHaveBeenCalled();
+      expect(mockCreateAnonymousSession).not.toHaveBeenCalled();
     });
   });
 
