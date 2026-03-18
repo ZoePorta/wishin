@@ -10,12 +10,16 @@ import "dotenv/config";
 const {
   EXPO_PUBLIC_APPWRITE_ENDPOINT,
   EXPO_PUBLIC_APPWRITE_PROJECT_ID,
+  EXPO_PUBLIC_APPWRITE_DATABASE_ID,
   APPWRITE_API_SECRET,
+  EXPO_PUBLIC_DB_PREFIX,
 } = process.env;
+const prefix = EXPO_PUBLIC_DB_PREFIX ?? "test";
 
 const shouldRun =
   EXPO_PUBLIC_APPWRITE_ENDPOINT &&
   EXPO_PUBLIC_APPWRITE_PROJECT_ID &&
+  EXPO_PUBLIC_APPWRITE_DATABASE_ID &&
   APPWRITE_API_SECRET;
 
 describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
@@ -24,11 +28,14 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
   let client: ReturnType<typeof createAppwriteClient>;
   let repository: AppwriteAuthRepository;
   let createdUserId: string | null = null;
+  let profileCollectionId: string;
 
   beforeAll(() => {
     const endpoint = EXPO_PUBLIC_APPWRITE_ENDPOINT!;
     const projectId = EXPO_PUBLIC_APPWRITE_PROJECT_ID!;
+    const databaseId = EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
     const apiKey = APPWRITE_API_SECRET!;
+    profileCollectionId = `${prefix}_profiles`;
 
     // Server SDK for cleanup
     serverClient = new ServerClient()
@@ -39,20 +46,27 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
 
     // Client SDK (Repository under test)
     client = createAppwriteClient(endpoint, projectId);
-    repository = new AppwriteAuthRepository(client, endpoint, projectId, {
-      debug: () => {
-        /* no-op */
-      },
-      info: () => {
-        /* no-op */
-      },
-      warn: () => {
-        /* no-op */
-      },
-      error: () => {
-        /* no-op */
-      },
-    } as unknown as Logger);
+    repository = new AppwriteAuthRepository(
+      client,
+      endpoint,
+      projectId,
+      databaseId,
+      profileCollectionId,
+      {
+        debug: () => {
+          /* no-op */
+        },
+        info: () => {
+          /* no-op */
+        },
+        warn: () => {
+          /* no-op */
+        },
+        error: () => {
+          /* no-op */
+        },
+      } as unknown as Logger,
+    );
   });
 
   afterEach(async () => {
@@ -141,9 +155,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
 
     it("should recover an anonymous session when email login fails (even if ID changes)", async () => {
       // 1. Start as guest
-      const guestResult = await repository.loginAnonymously();
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const guestId = guestResult.userId;
+      await repository.loginAnonymously();
 
       // 2. Attempt login with non-existent account
       const wrongEmail = `wrong-${randomUUID()}@example.com`;

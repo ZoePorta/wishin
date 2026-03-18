@@ -9,6 +9,7 @@ import {
   AppwriteProfileRepository,
   createAppwriteClient,
   AppwriteException,
+  isNetworkError,
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
@@ -169,11 +170,11 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
         const sessionAwareRepo: SessionAwareRepository = repos.authRepository;
 
         // timeout to prevent slow network from blocking startup (ADR 027)
-        // Reset to 5000ms to provide more buffer during Appwrite Cloud instability.
+        // Buffer provided by Config.SESSION_TIMEOUT_MS to handle Appwrite Cloud instability.
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => {
             reject(new Error("Session resolution timeout"));
-          }, 5000),
+          }, Config.SESSION_TIMEOUT_MS),
         );
 
         // attempt to restore session without forcing creation
@@ -186,11 +187,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
           error.message === "Session resolution timeout";
 
         const isAppwriteTransient =
-          error instanceof AppwriteException ||
-          (error instanceof Error &&
-            (error.message.includes("Network request failed") ||
-              error.message.includes("network error") ||
-              error.name === "AppwriteException"));
+          error instanceof AppwriteException || isNetworkError(error);
 
         if (isTimeout || isAppwriteTransient) {
           console.warn(

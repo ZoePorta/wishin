@@ -67,7 +67,8 @@ describe("AppwriteAuthRepository", () => {
   let mockClient: Client;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    mockDeleteSession.mockResolvedValue({} as Models.Session);
     mockClient = new Client();
     const logger = {
       debug: vi.fn(),
@@ -200,10 +201,6 @@ describe("AppwriteAuthRepository", () => {
       mockCreateEmailPasswordSession.mockResolvedValueOnce(
         {} as Models.Session,
       );
-      mockGet.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
-      mockCreateEmailPasswordSession.mockResolvedValueOnce(
-        {} as Models.Session,
-      );
       mockGet.mockResolvedValueOnce({
         $id: "user-123",
         email,
@@ -226,16 +223,12 @@ describe("AppwriteAuthRepository", () => {
         new AppwriteException("Unauthorized", 401),
       );
 
-      // 3. Recovery check: repository calls account.get()
-      // We simulate a session loss (401 Unauthorized) to trigger the catch block
-      mockGet.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
-
-      // 4. Verification: mockCreateAnonymousSession is called in the catch block
+      // 3. Verification: mockCreateAnonymousSession is called in the catch block
       mockCreateAnonymousSession.mockResolvedValue({} as Models.Session);
 
       await expect(repository.login("a@b.com", "p")).rejects.toThrow();
 
-      expect(mockGet).toHaveBeenCalledTimes(2);
+      expect(mockGet).toHaveBeenCalledTimes(1);
       expect(mockCreateAnonymousSession).toHaveBeenCalled();
     });
   });
@@ -243,11 +236,11 @@ describe("AppwriteAuthRepository", () => {
   describe("loginAnonymously", () => {
     it("should create an anonymous session if none exists", async () => {
       mockGet.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
+      mockCreateAnonymousSession.mockResolvedValueOnce({} as Models.Session);
       mockGet.mockResolvedValueOnce({
         $id: "anon-123",
         email: "",
       } as Models.User<Models.Preferences>);
-      mockCreateAnonymousSession.mockResolvedValue({} as Models.Session);
 
       const result = await repository.loginAnonymously();
       expect(mockCreateAnonymousSession).toHaveBeenCalled();

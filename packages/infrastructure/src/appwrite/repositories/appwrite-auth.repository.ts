@@ -276,7 +276,24 @@ export class AppwriteAuthRepository
     }
 
     this.invalidateSessionCache();
-    const user = await this.resolveSession();
+
+    // 3. Resolve session with retry (ADR 027)
+    const MAX_RETRIES = 2;
+    let attempt = 0;
+    let user: Models.User<Models.Preferences> | null = null;
+
+    while (attempt <= MAX_RETRIES) {
+      user = await this.resolveSession();
+      if (user) break;
+
+      attempt++;
+      if (attempt <= MAX_RETRIES) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, attempt - 1) * 100),
+        );
+      }
+    }
+
     if (!user) {
       throw new Error("Failed to resolve session after login");
     }
@@ -394,7 +411,24 @@ export class AppwriteAuthRepository
     }
 
     this.invalidateSessionCache();
-    const user = await this.resolveSession();
+
+    // 4. Resolve session with retry (ADR 027)
+    const MAX_RETRIES = 2;
+    let attempt = 0;
+    let user: Models.User<Models.Preferences> | null = null;
+
+    while (attempt <= MAX_RETRIES) {
+      user = await this.resolveSession();
+      if (user) break;
+
+      attempt++;
+      if (attempt <= MAX_RETRIES) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, attempt - 1) * 100),
+        );
+      }
+    }
+
     if (!user) {
       throw new Error("Failed to resolve session after OAuth completion");
     }
@@ -505,7 +539,24 @@ export class AppwriteAuthRepository
 
     await this.account.createAnonymousSession();
     this.invalidateSessionCache();
-    const user = await this.resolveSession();
+
+    // 3. Resolve session with retry (ADR 027)
+    const MAX_RETRIES = 2;
+    let attempt = 0;
+    let user: Models.User<Models.Preferences> | null = null;
+
+    while (attempt <= MAX_RETRIES) {
+      user = await this.resolveSession();
+      if (user) break;
+
+      attempt++;
+      if (attempt <= MAX_RETRIES) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, attempt - 1) * 100),
+        );
+      }
+    }
+
     if (!user) {
       throw new Error("Failed to resolve session after anonymous login");
     }

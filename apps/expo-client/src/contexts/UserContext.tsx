@@ -12,6 +12,8 @@ import {
   useUserRepository,
   useAuthRepository,
 } from "./WishlistRepositoryContext";
+import { Config } from "../constants/Config";
+import { useRef } from "react";
 
 interface UserContextValue {
   /** The unique identifier of the current user, or null if not loaded yet. */
@@ -53,16 +55,21 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
   const fetchUser = useCallback(async () => {
     setLoading(true);
     setError(null);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
     try {
-      // Protective timeout to prevent UI from hanging indefinitely if the repository is stuck (e.g. 503 errors)
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => {
+      // Protective timeout to prevent UI from hanging indefinitely if the repository is stuck (e.g. 503 errors) (ADR 027)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timerRef.current = setTimeout(() => {
           reject(new Error("User resolution timeout"));
-        }, 10000),
-      );
+        }, Config.SESSION_TIMEOUT_MS);
+      });
 
       const [id, type] = await Promise.race([
         Promise.all([
@@ -83,6 +90,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       console.error("UserProvider error:", message);
       return null;
     } finally {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
       setLoading(false);
     }
   }, [repository]);
@@ -113,6 +124,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   useEffect(() => {
     void fetchUser();
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [fetchUser]);
 
   const value = useMemo(
