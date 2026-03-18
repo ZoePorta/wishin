@@ -32,7 +32,6 @@ export const AuthButtons: React.FC = () => {
     }
   };
 
-  const isGuest = isSessionReliable && sessionType === "anonymous";
   const isAuthenticated =
     isSessionReliable &&
     (sessionType === "registered" || sessionType === "incomplete");
@@ -55,32 +54,28 @@ export const AuthButtons: React.FC = () => {
   return (
     <>
       <View style={styles.container}>
-        {isGuest && (
-          <>
-            <Button
-              mode="text"
-              onPress={() => {
-                setAuthMode("login");
-                setAuthModalVisible(true);
-              }}
-              contentStyle={commonStyles.minimumTouchTarget}
-              labelStyle={{ color: theme.colors.primary }}
-            >
-              Login
-            </Button>
-            <Button
-              mode="text"
-              onPress={() => {
-                setAuthMode("register");
-                setAuthModalVisible(true);
-              }}
-              contentStyle={commonStyles.minimumTouchTarget}
-              labelStyle={{ color: theme.colors.primary }}
-            >
-              Register
-            </Button>
-          </>
-        )}
+        <Button
+          mode="text"
+          onPress={() => {
+            setAuthMode("login");
+            setAuthModalVisible(true);
+          }}
+          contentStyle={commonStyles.minimumTouchTarget}
+          labelStyle={{ color: theme.colors.primary }}
+        >
+          Login
+        </Button>
+        <Button
+          mode="text"
+          onPress={() => {
+            setAuthMode("register");
+            setAuthModalVisible(true);
+          }}
+          contentStyle={commonStyles.minimumTouchTarget}
+          labelStyle={{ color: theme.colors.primary }}
+        >
+          Register
+        </Button>
       </View>
 
       <AuthModal
