@@ -141,16 +141,15 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
   });
 
   describe("Session Preservation and Overlap", () => {
-    it("should allow idempotent anonymous login", async () => {
+    it("should throw error when loginAnonymously is called with an active session", async () => {
       // 1. First anonymous login
       const firstResult = await repository.loginAnonymously();
       expect(firstResult.type).toBe("anonymous");
-      const firstId = firstResult.userId;
 
-      // 2. Second anonymous login should succeed and return the same ID
-      const secondResult = await repository.loginAnonymously();
-      expect(secondResult.type).toBe("anonymous");
-      expect(secondResult.userId).toBe(firstId);
+      // 2. Second anonymous login should fail because a session is active
+      await expect(repository.loginAnonymously()).rejects.toThrow(
+        "Creation of an anonymous session is prohibited when a session is active.",
+      );
     });
 
     it("should NOT recover an anonymous session when email login fails", async () => {

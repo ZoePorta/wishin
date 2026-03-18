@@ -213,6 +213,7 @@ export class AppwriteTransactionRepository
     let totalCancelled = 0;
     let hasMore = true;
 
+    const processedIds = new Set<string>();
     try {
       while (hasMore) {
         // 1. Fetch a page of RESERVED transactions for the item
@@ -228,25 +229,29 @@ export class AppwriteTransactionRepository
 
         const docs = toDocument<TransactionDocument[]>(response.rows);
 
-        if (docs.length === 0) {
+        // Filter out those already processed in this call (handles stale index cases)
+        const newDocs = docs.filter((doc) => !processedIds.has(doc.$id));
+
+        if (newDocs.length === 0) {
           hasMore = false;
           break;
         }
 
         // 2. Transition this page to CANCELLED_BY_OWNER
-        const updates = docs.map((doc) =>
-          this.tablesDb.updateRow({
+        const updates = newDocs.map((doc) => {
+          processedIds.add(doc.$id);
+          return this.tablesDb.updateRow({
             databaseId: this.databaseId,
             tableId: this.transactionsCollectionId,
             rowId: doc.$id,
             data: {
               status: TransactionStatus.CANCELLED_BY_OWNER,
             },
-          }),
-        );
+          });
+        });
 
         await Promise.all(updates);
-        totalCancelled += docs.length;
+        totalCancelled += newDocs.length;
 
         // If we got fewer than 100 docs, we know we've reached the end
         if (docs.length < 100) {
