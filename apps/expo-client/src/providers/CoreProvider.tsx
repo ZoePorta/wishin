@@ -165,21 +165,28 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     if (!repos) return;
     let isMounted = true;
 
+    let timerId: NodeJS.Timeout | null = null;
     const init = async () => {
       try {
         const sessionAwareRepo: SessionAwareRepository = repos.authRepository;
 
-        // timeout to prevent slow network from blocking startup (ADR 027)
-        // Buffer provided by Config.SESSION_TIMEOUT_MS to handle Appwrite Cloud instability.
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => {
+        const timeoutPromise = new Promise((_, reject) => {
+          timerId = setTimeout(() => {
             reject(new Error("Session resolution timeout"));
-          }, Config.SESSION_TIMEOUT_MS),
-        );
+          }, Config.SESSION_TIMEOUT_MS);
+        });
 
         // attempt to restore session without forcing creation
-
-        await Promise.race([sessionAwareRepo.resolveSession(), timeoutPromise]);
+        try {
+          await Promise.race([
+            sessionAwareRepo.resolveSession(),
+            timeoutPromise,
+          ]);
+        } finally {
+          if (timerId !== null) {
+            clearTimeout(timerId);
+          }
+        }
       } catch (error) {
         // Log as warning for transient/timeout errors as they are handled by proceeding in unauthenticated state.
         const isTimeout =
@@ -187,7 +194,11 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
           error.message === "Session resolution timeout";
 
         const isAppwriteTransient =
-          error instanceof AppwriteException || isNetworkError(error);
+          (error instanceof AppwriteException &&
+            (/timeout|network/i.test(error.message) ||
+              error.code === 429 ||
+              error.code >= 500)) ||
+          isNetworkError(error);
 
         if (isTimeout || isAppwriteTransient) {
           console.warn(
@@ -221,6 +232,9 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
 
     return () => {
       isMounted = false;
+      if (timerId !== null) {
+        clearTimeout(timerId);
+      }
     };
   }, [repos, onConfigError]);
 

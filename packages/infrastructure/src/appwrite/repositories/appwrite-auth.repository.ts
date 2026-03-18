@@ -141,6 +141,31 @@ export class AppwriteAuthRepository
   }
 
   /**
+   * Resolves the current session with retries and exponential backoff (ADR 027).
+   *
+   * @param maxRetries - The maximum number of retries.
+   * @returns A Promise that resolves to the user object or null.
+   * @private
+   */
+  private async resolveSessionWithRetry(
+    maxRetries = 2,
+  ): Promise<Models.User<Models.Preferences> | null> {
+    let attempt = 0;
+    while (attempt <= maxRetries) {
+      const user = await this.resolveSession();
+      if (user) return user;
+
+      attempt++;
+      if (attempt <= maxRetries) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.pow(2, attempt - 1) * 100),
+        );
+      }
+    }
+    return null;
+  }
+
+  /**
    * Registers a new user with email and password.
    * Supports promoting an existing anonymous session if active.
    *
@@ -214,50 +239,44 @@ export class AppwriteAuthRepository
     password: string,
   ): Promise<AuthenticatedAuthResult> {
     // 1. Check current session state (ADR 027)
-    let priorSessionIsAnonymous = false;
+    let priorSession: Models.User<Models.Preferences> | null = null;
     try {
-      const user = await this.resolveSession();
-      if (user) {
-        priorSessionIsAnonymous = !user.email;
-        if (user.email === email) {
-          // Already logged in as the correct user
-          return {
-            type: "authenticated",
-            userId: user.$id,
-            email: user.email,
-            isNewUser: false,
-          };
-        }
-
-        // Different user or guest, delete session before creating a new one.
-        // We delete the session here because Appwrite does not allow multiple active sessions
-        // on the same platform/storage (cookies/SecureStore). (ADR 027)
-        await this.account.deleteSession({ sessionId: "current" });
-        this.invalidateSessionCache();
+      priorSession = await this.resolveSession();
+      if (priorSession?.email === email) {
+        // Already logged in as the correct user
+        return {
+          type: "authenticated",
+          userId: priorSession.$id,
+          email: priorSession.email,
+          isNewUser: false,
+        };
       }
     } catch (error: unknown) {
-      // 401 (Unauthorized) means there is no active session, which is fine.
-      // We re-throw any other error (network, server error) to avoid silent failures.
-      if (error instanceof AppwriteException && error.code !== 401) {
-        throw error;
-      }
-
-      if (!(error instanceof AppwriteException)) {
+      // 401 is fine, other errors re-thrown
+      if (!(error instanceof AppwriteException && error.code === 401)) {
         throw error;
       }
     }
 
-    // 2. Create the new session
+    // 2. Aggressively attempt to delete any existing session before creating a new one (ADR 027)
+    // This is the only way to reliably avoid "prohibited when session is active" errors
+    // if the SDK's internal state is out of sync with our cached priorSession.
+    try {
+      await this.account.deleteSession({ sessionId: "current" });
+      this.invalidateSessionCache();
+    } catch {
+      // Ignore errors (like 401) if no session actually existed
+    }
+
+    // 3. Create the new session
     try {
       await this.account.createEmailPasswordSession({
         email,
         password,
       });
     } catch (error: unknown) {
-      // If creating the new session fails (e.g., wrong credentials),
-      // and we had an anonymous session, try to recover it.
-      // NOTE: This will result in a NEW anonymous userId.
-      if (priorSessionIsAnonymous) {
+      // Recovery logic: if login fails and we had an anonymous session, try to restore it.
+      if (priorSession && !priorSession.email) {
         try {
           await this.account.createAnonymousSession();
         } catch (recoveryError: unknown) {
@@ -277,22 +296,8 @@ export class AppwriteAuthRepository
 
     this.invalidateSessionCache();
 
-    // 3. Resolve session with retry (ADR 027)
-    const MAX_RETRIES = 2;
-    let attempt = 0;
-    let user: Models.User<Models.Preferences> | null = null;
-
-    while (attempt <= MAX_RETRIES) {
-      user = await this.resolveSession();
-      if (user) break;
-
-      attempt++;
-      if (attempt <= MAX_RETRIES) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.pow(2, attempt - 1) * 100),
-        );
-      }
-    }
+    // 4. Resolve session with retry (ADR 027)
+    const user = await this.resolveSessionWithRetry();
 
     if (!user) {
       throw new Error("Failed to resolve session after login");
@@ -413,21 +418,7 @@ export class AppwriteAuthRepository
     this.invalidateSessionCache();
 
     // 4. Resolve session with retry (ADR 027)
-    const MAX_RETRIES = 2;
-    let attempt = 0;
-    let user: Models.User<Models.Preferences> | null = null;
-
-    while (attempt <= MAX_RETRIES) {
-      user = await this.resolveSession();
-      if (user) break;
-
-      attempt++;
-      if (attempt <= MAX_RETRIES) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.pow(2, attempt - 1) * 100),
-        );
-      }
-    }
+    const user = await this.resolveSessionWithRetry();
 
     if (!user) {
       throw new Error("Failed to resolve session after OAuth completion");
@@ -516,19 +507,15 @@ export class AppwriteAuthRepository
    */
   async loginAnonymously(): Promise<AnonymousAuthResult> {
     try {
-      // Idempotency: check if we already have an anonymous session (ADR 027)
+      // Idempotency: check if we already have Any session (ADR 027)
+      // As per feedback, we maintain the existing session if present.
       const user = await this.resolveSession();
-      if (user && !user.email) {
+      if (user) {
         return {
           type: "anonymous",
           userId: user.$id,
           isNewUser: false,
         };
-      }
-      // If already logged in with email, we might want to throw or logout.
-      // Per requirements, if they want guest login we should probably logout email session.
-      if (user) {
-        await this.logout();
       }
     } catch (error: unknown) {
       // 401 is expected if no session
@@ -541,21 +528,7 @@ export class AppwriteAuthRepository
     this.invalidateSessionCache();
 
     // 3. Resolve session with retry (ADR 027)
-    const MAX_RETRIES = 2;
-    let attempt = 0;
-    let user: Models.User<Models.Preferences> | null = null;
-
-    while (attempt <= MAX_RETRIES) {
-      user = await this.resolveSession();
-      if (user) break;
-
-      attempt++;
-      if (attempt <= MAX_RETRIES) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, Math.pow(2, attempt - 1) * 100),
-        );
-      }
-    }
+    const user = await this.resolveSessionWithRetry();
 
     if (!user) {
       throw new Error("Failed to resolve session after anonymous login");

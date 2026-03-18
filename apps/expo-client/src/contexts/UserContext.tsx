@@ -13,7 +13,6 @@ import {
   useAuthRepository,
 } from "./WishlistRepositoryContext";
 import { Config } from "../constants/Config";
-import { useRef } from "react";
 
 interface UserContextValue {
   /** The unique identifier of the current user, or null if not loaded yet. */
@@ -34,6 +33,8 @@ interface UserContextValue {
   refetch: () => Promise<string | null>;
   /** Explicitly login as a guest. */
   loginAsGuest: () => Promise<void>;
+  /** Whether the session resolution is indeterminate (due to transient errors). */
+  sessionIndeterminate: boolean;
 }
 
 const UserContext = createContext<UserContextValue | undefined>(undefined);
@@ -54,19 +55,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     useState<UserContextValue["sessionType"]>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [sessionIndeterminate, setSessionIndeterminate] = useState(false);
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
     setError(null);
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-    }
+    let timeoutId: NodeJS.Timeout | null = null;
     try {
       // Protective timeout to prevent UI from hanging indefinitely if the repository is stuck (e.g. 503 errors) (ADR 027)
       const timeoutPromise = new Promise<never>((_, reject) => {
-        timerRef.current = setTimeout(() => {
+        timeoutId = setTimeout(() => {
           reject(new Error("User resolution timeout"));
         }, Config.SESSION_TIMEOUT_MS);
       });
@@ -80,19 +78,30 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       ]);
       setUserId(id);
       setSessionType(type);
+      setSessionIndeterminate(false);
       return id;
     } catch (err: unknown) {
+      const isTransient =
+        err instanceof Error && /timeout|network/i.test(err.message);
       const message =
         err instanceof Error ? err.message : "Failed to fetch user session";
       setError(message);
-      setUserId(null);
-      setSessionType(null);
+
+      if (isTransient) {
+        setSessionIndeterminate(true);
+        // Keep last known userId and sessionType
+      } else {
+        setUserId(null);
+        setSessionType(null);
+        setSessionIndeterminate(false);
+      }
+
       console.error("UserProvider error:", message);
       return null;
     } finally {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
       }
       setLoading(false);
     }
@@ -124,13 +133,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   useEffect(() => {
     void fetchUser();
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-    };
   }, [fetchUser]);
 
   const value = useMemo(
@@ -141,8 +143,17 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       error,
       refetch: fetchUser,
       loginAsGuest,
+      sessionIndeterminate,
     }),
-    [userId, sessionType, loading, error, fetchUser, loginAsGuest],
+    [
+      userId,
+      sessionType,
+      loading,
+      error,
+      fetchUser,
+      loginAsGuest,
+      sessionIndeterminate,
+    ],
   );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

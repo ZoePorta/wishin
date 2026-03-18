@@ -212,23 +212,23 @@ describe("AppwriteAuthRepository", () => {
       expect(result.email).toBe(email);
     });
 
-    it("should restore anonymous session if login fails", async () => {
-      // 1. Initial guest session state (priorSessionIsAnonymous = true)
+    it("should recover with a new anonymous session if login fails", async () => {
+      // 1. Initial guest session state
       mockGet.mockResolvedValueOnce({
         $id: "guest-123",
         email: "",
       } as Models.User<Models.Preferences>);
-      // 2. Login fails on probe client
+      // 2. Login fails
       mockCreateEmailPasswordSession.mockRejectedValue(
         new AppwriteException("Unauthorized", 401),
       );
-
-      // 3. Verification: mockCreateAnonymousSession is called in the catch block
       mockCreateAnonymousSession.mockResolvedValue({} as Models.Session);
 
+      // 3. Verification: Deletion then recovery
       await expect(repository.login("a@b.com", "p")).rejects.toThrow();
 
       expect(mockGet).toHaveBeenCalledTimes(1);
+      expect(mockDeleteSession).toHaveBeenCalledWith({ sessionId: "current" });
       expect(mockCreateAnonymousSession).toHaveBeenCalled();
     });
   });
