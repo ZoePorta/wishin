@@ -205,9 +205,22 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text variant="headlineSmall" style={styles.title}>
-        {initialData ? "Edit Item" : "Add New Item"}
-      </Text>
+      <ImagePickerField
+        accessibilityLabel="Item image"
+        imageUri={
+          selectedImage?.uri ??
+          (useInitialImage ? (initialData?.imageUrl ?? null) : null)
+        }
+        onImageSelected={(image) => {
+          setSelectedImage(image);
+          if (image) {
+            setUseInitialImage(false); // New image selected
+          } else {
+            setUseInitialImage(false); // Image removed
+          }
+        }}
+        disabled={loading || isUploading}
+      />
 
       <TextInput
         label="Name*"
@@ -311,23 +324,6 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         style={styles.segmentedButtons}
       />
 
-      <ImagePickerField
-        label="Item Image"
-        imageUri={
-          selectedImage?.uri ??
-          (useInitialImage ? (initialData?.imageUrl ?? null) : null)
-        }
-        onImageSelected={(image) => {
-          setSelectedImage(image);
-          if (image) {
-            setUseInitialImage(false); // New image selected
-          } else {
-            setUseInitialImage(false); // Image removed
-          }
-        }}
-        disabled={loading || isUploading}
-      />
-
       <Button
         mode="contained"
         onPress={() => {
@@ -386,9 +382,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
-  },
-  title: {
-    marginBottom: 24,
   },
   input: {
     marginBottom: 16,

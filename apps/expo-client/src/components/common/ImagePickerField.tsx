@@ -27,6 +27,10 @@ interface ImagePickerFieldProps {
    * Whether the field is disabled.
    */
   disabled?: boolean;
+  /**
+   * Accessibility label for the field.
+   */
+  accessibilityLabel?: string;
 }
 
 /**
@@ -41,6 +45,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
   imageUri,
   onImageSelected,
   disabled = false,
+  accessibilityLabel,
 }) => {
   const theme = useTheme();
 
@@ -97,7 +102,12 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
       )}
       <View style={styles.content}>
         {imageUri ? (
-          <Surface style={styles.previewContainer} elevation={1}>
+          <Surface
+            style={styles.previewContainer}
+            elevation={1}
+            accessibilityLabel={accessibilityLabel}
+            accessibilityRole="image"
+          >
             <Image source={{ uri: imageUri }} style={styles.preview} />
             <IconButton
               icon="close"
@@ -117,6 +127,8 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
             }}
             disabled={disabled}
             activeOpacity={0.7}
+            accessibilityLabel={accessibilityLabel ?? "Add photo"}
+            accessibilityRole="button"
             style={[
               styles.placeholder,
               {
