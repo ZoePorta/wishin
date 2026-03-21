@@ -7,6 +7,8 @@ const endpoint = (process.env.EXPO_PUBLIC_APPWRITE_ENDPOINT ?? "") as string;
 const projectId = (process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID ?? "") as string;
 const databaseId = (process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID ??
   "") as string;
+const bucketId = (process.env.EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_ID ??
+  "") as string;
 const prefix = (process.env.EXPO_PUBLIC_DB_PREFIX ?? "") as string;
 /**
  * Resolves and validates the base URL for the application.
@@ -70,11 +72,11 @@ let cachedBaseUrl: string | undefined;
  * or EXPO_PUBLIC_APPWRITE_DATABASE_ID are missing.
  */
 export function ensureAppwriteConfig() {
-  if (!endpoint || !projectId || !databaseId) {
+  if (!endpoint || !projectId || !databaseId || !bucketId) {
     throw new Error(
       "Missing required Appwrite environment variables. " +
         "Ensure EXPO_PUBLIC_APPWRITE_ENDPOINT, EXPO_PUBLIC_APPWRITE_PROJECT_ID, " +
-        "and EXPO_PUBLIC_APPWRITE_DATABASE_ID are set in your .env file.",
+        "EXPO_PUBLIC_APPWRITE_DATABASE_ID, and EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_ID are set in your .env file.",
     );
   }
 
@@ -86,6 +88,7 @@ export const Config = {
     endpoint,
     projectId,
     databaseId,
+    bucketId,
   },
   get baseUrl(): string {
     cachedBaseUrl ??= getValidatedBaseUrl();

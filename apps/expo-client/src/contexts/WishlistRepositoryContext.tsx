@@ -6,6 +6,7 @@ import type {
   UserRepository,
   AuthRepository,
   ProfileRepository,
+  StorageRepository,
   Logger,
   ObservabilityService,
 } from "@wishin/domain";
@@ -16,6 +17,7 @@ interface WishlistRepositoryContextProps {
   userRepository: UserRepository;
   authRepository: AuthRepository;
   profileRepository: ProfileRepository;
+  storageRepository: StorageRepository;
   logger: Logger;
   observability: ObservabilityService;
 }
@@ -48,6 +50,7 @@ export const WishlistRepositoryProvider: React.FC<{
   userRepository: UserRepository;
   authRepository: AuthRepository;
   profileRepository: ProfileRepository;
+  storageRepository: StorageRepository;
   logger: Logger;
   observability: ObservabilityService;
   children: ReactNode;
@@ -57,6 +60,7 @@ export const WishlistRepositoryProvider: React.FC<{
   userRepository,
   authRepository,
   profileRepository,
+  storageRepository,
   logger,
   observability,
   children,
@@ -68,6 +72,7 @@ export const WishlistRepositoryProvider: React.FC<{
       userRepository,
       authRepository,
       profileRepository,
+      storageRepository,
       logger,
       observability,
     }),
@@ -77,6 +82,7 @@ export const WishlistRepositoryProvider: React.FC<{
       userRepository,
       authRepository,
       profileRepository,
+      storageRepository,
       logger,
       observability,
     ],
@@ -155,6 +161,16 @@ export const useAuthRepository = (): AuthRepository => {
  */
 export const useProfileRepository = (): ProfileRepository => {
   return useRepositories().profileRepository;
+};
+
+/**
+ * Hook to consume only the {@link StorageRepository} from context.
+ *
+ * @returns The storage repository instance.
+ * @throws {Error} If {@link useRepositories} fails (e.g. used outside of provider).
+ */
+export const useStorageRepository = (): StorageRepository => {
+  return useRepositories().storageRepository;
 };
 
 /**

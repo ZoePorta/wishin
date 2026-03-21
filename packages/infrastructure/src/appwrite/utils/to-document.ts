@@ -1,4 +1,4 @@
-import type { Models } from "appwrite";
+import type { Models } from "react-native-appwrite";
 
 /**
  * Casts an unknown value to an Appwrite Document or array of Documents.

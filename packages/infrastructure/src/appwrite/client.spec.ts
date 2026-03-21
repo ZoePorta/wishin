@@ -1,6 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createAppwriteClient } from "./client";
-import { Client } from "appwrite";
+import { Client } from "react-native-appwrite";
+
+vi.mock("react-native-appwrite", () => ({
+  Client: class {
+    setEndpoint = vi.fn().mockReturnThis();
+    setProject = vi.fn().mockReturnThis();
+  },
+}));
 
 describe("Appwrite Client Factory", () => {
   it("should initialize an Appwrite Client with correct configuration", () => {

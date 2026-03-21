@@ -7,6 +7,7 @@ import {
   AppwriteTransactionRepository,
   AppwriteAuthRepository,
   AppwriteProfileRepository,
+  AppwriteStorageRepository,
   createAppwriteClient,
   AppwriteException,
   type SessionAwareRepository,
@@ -114,11 +115,21 @@ function createRepositories() {
     Config.collections.profiles,
   );
 
+  const storageRepository = new AppwriteStorageRepository(
+    client,
+    Config.appwrite.endpoint,
+    Config.appwrite.projectId,
+    Config.appwrite.bucketId,
+    consoleLogger,
+    OBSERVABILITY,
+  );
+
   return {
     wishlistRepository,
     transactionRepository,
     authRepository,
     profileRepository,
+    storageRepository,
   };
 }
 
@@ -234,6 +245,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
       wishlistRepository={repos.wishlistRepository}
       transactionRepository={repos.transactionRepository}
       profileRepository={repos.profileRepository}
+      storageRepository={repos.storageRepository}
       userRepository={repos.authRepository}
       authRepository={repos.authRepository}
       logger={consoleLogger}

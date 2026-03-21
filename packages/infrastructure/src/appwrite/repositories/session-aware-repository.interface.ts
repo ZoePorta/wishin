@@ -1,4 +1,4 @@
-import type { Models } from "appwrite";
+import type { Models } from "react-native-appwrite";
 
 /**
  * Interface representing a repository that requires active sessions.

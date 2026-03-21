@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { ProfileMapper, type ProfileDocument } from "./profile.mapper";
 import { Profile, InvalidAttributeError } from "@wishin/domain";
-import type { Models } from "appwrite";
+import type { Models } from "react-native-appwrite";
 
 describe("ProfileMapper", () => {
   const mockDoc: ProfileDocument = {

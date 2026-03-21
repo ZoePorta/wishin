@@ -3,7 +3,7 @@ import { Client as ServerClient, Users } from "node-appwrite";
 import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "../../src/appwrite/client";
 import { AppwriteAuthRepository } from "../../src/appwrite/repositories/appwrite-auth.repository";
-import { Account } from "appwrite";
+import { Account } from "react-native-appwrite";
 import type { AuthResult, Logger } from "@wishin/domain";
 import "dotenv/config";
 
@@ -37,22 +37,33 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
       .setKey(apiKey);
     usersService = new Users(serverClient);
 
+    const databaseId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
+    const prefix = process.env.EXPO_PUBLIC_DB_PREFIX ?? "";
+    const profileCollectionId = prefix ? `${prefix}_profiles` : "profiles";
+
     // Client SDK (Repository under test)
     client = createAppwriteClient(endpoint, projectId);
-    repository = new AppwriteAuthRepository(client, endpoint, projectId, {
-      debug: () => {
-        /* no-op */
-      },
-      info: () => {
-        /* no-op */
-      },
-      warn: () => {
-        /* no-op */
-      },
-      error: () => {
-        /* no-op */
-      },
-    } as unknown as Logger);
+    repository = new AppwriteAuthRepository(
+      client,
+      endpoint,
+      projectId,
+      databaseId,
+      profileCollectionId,
+      {
+        debug: () => {
+          /* no-op */
+        },
+        info: () => {
+          /* no-op */
+        },
+        warn: () => {
+          /* no-op */
+        },
+        error: () => {
+          /* no-op */
+        },
+      } as unknown as Logger,
+    );
   });
 
   afterEach(async () => {

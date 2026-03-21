@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteAuthRepository } from "./appwrite-auth.repository";
-import { Client, OAuthProvider, AppwriteException, Models } from "appwrite";
+import {
+  Client,
+  OAuthProvider,
+  AppwriteException,
+  Models,
+} from "react-native-appwrite";
 
 // 1. Hoisted mocks for sharing across factory and tests
 const {
@@ -28,7 +33,7 @@ const {
 }));
 
 // 2. Mock Appwrite SDK
-vi.mock("appwrite", () => {
+vi.mock("react-native-appwrite", () => {
   return {
     Client: class {
       setEndpoint = vi.fn().mockReturnThis();

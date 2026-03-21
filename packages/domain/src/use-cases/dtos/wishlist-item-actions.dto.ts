@@ -36,7 +36,7 @@ export interface AddWishlistItemInput {
   /**
    * Optional image URL.
    */
-  imageUrl?: string;
+  imageUrl?: string | null;
   /**
    * Whether the item has unlimited availability.
    */
@@ -87,7 +87,7 @@ export interface UpdateWishlistItemInput {
   /**
    * Optional image URL update.
    */
-  imageUrl?: string;
+  imageUrl?: string | null;
   /**
    * Optional availability type update.
    */

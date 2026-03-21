@@ -1,4 +1,4 @@
-import { Client } from "appwrite";
+import { Client } from "react-native-appwrite";
 
 /**
  * Initializes the Appwrite base client.

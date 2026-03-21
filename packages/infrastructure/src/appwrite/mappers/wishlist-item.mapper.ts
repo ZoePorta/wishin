@@ -1,4 +1,4 @@
-import type { Models } from "appwrite";
+import type { Models } from "react-native-appwrite";
 import { WishlistItem, Priority } from "@wishin/domain";
 
 /**
@@ -30,7 +30,7 @@ export interface WishlistItemPersistence {
   price?: number;
   currency?: string;
   url?: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
   isUnlimited: boolean;
   totalQuantity: number;
   reservedQuantity: number;

@@ -23,6 +23,22 @@ global.localStorage = {
   key: (index: number) => Object.keys(storage)[index] || null,
 } as Storage;
 
+import { vi } from "vitest";
+
+// Global mock for react-native-appwrite to avoid SyntaxErrors in Vitest (Node) environment.
+vi.mock("react-native-appwrite", () => ({
+  Client: vi.fn().mockImplementation(() => ({
+    setEndpoint: vi.fn().mockReturnThis(),
+    setProject: vi.fn().mockReturnThis(),
+  })),
+  Account: vi.fn(),
+  Storage: vi.fn(),
+  Databases: vi.fn(),
+  ID: { unique: () => "unique-id" },
+  Query: {},
+  Models: {},
+}));
+
 export {};
 
 // Restore type safety for global.window

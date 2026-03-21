@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { View, ScrollView, StyleSheet, FlatList } from "react-native";
+import { View, ScrollView, StyleSheet, FlatList, Alert } from "react-native";
 import {
   TextInput,
   Button,
@@ -11,11 +11,20 @@ import {
   List,
   Surface,
 } from "react-native-paper";
-import { Priority, type WishlistItemOutput } from "@wishin/domain";
+import {
+  Priority,
+  type WishlistItemOutput,
+  type FileData,
+} from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from "../utils/currencies";
 import { commonStyles } from "../../../theme/common-styles";
+import {
+  ImagePickerField,
+  type SelectedImage,
+} from "../../../components/common/ImagePickerField";
+import { useStorageRepository } from "../../../contexts/WishlistRepositoryContext";
 
 /**
  * Input format for the onSubmit callback.
@@ -67,6 +76,15 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   );
   const [priceUnknown, setPriceUnknown] = useState(initialData?.price == null);
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(
+    null,
+  );
+  const [useInitialImage, setUseInitialImage] = useState(
+    !!initialData?.imageUrl,
+  );
+  const [isUploading, setIsUploading] = useState(false);
+
+  const storageRepository = useStorageRepository();
 
   useEffect(() => {
     setName(initialData?.name ?? "");
@@ -78,31 +96,96 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     setTotalQuantity(initialData?.totalQuantity.toString() ?? "1");
     setIsUnlimited(initialData?.isUnlimited ?? false);
     setPriceUnknown(initialData?.price == null);
+    setSelectedImage(null);
+    setUseInitialImage(!!initialData?.imageUrl);
   }, [initialData]);
 
   const handleSubmit = useCallback(async () => {
-    if (!name.trim() || loading) return;
+    if (!name.trim() || loading || isUploading) return;
 
-    const payload: AddItemFormSubmission = {
-      wishlistId,
-      name: name.trim(),
-      description: description.trim() || undefined,
-      url: url.trim() || undefined,
-      price: priceUnknown ? undefined : parseFloat(price) || 0,
-      currency: priceUnknown ? undefined : currency,
-      priority: parseInt(priority, 10) as Priority,
-      totalQuantity: isUnlimited
-        ? 1
-        : Math.max(1, parseInt(totalQuantity, 10) || 1),
-      isUnlimited,
-      imageUrl: initialData?.imageUrl,
-      id: initialData?.id,
-    };
+    setIsUploading(true);
+    try {
+      let finalImageUrl = initialData?.imageUrl;
 
-    await onSubmit(payload);
+      // Handle image upload if a new local image is selected
+      if (selectedImage) {
+        console.warn(
+          "Preparing image upload for SelectedImage:",
+          selectedImage.name,
+        );
+        const fileData: FileData = {
+          uri: selectedImage.uri,
+          filename: selectedImage.name,
+          mimeType: selectedImage.type,
+          size: selectedImage.size,
+        };
+
+        const fileId = await storageRepository.upload(fileData);
+        console.warn("Image uploaded successfully, fileId:", fileId);
+        finalImageUrl = await storageRepository.getPreview(fileId);
+        console.warn("Image preview URL obtained:", finalImageUrl);
+      } else if (!useInitialImage && initialData?.imageUrl) {
+        // Image was explicitly removed
+        finalImageUrl = null;
+      }
+
+      const payload: AddItemFormSubmission = {
+        wishlistId,
+        name: name.trim(),
+        description: description.trim() || undefined,
+        url: url.trim() || undefined,
+        price: priceUnknown ? undefined : parseFloat(price) || 0,
+        currency: priceUnknown ? undefined : currency,
+        priority: parseInt(priority, 10) as Priority,
+        totalQuantity: isUnlimited
+          ? 1
+          : Math.max(1, parseInt(totalQuantity, 10) || 1),
+        isUnlimited,
+        imageUrl: finalImageUrl,
+        id: initialData?.id,
+      };
+
+      await onSubmit(payload);
+    } catch (error) {
+      console.error("Error submitting form with image:", error);
+      Alert.alert(
+        "Upload Failed",
+        "There was an error uploading the image. Would you like to save the item without the image?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Save anyway",
+            onPress: () => {
+              // Proceed with original data or without image
+              void (async () => {
+                const payload: AddItemFormSubmission = {
+                  wishlistId,
+                  name: name.trim(),
+                  description: description.trim() || undefined,
+                  url: url.trim() || undefined,
+                  price: priceUnknown ? undefined : parseFloat(price) || 0,
+                  currency: priceUnknown ? undefined : currency,
+                  priority: parseInt(priority, 10) as Priority,
+                  totalQuantity: isUnlimited
+                    ? 1
+                    : Math.max(1, parseInt(totalQuantity, 10) || 1),
+                  isUnlimited,
+                  imageUrl: initialData?.imageUrl, // Keep old image or none if new
+                  id: initialData?.id,
+                };
+                await onSubmit(payload);
+              })();
+            },
+          },
+        ],
+      );
+    } finally {
+      setIsUploading(false);
+    }
   }, [
     name,
     loading,
+    isUploading,
     wishlistId,
     description,
     url,
@@ -112,6 +195,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     priority,
     isUnlimited,
     totalQuantity,
+    selectedImage,
+    useInitialImage,
+    storageRepository,
     initialData?.imageUrl,
     initialData?.id,
     onSubmit,
@@ -220,9 +306,26 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         buttons={SORTED_PRIORITIES.map((p) => ({
           value: String(p),
           label: PRIORITY_LABELS[p],
-          disabled: loading,
+          disabled: loading || isUploading,
         }))}
         style={styles.segmentedButtons}
+      />
+
+      <ImagePickerField
+        label="Item Image"
+        imageUri={
+          selectedImage?.uri ??
+          (useInitialImage ? (initialData?.imageUrl ?? null) : null)
+        }
+        onImageSelected={(image) => {
+          setSelectedImage(image);
+          if (image) {
+            setUseInitialImage(false); // New image selected
+          } else {
+            setUseInitialImage(false); // Image removed
+          }
+        }}
+        disabled={loading || isUploading}
       />
 
       <Button
@@ -230,8 +333,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         onPress={() => {
           void handleSubmit();
         }}
-        loading={loading}
-        disabled={!name.trim() || loading}
+        loading={loading || isUploading}
+        disabled={!name.trim() || loading || isUploading}
         style={styles.submitButton}
         contentStyle={commonStyles.minimumTouchTarget}
       >
