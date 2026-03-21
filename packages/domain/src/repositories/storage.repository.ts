@@ -52,4 +52,11 @@ export interface StorageRepository {
    * @throws {PersistenceError} If the preview retrieval fails.
    */
   getPreview(fileId: string): Promise<string>;
+
+  /**
+   * Extracts a fileId from its corresponding image URL if it's a known storage URL.
+   * @param url - The full image URL.
+   * @returns {string | null} The extracted fileId or null if it's not a known storage URL.
+   */
+  extractFileId(url: string): string | null;
 }

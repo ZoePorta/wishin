@@ -241,4 +241,45 @@ export class AppwriteStorageRepository
 
     return previewUrl;
   }
+
+  /**
+   * Extracts a fileId from its corresponding image URL if it's a known storage URL.
+   * @param url - The full image URL.
+   * @returns {string | null} The extracted fileId or null if it's not a known storage URL.
+   */
+  extractFileId(url: string): string | null {
+    if (!url) return null;
+
+    try {
+      const parsedUrl = new URL(url);
+
+      // Check if it's the correct endpoint (ignoring protocol for flexibility if needed, but here we check full)
+      const expectedEndpoint = new URL(this.endpoint);
+      if (parsedUrl.host !== expectedEndpoint.host) return null;
+
+      // Pattern: /v1/storage/buckets/{bucketId}/files/{fileId}/view
+      // Note: this.endpoint might already contain /v1.
+      // Appwrite manually constructed URL in getPreview: ${this.endpoint}/storage/buckets/${this.bucketId}/files/${fileId}/view...
+      const pathParts = parsedUrl.pathname.split("/");
+
+      // We look for the bucketId and the "files" marker
+      const bucketIdx = pathParts.indexOf("buckets");
+      const filesIdx = pathParts.indexOf("files");
+      const viewIdx = pathParts.indexOf("view");
+
+      if (
+        bucketIdx !== -1 &&
+        filesIdx === bucketIdx + 2 &&
+        viewIdx === filesIdx + 2 &&
+        pathParts[bucketIdx + 1] === this.bucketId
+      ) {
+        return pathParts[filesIdx + 1];
+      }
+    } catch {
+      // Not a valid URL
+      return null;
+    }
+
+    return null;
+  }
 }

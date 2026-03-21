@@ -13,17 +13,21 @@ import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 import type { WishlistItemOutput } from "./dtos/get-wishlist.dto";
 
 import type { TransactionRepository } from "../repositories/transaction.repository";
+import type { StorageRepository } from "../repositories/storage.repository";
 
 describe("UpdateWishlistItemUseCase", () => {
   let useCase: UpdateWishlistItemUseCase;
   let mockRepo: WishlistRepository;
   let mockTransactionRepo: TransactionRepository;
+  let mockStorageRepo: StorageRepository;
   const WISHLIST_ID = "550e8400-e29b-41d4-a716-446655440000";
   const ITEM_ID = "660e8400-e29b-41d4-a716-446655441111";
 
   const repoFindById = vi.fn();
   const repoSave = vi.fn();
   const transactionCancelByItemId = vi.fn();
+  const storageExtractFileId = vi.fn();
+  const storageDelete = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -42,7 +46,17 @@ describe("UpdateWishlistItemUseCase", () => {
       cancelByItemId: transactionCancelByItemId,
       delete: vi.fn(),
     };
-    useCase = new UpdateWishlistItemUseCase(mockRepo, mockTransactionRepo);
+    mockStorageRepo = {
+      upload: vi.fn(),
+      delete: storageDelete,
+      getPreview: vi.fn(),
+      extractFileId: storageExtractFileId,
+    };
+    useCase = new UpdateWishlistItemUseCase(
+      mockRepo,
+      mockTransactionRepo,
+      mockStorageRepo,
+    );
   });
 
   const createExistingWishlistWithItem = () => {
@@ -209,5 +223,111 @@ describe("UpdateWishlistItemUseCase", () => {
     // Act & Assert
     await expect(useCase.execute(input)).rejects.toThrow(InvalidAttributeError);
     expect(repoSave).not.toHaveBeenCalled();
+  });
+
+  describe("Image Deletion", () => {
+    const OLD_IMAGE_URL = "https://appwrite.io/files/old-file-id/view";
+    const NEW_IMAGE_URL = "https://appwrite.io/files/new-file-id/view";
+
+    it("should delete the old image if imageUrl is replaced", async () => {
+      // Arrange
+      const existingWishlist = createExistingWishlistWithItem();
+      const item = existingWishlist.items.find((i) => i.id === ITEM_ID)!;
+      // Force old image URL
+      vi.spyOn(item, "imageUrl", "get").mockReturnValue(OLD_IMAGE_URL);
+
+      repoFindById.mockResolvedValue(existingWishlist);
+      repoSave.mockResolvedValue(undefined);
+      storageExtractFileId.mockReturnValue("old-file-id");
+      storageDelete.mockResolvedValue(undefined);
+
+      const input: UpdateWishlistItemInput = {
+        wishlistId: WISHLIST_ID,
+        itemId: ITEM_ID,
+        imageUrl: NEW_IMAGE_URL,
+      };
+
+      // Act
+      await useCase.execute(input);
+
+      // Assert
+      expect(storageExtractFileId).toHaveBeenCalledWith(OLD_IMAGE_URL);
+      expect(storageDelete).toHaveBeenCalledWith("old-file-id");
+    });
+
+    it("should delete the old image if imageUrl is removed (set to null)", async () => {
+      // Arrange
+      const existingWishlist = createExistingWishlistWithItem();
+      const item = existingWishlist.items.find((i) => i.id === ITEM_ID)!;
+      vi.spyOn(item, "imageUrl", "get").mockReturnValue(OLD_IMAGE_URL);
+
+      repoFindById.mockResolvedValue(existingWishlist);
+      repoSave.mockResolvedValue(undefined);
+      storageExtractFileId.mockReturnValue("old-file-id");
+      storageDelete.mockResolvedValue(undefined);
+
+      const input: UpdateWishlistItemInput = {
+        wishlistId: WISHLIST_ID,
+        itemId: ITEM_ID,
+        imageUrl: null,
+      };
+
+      // Act
+      await useCase.execute(input);
+
+      // Assert
+      expect(storageExtractFileId).toHaveBeenCalledWith(OLD_IMAGE_URL);
+      expect(storageDelete).toHaveBeenCalledWith("old-file-id");
+    });
+
+    it("should NOT delete anything if imageUrl remains the same", async () => {
+      // Arrange
+      const existingWishlist = createExistingWishlistWithItem();
+      const item = existingWishlist.items.find((i) => i.id === ITEM_ID)!;
+      vi.spyOn(item, "imageUrl", "get").mockReturnValue(OLD_IMAGE_URL);
+
+      repoFindById.mockResolvedValue(existingWishlist);
+      repoSave.mockResolvedValue(undefined);
+
+      const input: UpdateWishlistItemInput = {
+        wishlistId: WISHLIST_ID,
+        itemId: ITEM_ID,
+        imageUrl: OLD_IMAGE_URL,
+      };
+
+      // Act
+      await useCase.execute(input);
+
+      // Assert
+      expect(storageDelete).not.toHaveBeenCalled();
+    });
+
+    it("should NOT delete anything if the old imageUrl was not an Appwrite URL", async () => {
+      // Arrange
+      const existingWishlist = createExistingWishlistWithItem();
+      const item = existingWishlist.items.find((i) => i.id === ITEM_ID)!;
+      vi.spyOn(item, "imageUrl", "get").mockReturnValue(
+        "https://external.com/image.png",
+      );
+
+      repoFindById.mockResolvedValue(existingWishlist);
+      repoSave.mockResolvedValue(undefined);
+      storageExtractFileId.mockReturnValue(null);
+
+      const input: UpdateWishlistItemInput = {
+        wishlistId: WISHLIST_ID,
+        itemId: ITEM_ID,
+        imageUrl: NEW_IMAGE_URL,
+      };
+
+      // Act
+      await useCase.execute(input);
+
+      // Assert
+      expect(storageExtractFileId).toHaveBeenCalledWith(
+        "https://external.com/image.png",
+      );
+      expect(storageDelete).not.toHaveBeenCalled();
+    });
   });
 });

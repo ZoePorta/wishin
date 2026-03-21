@@ -248,4 +248,42 @@ describe("AppwriteStorageRepository", () => {
       expect(result).toBe(expectedUrl);
     });
   });
+
+  describe("extractFileId", () => {
+    it("should extract fileId from a valid Appwrite URL", () => {
+      const fileId = "file-123";
+      const url = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${fileId}/view?project=project-123`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBe(fileId);
+    });
+
+    it("should return null for non-storage URLs", () => {
+      const url = "https://example.com/image.png";
+      const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for Appwrite URLs from a different bucket", () => {
+      const url = `https://cloud.appwrite.io/v1/storage/buckets/other-bucket/files/file-123/view?project=project-123`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for Appwrite URLs from a different endpoint", () => {
+      const url = `https://other.appwrite.io/v1/storage/buckets/${bucketId}/files/file-123/view?project=project-123`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for malformed Appwrite URLs", () => {
+      const url = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/file-123/edit?project=project-123`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+  });
 });
