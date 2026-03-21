@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   # Job 1: Unit Tests (Fast, no network required)
   unit_tests:
@@ -17,7 +20,17 @@ jobs:
         with:
           node-version: 20
           cache: "pnpm"
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Auto-fix lockfile
+        if: failure()
+        run: |
+          pnpm install --no-frozen-lockfile
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore: update pnpm-lock.yaml [skip ci]" || echo "No changes to commit"
+          git push
       - run: pnpm test # This should only run *.spec.ts [cite: 2026-01-30]
 
   # Job 2: Integration Tests (Slow, requires Appwrite)
@@ -39,7 +52,17 @@ jobs:
         with:
           node-version: 20
           cache: "pnpm"
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Auto-fix lockfile
+        if: failure()
+        run: |
+          pnpm install --no-frozen-lockfile
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore: update pnpm-lock.yaml [skip ci]" || echo "No changes to commit"
+          git push
       # Critical step: Provision the isolated test environment [cite: 2026-01-30]
       - name: Provision Test DB
         run: pnpm run db:provision:test
