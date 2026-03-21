@@ -10,12 +10,16 @@ import "dotenv/config";
 const {
   EXPO_PUBLIC_APPWRITE_ENDPOINT,
   EXPO_PUBLIC_APPWRITE_PROJECT_ID,
+  EXPO_PUBLIC_APPWRITE_DATABASE_ID,
   APPWRITE_API_SECRET,
+  EXPO_PUBLIC_DB_PREFIX,
 } = process.env;
+const prefix = EXPO_PUBLIC_DB_PREFIX ?? "test";
 
 const shouldRun =
   EXPO_PUBLIC_APPWRITE_ENDPOINT &&
   EXPO_PUBLIC_APPWRITE_PROJECT_ID &&
+  EXPO_PUBLIC_APPWRITE_DATABASE_ID &&
   APPWRITE_API_SECRET;
 
 describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
@@ -23,12 +27,15 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
   let usersService: Users;
   let client: ReturnType<typeof createAppwriteClient>;
   let repository: AppwriteAuthRepository;
-  let createdUserId: string | null = null;
+  const createdUserIds: string[] = [];
+  let profileCollectionId: string;
 
   beforeAll(() => {
     const endpoint = EXPO_PUBLIC_APPWRITE_ENDPOINT!;
     const projectId = EXPO_PUBLIC_APPWRITE_PROJECT_ID!;
+    const databaseId = EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
     const apiKey = APPWRITE_API_SECRET!;
+    profileCollectionId = `${prefix}_profiles`;
 
     // Server SDK for cleanup
     serverClient = new ServerClient()
@@ -37,32 +44,31 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
       .setKey(apiKey);
     usersService = new Users(serverClient);
 
-    const databaseId = process.env.EXPO_PUBLIC_APPWRITE_DATABASE_ID!;
-    const prefix = process.env.EXPO_PUBLIC_DB_PREFIX ?? "";
-    const profileCollectionId = prefix ? `${prefix}_profiles` : "profiles";
-
     // Client SDK (Repository under test)
     client = createAppwriteClient(endpoint, projectId);
+
+    const logger: Logger = {
+      debug: (_message: string, _context?: Record<string, unknown>) => {
+        /* no-op */
+      },
+      info: (_message: string, _context?: Record<string, unknown>) => {
+        /* no-op */
+      },
+      warn: (_message: string, _context?: Record<string, unknown>) => {
+        /* no-op */
+      },
+      error: (_message: string, _context?: Record<string, unknown>) => {
+        /* no-op */
+      },
+    };
+
     repository = new AppwriteAuthRepository(
       client,
       endpoint,
       projectId,
       databaseId,
       profileCollectionId,
-      {
-        debug: () => {
-          /* no-op */
-        },
-        info: () => {
-          /* no-op */
-        },
-        warn: () => {
-          /* no-op */
-        },
-        error: () => {
-          /* no-op */
-        },
-      } as unknown as Logger,
+      logger,
     );
   });
 
@@ -75,14 +81,14 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     }
 
     // 2. Administrative cleanup (best effort)
-    if (createdUserId) {
+    for (const userId of createdUserIds) {
       try {
-        await usersService.delete({ userId: createdUserId });
+        await usersService.delete({ userId });
       } catch (_error) {
         // Ignore if user doesn't exist or already deleted
       }
-      createdUserId = null;
     }
+    createdUserIds.length = 0;
   });
 
   it("should register a new user successfully", async () => {
@@ -100,7 +106,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     expect(result.userId).toBeDefined();
     expect(result.isNewUser).toBe(true);
 
-    createdUserId = result.userId;
+    createdUserIds.push(result.userId);
   });
 
   it("should login a user successfully", async () => {
@@ -109,14 +115,14 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
 
     // 1. Create user using repository (since API key lacks users.write scope)
     const user = await repository.register(email, password, "testuser");
-    createdUserId = user.userId;
+    createdUserIds.push(user.userId);
 
     // 2. Login using repository
     const result: AuthResult = await repository.login(email, password);
 
     expect(result).toBeDefined();
     expect(result.email).toBe(email);
-    expect(result.userId).toBe(createdUserId);
+    expect(result.userId).toBe(user.userId);
     expect(result.isNewUser).toBe(false);
   });
 
@@ -126,7 +132,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
 
     // 1. Setup session
     const user = await repository.register(email, password, "testuser");
-    createdUserId = user.userId;
+    createdUserIds.push(user.userId);
     await repository.login(email, password);
 
     // 2. Logout
@@ -138,22 +144,22 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
   });
 
   describe("Session Preservation and Overlap", () => {
-    it("should allow idempotent anonymous login", async () => {
+    it("should throw error when loginAnonymously is called with an active session", async () => {
       // 1. First anonymous login
       const firstResult = await repository.loginAnonymously();
+      createdUserIds.push(firstResult.userId);
       expect(firstResult.type).toBe("anonymous");
-      const firstId = firstResult.userId;
 
-      // 2. Second anonymous login should succeed and return the same ID
-      const secondResult = await repository.loginAnonymously();
-      expect(secondResult.type).toBe("anonymous");
-      expect(secondResult.userId).toBe(firstId);
+      // 2. Second anonymous login should fail because a session is active
+      await expect(repository.loginAnonymously()).rejects.toThrow(
+        "Creation of an anonymous session is prohibited when a session is active.",
+      );
     });
 
-    it("should preserve anonymous session when email login fails", async () => {
+    it("should NOT recover an anonymous session when email login fails", async () => {
       // 1. Start as guest
       const guestResult = await repository.loginAnonymously();
-      const guestId = guestResult.userId;
+      createdUserIds.push(guestResult.userId);
 
       // 2. Attempt login with non-existent account
       const wrongEmail = `wrong-${randomUUID()}@example.com`;
@@ -161,11 +167,9 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
         repository.login(wrongEmail, "WrongPassword123!"),
       ).rejects.toThrow();
 
-      // 3. Verify STILL guest with same ID
+      // 3. Verify NO session exists (it was deleted to avoid conflict and not recovered)
       const account = new Account(client);
-      const currentUser = await account.get();
-      expect(currentUser.$id).toBe(guestId);
-      expect(currentUser.email).toBe("");
+      await expect(account.get()).rejects.toThrow();
     });
 
     it("should NOT create anonymous session when email login fails and no prior session existed", async () => {
@@ -190,6 +194,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
     it("should replace anonymous session when email login succeeds", async () => {
       // 1. Start as guest
       const guestResult = await repository.loginAnonymously();
+      createdUserIds.push(guestResult.userId);
       const guestId = guestResult.userId;
 
       // 2. Register a user (different email)
@@ -200,7 +205,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
         userPassword,
         "testuser",
       );
-      createdUserId = registerResult.userId;
+      createdUserIds.push(registerResult.userId);
 
       // 3. Login with the new user
       const loginResult = await repository.login(userEmail, userPassword);

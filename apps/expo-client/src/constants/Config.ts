@@ -100,4 +100,9 @@ export const Config = {
     transactions: prefix ? `${prefix}_transactions` : "transactions",
     profiles: prefix ? `${prefix}_profiles` : "profiles",
   },
+  /**
+   * Global timeout for session resolution operations (ADR 027).
+   * Ensures that slow network responses do not block the application startup for too long.
+   */
+  SESSION_TIMEOUT_MS: 10000,
 } as const;

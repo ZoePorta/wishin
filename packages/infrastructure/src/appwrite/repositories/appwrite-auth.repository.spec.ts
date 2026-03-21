@@ -72,7 +72,8 @@ describe("AppwriteAuthRepository", () => {
   let mockClient: Client;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
+    mockDeleteSession.mockResolvedValue({} as Models.Session);
     mockClient = new Client();
     const logger = {
       debug: vi.fn(),
@@ -205,10 +206,6 @@ describe("AppwriteAuthRepository", () => {
       mockCreateEmailPasswordSession.mockResolvedValueOnce(
         {} as Models.Session,
       );
-      mockGet.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
-      mockCreateEmailPasswordSession.mockResolvedValueOnce(
-        {} as Models.Session,
-      );
       mockGet.mockResolvedValueOnce({
         $id: "user-123",
         email,
@@ -220,53 +217,50 @@ describe("AppwriteAuthRepository", () => {
       expect(result.email).toBe(email);
     });
 
-    it("should restore anonymous session if login fails", async () => {
-      // 1. Initial guest session state (priorSessionIsAnonymous = true)
+    it("should not recover with a new anonymous session if login fails", async () => {
+      // 1. Initial guest session state
       mockGet.mockResolvedValueOnce({
         $id: "guest-123",
         email: "",
       } as Models.User<Models.Preferences>);
-      // 2. Login fails on probe client
+      // 2. Login fails
       mockCreateEmailPasswordSession.mockRejectedValue(
         new AppwriteException("Unauthorized", 401),
       );
-
-      // 3. Recovery check: repository calls account.get()
-      // We simulate a session loss (401 Unauthorized) to trigger the catch block
-      mockGet.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
-
-      // 4. Verification: mockCreateAnonymousSession is called in the catch block
       mockCreateAnonymousSession.mockResolvedValue({} as Models.Session);
 
+      // 3. Verification: Deletion happens, but no recovery attempt
       await expect(repository.login("a@b.com", "p")).rejects.toThrow();
 
-      expect(mockGet).toHaveBeenCalledTimes(2);
-      expect(mockCreateAnonymousSession).toHaveBeenCalled();
+      expect(mockGet).toHaveBeenCalledTimes(1);
+      expect(mockDeleteSession).toHaveBeenCalledWith({ sessionId: "current" });
+      expect(mockCreateAnonymousSession).not.toHaveBeenCalled();
     });
   });
 
   describe("loginAnonymously", () => {
     it("should create an anonymous session if none exists", async () => {
       mockGet.mockRejectedValueOnce(new AppwriteException("Unauthorized", 401));
+      mockCreateAnonymousSession.mockResolvedValueOnce({} as Models.Session);
       mockGet.mockResolvedValueOnce({
         $id: "anon-123",
         email: "",
       } as Models.User<Models.Preferences>);
-      mockCreateAnonymousSession.mockResolvedValue({} as Models.Session);
 
       const result = await repository.loginAnonymously();
       expect(mockCreateAnonymousSession).toHaveBeenCalled();
       expect(result.isNewUser).toBe(true);
     });
 
-    it("should return existing session if already anonymous", async () => {
+    it("should throw if a session is already active", async () => {
       const mockUser = { $id: "existing-anon", email: "" };
       mockGet.mockResolvedValue(mockUser as Models.User<Models.Preferences>);
 
-      const result = await repository.loginAnonymously();
+      await expect(repository.loginAnonymously()).rejects.toThrow(
+        "Creation of an anonymous session is prohibited when a session is active.",
+      );
 
       expect(mockCreateAnonymousSession).not.toHaveBeenCalled();
-      expect(result.userId).toBe("existing-anon");
     });
   });
 

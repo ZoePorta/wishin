@@ -10,6 +10,7 @@ import {
   AppwriteStorageRepository,
   createAppwriteClient,
   AppwriteException,
+  isNetworkError,
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
@@ -175,38 +176,51 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     if (!repos) return;
     let isMounted = true;
 
+    let timerId: NodeJS.Timeout | null = null;
     const init = async () => {
       try {
         const sessionAwareRepo: SessionAwareRepository = repos.authRepository;
 
-        // timeout to prevent slow network from blocking startup (ADR 027)
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => {
+        const timeoutPromise = new Promise((_, reject) => {
+          timerId = setTimeout(() => {
             reject(new Error("Session resolution timeout"));
-          }, 5000),
-        );
+          }, Config.SESSION_TIMEOUT_MS);
+        });
 
         // attempt to restore session without forcing creation
-
-        await Promise.race([sessionAwareRepo.resolveSession(), timeoutPromise]);
+        try {
+          await Promise.race([
+            sessionAwareRepo.resolveSession(),
+            timeoutPromise,
+          ]);
+        } finally {
+          if (timerId !== null) {
+            clearTimeout(timerId);
+          }
+        }
       } catch (error) {
-        // Log the error but do not block app initialization for transient session/network errors.
-        // PersistenceError and TimeoutError should not trigger onConfigError.
-        console.error(
-          "Transient session resolution error during initialization:",
-          error,
-        );
-
+        // Log as warning for transient/timeout errors as they are handled by proceeding in unauthenticated state.
         const isTimeout =
           error instanceof Error &&
           error.message === "Session resolution timeout";
 
         const isAppwriteTransient =
-          error instanceof AppwriteException ||
-          (error instanceof Error &&
-            (error.message.includes("Network request failed") ||
-              error.message.includes("network error") ||
-              error.name === "AppwriteException"));
+          (error instanceof AppwriteException &&
+            (/timeout|network/i.test(error.message) ||
+              error.code === 429 ||
+              error.code >= 500)) ||
+          isNetworkError(error);
+
+        if (isTimeout || isAppwriteTransient) {
+          console.warn(
+            `Session resolution deferred due to ${isTimeout ? "timeout" : "transient network error"}. Proceeding in unauthenticated state.`,
+          );
+        } else {
+          console.error(
+            "Persistent session resolution error during initialization:",
+            error,
+          );
+        }
 
         // If it's a critical error (not persistence, not timeout, not transient appwrite), we notify via onConfigError
         if (
@@ -229,6 +243,9 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
 
     return () => {
       isMounted = false;
+      if (timerId !== null) {
+        clearTimeout(timerId);
+      }
     };
   }, [repos, onConfigError]);
 
