@@ -162,8 +162,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             onPress={() => {
               setShowPassword(!showPassword);
             }}
-            focusable={false}
-            tabIndex={-1}
+            accessibilityLabel="Toggle password visibility"
+            accessibilityRole="button"
+            accessible={true}
           />
         }
         error={!!error && !password}

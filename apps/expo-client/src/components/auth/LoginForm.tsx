@@ -130,8 +130,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             onPress={() => {
               setShowPassword(!showPassword);
             }}
-            focusable={false}
-            tabIndex={-1}
+            accessibilityLabel="Toggle password visibility"
+            accessibilityRole="button"
           />
         }
         error={!!error && !password}
