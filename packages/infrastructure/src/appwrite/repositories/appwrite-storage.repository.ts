@@ -1,4 +1,10 @@
-import { Models, Client, Storage, Account, ID } from "react-native-appwrite";
+import {
+  Models,
+  Client,
+  Storage as AppwriteStorage,
+  Account,
+  ID,
+} from "react-native-appwrite";
 import {
   type StorageRepository,
   type FileData,
@@ -14,7 +20,7 @@ import type { SessionAwareRepository } from "./session-aware-repository.interfac
 export class AppwriteStorageRepository
   implements StorageRepository, SessionAwareRepository
 {
-  private readonly storage: Storage;
+  private readonly storage: AppwriteStorage;
   private readonly account: Account;
 
   private _currentUser: Models.User<Models.Preferences> | null = null;
@@ -38,7 +44,7 @@ export class AppwriteStorageRepository
     private readonly logger: Logger,
     private readonly observability: ObservabilityService,
   ) {
-    this.storage = new Storage(this.client);
+    this.storage = new AppwriteStorage(this.client);
     this.account = new Account(this.client);
   }
 
@@ -101,7 +107,11 @@ export class AppwriteStorageRepository
         hasBuffer: !!fileData.buffer,
       });
 
-      let file: unknown;
+      let file:
+        | Parameters<AppwriteStorage["createFile"]>[2]
+        | File
+        | Blob
+        | (Blob & { name: string });
 
       if (fileData.uri) {
         // Universal approach for Web and Mobile: fetch the URI to get a real Blob.
@@ -117,9 +127,12 @@ export class AppwriteStorageRepository
         if (typeof File !== "undefined") {
           file = new File([blob], uniqueFilename, { type: blob.type });
         } else {
-          file = Object.assign(blob, {
+          file = {
+            uri: fileData.uri,
             name: uniqueFilename,
-          });
+            type: blob.type,
+            size: blob.size,
+          };
         }
 
         this.logger.info("Prepared universal file from URI", {
@@ -154,16 +167,14 @@ export class AppwriteStorageRepository
 
       this.logger.info("Calling Appwrite createFile", {
         bucketId: this.bucketId,
-        fileInfo:
-          file && typeof file === "object" ? Object.keys(file) : typeof file,
+        fileInfo: typeof file === "object" ? Object.keys(file) : typeof file,
       });
 
       // Use the object parameter style for createFile as recommended for React Native.
       const result = await this.storage.createFile({
         bucketId: this.bucketId,
         fileId: ID.unique(),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-        file: file as any, // Cast to any to satisfy the complex SDK types in RN vs Web
+        file: file as Parameters<AppwriteStorage["createFile"]>[2],
       });
 
       this.logger.info("File upload successful", { fileId: result.$id });
@@ -253,27 +264,43 @@ export class AppwriteStorageRepository
     try {
       const parsedUrl = new URL(url);
 
-      // Check if it's the correct endpoint (ignoring protocol for flexibility if needed, but here we check full)
+      // Check if it's the correct endpoint
       const expectedEndpoint = new URL(this.endpoint);
       if (parsedUrl.host !== expectedEndpoint.host) return null;
 
-      // Pattern: /v1/storage/buckets/{bucketId}/files/{fileId}/view
-      // Note: this.endpoint might already contain /v1.
-      // Appwrite manually constructed URL in getPreview: ${this.endpoint}/storage/buckets/${this.bucketId}/files/${fileId}/view...
-      const pathParts = parsedUrl.pathname.split("/");
+      // Normalize pathnames by removing trailing slashes for comparison
+      const normalizePath = (p: string) => p.replace(/\/+$/, "");
+      const normalizedParsedPath = normalizePath(parsedUrl.pathname);
+      const normalizedExpectedPath = normalizePath(expectedEndpoint.pathname);
 
-      // We look for the bucketId and the "files" marker
-      const bucketIdx = pathParts.indexOf("buckets");
-      const filesIdx = pathParts.indexOf("files");
-      const viewIdx = pathParts.indexOf("view");
+      // Ensure the endpoint pathname is a prefix of the original URL's pathname
+      if (!normalizedParsedPath.startsWith(normalizedExpectedPath)) return null;
+
+      // Check project query param if it exists in the expected endpoint or use this.projectId
+      const expectedProject =
+        expectedEndpoint.searchParams.get("project") ?? this.projectId;
+      if (parsedUrl.searchParams.get("project") !== expectedProject)
+        return null;
+
+      // Pattern: /storage/buckets/{bucketId}/files/{fileId}/view
+      // We look for the bucketId and the "files" marker relative to the normalized expected path
+      const pathSuffix = normalizedParsedPath
+        .slice(normalizedExpectedPath.length)
+        .split("/")
+        .filter(Boolean);
+
+      // pathSuffix should look like: ['storage', 'buckets', bucketId, 'files', fileId, 'view']
+      const bucketIdx = pathSuffix.indexOf("buckets");
+      const filesIdx = pathSuffix.indexOf("files");
+      const viewIdx = pathSuffix.indexOf("view");
 
       if (
         bucketIdx !== -1 &&
         filesIdx === bucketIdx + 2 &&
         viewIdx === filesIdx + 2 &&
-        pathParts[bucketIdx + 1] === this.bucketId
+        pathSuffix[bucketIdx + 1] === this.bucketId
       ) {
-        return pathParts[filesIdx + 1];
+        return pathSuffix[filesIdx + 1];
       }
     } catch {
       // Not a valid URL

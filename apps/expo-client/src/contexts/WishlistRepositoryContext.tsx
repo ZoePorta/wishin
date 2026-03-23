@@ -38,6 +38,7 @@ const WishlistRepositoryContext = createContext<
  * @param props.userRepository - The {@link UserRepository} instance.
  * @param props.authRepository - The {@link AuthRepository} instance.
  * @param props.profileRepository - The {@link ProfileRepository} instance (required for the provider to function).
+ * @param props.storageRepository - The {@link StorageRepository} instance.
  * @param props.logger - The {@link Logger} instance.
  * @param props.observability - The {@link ObservabilityService} instance.
  * @param props.children - The child components to be wrapped by the provider.

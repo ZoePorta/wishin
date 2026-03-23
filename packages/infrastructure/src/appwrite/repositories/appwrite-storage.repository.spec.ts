@@ -246,6 +246,7 @@ describe("AppwriteStorageRepository", () => {
 
       const expectedUrl = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${fileId}/view?project=project-123`;
       expect(result).toBe(expectedUrl);
+      expect(get).not.toHaveBeenCalled();
     });
   });
 
@@ -282,6 +283,30 @@ describe("AppwriteStorageRepository", () => {
     it("should return null for malformed Appwrite URLs", () => {
       const url = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/file-123/edit?project=project-123`;
       const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for Appwrite URLs from a different project", () => {
+      const fileId = "file-123";
+      const url = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${fileId}/view?project=other-project`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null if the endpoint pathname is not a prefix", () => {
+      // Mock repository with a different endpoint pathname
+      const customRepo = new AppwriteStorageRepository(
+        client,
+        "https://cloud.appwrite.io/v2", // different prefix
+        "project-123",
+        bucketId,
+        mockLogger,
+        mockObservability,
+      );
+      const url = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/file-123/view?project=project-123`;
+      const result = customRepo.extractFileId(url);
 
       expect(result).toBeNull();
     });

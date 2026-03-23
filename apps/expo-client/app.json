@@ -3,7 +3,18 @@
     "name": "app",
     "slug": "app",
     "scheme": "wishin",
-    "plugins": ["expo-router", "./src/plugins/withAndroidQueries"],
+    "plugins": [
+      "expo-router",
+      "./src/plugins/withAndroidQueries",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Wishin to access your photos",
+          "cameraPermission": "Allow Wishin to access your camera",
+          "microphonePermission": "Allow Wishin to access your microphone"
+        }
+      ]
+    ],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

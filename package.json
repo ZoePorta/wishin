@@ -44,7 +44,7 @@
       "bash -c \"pnpm install --lockfile-only -w\"",
       "git add pnpm-lock.yaml"
     ],
-    "*.json": [
+    "!(package).json": [
       "prettier --write"
     ]
   }

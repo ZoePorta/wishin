@@ -72,7 +72,11 @@ export class UpdateWishlistItemUseCase {
 
     // ADR 025: Delete old image from storage if it was replaced or removed.
     // This is done after a successful save to avoid deleting images that might still be needed if the save fails.
-    if (originalItem.imageUrl && originalItem.imageUrl !== input.imageUrl) {
+    if (
+      Object.prototype.hasOwnProperty.call(input, "imageUrl") &&
+      originalItem.imageUrl &&
+      originalItem.imageUrl !== input.imageUrl
+    ) {
       const oldFileId = this.storageRepository.extractFileId(
         originalItem.imageUrl,
       );

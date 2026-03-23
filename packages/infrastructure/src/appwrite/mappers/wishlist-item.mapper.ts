@@ -64,6 +64,14 @@ export const WishlistItemMapper = {
     };
   },
 
+  /**
+   * Maps an Appwrite {@link Models.Document} to a {@link WishlistItem} domain object.
+   * This method uses {@link WishlistItem.reconstitute} to reconstruct the entity from persistence.
+   *
+   * @param doc - The Appwrite document, expected to match the {@link WishlistItemDocument} shape.
+   * @returns A {@link WishlistItem} domain entity.
+   * @description If the priority parsing fails, it defaults to {@link Priority.MEDIUM}.
+   */
   toDomain(doc: Models.Document): WishlistItem {
     const data = doc as WishlistItemDocument;
     const priorityValue = Number(data.priority as unknown);

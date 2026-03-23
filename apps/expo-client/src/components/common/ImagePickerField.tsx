@@ -1,8 +1,24 @@
 import React from "react";
-import { View, Image, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import { Text, IconButton, useTheme, Surface } from "react-native-paper";
+import { View, Image, StyleSheet, Alert } from "react-native";
+import {
+  Text,
+  IconButton,
+  useTheme,
+  Surface,
+  TouchableRipple,
+} from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
 
+/**
+ * Represents the metadata of an image selected from the device's library.
+ * This interface is used to pass image information between the picker and callers.
+ *
+ * @interface SelectedImage
+ * @property {string} uri - The local file URI or path to the selected image. Must be non-empty.
+ * @property {string} name - The filename of the selected image, including extension.
+ * @property {string} type - The MIME type of the image (e.g., 'image/jpeg', 'image/png').
+ * @property {number} size - The file size of the image in bytes.
+ */
 export interface SelectedImage {
   uri: string;
   name: string;
@@ -54,16 +70,17 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
    * Requests permissions if necessary.
    */
   const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== ImagePicker.PermissionStatus.GRANTED) {
-      Alert.alert(
-        "Permission Required",
-        "Permission to access the photo gallery is required to add images to your items.",
-      );
-      return;
-    }
-
     try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== ImagePicker.PermissionStatus.GRANTED) {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access the photo gallery is required to add images to your items.",
+        );
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
@@ -121,12 +138,12 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
             />
           </Surface>
         ) : (
-          <TouchableOpacity
+          <TouchableRipple
             onPress={() => {
               void pickImage();
             }}
             disabled={disabled}
-            activeOpacity={0.7}
+            rippleColor={theme.colors.onSurfaceVariant}
             accessibilityLabel={accessibilityLabel ?? "Add photo"}
             accessibilityRole="button"
             style={[
@@ -137,9 +154,11 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
               },
             ]}
           >
-            <IconButton icon="camera-plus" size={32} disabled={disabled} />
-            <Text variant="bodyMedium">Add Photo</Text>
-          </TouchableOpacity>
+            <View style={styles.rippleInner}>
+              <IconButton icon="camera-plus" size={32} disabled={disabled} />
+              <Text variant="bodyMedium">Add Photo</Text>
+            </View>
+          </TouchableRipple>
         )}
       </View>
     </View>
@@ -179,6 +198,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderStyle: "dashed",
+    overflow: "hidden",
+  },
+  rippleInner: {
+    width: "100%",
+    height: "100%",
     justifyContent: "center",
     alignItems: "center",
   },

@@ -208,5 +208,51 @@ describe("RemoveWishlistItemUseCase", () => {
       // Assert
       expect(mockStorageRepo.delete).not.toHaveBeenCalled();
     });
+
+    it("should NOT delete anything if the image URL yields no file ID", async () => {
+      // Arrange
+      const INVALID_IMAGE_URL = "https://external.com/photo.jpg";
+      const item = WishlistItem.reconstitute({
+        id: ITEM_ID,
+        wishlistId: WISHLIST_ID,
+        name: "Item",
+        priority: Priority.MEDIUM,
+        isUnlimited: false,
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+        imageUrl: INVALID_IMAGE_URL,
+      });
+
+      const existingWishlist = Wishlist.reconstitute({
+        id: WISHLIST_ID,
+        ownerId: "user-123",
+        title: "My Wishlist",
+        visibility: Visibility.LINK,
+        participation: Participation.ANYONE,
+        items: [item.toProps()],
+        version: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      vi.mocked(mockRepo.findById).mockResolvedValue(existingWishlist);
+      vi.mocked(mockRepo.save).mockResolvedValue(undefined);
+      vi.mocked(mockStorageRepo.extractFileId).mockReturnValue(null);
+
+      const input: RemoveWishlistItemInput = {
+        wishlistId: WISHLIST_ID,
+        itemId: ITEM_ID,
+      };
+
+      // Act
+      await useCase.execute(input);
+
+      // Assert
+      expect(mockStorageRepo.extractFileId).toHaveBeenCalledWith(
+        INVALID_IMAGE_URL,
+      );
+      expect(mockStorageRepo.delete).not.toHaveBeenCalled();
+    });
   });
 });
