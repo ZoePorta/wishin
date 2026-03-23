@@ -102,7 +102,15 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         mode="outlined"
         autoCapitalize="none"
         style={styles.input}
-        left={<TextInput.Icon icon="account-outline" />}
+        left={
+          <TextInput.Icon
+            icon="account-outline"
+            focusable={false}
+            tabIndex={-1}
+            importantForAccessibility="no-hide-descendants"
+            accessibilityElementsHidden={true}
+          />
+        }
         error={!!error && !username}
       />
 
@@ -117,7 +125,15 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         keyboardType="email-address"
         autoCapitalize="none"
         style={styles.input}
-        left={<TextInput.Icon icon="email-outline" />}
+        left={
+          <TextInput.Icon
+            icon="email-outline"
+            focusable={false}
+            tabIndex={-1}
+            importantForAccessibility="no-hide-descendants"
+            accessibilityElementsHidden={true}
+          />
+        }
         error={!!error && !email}
       />
 
@@ -131,13 +147,24 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         mode="outlined"
         secureTextEntry={!showPassword}
         style={styles.input}
-        left={<TextInput.Icon icon="lock-outline" />}
+        left={
+          <TextInput.Icon
+            icon="lock-outline"
+            focusable={false}
+            tabIndex={-1}
+            importantForAccessibility="no-hide-descendants"
+            accessibilityElementsHidden={true}
+          />
+        }
         right={
           <TextInput.Icon
             icon={showPassword ? "eye-off" : "eye"}
             onPress={() => {
               setShowPassword(!showPassword);
             }}
+            accessibilityLabel="Toggle password visibility"
+            accessibilityRole="button"
+            accessible={true}
           />
         }
         error={!!error && !password}

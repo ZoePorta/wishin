@@ -93,7 +93,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         keyboardType="email-address"
         autoCapitalize="none"
         style={styles.input}
-        left={<TextInput.Icon icon="email-outline" />}
+        left={
+          <TextInput.Icon
+            icon="email-outline"
+            focusable={false}
+            tabIndex={-1}
+            importantForAccessibility="no-hide-descendants"
+            accessibilityElementsHidden={true}
+          />
+        }
         error={!!error && !email}
       />
 
@@ -107,13 +115,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         mode="outlined"
         secureTextEntry={!showPassword}
         style={styles.input}
-        left={<TextInput.Icon icon="lock-outline" />}
+        left={
+          <TextInput.Icon
+            icon="lock-outline"
+            focusable={false}
+            tabIndex={-1}
+            importantForAccessibility="no-hide-descendants"
+            accessibilityElementsHidden={true}
+          />
+        }
         right={
           <TextInput.Icon
             icon={showPassword ? "eye-off" : "eye"}
             onPress={() => {
               setShowPassword(!showPassword);
             }}
+            accessibilityLabel="Toggle password visibility"
+            accessibilityRole="button"
           />
         }
         error={!!error && !password}
