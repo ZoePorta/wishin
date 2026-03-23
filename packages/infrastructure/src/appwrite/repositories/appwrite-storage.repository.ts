@@ -20,20 +20,6 @@ interface AppwriteLocalFile {
 }
 
 /**
- * Type guard to check if a file object matches the Appwrite React Native local file format.
- */
-function isAppwriteLocalFile(file: unknown): file is AppwriteLocalFile {
-  return (
-    typeof file === "object" &&
-    file !== null &&
-    "uri" in file &&
-    "name" in file &&
-    "type" in file &&
-    "size" in file
-  );
-}
-
-/**
  * Appwrite implementation of the StorageRepository.
  */
 export class AppwriteStorageRepository
@@ -125,10 +111,7 @@ export class AppwriteStorageRepository
         hasBuffer: !!fileData.buffer,
       });
 
-      let file:
-        | Blob
-        | File
-        | { uri: string; name: string; type: string; size: number };
+      let file: Blob | File | AppwriteLocalFile;
 
       if (fileData.uri) {
         // Universal approach for Web and Mobile: fetch the URI to get a real Blob.
@@ -193,15 +176,13 @@ export class AppwriteStorageRepository
 
       // Standardize the file reference before passing it to the SDK.
       // We use a safe adapter to ensure we pass the format expected by the Appwrite SDK.
-      const fileToUpload = isAppwriteLocalFile(file)
-        ? file
-        : this.convertToAppwriteLocalFile(file);
+      const fileToUpload = this.convertToAppwriteLocalFile(file);
 
       // Use the object parameter style for createFile as recommended for React Native.
       const result = await this.storage.createFile({
         bucketId: this.bucketId,
         fileId: ID.unique(),
-        file: fileToUpload,
+        file: fileToUpload as unknown as AppwriteLocalFile,
       });
 
       this.logger.info("File upload successful", { fileId: result.$id });
@@ -342,22 +323,48 @@ export class AppwriteStorageRepository
   }
 
   /**
-   * Converts a generic file-like object into the AppwriteLocalFile shape.
-   * This acts as an adapter for DOM File/Blob objects when the environment
-   * requires the React Native/SDK file descriptor format.
+   * Converts a generic file-like object into a format suitable for the Appwrite SDK.
+   * If the input is already a Blob or File (Web), it returns it directly.
+   * If it contains a filesystem URI (React Native), it returns an AppwriteLocalFile.
    *
    * @param file - The file-like object to convert.
-   * @returns A validated AppwriteLocalFile.
-   * @throws {PersistenceError} If the file cannot be converted.
+   * @returns A Blob, File, or AppwriteLocalFile.
+   * @throws {PersistenceError} If the file format is unsupported.
    */
-  private convertToAppwriteLocalFile(file: unknown): AppwriteLocalFile {
-    if (file instanceof Blob) {
-      return {
-        uri: (file as { uri?: string }).uri ?? "",
-        name: (file as { name?: string }).name ?? "file",
-        type: file.type,
-        size: file.size,
+  private convertToAppwriteLocalFile(
+    file: unknown,
+  ): Blob | File | AppwriteLocalFile {
+    if (
+      file instanceof Blob ||
+      (typeof File !== "undefined" && file instanceof File)
+    ) {
+      return file;
+    }
+
+    // Handle React Native filesystem URIs
+    if (
+      typeof file === "object" &&
+      file !== null &&
+      "uri" in file &&
+      typeof (file as { uri: unknown }).uri === "string"
+    ) {
+      const fileWithUri = file as {
+        uri: string;
+        name?: string;
+        type?: string;
+        size?: number;
       };
+      if (
+        fileWithUri.uri.startsWith("file://") ||
+        fileWithUri.uri.startsWith("/")
+      ) {
+        return {
+          uri: fileWithUri.uri,
+          name: fileWithUri.name ?? "file",
+          type: fileWithUri.type ?? "application/octet-stream",
+          size: fileWithUri.size ?? 0,
+        };
+      }
     }
 
     throw new PersistenceError("Unsupported file format for Appwrite upload");

@@ -131,17 +131,32 @@ vi.mock("react-native-appwrite", async (_importOriginal) => {
 
       /**
        * Updates the current user's email.
-       * @param params - New email.
+       * @param params - New email and optional password.
        * @returns Updated user object.
-       * @throws {AppwriteException} If unauthorized.
+       * @throws {AppwriteException} If unauthorized or email conflict occurs.
        */
-      async updateEmail({ email }: { email: string }) {
+      async updateEmail({
+        email,
+        password,
+      }: {
+        email: string;
+        password?: string;
+      }) {
         const sessionData = global.localStorage.getItem("appwrite_session");
         if (!sessionData)
           throw new nodeAppwrite.AppwriteException("Unauthorized", 401);
         const sessionUser = JSON.parse(sessionData) as MockUser;
 
-        // Retrieve existing full user data from mockUsers to preserve password/identities
+        // Check for email conflict
+        const conflictingUserId = mockEmails.get(email);
+        if (conflictingUserId && conflictingUserId !== sessionUser.$id) {
+          throw new nodeAppwrite.AppwriteException(
+            "User with this email already exists",
+            409,
+          );
+        }
+
+        // Retrieve existing full user data from mockUsers to preserve identities
         const existingUser = mockUsers.get(sessionUser.$id);
         const user = existingUser ? { ...existingUser } : { ...sessionUser };
 
@@ -151,6 +166,10 @@ vi.mock("react-native-appwrite", async (_importOriginal) => {
         }
 
         user.email = email;
+        if (password) {
+          user.password = password;
+        }
+
         mockUsers.set(user.$id, user);
         mockEmails.set(email, user.$id);
         global.localStorage.setItem("appwrite_session", JSON.stringify(user));
