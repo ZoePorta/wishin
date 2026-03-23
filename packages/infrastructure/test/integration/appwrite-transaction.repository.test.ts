@@ -73,8 +73,10 @@ describe.skipIf(!shouldRun)(
         databaseId,
         transactionsCollectionId,
       );
+    });
 
-      // Create anonymous session to enable authenticated calls
+    beforeEach(async () => {
+      // Create anonymous session to enable authenticated calls for each test
       const session = await new Account(client).createAnonymousSession();
       process.env.TEST_ANONYMOUS_USER_ID = session.userId;
     });

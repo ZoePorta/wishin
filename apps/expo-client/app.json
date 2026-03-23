@@ -10,8 +10,7 @@
         "expo-image-picker",
         {
           "photosPermission": "Allow Wishin to access your photos",
-          "cameraPermission": "Allow Wishin to access your camera",
-          "microphonePermission": "Allow Wishin to access your microphone"
+          "cameraPermission": "Allow Wishin to access your camera"
         }
       ]
     ],

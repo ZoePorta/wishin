@@ -78,6 +78,10 @@ describe("AppwriteStorageRepository", () => {
     );
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   describe("resolveSession", () => {
     it("should return user if session exists", async () => {
       const mockUser = { $id: "user-123" };
@@ -194,8 +198,6 @@ describe("AppwriteStorageRepository", () => {
           name: "unique-id.png",
         }) as unknown as File,
       });
-
-      vi.unstubAllGlobals();
     });
 
     it("should throw PersistenceError if no session and not call storage", async () => {
@@ -307,6 +309,13 @@ describe("AppwriteStorageRepository", () => {
       );
       const url = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/file-123/view?project=project-123`;
       const result = customRepo.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for URLs with extra leading path segments (regression)", () => {
+      const url = `https://cloud.appwrite.io/v1/anything/storage/buckets/${bucketId}/files/file-123/view?project=project-123`;
+      const result = repository.extractFileId(url);
 
       expect(result).toBeNull();
     });

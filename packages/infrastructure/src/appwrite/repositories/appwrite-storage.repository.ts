@@ -100,7 +100,6 @@ export class AppwriteStorageRepository
     }
     try {
       this.logger.info("Starting file upload", {
-        filename: fileData.filename,
         mimeType: fileData.mimeType,
         size: fileData.size,
         hasUri: !!fileData.uri,
@@ -108,10 +107,9 @@ export class AppwriteStorageRepository
       });
 
       let file:
-        | Parameters<AppwriteStorage["createFile"]>[2]
-        | File
         | Blob
-        | (Blob & { name: string });
+        | File
+        | { uri: string; name: string; type: string; size: number };
 
       if (fileData.uri) {
         // Universal approach for Web and Mobile: fetch the URI to get a real Blob.
@@ -136,7 +134,6 @@ export class AppwriteStorageRepository
         }
 
         this.logger.info("Prepared universal file from URI", {
-          originalName: fileData.filename,
           uniqueFilename,
           type: blob.type,
           size: blob.size,
@@ -144,13 +141,9 @@ export class AppwriteStorageRepository
       } else if (fileData.buffer) {
         // Fallback for web/node environments using File API if available
         if (typeof File !== "undefined") {
-          file = new File(
-            [new Uint8Array(fileData.buffer)],
-            fileData.filename,
-            {
-              type: fileData.mimeType,
-            },
-          );
+          file = new File([new Uint8Array(fileData.buffer)], "file", {
+            type: fileData.mimeType,
+          });
         } else {
           // If File is not available, we can try using Blob which is more common in RN/Web
           file = new Blob([new Uint8Array(fileData.buffer)], {
@@ -167,14 +160,20 @@ export class AppwriteStorageRepository
 
       this.logger.info("Calling Appwrite createFile", {
         bucketId: this.bucketId,
-        fileInfo: typeof file === "object" ? Object.keys(file) : typeof file,
+        fileInfo:
+          typeof file === "object" ? Object.keys(file as object) : typeof file,
       });
 
       // Use the object parameter style for createFile as recommended for React Native.
       const result = await this.storage.createFile({
         bucketId: this.bucketId,
         fileId: ID.unique(),
-        file: file as Parameters<AppwriteStorage["createFile"]>[2],
+        file: file as unknown as {
+          uri: string;
+          name: string;
+          type: string;
+          size: number;
+        },
       });
 
       this.logger.info("File upload successful", { fileId: result.$id });
@@ -289,18 +288,16 @@ export class AppwriteStorageRepository
         .split("/")
         .filter(Boolean);
 
-      // pathSuffix should look like: ['storage', 'buckets', bucketId, 'files', fileId, 'view']
-      const bucketIdx = pathSuffix.indexOf("buckets");
-      const filesIdx = pathSuffix.indexOf("files");
-      const viewIdx = pathSuffix.indexOf("view");
-
+      // pathSuffix should look exactly like: ['storage', 'buckets', bucketId, 'files', fileId, 'view']
       if (
-        bucketIdx !== -1 &&
-        filesIdx === bucketIdx + 2 &&
-        viewIdx === filesIdx + 2 &&
-        pathSuffix[bucketIdx + 1] === this.bucketId
+        pathSuffix.length === 6 &&
+        pathSuffix[0] === "storage" &&
+        pathSuffix[1] === "buckets" &&
+        pathSuffix[2] === this.bucketId &&
+        pathSuffix[3] === "files" &&
+        pathSuffix[5] === "view"
       ) {
-        return pathSuffix[filesIdx + 1];
+        return pathSuffix[4];
       }
     } catch {
       // Not a valid URL

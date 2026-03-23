@@ -104,10 +104,12 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     if (!name.trim() || loading || isUploading) return;
 
     setIsUploading(true);
+    let uploadedFileId: string | null = null;
+
     try {
       let finalImageUrl = initialData?.imageUrl;
 
-      // Handle image upload if a new local image is selected
+      // Stage 1: Handle image upload if a new local image is selected
       if (selectedImage) {
         console.warn(
           "Preparing image upload for SelectedImage:",
@@ -120,15 +122,68 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           size: selectedImage.size,
         };
 
-        const fileId = await storageRepository.upload(fileData);
-        console.warn("Image uploaded successfully, fileId:", fileId);
-        finalImageUrl = await storageRepository.getPreview(fileId);
-        console.warn("Image preview URL obtained:", finalImageUrl);
+        try {
+          const fileId = await storageRepository.upload(fileData);
+          uploadedFileId = fileId; // Track for cleanup if save fails
+          console.warn("Image uploaded successfully, fileId:", fileId);
+          finalImageUrl = await storageRepository.getPreview(fileId);
+          console.warn("Image preview URL obtained:", finalImageUrl);
+        } catch (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          Alert.alert(
+            "Upload Failed",
+            "There was an error uploading the image. Would you like to save the item without the image?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+                onPress: () => {
+                  setIsUploading(false);
+                },
+              },
+              {
+                text: "Save anyway",
+                onPress: () => {
+                  void (async () => {
+                    const payload: AddItemFormSubmission = {
+                      wishlistId,
+                      name: name.trim(),
+                      description: description.trim() || undefined,
+                      url: url.trim() || undefined,
+                      price: priceUnknown ? undefined : parseFloat(price) || 0,
+                      currency: priceUnknown ? undefined : currency,
+                      priority: parseInt(priority, 10) as Priority,
+                      totalQuantity: isUnlimited
+                        ? 1
+                        : Math.max(1, parseInt(totalQuantity, 10) || 1),
+                      isUnlimited,
+                      imageUrl: initialData?.imageUrl, // Keep old image or none
+                      id: initialData?.id,
+                    };
+                    try {
+                      await onSubmit(payload);
+                    } catch (submitError) {
+                      console.error("Error saving anyway:", submitError);
+                      Alert.alert(
+                        "Save Failed",
+                        "Could not save the item. Please try again.",
+                      );
+                    } finally {
+                      setIsUploading(false);
+                    }
+                  })();
+                },
+              },
+            ],
+          );
+          return; // Stop execution of the main flow
+        }
       } else if (!useInitialImage && initialData?.imageUrl) {
         // Image was explicitly removed
         finalImageUrl = null;
       }
 
+      // Stage 2: Form submission
       const payload: AddItemFormSubmission = {
         wishlistId,
         name: name.trim(),
@@ -145,40 +200,29 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         id: initialData?.id,
       };
 
-      await onSubmit(payload);
-    } catch (error) {
-      console.error("Error submitting form with image:", error);
-      Alert.alert(
-        "Upload Failed",
-        "There was an error uploading the image. Would you like to save the item without the image?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Save anyway",
-            onPress: () => {
-              // Proceed with original data or without image
-              void (async () => {
-                const payload: AddItemFormSubmission = {
-                  wishlistId,
-                  name: name.trim(),
-                  description: description.trim() || undefined,
-                  url: url.trim() || undefined,
-                  price: priceUnknown ? undefined : parseFloat(price) || 0,
-                  currency: priceUnknown ? undefined : currency,
-                  priority: parseInt(priority, 10) as Priority,
-                  totalQuantity: isUnlimited
-                    ? 1
-                    : Math.max(1, parseInt(totalQuantity, 10) || 1),
-                  isUnlimited,
-                  imageUrl: initialData?.imageUrl, // Keep old image or none if new
-                  id: initialData?.id,
-                };
-                await onSubmit(payload);
-              })();
-            },
-          },
-        ],
-      );
+      try {
+        await onSubmit(payload);
+      } catch (submitError) {
+        console.error("Error submitting form:", submitError);
+
+        // Cleanup: If we uploaded a new image, delete it since the save failed
+        if (uploadedFileId) {
+          console.warn("Cleaning up orphaned upload:", uploadedFileId);
+          try {
+            await storageRepository.delete(uploadedFileId);
+          } catch (deleteError) {
+            console.error("Failed to cleanup orphaned upload:", deleteError);
+          }
+        }
+
+        Alert.alert(
+          "Save Failed",
+          "There was an error saving the item. Please try again.",
+        );
+      }
+    } catch (unexpectedError) {
+      console.error("Unexpected error in handleSubmit:", unexpectedError);
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
     } finally {
       setIsUploading(false);
     }
