@@ -6,7 +6,7 @@ import {
   TablesDB,
   AppwriteException,
   type Models,
-} from "appwrite";
+} from "react-native-appwrite";
 import type {
   AuthRepository,
   OAuthInitiation,
@@ -319,7 +319,7 @@ export class AppwriteAuthRepository
     // Appwrite's createOAuth2Token handles redirection, but we return the URL and state
     // so the caller can track it according to the AuthRepository contract.
     return {
-      url: oauthUrl,
+      url: oauthUrl.toString(),
       state,
     };
   }

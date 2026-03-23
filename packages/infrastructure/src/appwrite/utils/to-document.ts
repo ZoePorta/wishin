@@ -1,8 +1,8 @@
-import type { Models } from "appwrite";
+import type { Models } from "react-native-appwrite";
 
 /**
  * Casts an unknown value to an Appwrite Document or array of Documents.
- * Useful for bridging the gap between node-appwrite (server) types and appwrite (client) types,
+ * Useful for bridging the gap between react-native-appwrite types
  * or when dealing with untyped responses.
  *
  * @param doc - The document(s) to cast.

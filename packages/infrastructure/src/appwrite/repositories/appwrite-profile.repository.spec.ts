@@ -5,7 +5,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteProfileRepository } from "./appwrite-profile.repository";
-import { Client, TablesDB, AppwriteException, type Models } from "appwrite";
+import {
+  Client,
+  TablesDB,
+  AppwriteException,
+  type Models,
+} from "react-native-appwrite";
 import { Profile } from "@wishin/domain";
 
 // TablesDB specific types from Appwrite SDK
@@ -18,7 +23,7 @@ interface MockRow extends Models.Document {
 }
 
 // Mock Appwrite SDK
-vi.mock("appwrite", () => {
+vi.mock("react-native-appwrite", () => {
   const TablesDBMock = vi.fn();
 
   TablesDBMock.prototype.getRow = vi.fn();

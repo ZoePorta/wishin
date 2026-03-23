@@ -8,6 +8,6 @@
   },
   "dependencies": {
     "@wishin/domain": "workspace:*",
-    "appwrite": "^22.0.0"
+    "react-native-appwrite": "^0.25.0"
   }
 }

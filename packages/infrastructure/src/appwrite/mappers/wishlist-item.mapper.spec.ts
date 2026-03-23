@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { WishlistItemMapper } from "./wishlist-item.mapper";
 import { WishlistItem, Priority } from "@wishin/domain";
-import type { Models } from "appwrite";
+import type { Models } from "react-native-appwrite";
 
 describe("WishlistItemMapper", () => {
   interface WishlistItemDocument extends Models.Document {

@@ -6,7 +6,7 @@ import {
   Account,
   AppwriteException,
   type Models,
-} from "appwrite";
+} from "react-native-appwrite";
 import {
   Transaction,
   TransactionStatus,
@@ -74,11 +74,8 @@ const {
 }));
 
 // Mock Appwrite SDK
-vi.mock("appwrite", async (importActual) => {
-  const actual = await importActual<typeof import("appwrite")>();
-
+vi.mock("react-native-appwrite", () => {
   return {
-    ...actual,
     Client: class {
       setEndpoint = vi.fn().mockReturnThis();
       setProject = vi.fn().mockReturnThis();
@@ -102,6 +99,15 @@ vi.mock("appwrite", async (importActual) => {
       limit: vi.fn((value: number) => ({ value, type: "limit" })),
       offset: vi.fn((value: number) => ({ value, type: "offset" })),
     },
+    AppwriteException: class extends Error {
+      constructor(
+        public message: string,
+        public code: number,
+      ) {
+        super(message);
+      }
+    },
+    ID: { unique: () => "unique-id" },
   };
 });
 

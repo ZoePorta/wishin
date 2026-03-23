@@ -1,4 +1,4 @@
-import type { Models } from "appwrite";
+import type { Models } from "react-native-appwrite";
 import { Wishlist, Visibility, Participation } from "@wishin/domain";
 import type { WishlistItem } from "@wishin/domain";
 

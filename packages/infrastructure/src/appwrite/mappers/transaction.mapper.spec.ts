@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Transaction, TransactionStatus } from "@wishin/domain";
 import { TransactionMapper } from "./transaction.mapper";
-import type { Models } from "appwrite";
+import type { Models } from "react-native-appwrite";
 
 describe("TransactionMapper", () => {
   const transactionId = "550e8400-e29b-41d4-a716-446655440000";

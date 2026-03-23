@@ -1,4 +1,4 @@
-import type { Models } from "appwrite";
+import type { Models } from "react-native-appwrite";
 import { Profile, InvalidAttributeError } from "@wishin/domain";
 
 /**

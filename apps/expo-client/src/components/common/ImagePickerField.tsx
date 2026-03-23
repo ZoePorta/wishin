@@ -1,0 +1,209 @@
+import React from "react";
+import { View, Image, StyleSheet, Alert } from "react-native";
+import {
+  Text,
+  IconButton,
+  useTheme,
+  Surface,
+  TouchableRipple,
+} from "react-native-paper";
+import * as ImagePicker from "expo-image-picker";
+
+/**
+ * Represents the metadata of an image selected from the device's library.
+ * This interface is used to pass image information between the picker and callers.
+ *
+ * @interface SelectedImage
+ * @property {string} uri - The local file URI or path to the selected image. Must be non-empty.
+ * @property {string} name - The filename of the selected image, including extension.
+ * @property {string} type - The MIME type of the image (e.g., 'image/jpeg', 'image/png').
+ * @property {number} size - The file size of the image in bytes.
+ */
+export interface SelectedImage {
+  uri: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+interface ImagePickerFieldProps {
+  /**
+   * Optional label for the field.
+   */
+  label?: string;
+  /**
+   * The current image URI (local or remote).
+   */
+  imageUri: string | null;
+  /**
+   * Callback invoked when an image is selected or removed.
+   */
+  onImageSelected: (image: SelectedImage | null) => void;
+  /**
+   * Whether the field is disabled.
+   */
+  disabled?: boolean;
+  /**
+   * Accessibility label for the field.
+   */
+  accessibilityLabel?: string;
+}
+
+/**
+ * A component that allows the user to pick an image from their gallery.
+ * Uses Material Design 3 components from react-native-paper.
+ *
+ * @param {ImagePickerFieldProps} props - The component props.
+ * @returns {JSX.Element} The rendered image picker field.
+ */
+export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
+  label,
+  imageUri,
+  onImageSelected,
+  disabled = false,
+  accessibilityLabel,
+}) => {
+  const theme = useTheme();
+
+  /**
+   * Launches the image library to pick an image.
+   * Requests permissions if necessary.
+   */
+  const pickImage = async () => {
+    try {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== ImagePicker.PermissionStatus.GRANTED) {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access the photo gallery is required to add images to your items.",
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0];
+        onImageSelected({
+          uri: asset.uri,
+          name: asset.fileName ?? asset.uri.split("/").pop() ?? "image.jpg",
+          type: asset.mimeType ?? "image/jpeg",
+          size: asset.fileSize ?? 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick an image. Please try again.");
+    }
+  };
+
+  /**
+   * Removes the currently selected image.
+   */
+  const removeImage = () => {
+    onImageSelected(null);
+  };
+
+  return (
+    <View style={styles.container}>
+      {label && (
+        <Text variant="labelLarge" style={styles.label}>
+          {label}
+        </Text>
+      )}
+      <View style={styles.content}>
+        {imageUri ? (
+          <Surface
+            style={styles.previewContainer}
+            elevation={1}
+            accessibilityLabel={accessibilityLabel}
+            accessibilityRole="image"
+          >
+            <Image source={{ uri: imageUri }} style={styles.preview} />
+            <IconButton
+              icon="close"
+              mode="contained"
+              containerColor={theme.colors.error}
+              iconColor={theme.colors.onError}
+              size={20}
+              onPress={removeImage}
+              style={styles.removeButton}
+              disabled={disabled}
+            />
+          </Surface>
+        ) : (
+          <TouchableRipple
+            onPress={() => {
+              void pickImage();
+            }}
+            disabled={disabled}
+            rippleColor={theme.colors.onSurfaceVariant}
+            accessibilityLabel={accessibilityLabel ?? "Add photo"}
+            accessibilityRole="button"
+            style={[
+              styles.placeholder,
+              {
+                borderColor: theme.colors.outline,
+                backgroundColor: theme.colors.surfaceVariant,
+              },
+            ]}
+          >
+            <View style={styles.rippleInner}>
+              <IconButton icon="camera-plus" size={32} disabled={disabled} />
+              <Text variant="bodyMedium">Add Photo</Text>
+            </View>
+          </TouchableRipple>
+        )}
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    marginBottom: 16,
+  },
+  label: {
+    marginBottom: 8,
+  },
+  content: {
+    alignItems: "center",
+  },
+  previewContainer: {
+    width: 150,
+    height: 150,
+    borderRadius: 12,
+    position: "relative",
+    overflow: "hidden",
+  },
+  preview: {
+    width: "100%",
+    height: "100%",
+  },
+  removeButton: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    margin: 0,
+  },
+  placeholder: {
+    width: 150,
+    height: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    overflow: "hidden",
+  },
+  rippleInner: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

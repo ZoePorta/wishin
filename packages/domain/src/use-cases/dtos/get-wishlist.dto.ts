@@ -32,7 +32,7 @@ export interface WishlistItemOutput {
   price?: number;
   currency?: string;
   priority: Priority;
-  imageUrl?: string;
+  imageUrl?: string | null;
   totalQuantity: number;
   reservedQuantity: number;
   purchasedQuantity: number;

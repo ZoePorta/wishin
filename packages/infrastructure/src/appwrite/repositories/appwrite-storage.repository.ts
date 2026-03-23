@@ -1,4 +1,5 @@
-import { Models, Client, Storage, Account, ID } from "appwrite";
+import { Storage as AppwriteStorage, Account, ID } from "react-native-appwrite";
+import type { Models, Client } from "react-native-appwrite";
 import {
   type StorageRepository,
   type FileData,
@@ -9,12 +10,22 @@ import {
 import type { SessionAwareRepository } from "./session-aware-repository.interface";
 
 /**
+ * Represents the file object format expected by the Appwrite React Native SDK.
+ */
+interface AppwriteLocalFile {
+  uri: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
+/**
  * Appwrite implementation of the StorageRepository.
  */
 export class AppwriteStorageRepository
   implements StorageRepository, SessionAwareRepository
 {
-  private readonly storage: Storage;
+  private readonly storage: AppwriteStorage;
   private readonly account: Account;
 
   private _currentUser: Models.User<Models.Preferences> | null = null;
@@ -24,17 +35,21 @@ export class AppwriteStorageRepository
   /**
    * Initializes the repository.
    * @param client - The Appwrite Client SDK instance.
+   * @param endpoint - The Appwrite API endpoint.
+   * @param projectId - The Appwrite Project ID.
    * @param bucketId - The Appwrite storage bucket ID.
    * @param logger - The domain logger for infrastructure events.
    * @param observability - Service for breadcrumbs and telemetry events.
    */
   constructor(
     private readonly client: Client,
+    private readonly endpoint: string,
+    private readonly projectId: string,
     private readonly bucketId: string,
     private readonly logger: Logger,
     private readonly observability: ObservabilityService,
   ) {
-    this.storage = new Storage(this.client);
+    this.storage = new AppwriteStorage(this.client);
     this.account = new Account(this.client);
   }
 
@@ -89,25 +104,96 @@ export class AppwriteStorageRepository
       );
     }
     try {
-      // Platform-agnostic conversion to File for Appwrite SDK
-      // This ensures we preserve the filename and MIME type.
-      const file = new File(
-        [new Uint8Array(fileData.buffer)],
-        fileData.filename,
-        {
-          type: fileData.mimeType,
-        },
-      );
+      this.logger.info("Starting file upload", {
+        mimeType: fileData.mimeType,
+        size: fileData.size,
+        hasUri: !!fileData.uri,
+        hasBuffer: !!fileData.buffer,
+      });
 
+      let file: Blob | File | AppwriteLocalFile;
+
+      if (fileData.uri) {
+        // Universal approach for Web and Mobile: fetch the URI to get a real Blob.
+        const response = await fetch(fileData.uri);
+        const blob = await response.blob();
+
+        // Generate a unique filename to avoid duplicates and generic "blob" names.
+        // If the filename has no extension, fallback to "jpg".
+        const lastDotIndex = fileData.filename.lastIndexOf(".");
+        const extracted = fileData.filename.split(".").pop();
+        const extension =
+          lastDotIndex > 0 &&
+          lastDotIndex < fileData.filename.length - 1 &&
+          extracted
+            ? extracted
+            : "jpg";
+        const uniqueFilename = `${ID.unique()}.${extension}`;
+
+        // Use File constructor if available (Web) to ensure the filename is correctly
+        // captured in the FormData. In RN, we fallback to Object.assign.
+        if (typeof File !== "undefined") {
+          file = new File([blob], uniqueFilename, { type: blob.type });
+        } else {
+          file = {
+            uri: fileData.uri,
+            name: uniqueFilename,
+            type: blob.type,
+            size: blob.size,
+          };
+        }
+
+        this.logger.info("Prepared universal file from URI", {
+          uniqueFilename,
+          type: blob.type,
+          size: blob.size,
+        });
+      } else if (fileData.buffer) {
+        // Fallback for web/node environments using File API if available
+        if (typeof File !== "undefined") {
+          file = new File([new Uint8Array(fileData.buffer)], "file", {
+            type: fileData.mimeType,
+          });
+        } else {
+          // If File is not available, we can try using Blob which is more common in RN/Web
+          file = new Blob([new Uint8Array(fileData.buffer)], {
+            type: fileData.mimeType,
+          });
+          // We might lose the filename here if the SDK doesn't pick it up from somewhere else,
+          // but createFile usually takes the filename from the File object.
+        }
+      } else {
+        throw new PersistenceError(
+          "Invalid file data: no buffer or uri provided",
+        );
+      }
+
+      this.logger.info("Calling Appwrite createFile", {
+        bucketId: this.bucketId,
+        fileInfo:
+          typeof file === "object" ? Object.keys(file as object) : typeof file,
+      });
+
+      // Standardize the file reference before passing it to the SDK.
+      // We use a safe adapter to ensure we pass the format expected by the Appwrite SDK.
+      const fileToUpload = this.convertToAppwriteLocalFile(file);
+
+      // Use the object parameter style for createFile as recommended for React Native.
       const result = await this.storage.createFile({
         bucketId: this.bucketId,
         fileId: ID.unique(),
-        file,
+        file: fileToUpload as unknown as AppwriteLocalFile,
       });
 
+      this.logger.info("File upload successful", { fileId: result.$id });
       return result.$id;
     } catch (error: unknown) {
-      this.logger.error("AppwriteStorageRepository.upload failed", { error });
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      this.logger.error("AppwriteStorageRepository.upload failed", {
+        error: errorMsg,
+        stack,
+      });
       throw new PersistenceError("Failed to upload file", {
         cause: error instanceof Error ? error : String(error),
       });
@@ -164,13 +250,123 @@ export class AppwriteStorageRepository
    * @throws {PersistenceError} If the preview cannot be generated.
    */
   async getPreview(fileId: string): Promise<string> {
-    const result = this.storage.getFilePreview({
-      bucketId: this.bucketId,
-      fileId,
-    }) as unknown as string | { toString(): string };
+    // Manually construct the Appwrite file view URL to ensure consistency.
+    // In some environments, the SDK's getFileView returns a Promise or even an ArrayBuffer,
+    // which causes issues when we need a simple URL string for the database.
+    // By constructing it manually, we also guarantee no transformations are applied.
+    const previewUrl = `${this.endpoint}/storage/buckets/${this.bucketId}/files/${fileId}/view?project=${this.projectId}`;
 
-    // Appwrite SDK returns a URL object in web environments.
-    // Ensure we return a string as defined in StorageRepository.
-    return typeof result === "string" ? result : result.toString();
+    this.logger.info("Constructed image file URL", { fileId, previewUrl });
+
+    return previewUrl;
+  }
+
+  /**
+   * Extracts a fileId from its corresponding image URL if it's a known storage URL.
+   * @param url - The full image URL.
+   * @returns {string | null} The extracted fileId or null if it's not a known storage URL.
+   */
+  extractFileId(url: string): string | null {
+    if (!url) return null;
+
+    try {
+      const parsedUrl = new URL(url);
+
+      // Check if it's the correct endpoint
+      const expectedEndpoint = new URL(this.endpoint);
+      if (parsedUrl.host !== expectedEndpoint.host) return null;
+
+      // Normalize pathnames by removing trailing slashes for comparison
+      const normalizePath = (p: string) => p.replace(/\/+$/, "");
+      const normalizedParsedPath = normalizePath(parsedUrl.pathname);
+      const normalizedExpectedPath = normalizePath(expectedEndpoint.pathname);
+
+      // Ensure the endpoint pathname is a prefix of the original URL's pathname.
+      // We require either an exact match or that it starts with the expected path followed by a slash.
+      if (
+        normalizedParsedPath !== normalizedExpectedPath &&
+        !normalizedParsedPath.startsWith(normalizedExpectedPath + "/")
+      ) {
+        return null;
+      }
+
+      // Check project query param if it exists in the expected endpoint or use this.projectId
+      const expectedProject =
+        expectedEndpoint.searchParams.get("project") ?? this.projectId;
+      if (parsedUrl.searchParams.get("project") !== expectedProject)
+        return null;
+
+      // Pattern: /storage/buckets/{bucketId}/files/{fileId}/view
+      // We look for the bucketId and the "files" marker relative to the normalized expected path
+      const pathSuffix = normalizedParsedPath
+        .slice(normalizedExpectedPath.length)
+        .split("/")
+        .filter(Boolean);
+
+      // pathSuffix should look exactly like: ['storage', 'buckets', bucketId, 'files', fileId, 'view']
+      if (
+        pathSuffix.length === 6 &&
+        pathSuffix[0] === "storage" &&
+        pathSuffix[1] === "buckets" &&
+        pathSuffix[2] === this.bucketId &&
+        pathSuffix[3] === "files" &&
+        pathSuffix[5] === "view"
+      ) {
+        return pathSuffix[4];
+      }
+    } catch {
+      // Not a valid URL
+      return null;
+    }
+
+    return null;
+  }
+
+  /**
+   * Converts a generic file-like object into a format suitable for the Appwrite SDK.
+   * If the input is already a Blob or File (Web), it returns it directly.
+   * If it contains a filesystem URI (React Native), it returns an AppwriteLocalFile.
+   *
+   * @param file - The file-like object to convert.
+   * @returns A Blob, File, or AppwriteLocalFile.
+   * @throws {PersistenceError} If the file format is unsupported.
+   */
+  private convertToAppwriteLocalFile(
+    file: unknown,
+  ): Blob | File | AppwriteLocalFile {
+    if (
+      file instanceof Blob ||
+      (typeof File !== "undefined" && file instanceof File)
+    ) {
+      return file;
+    }
+
+    // Handle React Native filesystem URIs
+    if (
+      typeof file === "object" &&
+      file !== null &&
+      "uri" in file &&
+      typeof (file as { uri: unknown }).uri === "string"
+    ) {
+      const fileWithUri = file as {
+        uri: string;
+        name?: string;
+        type?: string;
+        size?: number;
+      };
+      if (
+        fileWithUri.uri.startsWith("file://") ||
+        fileWithUri.uri.startsWith("/")
+      ) {
+        return {
+          uri: fileWithUri.uri,
+          name: fileWithUri.name ?? "file",
+          type: fileWithUri.type ?? "application/octet-stream",
+          size: fileWithUri.size ?? 0,
+        };
+      }
+    }
+
+    throw new PersistenceError("Unsupported file format for Appwrite upload");
   }
 }

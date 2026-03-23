@@ -4,7 +4,7 @@ import {
   Query,
   AppwriteException,
   type Models,
-} from "appwrite";
+} from "react-native-appwrite";
 import {
   type WishlistRepository,
   type Logger,

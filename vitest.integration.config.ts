@@ -9,5 +9,8 @@ export default defineConfig({
     include: ["packages/infrastructure/test/integration/**/*.test.ts"],
     exclude: [...defaultExclude],
     setupFiles: ["packages/infrastructure/test/integration/setup.ts"],
+    env: {
+      IS_INTEGRATION_TEST: "true",
+    },
   },
 });

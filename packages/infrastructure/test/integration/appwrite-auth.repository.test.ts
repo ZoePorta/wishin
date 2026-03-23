@@ -3,7 +3,7 @@ import { Client as ServerClient, Users } from "node-appwrite";
 import { randomUUID } from "node:crypto";
 import { createAppwriteClient } from "../../src/appwrite/client";
 import { AppwriteAuthRepository } from "../../src/appwrite/repositories/appwrite-auth.repository";
-import { Account } from "appwrite";
+import { Account } from "react-native-appwrite";
 import type { AuthResult, Logger } from "@wishin/domain";
 import "dotenv/config";
 

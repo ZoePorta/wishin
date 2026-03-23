@@ -1,4 +1,9 @@
-import { Client, TablesDB, AppwriteException, type Models } from "appwrite";
+import {
+  Client,
+  TablesDB,
+  AppwriteException,
+  type Models,
+} from "react-native-appwrite";
 import type { ProfileRepository, Profile } from "@wishin/domain";
 import { ProfileMapper } from "../mappers/profile.mapper";
 import { toDocument } from "../utils/to-document";

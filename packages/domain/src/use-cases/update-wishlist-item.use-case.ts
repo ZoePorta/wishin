@@ -7,6 +7,7 @@ import type { UpdateWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 import type { WishlistOutput } from "./dtos/get-wishlist.dto";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
 import type { TransactionRepository } from "../repositories/transaction.repository";
+import type { StorageRepository } from "../repositories/storage.repository";
 import type { WishlistItem } from "../entities/wishlist-item";
 
 /**
@@ -19,6 +20,7 @@ export class UpdateWishlistItemUseCase {
   constructor(
     private readonly wishlistRepository: WishlistRepository,
     private readonly transactionRepository: TransactionRepository,
+    private readonly storageRepository: StorageRepository,
   ) {}
 
   /**
@@ -67,6 +69,28 @@ export class UpdateWishlistItemUseCase {
     }
 
     await this.wishlistRepository.save(updatedWishlist);
+
+    // ADR 025: Delete old image from storage if it was replaced or removed.
+    // This is done after a successful save to avoid deleting images that might still be needed if the save fails.
+    if (
+      Object.prototype.hasOwnProperty.call(input, "imageUrl") &&
+      originalItem.imageUrl &&
+      originalItem.imageUrl !== input.imageUrl
+    ) {
+      const oldFileId = this.storageRepository.extractFileId(
+        originalItem.imageUrl,
+      );
+      if (oldFileId) {
+        // Fire and forget or log on error - we don't want to fail the whole update if deletion fails.
+        this.storageRepository.delete(oldFileId).catch((error: unknown) => {
+          // Ideally we would log this to a proper logger if available in the use case.
+          console.error(
+            `Failed to delete old image ${oldFileId} from storage:`,
+            error,
+          );
+        });
+      }
+    }
 
     return WishlistOutputMapper.toDTO(updatedWishlist);
   }

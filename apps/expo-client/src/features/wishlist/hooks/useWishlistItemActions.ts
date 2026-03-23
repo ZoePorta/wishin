@@ -4,6 +4,7 @@ import { useAsyncAction } from "../../../hooks/useAsyncAction";
 import {
   useWishlistRepository,
   useTransactionRepository,
+  useStorageRepository,
 } from "../../../contexts/WishlistRepositoryContext";
 import {
   AddWishlistItemUseCase,
@@ -24,6 +25,7 @@ import type {
 export function useWishlistItemActions() {
   const wishlistRepository = useWishlistRepository();
   const transactionRepository = useTransactionRepository();
+  const storageRepository = useStorageRepository();
   const { loading, error, wrapAsyncAction } = useAsyncAction();
 
   const addItem = useCallback(
@@ -39,18 +41,27 @@ export function useWishlistItemActions() {
       const useCase = new UpdateWishlistItemUseCase(
         wishlistRepository,
         transactionRepository,
+        storageRepository,
       );
       return await useCase.execute(input);
     }),
-    [wishlistRepository, transactionRepository, wrapAsyncAction],
+    [
+      wishlistRepository,
+      transactionRepository,
+      storageRepository,
+      wrapAsyncAction,
+    ],
   );
 
   const removeItem = useCallback(
     wrapAsyncAction("removeItem", async (input: RemoveWishlistItemInput) => {
-      const useCase = new RemoveWishlistItemUseCase(wishlistRepository);
+      const useCase = new RemoveWishlistItemUseCase(
+        wishlistRepository,
+        storageRepository,
+      );
       return await useCase.execute(input);
     }),
-    [wishlistRepository, wrapAsyncAction],
+    [wishlistRepository, storageRepository, wrapAsyncAction],
   );
 
   return {

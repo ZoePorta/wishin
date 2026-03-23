@@ -40,7 +40,11 @@
       "eslint --fix",
       "prettier --write"
     ],
-    "*.json": [
+    "package.json": [
+      "bash -c \"pnpm install --lockfile-only -w\"",
+      "git add pnpm-lock.yaml"
+    ],
+    "!(package).json": [
       "prettier --write"
     ]
   }
