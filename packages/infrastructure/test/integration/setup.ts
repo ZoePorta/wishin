@@ -139,9 +139,13 @@ vi.mock("react-native-appwrite", async (_importOriginal) => {
         const sessionData = global.localStorage.getItem("appwrite_session");
         if (!sessionData)
           throw new nodeAppwrite.AppwriteException("Unauthorized", 401);
-        const user = JSON.parse(sessionData) as MockUser;
+        const sessionUser = JSON.parse(sessionData) as MockUser;
 
-        // Cleanup old email mapping
+        // Retrieve existing full user data from mockUsers to preserve password/identities
+        const existingUser = mockUsers.get(sessionUser.$id);
+        const user = existingUser ? { ...existingUser } : { ...sessionUser };
+
+        // Cleanup old email mapping if it exists
         if (user.email) {
           mockEmails.delete(user.email);
         }
@@ -191,6 +195,13 @@ vi.mock("react-native-appwrite", async (_importOriginal) => {
         password: string;
         name?: string;
       }) {
+        if (mockEmails.has(email)) {
+          throw new nodeAppwrite.AppwriteException(
+            "User with this email already exists",
+            409,
+          );
+        }
+
         const id =
           userId === "unique-id" || !userId
             ? "user-" + Math.random().toString(36).substring(7)

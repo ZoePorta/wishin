@@ -192,11 +192,10 @@ export class AppwriteStorageRepository
       });
 
       // Standardize the file reference before passing it to the SDK.
-      // We use a narrowing approach to satisfy the user request for type safety.
-      // While the SDK types are restrictive (expecting the RN object), we've confirmed the type here.
+      // We use a safe adapter to ensure we pass the format expected by the Appwrite SDK.
       const fileToUpload = isAppwriteLocalFile(file)
         ? file
-        : (file as unknown as AppwriteLocalFile);
+        : this.convertToAppwriteLocalFile(file);
 
       // Use the object parameter style for createFile as recommended for React Native.
       const result = await this.storage.createFile({
@@ -301,8 +300,14 @@ export class AppwriteStorageRepository
       const normalizedParsedPath = normalizePath(parsedUrl.pathname);
       const normalizedExpectedPath = normalizePath(expectedEndpoint.pathname);
 
-      // Ensure the endpoint pathname is a prefix of the original URL's pathname
-      if (!normalizedParsedPath.startsWith(normalizedExpectedPath)) return null;
+      // Ensure the endpoint pathname is a prefix of the original URL's pathname.
+      // We require either an exact match or that it starts with the expected path followed by a slash.
+      if (
+        normalizedParsedPath !== normalizedExpectedPath &&
+        !normalizedParsedPath.startsWith(normalizedExpectedPath + "/")
+      ) {
+        return null;
+      }
 
       // Check project query param if it exists in the expected endpoint or use this.projectId
       const expectedProject =
@@ -334,5 +339,27 @@ export class AppwriteStorageRepository
     }
 
     return null;
+  }
+
+  /**
+   * Converts a generic file-like object into the AppwriteLocalFile shape.
+   * This acts as an adapter for DOM File/Blob objects when the environment
+   * requires the React Native/SDK file descriptor format.
+   *
+   * @param file - The file-like object to convert.
+   * @returns A validated AppwriteLocalFile.
+   * @throws {PersistenceError} If the file cannot be converted.
+   */
+  private convertToAppwriteLocalFile(file: unknown): AppwriteLocalFile {
+    if (file instanceof Blob) {
+      return {
+        uri: (file as { uri?: string }).uri ?? "",
+        name: (file as { name?: string }).name ?? "file",
+        type: file.type,
+        size: file.size,
+      };
+    }
+
+    throw new PersistenceError("Unsupported file format for Appwrite upload");
   }
 }

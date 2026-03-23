@@ -347,9 +347,18 @@ describe("AppwriteStorageRepository", () => {
       expect(result).toBeNull();
     });
 
-    it("should return null for URLs with extra leading path segments (regression)", () => {
-      const url = `https://cloud.appwrite.io/v1/anything/storage/buckets/${bucketId}/files/file-123/view?project=project-123`;
-      const result = repository.extractFileId(url);
+    it("should return null for permissive path prefixes (regression)", () => {
+      const customRepo = new AppwriteStorageRepository(
+        client,
+        "https://cloud.appwrite.io/v1",
+        "project-123",
+        bucketId,
+        mockLogger,
+        mockObservability,
+      );
+      // Path starts with /v1 but is /v1storage (missing slash)
+      const url = `https://cloud.appwrite.io/v1storage/buckets/${bucketId}/files/file-123/view?project=project-123`;
+      const result = customRepo.extractFileId(url);
 
       expect(result).toBeNull();
     });
