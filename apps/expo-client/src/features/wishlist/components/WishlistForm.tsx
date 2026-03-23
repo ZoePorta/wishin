@@ -98,6 +98,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    flexGrow: 1,
     padding: 16,
   },
   description: {

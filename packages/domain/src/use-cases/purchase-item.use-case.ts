@@ -4,6 +4,7 @@ import {
 } from "../errors/domain-errors";
 import { Transaction } from "../aggregates/transaction";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
+import { generateUUID } from "../common/uuid";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
 import type { TransactionRepository } from "../repositories/transaction.repository";
@@ -43,8 +44,7 @@ export class PurchaseItemUseCase {
     private readonly transactionRepository: TransactionRepository,
     private readonly logger: Logger,
     private readonly observability: ObservabilityService,
-    private readonly uuidFn: () => string = () =>
-      globalThis.crypto.randomUUID(),
+    private readonly uuidFn: () => string = () => generateUUID(),
   ) {}
 
   /**

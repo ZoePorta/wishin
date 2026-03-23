@@ -130,9 +130,12 @@ export class AppwriteStorageRepository
             : "jpg";
         const uniqueFilename = `${ID.unique()}.${extension}`;
 
-        // Use File constructor if available (Web) to ensure the filename is correctly
-        // captured in the FormData. In RN, we fallback to Object.assign.
-        if (typeof File !== "undefined") {
+        // Use File constructor ONLY on Web if available.
+        // In RN/Mobile, even if File is defined (e.g. by polyfills), we MUST use the object literal
+        // format { uri, name, type } for the Appwrite SDK to handle the upload via FormData correctly.
+        const isWeb = typeof document !== "undefined";
+
+        if (typeof File !== "undefined" && isWeb) {
           file = new File([blob], uniqueFilename, { type: blob.type });
         } else {
           file = {
