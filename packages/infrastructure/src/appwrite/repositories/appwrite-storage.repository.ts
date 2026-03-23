@@ -1,10 +1,5 @@
-import {
-  Models,
-  Client,
-  Storage as AppwriteStorage,
-  Account,
-  ID,
-} from "react-native-appwrite";
+import { Storage as AppwriteStorage, Account, ID } from "react-native-appwrite";
+import type { Models, Client } from "react-native-appwrite";
 import {
   type StorageRepository,
   type FileData,

@@ -29,7 +29,7 @@ import { vi, beforeEach } from "vitest";
 interface MockUser {
   $id: string;
   email: string;
-  name: string;
+  name?: string;
   password?: string;
 }
 
@@ -91,7 +91,11 @@ vi.mock("react-native-appwrite", async (_importOriginal) => {
         const userId = mockEmails.get(email);
         const user = userId ? mockUsers.get(userId) : null;
 
-        if (user?.password !== password) {
+        if (!user) {
+          throw new nodeAppwrite.AppwriteException("Invalid credentials", 401);
+        }
+
+        if (user.password !== password) {
           throw new nodeAppwrite.AppwriteException("Invalid credentials", 401);
         }
 
@@ -113,7 +117,10 @@ vi.mock("react-native-appwrite", async (_importOriginal) => {
 
       /**
        * Deletes a session (Logout).
-       * @param params - Session identifier.
+       * @param params - The session identifier parameters.
+       * @param params.sessionId - The unique identifier of the session to delete. Use 'current' for the active session.
+       * @returns A promise that resolves to an empty object upon successful deletion.
+       * @throws {AppwriteException} If the session operation fails.
        */
       async deleteSession({ sessionId }: { sessionId: string }) {
         if (sessionId === "current") {
@@ -165,8 +172,13 @@ vi.mock("react-native-appwrite", async (_importOriginal) => {
 
       /**
        * Creates a new user account.
-       * @param params - User details.
-       * @returns The created user object.
+       * @param params - The user creation details.
+       * @param params.userId - Optional unique identifier for the user. If not provided or 'unique-id', one will be generated.
+       * @param params.email - The user's email address.
+       * @param params.password - The user's password.
+       * @param params.name - Optional name for the user.
+       * @returns A promise that resolves to the created user object.
+       * @throws {AppwriteException} If the account creation fails.
        */
       async create({
         userId,
@@ -176,8 +188,8 @@ vi.mock("react-native-appwrite", async (_importOriginal) => {
       }: {
         userId?: string;
         email: string;
-        password?: string;
-        name: string;
+        password: string;
+        name?: string;
       }) {
         const id =
           userId === "unique-id" || !userId
