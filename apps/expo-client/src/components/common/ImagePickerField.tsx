@@ -6,19 +6,13 @@ import {
   useTheme,
   Surface,
   TouchableRipple,
+  Portal,
+  Modal,
+  List,
+  Button,
 } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
 
-/**
- * Represents the metadata of an image selected from the device's library.
- * This interface is used to pass image information between the picker and callers.
- *
- * @interface SelectedImage
- * @property {string} uri - The local file URI or path to the selected image. Must be non-empty.
- * @property {string} name - The filename of the selected image, including extension.
- * @property {string} type - The MIME type of the image (e.g., 'image/jpeg', 'image/png').
- * @property {number} size - The file size of the image in bytes.
- */
 export interface SelectedImage {
   uri: string;
   name: string;
@@ -64,12 +58,33 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
   accessibilityLabel,
 }) => {
   const theme = useTheme();
+  const [menuVisible, setMenuVisible] = React.useState(false);
+
+  const openMenu = () => {
+    setMenuVisible(true);
+  };
+  const closeMenu = () => {
+    setMenuVisible(false);
+  };
+
+  const handleImageResult = (result: ImagePicker.ImagePickerResult) => {
+    if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0];
+      onImageSelected({
+        uri: asset.uri,
+        name: asset.fileName ?? asset.uri.split("/").pop() ?? "image.jpg",
+        type: asset.mimeType ?? "image/jpeg",
+        size: asset.fileSize ?? 0,
+      });
+    }
+  };
 
   /**
    * Launches the image library to pick an image.
    * Requests permissions if necessary.
    */
   const pickImage = async () => {
+    closeMenu();
     try {
       const { status } =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -88,18 +103,40 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets.length > 0) {
-        const asset = result.assets[0];
-        onImageSelected({
-          uri: asset.uri,
-          name: asset.fileName ?? asset.uri.split("/").pop() ?? "image.jpg",
-          type: asset.mimeType ?? "image/jpeg",
-          size: asset.fileSize ?? 0,
-        });
-      }
+      handleImageResult(result);
     } catch (error) {
       console.error("Error picking image:", error);
       Alert.alert("Error", "Failed to pick an image. Please try again.");
+    }
+  };
+
+  /**
+   * Launches the camera to take a photo.
+   * Requests permissions if necessary.
+   */
+  const takePhoto = async () => {
+    closeMenu();
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== ImagePicker.PermissionStatus.GRANTED) {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access the camera is required to take photos of your items.",
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      handleImageResult(result);
+    } catch (error) {
+      console.error("Error taking photo:", error);
+      Alert.alert("Error", "Failed to take a photo. Please try again.");
     }
   };
 
@@ -138,27 +175,62 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
             />
           </Surface>
         ) : (
-          <TouchableRipple
-            onPress={() => {
-              void pickImage();
-            }}
-            disabled={disabled}
-            rippleColor={theme.colors.onSurfaceVariant}
-            accessibilityLabel={accessibilityLabel ?? "Add photo"}
-            accessibilityRole="button"
-            style={[
-              styles.placeholder,
-              {
-                borderColor: theme.colors.outline,
-                backgroundColor: theme.colors.surfaceVariant,
-              },
-            ]}
-          >
-            <View style={styles.rippleInner}>
-              <IconButton icon="camera-plus" size={32} disabled={disabled} />
-              <Text variant="bodyMedium">Add Photo</Text>
-            </View>
-          </TouchableRipple>
+          <View>
+            <TouchableRipple
+              onPress={openMenu}
+              disabled={disabled}
+              rippleColor={theme.colors.onSurfaceVariant}
+              accessibilityLabel={accessibilityLabel ?? "Add photo"}
+              accessibilityRole="button"
+              style={[
+                styles.placeholder,
+                {
+                  borderColor: theme.colors.outline,
+                  backgroundColor: theme.colors.surfaceVariant,
+                },
+              ]}
+            >
+              <View style={styles.rippleInner}>
+                <IconButton icon="camera-plus" size={32} disabled={disabled} />
+                <Text variant="bodyMedium">Add Photo</Text>
+              </View>
+            </TouchableRipple>
+
+            <Portal>
+              <Modal
+                visible={menuVisible}
+                onDismiss={closeMenu}
+                contentContainerStyle={styles.modalContent}
+              >
+                <Surface style={styles.modalSurface} elevation={5}>
+                  <Text variant="titleMedium" style={styles.modalTitle}>
+                    Select Photo Source
+                  </Text>
+                  <List.Item
+                    title="Take Photo"
+                    left={(props) => <List.Icon {...props} icon="camera" />}
+                    onPress={() => {
+                      void takePhoto();
+                    }}
+                  />
+                  <List.Item
+                    title="Choose from Gallery"
+                    left={(props) => <List.Icon {...props} icon="image" />}
+                    onPress={() => {
+                      void pickImage();
+                    }}
+                  />
+                  <Button
+                    onPress={closeMenu}
+                    style={styles.cancelButton}
+                    mode="text"
+                  >
+                    Cancel
+                  </Button>
+                </Surface>
+              </Modal>
+            </Portal>
+          </View>
         )}
       </View>
     </View>
@@ -205,5 +277,20 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
+  },
+  modalContent: {
+    padding: 20,
+    justifyContent: "center",
+  },
+  modalSurface: {
+    padding: 8,
+    borderRadius: 16,
+  },
+  modalTitle: {
+    padding: 16,
+    textAlign: "center",
+  },
+  cancelButton: {
+    marginTop: 8,
   },
 });

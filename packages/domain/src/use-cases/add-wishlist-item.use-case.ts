@@ -4,6 +4,7 @@ import type { AddWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
 import type { WishlistOutput } from "./dtos/get-wishlist.dto";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
 import { WishlistNotFoundError } from "../errors/domain-errors";
+import { generateUUID } from "../common/uuid";
 
 /**
  * Use case for adding a new item to a wishlist.
@@ -22,8 +23,7 @@ export class AddWishlistItemUseCase {
    */
   constructor(
     private readonly wishlistRepository: WishlistRepository,
-    private readonly uuidFn: () => string = () =>
-      globalThis.crypto.randomUUID(),
+    private readonly uuidFn: () => string = () => generateUUID(),
   ) {}
 
   /**

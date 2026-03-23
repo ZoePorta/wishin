@@ -2,6 +2,7 @@ import { Wishlist } from "../aggregates/wishlist";
 import type { WishlistRepository } from "../repositories/wishlist.repository";
 import type { CreateWishlistInput, WishlistOutput } from "./dtos";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
+import { generateUUID } from "../common/uuid";
 
 /**
  * Use case for creating a new wishlist.
@@ -18,8 +19,7 @@ export class CreateWishlistUseCase {
    */
   constructor(
     private readonly wishlistRepository: WishlistRepository,
-    private readonly uuidFn: () => string = () =>
-      globalThis.crypto.randomUUID(),
+    private readonly uuidFn: () => string = () => generateUUID(),
   ) {}
 
   /**

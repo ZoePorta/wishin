@@ -343,6 +343,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 28,
     maxHeight: "85%",
+    flex: 1, // Added for Android visibility
   },
   modalHeader: {
     flexDirection: "row",
