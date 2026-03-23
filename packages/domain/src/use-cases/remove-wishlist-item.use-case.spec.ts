@@ -7,10 +7,12 @@ import { WishlistItem } from "../entities/wishlist-item";
 import { Priority, Visibility, Participation } from "../value-objects";
 import { WishlistNotFoundError } from "../errors/domain-errors";
 import type { RemoveWishlistItemInput } from "./dtos/wishlist-item-actions.dto";
+import type { StorageRepository } from "../repositories/storage.repository";
 
 describe("RemoveWishlistItemUseCase", () => {
   let useCase: RemoveWishlistItemUseCase;
   let mockRepo: WishlistRepository;
+  let mockStorageRepo: StorageRepository;
   const WISHLIST_ID = "550e8400-e29b-41d4-a716-446655440000";
   const ITEM_ID = "660e8400-e29b-41d4-a716-446655441111";
 
@@ -21,7 +23,13 @@ describe("RemoveWishlistItemUseCase", () => {
       save: vi.fn(),
       delete: vi.fn(),
     };
-    useCase = new RemoveWishlistItemUseCase(mockRepo);
+    mockStorageRepo = {
+      upload: vi.fn(),
+      delete: vi.fn(),
+      getPreview: vi.fn(),
+      extractFileId: vi.fn(),
+    };
+    useCase = new RemoveWishlistItemUseCase(mockRepo, mockStorageRepo);
   });
 
   it("should successfully remove an item and save", async () => {
@@ -111,5 +119,140 @@ describe("RemoveWishlistItemUseCase", () => {
     // Act & Assert
     await expect(useCase.execute(input)).rejects.toThrow(WishlistNotFoundError);
     expect(mockRepo.save).not.toHaveBeenCalled();
+  });
+
+  describe("Image Deletion", () => {
+    const IMAGE_URL = "https://appwrite.io/files/file-id/view";
+
+    it("should delete the image of the removed item", async () => {
+      // Arrange
+      const item = WishlistItem.reconstitute({
+        id: ITEM_ID,
+        wishlistId: WISHLIST_ID,
+        name: "Item",
+        priority: Priority.MEDIUM,
+        isUnlimited: false,
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+        imageUrl: IMAGE_URL,
+      });
+
+      const existingWishlist = Wishlist.reconstitute({
+        id: WISHLIST_ID,
+        ownerId: "user-123",
+        title: "My Wishlist",
+        visibility: Visibility.LINK,
+        participation: Participation.ANYONE,
+        items: [item.toProps()],
+        version: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      vi.mocked(mockRepo.findById).mockResolvedValue(existingWishlist);
+      vi.mocked(mockRepo.save).mockResolvedValue(undefined);
+      vi.mocked(mockStorageRepo.extractFileId).mockReturnValue("file-id");
+      vi.mocked(mockStorageRepo.delete).mockResolvedValue(undefined);
+
+      const input: RemoveWishlistItemInput = {
+        wishlistId: WISHLIST_ID,
+        itemId: ITEM_ID,
+      };
+
+      // Act
+      await useCase.execute(input);
+
+      // Assert
+      expect(mockStorageRepo.extractFileId).toHaveBeenCalledWith(IMAGE_URL);
+      expect(mockStorageRepo.delete).toHaveBeenCalledWith("file-id");
+    });
+
+    it("should NOT delete anything if the removed item has no image", async () => {
+      // Arrange
+      const item = WishlistItem.reconstitute({
+        id: ITEM_ID,
+        wishlistId: WISHLIST_ID,
+        name: "Item",
+        priority: Priority.MEDIUM,
+        isUnlimited: false,
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+        imageUrl: null,
+      });
+
+      const existingWishlist = Wishlist.reconstitute({
+        id: WISHLIST_ID,
+        ownerId: "user-123",
+        title: "My Wishlist",
+        visibility: Visibility.LINK,
+        participation: Participation.ANYONE,
+        items: [item.toProps()],
+        version: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      vi.mocked(mockRepo.findById).mockResolvedValue(existingWishlist);
+      vi.mocked(mockRepo.save).mockResolvedValue(undefined);
+
+      const input: RemoveWishlistItemInput = {
+        wishlistId: WISHLIST_ID,
+        itemId: ITEM_ID,
+      };
+
+      // Act
+      await useCase.execute(input);
+
+      // Assert
+      expect(mockStorageRepo.delete).not.toHaveBeenCalled();
+    });
+
+    it("should NOT delete anything if the image URL yields no file ID", async () => {
+      // Arrange
+      const INVALID_IMAGE_URL = "https://external.com/photo.jpg";
+      const item = WishlistItem.reconstitute({
+        id: ITEM_ID,
+        wishlistId: WISHLIST_ID,
+        name: "Item",
+        priority: Priority.MEDIUM,
+        isUnlimited: false,
+        totalQuantity: 1,
+        reservedQuantity: 0,
+        purchasedQuantity: 0,
+        imageUrl: INVALID_IMAGE_URL,
+      });
+
+      const existingWishlist = Wishlist.reconstitute({
+        id: WISHLIST_ID,
+        ownerId: "user-123",
+        title: "My Wishlist",
+        visibility: Visibility.LINK,
+        participation: Participation.ANYONE,
+        items: [item.toProps()],
+        version: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      vi.mocked(mockRepo.findById).mockResolvedValue(existingWishlist);
+      vi.mocked(mockRepo.save).mockResolvedValue(undefined);
+      vi.mocked(mockStorageRepo.extractFileId).mockReturnValue(null);
+
+      const input: RemoveWishlistItemInput = {
+        wishlistId: WISHLIST_ID,
+        itemId: ITEM_ID,
+      };
+
+      // Act
+      await useCase.execute(input);
+
+      // Assert
+      expect(mockStorageRepo.extractFileId).toHaveBeenCalledWith(
+        INVALID_IMAGE_URL,
+      );
+      expect(mockStorageRepo.delete).not.toHaveBeenCalled();
+    });
   });
 });

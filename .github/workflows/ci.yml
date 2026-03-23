@@ -6,18 +6,36 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   # Job 1: Unit Tests (Fast, no network required)
   unit_tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "pnpm"
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        continue-on-error: true
+      - name: Auto-fix lockfile
+        if: |
+          failure() &&
+          (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+        run: |
+          pnpm install --no-frozen-lockfile
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore: update pnpm-lock.yaml [skip ci]" || echo "No changes to commit"
+          git push
       - run: pnpm test # This should only run *.spec.ts [cite: 2026-01-30]
 
   # Job 2: Integration Tests (Slow, requires Appwrite)
@@ -34,12 +52,27 @@ jobs:
       APPWRITE_API_SECRET: ${{ secrets.APPWRITE_API_SECRET }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "pnpm"
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        continue-on-error: true
+      - name: Auto-fix lockfile
+        if: |
+          failure() &&
+          (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+        run: |
+          pnpm install --no-frozen-lockfile
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore: update pnpm-lock.yaml [skip ci]" || echo "No changes to commit"
+          git push
       # Critical step: Provision the isolated test environment [cite: 2026-01-30]
       - name: Provision Test DB
         run: pnpm run db:provision:test

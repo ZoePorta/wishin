@@ -37,7 +37,7 @@ export interface WishlistItemProps {
   price?: number;
   currency?: string;
   url?: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
   isUnlimited: boolean;
   totalQuantity: number;
   reservedQuantity: number;
@@ -129,7 +129,7 @@ export class WishlistItem {
    * @returns string | undefined
    */
   public get imageUrl(): string | undefined {
-    return this.props.imageUrl;
+    return this.props.imageUrl ?? undefined;
   }
   /**
    * Indicates if the item has an unlimited quantity.
@@ -258,7 +258,9 @@ export class WishlistItem {
 
     // Sanitize props to remove undefined values so they don't overwrite currentProps
     const sanitizedUpdateProps = Object.fromEntries(
-      Object.entries(props).filter(([, value]) => typeof value !== "undefined"),
+      (Object.entries(props) as [string, unknown][]).filter(
+        ([, value]) => typeof value !== "undefined",
+      ),
     ) as Partial<WishlistItemProps>;
 
     // Reservation Pruning Logic:

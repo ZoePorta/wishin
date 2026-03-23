@@ -9,7 +9,7 @@ import {
   TablesDB,
   AppwriteException,
   type Models,
-} from "appwrite";
+} from "react-native-appwrite";
 import { Wishlist, Visibility, Participation, Priority } from "@wishin/domain";
 import type { Logger, ObservabilityService } from "@wishin/domain";
 
@@ -51,7 +51,7 @@ function isUpsertCall(
 }
 
 // Mock Appwrite SDK
-vi.mock("appwrite", () => {
+vi.mock("react-native-appwrite", () => {
   const AccountMock = vi.fn().mockImplementation(function (this: Account) {
     // Mock implementation for Account
   });

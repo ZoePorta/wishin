@@ -5,7 +5,7 @@ import {
   Query,
   AppwriteException,
   type Models,
-} from "appwrite";
+} from "react-native-appwrite";
 import {
   TransactionStatus,
   PersistenceError,

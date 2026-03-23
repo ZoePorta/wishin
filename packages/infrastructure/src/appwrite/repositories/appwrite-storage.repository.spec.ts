@@ -1,18 +1,18 @@
 import { AppwriteStorageRepository } from "./appwrite-storage.repository";
-import { Client, type Models } from "appwrite";
+import { Client, type Models } from "react-native-appwrite";
 import { PersistenceError } from "@wishin/domain";
 import type { ObservabilityService, Logger } from "@wishin/domain";
 
 // Share mocks using vi.hoisted
-const { get, createFile, deleteFile, getFilePreview } = vi.hoisted(() => ({
+const { get, createFile, deleteFile, getFileView } = vi.hoisted(() => ({
   get: vi.fn(),
   createFile: vi.fn(),
   deleteFile: vi.fn(),
-  getFilePreview: vi.fn(),
+  getFileView: vi.fn(),
 }));
 
 // Mock Appwrite SDK
-vi.mock("appwrite", () => {
+vi.mock("react-native-appwrite", () => {
   const AccountMock = vi.fn().mockImplementation(function () {
     return {
       get,
@@ -23,7 +23,7 @@ vi.mock("appwrite", () => {
     return {
       createFile,
       deleteFile,
-      getFilePreview,
+      getFileView,
     };
   });
 
@@ -55,6 +55,9 @@ describe("AppwriteStorageRepository", () => {
 
   const mockLogger = {
     error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
   } as unknown as Logger;
 
   const mockObservability = {
@@ -67,10 +70,16 @@ describe("AppwriteStorageRepository", () => {
     client = new Client();
     repository = new AppwriteStorageRepository(
       client,
+      "https://cloud.appwrite.io/v1",
+      "project-123",
       bucketId,
       mockLogger,
       mockObservability,
     );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   describe("resolveSession", () => {
@@ -151,7 +160,43 @@ describe("AppwriteStorageRepository", () => {
       expect(createFile).toHaveBeenCalledWith({
         bucketId,
         fileId: "unique-id",
-        file: expect.any(File) as unknown as File,
+        file: expect.anything() as unknown,
+      });
+    });
+
+    it("should upload a file via URI and return its ID", async () => {
+      const fileData = {
+        uri: "file:///test.png",
+        filename: "test.png",
+        mimeType: "image/png",
+        size: 3,
+      };
+
+      // Mock global fetch for universal approach
+      const mockBlob = { size: 3, type: "image/png" };
+      const mockResponse = {
+        blob: vi.fn().mockResolvedValue(mockBlob),
+      };
+      const globalFetch = vi.fn().mockResolvedValue(mockResponse);
+      vi.stubGlobal("fetch", globalFetch);
+
+      vi.mocked(get).mockResolvedValue({
+        $id: "user-123",
+      } as unknown as Models.User<Models.Preferences>);
+      vi.mocked(createFile).mockResolvedValue({
+        $id: "file-uri-123",
+      } as unknown as Models.File);
+
+      const result = await repository.upload(fileData);
+
+      expect(result).toBe("file-uri-123");
+      expect(globalFetch).toHaveBeenCalledWith("file:///test.png");
+      expect(createFile).toHaveBeenCalledWith({
+        bucketId,
+        fileId: "unique-id",
+        file: expect.objectContaining({
+          name: "unique-id.png",
+        }) as unknown as File,
       });
     });
 
@@ -197,30 +242,82 @@ describe("AppwriteStorageRepository", () => {
   });
 
   describe("getPreview", () => {
-    it("should return preview URL string from string return", async () => {
-      const mockUrl = "http://preview/file-123";
-      vi.mocked(getFilePreview).mockReturnValue(mockUrl);
+    it("should return a manually constructed URL", async () => {
+      const fileId = "file-123";
+      const result = await repository.getPreview(fileId);
 
-      const result = await repository.getPreview("file-123");
+      const expectedUrl = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${fileId}/view?project=project-123`;
+      expect(result).toBe(expectedUrl);
+      expect(get).not.toHaveBeenCalled();
+    });
+  });
 
-      expect(result).toBe(mockUrl);
-      expect(getFilePreview).toHaveBeenCalledWith({
-        bucketId,
-        fileId: "file-123",
-      });
+  describe("extractFileId", () => {
+    it("should extract fileId from a valid Appwrite URL", () => {
+      const fileId = "file-123";
+      const url = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${fileId}/view?project=project-123`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBe(fileId);
     });
 
-    it("should return preview URL string from URL object return", async () => {
-      const mockUrl = "http://preview/file-123";
-      const urlObject = {
-        toString: () => mockUrl,
-        href: mockUrl,
-      };
-      vi.mocked(getFilePreview).mockReturnValue(urlObject);
+    it("should return null for non-storage URLs", () => {
+      const url = "https://example.com/image.png";
+      const result = repository.extractFileId(url);
 
-      const result = await repository.getPreview("file-123");
+      expect(result).toBeNull();
+    });
 
-      expect(result).toBe(mockUrl);
+    it("should return null for Appwrite URLs from a different bucket", () => {
+      const url = `https://cloud.appwrite.io/v1/storage/buckets/other-bucket/files/file-123/view?project=project-123`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for Appwrite URLs from a different endpoint", () => {
+      const url = `https://other.appwrite.io/v1/storage/buckets/${bucketId}/files/file-123/view?project=project-123`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for malformed Appwrite URLs", () => {
+      const url = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/file-123/edit?project=project-123`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for Appwrite URLs from a different project", () => {
+      const fileId = "file-123";
+      const url = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/${fileId}/view?project=other-project`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null if the endpoint pathname is not a prefix", () => {
+      // Mock repository with a different endpoint pathname
+      const customRepo = new AppwriteStorageRepository(
+        client,
+        "https://cloud.appwrite.io/v2", // different prefix
+        "project-123",
+        bucketId,
+        mockLogger,
+        mockObservability,
+      );
+      const url = `https://cloud.appwrite.io/v1/storage/buckets/${bucketId}/files/file-123/view?project=project-123`;
+      const result = customRepo.extractFileId(url);
+
+      expect(result).toBeNull();
+    });
+
+    it("should return null for URLs with extra leading path segments (regression)", () => {
+      const url = `https://cloud.appwrite.io/v1/anything/storage/buckets/${bucketId}/files/file-123/view?project=project-123`;
+      const result = repository.extractFileId(url);
+
+      expect(result).toBeNull();
     });
   });
 });

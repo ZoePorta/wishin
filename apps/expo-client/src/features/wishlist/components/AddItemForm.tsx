@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { View, ScrollView, StyleSheet, FlatList } from "react-native";
+import { View, ScrollView, StyleSheet, FlatList, Alert } from "react-native";
 import {
   TextInput,
   Button,
@@ -11,11 +11,20 @@ import {
   List,
   Surface,
 } from "react-native-paper";
-import { Priority, type WishlistItemOutput } from "@wishin/domain";
+import {
+  Priority,
+  type WishlistItemOutput,
+  type FileData,
+} from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from "../utils/currencies";
 import { commonStyles } from "../../../theme/common-styles";
+import {
+  ImagePickerField,
+  type SelectedImage,
+} from "../../../components/common/ImagePickerField";
+import { useStorageRepository } from "../../../contexts/WishlistRepositoryContext";
 
 /**
  * Input format for the onSubmit callback.
@@ -67,6 +76,15 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   );
   const [priceUnknown, setPriceUnknown] = useState(initialData?.price == null);
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(
+    null,
+  );
+  const [useInitialImage, setUseInitialImage] = useState(
+    !!initialData?.imageUrl,
+  );
+  const [isUploading, setIsUploading] = useState(false);
+
+  const storageRepository = useStorageRepository();
 
   useEffect(() => {
     setName(initialData?.name ?? "");
@@ -78,31 +96,140 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     setTotalQuantity(initialData?.totalQuantity.toString() ?? "1");
     setIsUnlimited(initialData?.isUnlimited ?? false);
     setPriceUnknown(initialData?.price == null);
+    setSelectedImage(null);
+    setUseInitialImage(!!initialData?.imageUrl);
   }, [initialData]);
 
   const handleSubmit = useCallback(async () => {
-    if (!name.trim() || loading) return;
+    if (!name.trim() || loading || isUploading) return;
 
-    const payload: AddItemFormSubmission = {
-      wishlistId,
-      name: name.trim(),
-      description: description.trim() || undefined,
-      url: url.trim() || undefined,
-      price: priceUnknown ? undefined : parseFloat(price) || 0,
-      currency: priceUnknown ? undefined : currency,
-      priority: parseInt(priority, 10) as Priority,
-      totalQuantity: isUnlimited
-        ? 1
-        : Math.max(1, parseInt(totalQuantity, 10) || 1),
-      isUnlimited,
-      imageUrl: initialData?.imageUrl,
-      id: initialData?.id,
-    };
+    setIsUploading(true);
+    let uploadedFileId: string | null = null;
 
-    await onSubmit(payload);
+    try {
+      let finalImageUrl = initialData?.imageUrl;
+
+      // Stage 1: Handle image upload if a new local image is selected
+      if (selectedImage) {
+        console.warn(
+          "Preparing image upload for SelectedImage:",
+          selectedImage.name,
+        );
+        const fileData: FileData = {
+          uri: selectedImage.uri,
+          filename: selectedImage.name,
+          mimeType: selectedImage.type,
+          size: selectedImage.size,
+        };
+
+        try {
+          const fileId = await storageRepository.upload(fileData);
+          uploadedFileId = fileId; // Track for cleanup if save fails
+          console.warn("Image uploaded successfully, fileId:", fileId);
+          finalImageUrl = await storageRepository.getPreview(fileId);
+          console.warn("Image preview URL obtained:", finalImageUrl);
+        } catch (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          Alert.alert(
+            "Upload Failed",
+            "There was an error uploading the image. Would you like to save the item without the image?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+                onPress: () => {
+                  setIsUploading(false);
+                },
+              },
+              {
+                text: "Save anyway",
+                onPress: () => {
+                  void (async () => {
+                    const payload: AddItemFormSubmission = {
+                      wishlistId,
+                      name: name.trim(),
+                      description: description.trim() || undefined,
+                      url: url.trim() || undefined,
+                      price: priceUnknown ? undefined : parseFloat(price) || 0,
+                      currency: priceUnknown ? undefined : currency,
+                      priority: parseInt(priority, 10) as Priority,
+                      totalQuantity: isUnlimited
+                        ? 1
+                        : Math.max(1, parseInt(totalQuantity, 10) || 1),
+                      isUnlimited,
+                      imageUrl: initialData?.imageUrl, // Keep old image or none
+                      id: initialData?.id,
+                    };
+                    try {
+                      await onSubmit(payload);
+                    } catch (submitError) {
+                      console.error("Error saving anyway:", submitError);
+                      Alert.alert(
+                        "Save Failed",
+                        "Could not save the item. Please try again.",
+                      );
+                    } finally {
+                      setIsUploading(false);
+                    }
+                  })();
+                },
+              },
+            ],
+          );
+          return; // Stop execution of the main flow
+        }
+      } else if (!useInitialImage && initialData?.imageUrl) {
+        // Image was explicitly removed
+        finalImageUrl = null;
+      }
+
+      // Stage 2: Form submission
+      const payload: AddItemFormSubmission = {
+        wishlistId,
+        name: name.trim(),
+        description: description.trim() || undefined,
+        url: url.trim() || undefined,
+        price: priceUnknown ? undefined : parseFloat(price) || 0,
+        currency: priceUnknown ? undefined : currency,
+        priority: parseInt(priority, 10) as Priority,
+        totalQuantity: isUnlimited
+          ? 1
+          : Math.max(1, parseInt(totalQuantity, 10) || 1),
+        isUnlimited,
+        imageUrl: finalImageUrl,
+        id: initialData?.id,
+      };
+
+      try {
+        await onSubmit(payload);
+      } catch (submitError) {
+        console.error("Error submitting form:", submitError);
+
+        // Cleanup: If we uploaded a new image, delete it since the save failed
+        if (uploadedFileId) {
+          console.warn("Cleaning up orphaned upload:", uploadedFileId);
+          try {
+            await storageRepository.delete(uploadedFileId);
+          } catch (deleteError) {
+            console.error("Failed to cleanup orphaned upload:", deleteError);
+          }
+        }
+
+        Alert.alert(
+          "Save Failed",
+          "There was an error saving the item. Please try again.",
+        );
+      }
+    } catch (unexpectedError) {
+      console.error("Unexpected error in handleSubmit:", unexpectedError);
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
   }, [
     name,
     loading,
+    isUploading,
     wishlistId,
     description,
     url,
@@ -112,6 +239,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     priority,
     isUnlimited,
     totalQuantity,
+    selectedImage,
+    useInitialImage,
+    storageRepository,
     initialData?.imageUrl,
     initialData?.id,
     onSubmit,
@@ -119,9 +249,22 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text variant="headlineSmall" style={styles.title}>
-        {initialData ? "Edit Item" : "Add New Item"}
-      </Text>
+      <ImagePickerField
+        accessibilityLabel="Item image"
+        imageUri={
+          selectedImage?.uri ??
+          (useInitialImage ? (initialData?.imageUrl ?? null) : null)
+        }
+        onImageSelected={(image) => {
+          setSelectedImage(image);
+          if (image) {
+            setUseInitialImage(false); // New image selected
+          } else {
+            setUseInitialImage(false); // Image removed
+          }
+        }}
+        disabled={loading || isUploading}
+      />
 
       <TextInput
         label="Name*"
@@ -220,7 +363,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         buttons={SORTED_PRIORITIES.map((p) => ({
           value: String(p),
           label: PRIORITY_LABELS[p],
-          disabled: loading,
+          disabled: loading || isUploading,
         }))}
         style={styles.segmentedButtons}
       />
@@ -230,8 +373,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         onPress={() => {
           void handleSubmit();
         }}
-        loading={loading}
-        disabled={!name.trim() || loading}
+        loading={loading || isUploading}
+        disabled={!name.trim() || loading || isUploading}
         style={styles.submitButton}
         contentStyle={commonStyles.minimumTouchTarget}
       >
@@ -283,9 +426,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
-  },
-  title: {
-    marginBottom: 24,
   },
   input: {
     marginBottom: 16,
