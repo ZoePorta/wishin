@@ -200,6 +200,40 @@ describe("AppwriteStorageRepository", () => {
       });
     });
 
+    it("should handle extensionless filenames and fallback to jpg", async () => {
+      const fileData = {
+        uri: "file:///photo",
+        filename: "photo",
+        mimeType: "image/jpeg",
+        size: 3,
+      };
+
+      const mockBlob = { size: 3, type: "image/jpeg" };
+      const mockResponse = {
+        blob: vi.fn().mockResolvedValue(mockBlob),
+      };
+      const globalFetch = vi.fn().mockResolvedValue(mockResponse);
+      vi.stubGlobal("fetch", globalFetch);
+
+      vi.mocked(get).mockResolvedValue({
+        $id: "user-123",
+      } as unknown as Models.User<Models.Preferences>);
+      vi.mocked(createFile).mockResolvedValue({
+        $id: "file-no-ext-123",
+      } as unknown as Models.File);
+
+      const result = await repository.upload(fileData);
+
+      expect(result).toBe("file-no-ext-123");
+      expect(createFile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          file: expect.objectContaining({
+            name: "unique-id.jpg",
+          }) as unknown,
+        }),
+      );
+    });
+
     it("should throw PersistenceError if no session and not call storage", async () => {
       const fileData = {
         buffer: new Uint8Array([1, 2, 3]),
