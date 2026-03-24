@@ -10,6 +10,7 @@ import {
   Modal,
   List,
   Surface,
+  HelperText,
 } from "react-native-paper";
 import {
   Priority,
@@ -83,8 +84,38 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     !!initialData?.imageUrl,
   );
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const storageRepository = useStorageRepository();
+
+  /**
+   * Primary error message mapper for friendly, approachable language.
+   * Maps domain/technical errors to user-centric feedback.
+   */
+  const mapErrorToMessage = (err: unknown): string => {
+    const message = err instanceof Error ? err.message : String(err);
+
+    if (message.includes("Invalid name") || message.includes("too short")) {
+      return "Oops! The name is a bit too short. It needs at least 3 characters to look great on your list! ✨";
+    }
+    if (message.includes("Wishlist not found")) {
+      return "We couldn't find your wishlist. Please try refreshing the page! 🔄";
+    }
+    if (
+      message.includes("Network request failed") ||
+      message.includes("Failed to fetch")
+    ) {
+      return "It seems like there's a connection issue. Please check your internet and try again! 📡";
+    }
+    if (
+      message.includes("Upload Failed") ||
+      message.includes("uploading the image")
+    ) {
+      return "We had some trouble with the image. Want to try again or save without it? 🖼️";
+    }
+
+    return "Something went wrong on our end. Could you please try again? 🛠️";
+  };
 
   useEffect(() => {
     setName(initialData?.name ?? "");
@@ -98,10 +129,18 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     setPriceUnknown(initialData?.price == null);
     setSelectedImage(null);
     setUseInitialImage(!!initialData?.imageUrl);
+    setError(null);
   }, [initialData]);
 
   const handleSubmit = useCallback(async () => {
     if (!name.trim() || loading || isUploading) return;
+    setError(null);
+
+    // Initial local validation for name length
+    if (name.trim().length < 3) {
+      setError(mapErrorToMessage("Invalid name: too short"));
+      return;
+    }
 
     setIsUploading(true);
     let uploadedFileId: string | null = null;
@@ -215,14 +254,11 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           }
         }
 
-        Alert.alert(
-          "Save Failed",
-          "There was an error saving the item. Please try again.",
-        );
+        setError(mapErrorToMessage(submitError));
       }
     } catch (unexpectedError) {
       console.error("Unexpected error in handleSubmit:", unexpectedError);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      setError(mapErrorToMessage(unexpectedError));
     } finally {
       setIsUploading(false);
     }
@@ -269,11 +305,15 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       <TextInput
         label="Name*"
         value={name}
-        onChangeText={setName}
+        onChangeText={(text) => {
+          setName(text);
+          if (error) setError(null);
+        }}
         mode="outlined"
         placeholder="Product name..."
         disabled={loading}
         style={styles.input}
+        error={!!error && error.includes("name")}
       />
 
       <TextInput
@@ -368,6 +408,12 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         style={styles.segmentedButtons}
       />
 
+      {error && (
+        <HelperText type="error" visible={!!error} style={styles.errorText}>
+          {error}
+        </HelperText>
+      )}
+
       <Button
         mode="contained"
         onPress={() => {
@@ -452,6 +498,10 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 8,
+  },
+  errorText: {
+    marginBottom: 8,
+    textAlign: "center",
   },
   modalContent: {
     padding: 20,
