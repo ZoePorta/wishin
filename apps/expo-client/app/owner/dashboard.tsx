@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Alert } from "react-native";
+import { View, StyleSheet, Alert, Platform } from "react-native";
 import { Stack, router } from "expo-router";
 import {
   Portal,
@@ -155,39 +155,87 @@ export default function OwnerDashboard() {
             />
 
             <Portal>
-              <FAB.Group
-                open={fabOpen}
-                visible
-                icon={fabOpen ? "close" : "dots-vertical"}
-                actions={[
-                  {
-                    icon: "plus",
-                    label: "Add Item",
-                    onPress: () => {
-                      setEditingItem(undefined);
-                      setIsItemModalVisible(true);
+              {Platform.OS === "web" ? (
+                <View style={styles.webFabContainer}>
+                  {fabOpen && (
+                    <View style={styles.webFabActions}>
+                      <FAB
+                        icon="plus"
+                        label="Add Item"
+                        onPress={() => {
+                          setEditingItem(undefined);
+                          setIsItemModalVisible(true);
+                          setFabOpen(false);
+                        }}
+                        style={styles.webFabAction}
+                        size="small"
+                      />
+                      <FAB
+                        icon="share-variant"
+                        label="Share Wishlist"
+                        onPress={() => {
+                          void handleShare();
+                          setFabOpen(false);
+                        }}
+                        style={styles.webFabAction}
+                        size="small"
+                      />
+                      <FAB
+                        icon="pencil"
+                        label="Edit Wishlist"
+                        onPress={() => {
+                          setIsEditing(true);
+                          setFabOpen(false);
+                        }}
+                        style={styles.webFabAction}
+                        size="small"
+                      />
+                    </View>
+                  )}
+                  <FAB
+                    icon={fabOpen ? "close" : "dots-vertical"}
+                    onPress={() => {
+                      setFabOpen(!fabOpen);
+                    }}
+                    style={styles.fabMain}
+                    accessibilityLabel="Wishlist actions"
+                  />
+                </View>
+              ) : (
+                <FAB.Group
+                  open={fabOpen}
+                  visible
+                  icon={fabOpen ? "close" : "dots-vertical"}
+                  actions={[
+                    {
+                      icon: "plus",
+                      label: "Add Item",
+                      onPress: () => {
+                        setEditingItem(undefined);
+                        setIsItemModalVisible(true);
+                      },
                     },
-                  },
-                  {
-                    icon: "share-variant",
-                    label: "Share Wishlist",
-                    onPress: () => {
-                      void handleShare();
+                    {
+                      icon: "share-variant",
+                      label: "Share Wishlist",
+                      onPress: () => {
+                        void handleShare();
+                      },
                     },
-                  },
-                  {
-                    icon: "pencil",
-                    label: "Edit Wishlist",
-                    onPress: () => {
-                      setIsEditing(true);
+                    {
+                      icon: "pencil",
+                      label: "Edit Wishlist",
+                      onPress: () => {
+                        setIsEditing(true);
+                      },
                     },
-                  },
-                ]}
-                onStateChange={({ open }) => {
-                  setFabOpen(open);
-                }}
-                accessibilityLabel="Wishlist actions"
-              />
+                  ]}
+                  onStateChange={({ open }) => {
+                    setFabOpen(open);
+                  }}
+                  accessibilityLabel="Wishlist actions"
+                />
+              )}
             </Portal>
 
             <Portal>
@@ -353,5 +401,22 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+  },
+  webFabContainer: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    padding: 16,
+    alignItems: "flex-end",
+  },
+  webFabActions: {
+    marginBottom: 16,
+    alignItems: "flex-end",
+  },
+  webFabAction: {
+    marginBottom: 16,
+  },
+  fabMain: {
+    // Standard FAB positioning
   },
 });
