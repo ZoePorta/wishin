@@ -10,6 +10,7 @@ import {
   Modal,
   List,
   Button,
+  Icon,
 } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
 
@@ -191,9 +192,10 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
               ]}
             >
               <View style={styles.rippleInner}>
-                <List.Icon
-                  icon="camera-plus"
+                <Icon
+                  source="camera-plus"
                   color={theme.colors.onSurfaceVariant}
+                  size={24}
                 />
                 <Text variant="bodyMedium">Add Photo</Text>
               </View>

@@ -169,10 +169,10 @@ export default function OwnerDashboard() {
                             left: 0,
                             right: 0,
                             bottom: 0,
-                            zIndex: -1,
+                            backgroundColor: "transparent",
                           },
                         ]}
-                        onPointerDown={() => {
+                        onPress={() => {
                           setFabOpen(false);
                         }}
                       />
@@ -430,5 +430,8 @@ const styles = StyleSheet.create({
   },
   webFabAction: {
     marginBottom: 16,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: "center",
   },
 });
