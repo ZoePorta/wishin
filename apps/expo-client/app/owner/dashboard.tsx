@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Alert, Platform } from "react-native";
+import { View, StyleSheet, Alert, Platform, Pressable } from "react-native";
 import { Stack, router } from "expo-router";
 import {
   Portal,
@@ -158,46 +158,61 @@ export default function OwnerDashboard() {
               {Platform.OS === "web" ? (
                 <View style={styles.webFabContainer}>
                   {fabOpen && (
-                    <View style={styles.webFabActions}>
-                      <FAB
-                        icon="plus"
-                        label="Add Item"
-                        onPress={() => {
-                          setEditingItem(undefined);
-                          setIsItemModalVisible(true);
+                    <>
+                      <Pressable
+                        style={[
+                          StyleSheet.absoluteFill,
+                          {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+                            position: "fixed" as any,
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            zIndex: -1,
+                          },
+                        ]}
+                        onPointerDown={() => {
                           setFabOpen(false);
                         }}
-                        style={styles.webFabAction}
-                        size="small"
                       />
-                      <FAB
-                        icon="share-variant"
-                        label="Share Wishlist"
-                        onPress={() => {
-                          void handleShare();
-                          setFabOpen(false);
-                        }}
-                        style={styles.webFabAction}
-                        size="small"
-                      />
-                      <FAB
-                        icon="pencil"
-                        label="Edit Wishlist"
-                        onPress={() => {
-                          setIsEditing(true);
-                          setFabOpen(false);
-                        }}
-                        style={styles.webFabAction}
-                        size="small"
-                      />
-                    </View>
+                      <View style={styles.webFabActions}>
+                        <FAB
+                          icon="plus"
+                          label="Add Item"
+                          onPress={() => {
+                            setEditingItem(undefined);
+                            setIsItemModalVisible(true);
+                            setFabOpen(false);
+                          }}
+                          style={styles.webFabAction}
+                        />
+                        <FAB
+                          icon="share-variant"
+                          label="Share Wishlist"
+                          onPress={() => {
+                            void handleShare();
+                            setFabOpen(false);
+                          }}
+                          style={styles.webFabAction}
+                        />
+                        <FAB
+                          icon="pencil"
+                          label="Edit Wishlist"
+                          onPress={() => {
+                            setIsEditing(true);
+                            setFabOpen(false);
+                          }}
+                          style={styles.webFabAction}
+                        />
+                      </View>
+                    </>
                   )}
                   <FAB
                     icon={fabOpen ? "close" : "dots-vertical"}
                     onPress={() => {
                       setFabOpen(!fabOpen);
                     }}
-                    style={styles.fabMain}
                     accessibilityLabel="Wishlist actions"
                   />
                 </View>
@@ -415,8 +430,5 @@ const styles = StyleSheet.create({
   },
   webFabAction: {
     marginBottom: 16,
-  },
-  fabMain: {
-    // Standard FAB positioning
   },
 });

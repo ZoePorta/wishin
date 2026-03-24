@@ -191,7 +191,10 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
               ]}
             >
               <View style={styles.rippleInner}>
-                <IconButton icon="camera-plus" size={32} disabled={disabled} />
+                <List.Icon
+                  icon="camera-plus"
+                  color={theme.colors.onSurfaceVariant}
+                />
                 <Text variant="bodyMedium">Add Photo</Text>
               </View>
             </TouchableRipple>
