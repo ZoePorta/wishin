@@ -3,5 +3,6 @@
   "compilerOptions": {
     "baseUrl": "../..",
     "moduleResolution": "bundler"
-  }
+  },
+  "include": ["src", "app", "assets"]
 }

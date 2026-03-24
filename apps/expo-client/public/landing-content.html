@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Wishin - Gift giving in three easy steps</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Aclonica&family=Varela+Round&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Extract theme tokens from URL
+      const params = new URLSearchParams(window.location.search);
+      let themeTokens = {
+        colors: {
+          "on-surface": "#2e1a28",
+          primary: "#e040a0",
+          secondary: "#7c52aa",
+          tertiary: "#0096cc",
+          background: "#fef7ff",
+          "on-surface-variant": "#604868",
+          "surface-container": "#f8eef8",
+        },
+        fonts: { headline: "Aclonica", body: "Varela Round" },
+        borderRadius: { DEFAULT: "1rem" },
+      };
+
+      try {
+        const tokensParam = params.get("tokens");
+        if (tokensParam) {
+          themeTokens = JSON.parse(tokensParam);
+        }
+      } catch (e) {
+        console.error("Failed to parse theme tokens", e);
+      }
+
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: themeTokens.colors,
+            fontFamily: {
+              headline: [themeTokens.fonts.headline, "sans-serif"],
+              body: [themeTokens.fonts.body, "sans-serif"],
+            },
+            borderRadius: themeTokens.borderRadius,
+          },
+        },
+      };
+
+      // Inject CSS variables for non-tailwind use
+      const root = document.documentElement;
+      Object.entries(themeTokens.colors).forEach(([key, value]) => {
+        root.style.setProperty(`--color-${key}`, value);
+      });
+      root.style.setProperty("--font-body", themeTokens.fonts.body);
+    </script>
+    <style>
+      body {
+        font-family: var(--font-body, "Varela Round"), sans-serif;
+        background-color: var(--color-background, #fef7ff);
+        margin: 0;
+        padding: 0;
+      }
+      .bouncy-hover {
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .bouncy-hover:hover {
+        transform: scale(1.03);
+        cursor: pointer;
+      }
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 1,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+      /* Hide scrollbar but keep functionality */
+      body::-webkit-scrollbar {
+        display: none;
+      }
+      body {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body class="text-on-surface">
+    <header class="pt-32 pb-20 px-6 overflow-hidden">
+      <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+        <div class="space-y-8">
+          <div
+            class="inline-flex items-center gap-2 px-4 py-2 bg-primary-fixed rounded-full text-on-primary-fixed-variant font-bold text-sm"
+          >
+            <span
+              class="material-symbols-outlined text-sm"
+              style="font-variation-settings: &quot;FILL&quot; 1"
+              >celebration</span
+            >
+            Joyful gifting for everyone
+          </div>
+          <h1
+            class="text-5xl md:text-7xl font-black text-on-surface leading-[1.1] tracking-tight font-['Aclonica']"
+          >
+            Stop guessing.<br />
+            <span class="text-primary">Start gifting.</span>
+          </h1>
+          <p class="text-xl text-on-surface-variant leading-relaxed max-w-xl">
+            Create a universal wishlist for any occasion. Share it with friends
+            and family, and let them reserve gifts in one click. No duplicates,
+            no awkward returns.
+          </p>
+          <div class="flex flex-wrap gap-4">
+            <button
+              class="bg-primary text-on-primary px-8 py-4 rounded-full font-black text-lg shadow-[0_8px_24px_rgba(224,64,160,0.3)] bouncy-hover"
+            >
+              Create Your Free List
+            </button>
+          </div>
+        </div>
+        <div class="relative">
+          <div
+            class="absolute -top-20 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl"
+          ></div>
+          <div
+            class="absolute -bottom-20 -left-20 w-80 h-80 bg-tertiary/10 rounded-full blur-3xl"
+          ></div>
+          <div
+            class="relative bg-white p-4 rounded-[2.5rem] shadow-[0_24px_48px_rgba(224,64,160,0.15)] border border-pink-50"
+          >
+            <img
+              alt="Celebration background"
+              class="rounded-[2rem] w-full aspect-[4/3] object-cover"
+              data-alt="People laughing and celebrating with confetti and gifts"
+              src="image1.png"
+            />
+          </div>
+        </div>
+      </div>
+    </header>
+    <!-- How it Works (1-2-3) -->
+    <section class="py-20 bg-surface-container-low">
+      <div class="max-w-7xl mx-auto px-6 text-center">
+        <h2
+          class="text-primary font-black uppercase tracking-widest text-sm mb-4 font-['Aclonica']"
+        >
+          Simple. Seamless. Stress-free.
+        </h2>
+        <h3
+          class="text-4xl md:text-5xl font-black text-on-surface mb-16 font-['Aclonica']"
+        >
+          Gift giving in three easy steps
+        </h3>
+        <div class="grid md:grid-cols-3 gap-8">
+          <!-- Step 1 -->
+          <div
+            class="bg-surface p-8 rounded-xl shadow-sm border border-outline-variant hover:shadow-lg transition-all bouncy-hover group"
+          >
+            <div
+              class="w-16 h-16 bg-primary-fixed rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto group-hover:rotate-6 transition-transform"
+            >
+              <span
+                class="material-symbols-outlined text-4xl"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >add_shopping_cart</span
+              >
+            </div>
+            <div class="text-2xl font-black mb-4">Step 1: Build Your List</div>
+            <p class="text-on-surface-variant">
+              Add items from any store across the web or physical locations
+            </p>
+          </div>
+          <!-- Step 2 -->
+          <div
+            class="bg-surface p-8 rounded-xl shadow-sm border border-outline-variant hover:shadow-lg transition-all bouncy-hover group"
+          >
+            <div
+              class="w-16 h-16 bg-secondary-fixed rounded-2xl flex items-center justify-center text-secondary mb-6 mx-auto group-hover:-rotate-6 transition-transform"
+            >
+              <span
+                class="material-symbols-outlined text-4xl"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >share</span
+              >
+            </div>
+            <div class="text-2xl font-black mb-4">Step 2: Share the Link</div>
+            <p class="text-on-surface-variant">
+              Spread the joy via WhatsApp, Email, or social media with one click
+            </p>
+          </div>
+          <!-- Step 3 -->
+          <div
+            class="bg-surface p-8 rounded-xl shadow-sm border border-outline-variant hover:shadow-lg transition-all bouncy-hover group"
+          >
+            <div
+              class="w-16 h-16 bg-tertiary-fixed rounded-2xl flex items-center justify-center text-tertiary mb-6 mx-auto group-hover:rotate-6 transition-transform"
+            >
+              <span
+                class="material-symbols-outlined text-4xl"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >sync</span
+              >
+            </div>
+            <div class="text-2xl font-black mb-4">Step 3: Real-Time Sync</div>
+            <p class="text-on-surface-variant">
+              Gifts are hidden from others once reserved to avoid duplicates
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Why Use Us (Icon Cards) - Bento-style Grid -->
+    <section class="py-24 px-6">
+      <div class="max-w-7xl mx-auto">
+        <div class="grid md:grid-cols-4 gap-6">
+          <!-- Main Header Card -->
+          <div
+            class="md:col-span-2 bg-gradient-to-br from-primary to-secondary p-12 rounded-[2rem] text-on-primary flex flex-col justify-center"
+          >
+            <h2 class="text-4xl mb-6 font-['Aclonica']">
+              Why Giftly is the gold standard
+            </h2>
+            <p class="text-lg opacity-90 leading-relaxed">
+              We've obsessed over the details so you can focus on the
+              celebration. No more spreadsheet headaches
+            </p>
+          </div>
+          <!-- Feature 1 -->
+          <div
+            class="bg-white p-8 rounded-[2rem] shadow-[0_12px_24px_rgba(0,150,204,0.08)] border border-tertiary-fixed border-opacity-30 bouncy-hover"
+          >
+            <div
+              class="w-12 h-12 bg-tertiary-fixed rounded-full flex items-center justify-center text-tertiary mb-6"
+            >
+              <span
+                class="material-symbols-outlined"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >format_list_bulleted</span
+              >
+            </div>
+            <h4
+              class="text-xl font-black mb-3 text-on-surface font-['Aclonica']"
+            >
+              One List to Rule Them All
+            </h4>
+            <p class="text-on-surface-variant text-sm">
+              Everything in one place, from designer clothes to grocery gift
+              cards
+            </p>
+          </div>
+          <!-- Feature 2 -->
+          <div
+            class="bg-white p-8 rounded-[2rem] shadow-[0_12px_24px_rgba(124,82,170,0.08)] border border-secondary-fixed border-opacity-30 bouncy-hover"
+          >
+            <div
+              class="w-12 h-12 bg-secondary-fixed rounded-full flex items-center justify-center text-secondary mb-6"
+            >
+              <span
+                class="material-symbols-outlined"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >person_add</span
+              >
+            </div>
+            <h4
+              class="text-xl font-black mb-3 text-on-surface font-['Aclonica']"
+            >
+              Guest-Friendly
+            </h4>
+            <p class="text-on-surface-variant text-sm">
+              No account needed to reserve. Your grandma will find it incredibly
+              easy
+            </p>
+          </div>
+          <!-- Feature 3 -->
+          <div
+            class="bg-white p-8 rounded-[2rem] shadow-[0_12px_24px_rgba(224,64,160,0.08)] border border-primary-fixed border-opacity-30 bouncy-hover"
+          >
+            <div
+              class="w-12 h-12 bg-primary-fixed rounded-full flex items-center justify-center text-primary mb-6"
+            >
+              <span
+                class="material-symbols-outlined"
+                style="font-variation-settings: &quot;FILL&quot; 1"
+                >do_not_disturb_on</span
+              >
+            </div>
+            <h4
+              class="text-xl font-black mb-3 text-on-surface font-['Aclonica']"
+            >
+              No More Duplicates
+            </h4>
+            <p class="text-on-surface-variant text-sm">
+              Claimed gifts are instantly locked for everyone else in real-time
+            </p>
+          </div>
+          <!-- Feature 4 -->
+          <div
+            class="md:col-span-3 bg-surface-container p-10 rounded-[2rem] flex flex-col md:flex-row items-center gap-8 border border-white"
+          >
+            <div class="flex-1">
+              <div
+                class="w-12 h-12 bg-on-surface-variant/10 rounded-full flex items-center justify-center text-on-surface-variant mb-4"
+              >
+                <span
+                  class="material-symbols-outlined"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >visibility_off</span
+                >
+              </div>
+              <h4
+                class="text-2xl font-black mb-3 text-on-surface font-['Aclonica']"
+              >
+                Keep it a Surprise
+              </h4>
+              <p class="text-on-surface-variant">
+                The best part? You won't see what's been bought unless you
+                specifically choose to peek. Maintain the magic of the moment
+              </p>
+            </div>
+            <div
+              class="w-full md:w-1/3 h-48 bg-white/60 rounded-xl overflow-hidden shadow-inner"
+            >
+              <img
+                alt="Wrapped gift"
+                class="w-full h-full object-cover"
+                data-alt="Beautifully wrapped pink and purple gift box"
+                src="/image2.png"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Features for Everyone -->
+    <section class="py-24 bg-[#fef7ff]">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-16">
+          <h3 class="text-4xl font-black text-on-surface font-['Aclonica']">
+            Features for Everyone
+          </h3>
+          <div class="w-24 h-1.5 bg-primary mx-auto mt-4 rounded-full"></div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-12">
+          <!-- For You -->
+          <div class="space-y-6">
+            <div class="flex items-center gap-4 mb-8">
+              <div
+                class="w-12 h-12 bg-primary text-on-primary rounded-full flex items-center justify-center"
+              >
+                <span
+                  class="material-symbols-outlined"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >face</span
+                >
+              </div>
+              <h4 class="text-3xl font-black text-on-surface font-['Aclonica']">
+                For You (Owner)
+              </h4>
+            </div>
+            <ul class="space-y-4">
+              <li
+                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+              >
+                <span class="material-symbols-outlined text-primary"
+                  >check_circle</span
+                >
+                <div>
+                  <span class="font-bold block">Add from anywhere</span>
+                  <span class="text-on-surface-variant text-sm"
+                    >Any shop, online or phisical</span
+                  >
+                </div>
+              </li>
+              <li
+                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+              >
+                <span class="material-symbols-outlined text-primary"
+                  >check_circle</span
+                >
+                <div>
+                  <span class="font-bold block">Set priorities</span>
+                  <span class="text-on-surface-variant text-sm"
+                    >Label your "must-haves" and "nice-to-haves"</span
+                  >
+                </div>
+              </li>
+              <li
+                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+              >
+                <span class="material-symbols-outlined text-primary"
+                  >check_circle</span
+                >
+                <div>
+                  <span class="font-bold block">Private/public lists</span>
+                  <span class="text-on-surface-variant text-sm"
+                    >Control exactly who sees what with permissions</span
+                  >
+                </div>
+              </li>
+            </ul>
+          </div>
+          <!-- For Them -->
+          <div class="space-y-6">
+            <div class="flex items-center gap-4 mb-8">
+              <div
+                class="w-12 h-12 bg-secondary text-on-secondary rounded-full flex items-center justify-center"
+              >
+                <span
+                  class="material-symbols-outlined"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >groups</span
+                >
+              </div>
+              <h4 class="text-3xl font-black text-on-surface font-['Aclonica']">
+                For Them (Giver)
+              </h4>
+            </div>
+            <ul class="space-y-4">
+              <li
+                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+              >
+                <span class="material-symbols-outlined text-secondary"
+                  >check_circle</span
+                >
+                <div>
+                  <span class="font-bold block">No login required</span>
+                  <span class="text-on-surface-variant text-sm"
+                    >Friends can browse and reserve in seconds</span
+                  >
+                </div>
+              </li>
+              <li
+                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+              >
+                <span class="material-symbols-outlined text-secondary"
+                  >check_circle</span
+                >
+                <div>
+                  <span class="font-bold block">Mark as 'Bought'</span>
+                  <span class="text-on-surface-variant text-sm"
+                    >Update status so others know the gift is taken</span
+                  >
+                </div>
+              </li>
+              <li
+                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+              >
+                <span class="material-symbols-outlined text-secondary"
+                  >check_circle</span
+                >
+                <div>
+                  <span class="font-bold block">Mobile-friendly</span>
+                  <span class="text-on-surface-variant text-sm"
+                    >Works perfectly on any smartphone browser</span
+                  >
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Closing CTA -->
+    <section class="py-24 px-6 overflow-hidden">
+      <div
+        class="max-w-5xl mx-auto relative bg-gradient-to-r from-primary-fixed-dim to-secondary-fixed-dim rounded-[3rem] p-12 md:p-20 text-center shadow-[0_32px_64px_rgba(124,82,170,0.15)]"
+      >
+        <div
+          class="absolute -top-10 -left-10 w-40 h-40 bg-white/20 rounded-full blur-2xl"
+        ></div>
+        <div
+          class="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-2xl"
+        ></div>
+        <div class="relative z-10">
+          <h2
+            class="text-4xl md:text-6xl font-black text-on-surface mb-6 font-['Aclonica']"
+          >
+            Make your next celebration better
+          </h2>
+          <p class="text-xl text-on-surface-variant/80 mb-10 max-w-2xl mx-auto">
+            Join thousands of people making gifting easier. Start your first
+            wishlist today and experience the joy of organized giving.
+          </p>
+          <button
+            class="bg-primary text-on-primary px-12 py-5 rounded-full font-black text-xl shadow-[0_8px_24px_rgba(224,64,160,0.3)] bouncy-hover"
+          >
+            Get Started for Free
+          </button>
+          <p class="mt-6 text-sm font-bold text-on-surface-variant opacity-60">
+            No credit card required
+          </p>
+        </div>
+      </div>
+    </section>
+    <!-- Footer -->
+    <footer
+      class="w-full rounded-t-[40px] mt-20 bg-[#fef7ff] dark:bg-zinc-950 border-t border-pink-100 dark:border-zinc-800"
+    >
+      <div
+        class="flex flex-col md:flex-row justify-between items-center px-10 py-12 max-w-7xl mx-auto"
+      >
+        <div class="mb-8 md:mb-0 text-center md:text-left">
+          <span
+            class="text-xl font-bold text-[#e040a0] mb-4 block font-['Aclonica']"
+            >Wishin</span
+          >
+          <p class="text-sm text-zinc-500 max-w-xs">
+            The easiest way to gift and get gifted. Share the joy, skip the
+            stress
+          </p>
+        </div>
+        <div class="flex flex-wrap justify-center gap-8 mb-8 md:mb-0">
+          <a
+            class="text-sm text-zinc-500 hover:text-[#7c52aa] hover:underline transition-all"
+            href="#"
+            ><br
+          /></a>
+          <a
+            class="text-sm text-zinc-500 hover:text-[#7c52aa] hover:underline transition-all"
+            href="#"
+            ><br
+          /></a>
+          <a
+            class="text-sm text-zinc-500 hover:text-[#7c52aa] hover:underline transition-all"
+            href="#"
+            ><br
+          /></a>
+          <a
+            class="text-sm text-zinc-500 hover:text-[#7c52aa] hover:underline transition-all"
+            href="#"
+            ><br
+          /></a>
+          <a
+            class="text-sm text-zinc-500 hover:text-[#7c52aa] hover:underline transition-all"
+            href="#"
+            ><br
+          /></a>
+          <a
+            class="text-sm text-zinc-500 hover:text-[#7c52aa] hover:underline transition-all"
+            href="#"
+            ><br
+          /></a>
+        </div>
+        <div class="text-center md:text-right">
+          <p class="text-sm text-zinc-500">© 2026 Wishin. Made with joy</p>
+        </div>
+      </div>
+    </footer>
+    <!-- Scripts -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const createButtons = document.querySelectorAll("button");
+        createButtons.forEach((btn) => {
+          if (
+            btn.textContent.includes("Create Your Free List") ||
+            btn.textContent.includes("Get Started for Free")
+          ) {
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              window.parent.postMessage("open-register", "*");
+            });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -12,31 +12,134 @@ import type { Theme as NavigationTheme } from "@react-navigation/native";
 import materialTheme from "./material-theme.json";
 
 /**
- * 1. Brand Logic Overrides
- * Targets a "Joyful" aesthetic using chromatic palettes.
+ * 1. Typography Configuration
+ * Uses Aclonica for headlines and Varela Round for body/labels.
  */
-const brandLightOverrides = {
-  // Soft lavender for the main background
-  background: materialTheme.palettes.secondary[95],
-
-  // Pure white for surfaces to make cards stand out
-  surface: materialTheme.palettes.neutral[100],
-
-  // Saturated pink for primary actions
-  primary: materialTheme.palettes.primary[50],
-  onPrimary: materialTheme.palettes.primary[100],
-
-  // Pastel variants for inputs and containers
-  surfaceVariant: materialTheme.palettes.primary[95],
-  secondaryContainer: materialTheme.palettes.secondary[90],
-
-  // UI details and outlines
-  outline: materialTheme.palettes.secondary[80],
-  onSurfaceVariant: materialTheme.palettes.secondary[30],
+const typography = {
+  displayLarge: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 57,
+    lineHeight: 80,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  displayMedium: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 45,
+    lineHeight: 52,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  displaySmall: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 36,
+    lineHeight: 44,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  headlineLarge: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 32,
+    lineHeight: 40,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  headlineMedium: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 28,
+    lineHeight: 36,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  headlineSmall: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  titleLarge: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  titleMedium: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: 0.15,
+    fontWeight: "500" as const,
+  },
+  titleSmall: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.1,
+    fontWeight: "500" as const,
+  },
+  labelLarge: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.1,
+    fontWeight: "500" as const,
+  },
+  labelMedium: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.5,
+    fontWeight: "500" as const,
+  },
+  labelSmall: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 11,
+    lineHeight: 16,
+    letterSpacing: 0.5,
+    fontWeight: "500" as const,
+  },
+  bodyLarge: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: 0.15,
+    fontWeight: "400" as const,
+  },
+  bodyMedium: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.25,
+    fontWeight: "400" as const,
+  },
+  bodySmall: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+    fontWeight: "400" as const,
+  },
 };
 
 /**
- * 2. Navigation Adaptation
+ * 2. Brand Logic Overrides
+ * Targets a "Joyful" aesthetic using chromatic palettes.
+ */
+const brandLightOverrides = {
+  ...materialTheme.schemes.light,
+  primary: materialTheme.schemes.light.primary,
+  surface: materialTheme.schemes.light.surface,
+  background: materialTheme.schemes.light.background,
+};
+
+const brandDarkOverrides = {
+  ...materialTheme.schemes.dark,
+};
+
+/**
+ * 3. Navigation Adaptation
  */
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -44,24 +147,7 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 });
 
 /**
- * 3. Theme Merging Logic
- * Deeply merges Paper, Navigation and Material schemes.
- * Order: Paper -> Navigation -> Material Scheme -> Brand Overrides
- */
-/**
- * Merges MD3 Paper, Navigation, and Material schemes into a final application theme.
- *
- * @param paperTheme - The base MD3 Paper theme (Light or Dark).
- * @param navigationTheme - The adapted Navigation theme.
- * @param materialScheme - Raw Material Design 3 color tokens from JSON.
- * @param overrides - High-priority brand color overrides.
- *
- * @remarks
- * Merge Precedence: Paper < Navigation < Material Scheme < Overrides.
- * This function also forces elevation tokens to match the resolve surface color
- * to prevent MD3's automatic tinting for elevated cards.
- *
- * @returns {MD3Theme} The fully merged and validated theme object.
+ * 4. Theme Merging Logic
  */
 function mergeAndValidateTheme(
   paperTheme: MD3Theme,
@@ -78,13 +164,10 @@ function mergeAndValidateTheme(
     colors: {
       ...paperTheme.colors,
       ...navigationTheme.colors,
-      ...materialScheme, // Raw M3 Schemes from JSON
-      ...overrides, // FINAL AUTHORITY: Your Joyful/Friendly overrides
+      ...materialScheme,
+      ...overrides,
       elevation: {
         ...paperTheme.colors.elevation,
-        // Override all elevation levels to use the intended surface color.
-        // This prevents MD3 from applying automatic tint overlays that
-        // make white surfaces look gray.
         level1: finalSurface,
         level2: finalSurface,
         level3: finalSurface,
@@ -92,17 +175,19 @@ function mergeAndValidateTheme(
         level5: finalSurface,
       },
     },
-    // Preserve MD3 typography and structure
-    fonts: paperTheme.fonts,
+    fonts: {
+      ...paperTheme.fonts,
+      ...typography,
+    },
     animation: paperTheme.animation,
-    roundness: paperTheme.roundness,
+    roundness: 2,
   };
 
   return merged as MD3Theme;
 }
 
 /**
- * 4. Final Exports
+ * 5. Final Exports
  */
 export const combinedTheme = {
   light: mergeAndValidateTheme(
@@ -115,6 +200,6 @@ export const combinedTheme = {
     MD3DarkTheme,
     DarkTheme,
     materialTheme.schemes.dark,
-    {}, // Add dark overrides here if needed
+    brandDarkOverrides,
   ),
 };
