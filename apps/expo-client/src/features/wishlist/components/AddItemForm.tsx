@@ -10,6 +10,7 @@ import {
   Modal,
   List,
   Surface,
+  HelperText,
 } from "react-native-paper";
 import {
   Priority,
@@ -24,7 +25,11 @@ import {
   ImagePickerField,
   type SelectedImage,
 } from "../../../components/common/ImagePickerField";
+import { mapErrorToMessage, matchesError } from "../utils/error-mapper";
 import { useStorageRepository } from "../../../contexts/WishlistRepositoryContext";
+
+const MIN_NAME_LENGTH = 3;
+const MAX_NAME_LENGTH = 100;
 
 /**
  * Input format for the onSubmit callback.
@@ -83,6 +88,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     !!initialData?.imageUrl,
   );
   const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const storageRepository = useStorageRepository();
 
@@ -98,10 +104,22 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     setPriceUnknown(initialData?.price == null);
     setSelectedImage(null);
     setUseInitialImage(!!initialData?.imageUrl);
+    setError(null);
   }, [initialData]);
 
   const handleSubmit = useCallback(async () => {
     if (!name.trim() || loading || isUploading) return;
+    setError(null);
+
+    // Initial local validation for name length
+    if (name.trim().length < MIN_NAME_LENGTH) {
+      setError(mapErrorToMessage("too short"));
+      return;
+    }
+    if (name.trim().length > MAX_NAME_LENGTH) {
+      setError(mapErrorToMessage("too long"));
+      return;
+    }
 
     setIsUploading(true);
     let uploadedFileId: string | null = null;
@@ -215,14 +233,11 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           }
         }
 
-        Alert.alert(
-          "Save Failed",
-          "There was an error saving the item. Please try again.",
-        );
+        setError(mapErrorToMessage(submitError));
       }
     } catch (unexpectedError) {
       console.error("Unexpected error in handleSubmit:", unexpectedError);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      setError(mapErrorToMessage(unexpectedError));
     } finally {
       setIsUploading(false);
     }
@@ -269,11 +284,17 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       <TextInput
         label="Name*"
         value={name}
-        onChangeText={setName}
+        onChangeText={(text) => {
+          setName(text);
+          if (matchesError(error, "name")) {
+            setError(null);
+          }
+        }}
         mode="outlined"
         placeholder="Product name..."
         disabled={loading}
         style={styles.input}
+        error={matchesError(error, "name")}
       />
 
       <TextInput
@@ -368,6 +389,12 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         style={styles.segmentedButtons}
       />
 
+      {error && (
+        <HelperText type="error" style={styles.errorText}>
+          {error}
+        </HelperText>
+      )}
+
       <Button
         mode="contained"
         onPress={() => {
@@ -452,6 +479,10 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 8,
+  },
+  errorText: {
+    marginBottom: 8,
+    textAlign: "center",
   },
   modalContent: {
     padding: 20,

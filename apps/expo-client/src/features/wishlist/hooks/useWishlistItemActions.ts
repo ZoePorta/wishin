@@ -26,18 +26,19 @@ export function useWishlistItemActions() {
   const wishlistRepository = useWishlistRepository();
   const transactionRepository = useTransactionRepository();
   const storageRepository = useStorageRepository();
-  const { loading, error, wrapAsyncAction } = useAsyncAction();
+  const { loading, error, wrapAsyncAction, wrapAsyncActionEx } =
+    useAsyncAction();
 
   const addItem = useCallback(
-    wrapAsyncAction("addItem", async (input: AddWishlistItemInput) => {
+    wrapAsyncActionEx("addItem", async (input: AddWishlistItemInput) => {
       const useCase = new AddWishlistItemUseCase(wishlistRepository);
       return await useCase.execute(input);
     }),
-    [wishlistRepository, wrapAsyncAction],
+    [wishlistRepository, wrapAsyncActionEx],
   );
 
   const updateItem = useCallback(
-    wrapAsyncAction("updateItem", async (input: UpdateWishlistItemInput) => {
+    wrapAsyncActionEx("updateItem", async (input: UpdateWishlistItemInput) => {
       const useCase = new UpdateWishlistItemUseCase(
         wishlistRepository,
         transactionRepository,
@@ -49,7 +50,7 @@ export function useWishlistItemActions() {
       wishlistRepository,
       transactionRepository,
       storageRepository,
-      wrapAsyncAction,
+      wrapAsyncActionEx,
     ],
   );
 
