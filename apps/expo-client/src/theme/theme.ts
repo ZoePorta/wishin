@@ -25,14 +25,42 @@ declare module "react-native-paper" {
   }
 }
 
+/**
+ * Extension of the React Native Paper MD3Theme that includes
+ * additional Material Design 3 surface container color tokens.
+ *
+ * This interface ensures that the theme used throughout the application
+ * provides the standard MD3 elevation levels and surface variants.
+ */
 export interface AppTheme extends MD3Theme {
   colors: MD3Theme["colors"] & {
+    /**
+     * Used for content on surfaces with the lowest emphasis.
+     */
     surfaceContainerLow: string;
+    /**
+     * The standard container color for content.
+     */
     surfaceContainer: string;
+    /**
+     * Used for content on surfaces with high emphasis.
+     */
     surfaceContainerHigh: string;
+    /**
+     * Used for content on surfaces with the highest emphasis.
+     */
     surfaceContainerHighest: string;
+    /**
+     * Used for content on surfaces with the lowest emphasis (lower than Low).
+     */
     surfaceContainerLowest: string;
+    /**
+     * A darker variant of the surface color.
+     */
     surfaceDim: string;
+    /**
+     * A brighter variant of the surface color.
+     */
     surfaceBright: string;
   };
 }
@@ -206,6 +234,34 @@ function mergeAndValidateTheme(
     roundness: 2,
   };
 
+  // Runtime assertion for required tokens
+  const requiredColors = ["surface"] as const;
+  const missingColors = requiredColors.filter((key) => !merged.colors[key]);
+
+  const requiredElevations = [
+    "level1",
+    "level2",
+    "level3",
+    "level4",
+    "level5",
+  ] as const;
+  const missingElevations = requiredElevations.filter(
+    (key) => !merged.colors.elevation[key],
+  );
+
+  if (missingColors.length > 0 || missingElevations.length > 0) {
+    const errorPrefix = `Theme validation failed for ${paperTheme.dark ? "dark" : "light"} scheme.`;
+    const colorError =
+      missingColors.length > 0
+        ? ` Missing colors: ${missingColors.join(", ")}.`
+        : "";
+    const elevationError =
+      missingElevations.length > 0
+        ? ` Missing elevation levels: ${missingElevations.join(", ")}.`
+        : "";
+    throw new Error(`${errorPrefix}${colorError}${elevationError}`);
+  }
+
   return merged as unknown as AppTheme;
 }
 
@@ -225,4 +281,19 @@ export const combinedTheme = {
     materialTheme.schemes.dark,
     brandDarkOverrides,
   ),
+};
+
+/**
+ * Fallback theme used when custom fonts fail to load.
+ * Uses system fonts instead of Aclonica/Varela Round.
+ */
+export const fallbackTheme = {
+  light: {
+    ...combinedTheme.light,
+    fonts: MD3LightTheme.fonts,
+  },
+  dark: {
+    ...combinedTheme.dark,
+    fonts: MD3DarkTheme.fonts,
+  },
 };

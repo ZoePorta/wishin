@@ -4,7 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet, useColorScheme, Platform } from "react-native";
 import { PaperProvider, Surface } from "react-native-paper";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { combinedTheme } from "../src/theme";
+import { combinedTheme, fallbackTheme, AppTheme } from "../src/theme";
 import { AppErrorBoundary } from "../src/components/core/AppErrorBoundary";
 import { ConfigErrorScreen } from "../src/components/core/ConfigErrorScreen";
 import { GeneralErrorScreen } from "../src/components/core/GeneralErrorScreen";
@@ -25,15 +25,25 @@ SplashScreen.preventAutoHideAsync().catch((e: unknown) => {
 export default function Root() {
   const [initError, setInitError] = useState<Error | null>(null);
   const colorScheme = useColorScheme();
-  const theme =
-    colorScheme === "dark" ? combinedTheme.dark : combinedTheme.light;
 
   const [fontsLoaded, fontError] = useFonts({
     Aclonica_400Regular,
     VarelaRound_400Regular,
   });
 
+  const theme = fontError
+    ? colorScheme === "dark"
+      ? fallbackTheme.dark
+      : fallbackTheme.light
+    : colorScheme === "dark"
+      ? combinedTheme.dark
+      : combinedTheme.light;
+
   useEffect(() => {
+    if (fontError) {
+      console.error("Custom fonts failed to load", fontError);
+    }
+
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync().catch((e: unknown) => {
         console.error("Failed to hide splash screen", e);
@@ -57,7 +67,7 @@ export default function Root() {
         ) : (
           <AppErrorBoundary fallback={<GeneralErrorScreen />}>
             <CoreProvider onConfigError={setInitError}>
-              <RootLayout />
+              <RootLayout theme={theme} />
             </CoreProvider>
           </AppErrorBoundary>
         )}
@@ -69,10 +79,8 @@ export default function Root() {
 /**
  * UI shell for the application including navigation and theme management.
  */
-function RootLayout() {
+function RootLayout({ theme }: { theme: AppTheme }) {
   const colorScheme = useColorScheme();
-  const theme =
-    colorScheme === "dark" ? combinedTheme.dark : combinedTheme.light;
 
   return (
     <Surface style={styles.container}>
