@@ -3,7 +3,11 @@ import { ScrollView, StyleSheet } from "react-native";
 import { TextInput, Button, HelperText } from "react-native-paper";
 import { Visibility, Participation } from "@wishin/domain";
 import type { CreateWishlistInput } from "@wishin/domain";
+import { mapErrorToMessage, matchesError } from "../utils/error-mapper";
 import { commonStyles } from "../../../theme/common-styles";
+
+const MIN_TITLE_LENGTH = 3;
+const MAX_TITLE_LENGTH = 100;
 
 interface WishlistFormProps {
   onSubmit: (data: CreateWishlistInput & { id?: string }) => Promise<void>;
@@ -33,23 +37,41 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
   const [description, setDescription] = useState(
     initialData?.description ?? "",
   );
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setTitle(initialData?.title ?? "");
     setDescription(initialData?.description ?? "");
+    setError(null);
   }, [initialData]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title.trim() || loading) return;
+    setError(null);
 
-    void onSubmit({
-      id: initialData?.id,
-      title: title.trim(),
-      description: description.trim() || undefined,
-      visibility: initialData?.visibility ?? Visibility.LINK,
-      participation: initialData?.participation ?? Participation.ANYONE,
-      ownerId: currentUserId,
-    });
+    // Initial local validation (consistent with AddItemForm)
+    if (title.trim().length < MIN_TITLE_LENGTH) {
+      setError(mapErrorToMessage("too short"));
+      return;
+    }
+    if (title.trim().length > MAX_TITLE_LENGTH) {
+      setError(mapErrorToMessage("too long"));
+      return;
+    }
+
+    try {
+      await onSubmit({
+        id: initialData?.id,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        visibility: initialData?.visibility ?? Visibility.LINK,
+        participation: initialData?.participation ?? Participation.ANYONE,
+        ownerId: currentUserId,
+      });
+    } catch (submitError) {
+      console.error("Error submitting wishlist form:", submitError);
+      setError(mapErrorToMessage(submitError));
+    }
   };
 
   return (
@@ -57,15 +79,25 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
       <TextInput
         label="Title*"
         value={title}
-        onChangeText={setTitle}
+        onChangeText={(text) => {
+          setTitle(text);
+          if (
+            matchesError(error, "title") ||
+            matchesError(error, "short") ||
+            matchesError(error, "long")
+          ) {
+            setError(null);
+          }
+        }}
         mode="outlined"
         placeholder="e.g. Birthday 2026"
-        error={!title.trim() && title.length > 0}
+        error={
+          matchesError(error, "title") ||
+          matchesError(error, "short") ||
+          matchesError(error, "long")
+        }
         disabled={loading}
       />
-      <HelperText type="error" visible={!title.trim() && title.length > 0}>
-        Title is required
-      </HelperText>
 
       <TextInput
         label="Description (Optional)"
@@ -79,9 +111,17 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
         style={styles.description}
       />
 
+      {error && (
+        <HelperText type="error" style={styles.errorText}>
+          {error}
+        </HelperText>
+      )}
+
       <Button
         mode="contained"
-        onPress={handleSubmit}
+        onPress={() => {
+          void handleSubmit();
+        }}
         loading={loading}
         disabled={!title.trim() || loading}
         style={styles.submitButton}
@@ -105,6 +145,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   submitButton: {
-    marginTop: 24,
+    marginTop: 8,
+  },
+  errorText: {
+    marginTop: 16,
+    textAlign: "center",
   },
 });
