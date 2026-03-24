@@ -16,6 +16,7 @@ import {
   Priority,
   type WishlistItemOutput,
   type FileData,
+  WishlistItemNotFoundError,
 } from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
@@ -98,8 +99,17 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     if (message.includes("Invalid name") || message.includes("too short")) {
       return "Oops! The name is a bit too short. It needs at least 3 characters to look great on your list! ✨";
     }
+    if (message.includes("too long")) {
+      return "Whoa! That's a long name. Try keeping it under 100 characters so it fits perfectly! 📏";
+    }
     if (message.includes("Wishlist not found")) {
       return "We couldn't find your wishlist. Please try refreshing the page! 🔄";
+    }
+    if (
+      err instanceof WishlistItemNotFoundError ||
+      message.includes("Wishlist item with ID")
+    ) {
+      return "Couldn’t find that wishlist item. It might have been removed! 🕵️‍♂️";
     }
     if (
       message.includes("Network request failed") ||
@@ -139,6 +149,10 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     // Initial local validation for name length
     if (name.trim().length < 3) {
       setError(mapErrorToMessage("Invalid name: too short"));
+      return;
+    }
+    if (name.trim().length > 100) {
+      setError(mapErrorToMessage("Invalid name: too long"));
       return;
     }
 
@@ -307,7 +321,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         value={name}
         onChangeText={(text) => {
           setName(text);
-          if (error) setError(null);
+          if (error?.toLowerCase().includes("name")) {
+            setError(null);
+          }
         }}
         mode="outlined"
         placeholder="Product name..."
