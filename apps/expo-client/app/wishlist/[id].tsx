@@ -13,6 +13,8 @@ import { useWishlist } from "../../src/hooks/useWishlist";
 import type { UseWishlistReturn } from "../../src/hooks/useWishlist";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { PublicItemCard } from "../../src/features/wishlist/components/PublicItemCard";
+import { useUser } from "../../src/contexts/UserContext";
+import { SpoilerOverlay } from "../../src/features/wishlist/components/SpoilerOverlay";
 
 /**
  * Display the details of a specific wishlist.
@@ -25,7 +27,14 @@ export default function WishlistDetail() {
   const { wishlist, loading, error, refetch }: UseWishlistReturn =
     useWishlist(id);
   const theme = useTheme();
+  const { userId } = useUser();
   const [hasShownSuggestion, setHasShownSuggestion] = useState(false);
+  const [isSpoilerRevealed, setIsSpoilerRevealed] = useState(false);
+
+  const isOwner = useMemo(
+    () => !!userId && !!wishlist && userId === wishlist.ownerId,
+    [userId, wishlist],
+  );
 
   const handleSuggestionShown = useCallback(() => {
     setHasShownSuggestion(true);
@@ -141,6 +150,12 @@ export default function WishlistDetail() {
           </View>
         }
         showsVerticalScrollIndicator={false}
+      />
+      <SpoilerOverlay
+        isVisible={isOwner && !isSpoilerRevealed}
+        onReveal={() => {
+          setIsSpoilerRevealed(true);
+        }}
       />
     </Surface>
   );
