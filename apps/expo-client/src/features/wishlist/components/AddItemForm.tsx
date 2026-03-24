@@ -16,7 +16,6 @@ import {
   Priority,
   type WishlistItemOutput,
   type FileData,
-  WishlistItemNotFoundError,
 } from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
@@ -26,7 +25,11 @@ import {
   ImagePickerField,
   type SelectedImage,
 } from "../../../components/common/ImagePickerField";
+import { mapErrorToMessage, matchesError } from "../utils/error-mapper";
 import { useStorageRepository } from "../../../contexts/WishlistRepositoryContext";
+
+const MIN_NAME_LENGTH = 3;
+const MAX_NAME_LENGTH = 100;
 
 /**
  * Input format for the onSubmit callback.
@@ -89,44 +92,6 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
   const storageRepository = useStorageRepository();
 
-  /**
-   * Primary error message mapper for friendly, approachable language.
-   * Maps domain/technical errors to user-centric feedback.
-   */
-  const mapErrorToMessage = (err: unknown): string => {
-    const message = err instanceof Error ? err.message : String(err);
-
-    if (message.includes("Invalid name") || message.includes("too short")) {
-      return "Oops! The name is a bit too short. It needs at least 3 characters to look great on your list! ✨";
-    }
-    if (message.includes("too long")) {
-      return "Whoa! That's a long name. Try keeping it under 100 characters so it fits perfectly! 📏";
-    }
-    if (message.includes("Wishlist not found")) {
-      return "We couldn't find your wishlist. Please try refreshing the page! 🔄";
-    }
-    if (
-      err instanceof WishlistItemNotFoundError ||
-      message.includes("Wishlist item with ID")
-    ) {
-      return "Couldn’t find that wishlist item. It might have been removed! 🕵️‍♂️";
-    }
-    if (
-      message.includes("Network request failed") ||
-      message.includes("Failed to fetch")
-    ) {
-      return "It seems like there's a connection issue. Please check your internet and try again! 📡";
-    }
-    if (
-      message.includes("Upload Failed") ||
-      message.includes("uploading the image")
-    ) {
-      return "We had some trouble with the image. Want to try again or save without it? 🖼️";
-    }
-
-    return "Something went wrong on our end. Could you please try again? 🛠️";
-  };
-
   useEffect(() => {
     setName(initialData?.name ?? "");
     setDescription(initialData?.description ?? "");
@@ -147,12 +112,12 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     setError(null);
 
     // Initial local validation for name length
-    if (name.trim().length < 3) {
-      setError(mapErrorToMessage("Invalid name: too short"));
+    if (name.trim().length < MIN_NAME_LENGTH) {
+      setError(mapErrorToMessage("too short"));
       return;
     }
-    if (name.trim().length > 100) {
-      setError(mapErrorToMessage("Invalid name: too long"));
+    if (name.trim().length > MAX_NAME_LENGTH) {
+      setError(mapErrorToMessage("too long"));
       return;
     }
 
@@ -321,7 +286,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         value={name}
         onChangeText={(text) => {
           setName(text);
-          if (error?.toLowerCase().includes("name")) {
+          if (matchesError(error, "name")) {
             setError(null);
           }
         }}
@@ -329,7 +294,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         placeholder="Product name..."
         disabled={loading}
         style={styles.input}
-        error={!!error && error.includes("name")}
+        error={matchesError(error, "name")}
       />
 
       <TextInput
@@ -425,7 +390,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       />
 
       {error && (
-        <HelperText type="error" visible={!!error} style={styles.errorText}>
+        <HelperText type="error" style={styles.errorText}>
           {error}
         </HelperText>
       )}
