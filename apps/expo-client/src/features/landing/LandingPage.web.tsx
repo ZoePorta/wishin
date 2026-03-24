@@ -23,6 +23,11 @@ export const LandingPage = () => {
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      // Validate origin to prevent XSS/CSRF
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
       if (event.data === "open-register") {
         handleOpenAuth("register");
       } else if (event.data === "open-login") {
@@ -50,7 +55,8 @@ export const LandingPage = () => {
         <iframe
           src={`/landing-content.html?${themeParams}`}
           style={{ width: "100%", height: "100%", border: "none" }}
-          title="Wishin Content"
+          title="Wishin landing content — Features and Getting Started"
+          aria-label="Wishin landing content"
         />
       </View>
       <AuthModal

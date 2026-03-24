@@ -1,13 +1,13 @@
 import React from "react";
 import Logo from "../../../assets/wishinlogo.svg";
 import { StyleSheet, View, Image, Platform } from "react-native";
-import { Text, Button, useTheme } from "react-native-paper";
+import { Button, useTheme } from "react-native-paper";
+import { type AppTheme } from "../../theme/theme";
 import { MotiView } from "moti";
 
 interface HeaderProps {
   onLogin?: () => void;
   onGetStarted?: () => void;
-  showLinks?: boolean;
 }
 
 /**
@@ -17,14 +17,14 @@ interface HeaderProps {
  * @returns {JSX.Element} The rendered header
  */
 export const Header = ({ onLogin, onGetStarted }: HeaderProps) => {
-  const theme = useTheme();
+  const theme = useTheme<AppTheme>();
 
   return (
     <View
       style={[
         styles.nav,
         {
-          backgroundColor: `${theme.colors.background}CC`,
+          backgroundColor: theme.colors.surfaceContainerLow,
           borderBottomColor: theme.colors.outlineVariant,
         },
       ]}
@@ -38,12 +38,18 @@ export const Header = ({ onLogin, onGetStarted }: HeaderProps) => {
         </MotiView>
 
         <View style={styles.navActions}>
-          <Text
-            style={[styles.loginText, { color: theme.colors.onSurfaceVariant }]}
+          <Button
+            mode="text"
             onPress={onLogin}
+            textColor={theme.colors.onSurfaceVariant}
+            labelStyle={styles.loginLabel}
+            compact
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="Log in"
           >
             Log In
-          </Text>
+          </Button>
           <MotiView
             from={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -88,10 +94,9 @@ const styles = StyleSheet.create({
   navLinks: { flexDirection: "row", gap: 32 },
   navLink: { fontWeight: "700", fontSize: 16 },
   navActions: { flexDirection: "row", alignItems: "center", gap: 24 },
-  loginText: {
+  loginLabel: {
     fontWeight: "700",
     fontSize: 16,
-    cursor: "pointer",
   },
   getStartedBtn: { borderRadius: 100, paddingHorizontal: 16 },
   getStartedLabel: { fontWeight: "900", fontSize: 14 },

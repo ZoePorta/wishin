@@ -2,7 +2,8 @@ import materialTheme from "./material-theme.json";
 
 /**
  * Shared theme tokens extracted from the Material Design 3 scheme.
- * This is the single source of truth for colors and typography.
+ * These tokens are derived from materialTheme.schemes.light and are currently light-mode only.
+ * Dark-mode support will be added in a future iteration.
  */
 export const themeTokens = {
   colors: {

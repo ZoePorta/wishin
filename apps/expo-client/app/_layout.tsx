@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, useColorScheme, Platform } from "react-native";
 import { PaperProvider, Surface } from "react-native-paper";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { combinedTheme } from "../src/theme";
 import { AppErrorBoundary } from "../src/components/core/AppErrorBoundary";
 import { ConfigErrorScreen } from "../src/components/core/ConfigErrorScreen";
@@ -14,7 +15,9 @@ import { useFonts } from "expo-font";
 import { Aclonica_400Regular } from "@expo-google-fonts/aclonica";
 import { VarelaRound_400Regular } from "@expo-google-fonts/varela-round";
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.preventAutoHideAsync().catch((e: unknown) => {
+  console.error("Failed to prevent splash screen auto hide", e);
+});
 
 /**
  * Root orchestrator component that manages dependencies and routing.
@@ -32,7 +35,9 @@ export default function Root() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {});
+      SplashScreen.hideAsync().catch((e: unknown) => {
+        console.error("Failed to hide splash screen", e);
+      });
     }
   }, [fontsLoaded, fontError]);
 
@@ -41,21 +46,23 @@ export default function Root() {
   }
 
   return (
-    <PaperProvider theme={theme}>
-      {initError ? (
-        <ConfigErrorScreen
-          onRetry={() => {
-            setInitError(null);
-          }}
-        />
-      ) : (
-        <AppErrorBoundary fallback={<GeneralErrorScreen />}>
-          <CoreProvider onConfigError={setInitError}>
-            <RootLayout />
-          </CoreProvider>
-        </AppErrorBoundary>
-      )}
-    </PaperProvider>
+    <GestureHandlerRootView style={styles.container}>
+      <PaperProvider theme={theme}>
+        {initError ? (
+          <ConfigErrorScreen
+            onRetry={() => {
+              setInitError(null);
+            }}
+          />
+        ) : (
+          <AppErrorBoundary fallback={<GeneralErrorScreen />}>
+            <CoreProvider onConfigError={setInitError}>
+              <RootLayout />
+            </CoreProvider>
+          </AppErrorBoundary>
+        )}
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 }
 

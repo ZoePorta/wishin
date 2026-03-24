@@ -11,6 +11,32 @@ import {
 import type { Theme as NavigationTheme } from "@react-navigation/native";
 import materialTheme from "./material-theme.json";
 
+import "react-native-paper";
+
+declare module "react-native-paper" {
+  export interface MD3Colors {
+    surfaceContainerLow: string;
+    surfaceContainer: string;
+    surfaceContainerHigh: string;
+    surfaceContainerHighest: string;
+    surfaceContainerLowest: string;
+    surfaceDim: string;
+    surfaceBright: string;
+  }
+}
+
+export interface AppTheme extends MD3Theme {
+  colors: MD3Theme["colors"] & {
+    surfaceContainerLow: string;
+    surfaceContainer: string;
+    surfaceContainerHigh: string;
+    surfaceContainerHighest: string;
+    surfaceContainerLowest: string;
+    surfaceDim: string;
+    surfaceBright: string;
+  };
+}
+
 /**
  * 1. Typography Configuration
  * Uses Aclonica for headlines and Varela Round for body/labels.
@@ -70,35 +96,35 @@ const typography = {
     fontSize: 16,
     lineHeight: 24,
     letterSpacing: 0.15,
-    fontWeight: "500" as const,
+    fontWeight: "400" as const,
   },
   titleSmall: {
     fontFamily: "VarelaRound_400Regular",
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: 0.1,
-    fontWeight: "500" as const,
+    fontWeight: "400" as const,
   },
   labelLarge: {
     fontFamily: "VarelaRound_400Regular",
     fontSize: 14,
     lineHeight: 20,
     letterSpacing: 0.1,
-    fontWeight: "500" as const,
+    fontWeight: "400" as const,
   },
   labelMedium: {
     fontFamily: "VarelaRound_400Regular",
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: 0.5,
-    fontWeight: "500" as const,
+    fontWeight: "400" as const,
   },
   labelSmall: {
     fontFamily: "VarelaRound_400Regular",
     fontSize: 11,
     lineHeight: 16,
     letterSpacing: 0.5,
-    fontWeight: "500" as const,
+    fontWeight: "400" as const,
   },
   bodyLarge: {
     fontFamily: "VarelaRound_400Regular",
@@ -129,9 +155,6 @@ const typography = {
  */
 const brandLightOverrides = {
   ...materialTheme.schemes.light,
-  primary: materialTheme.schemes.light.primary,
-  surface: materialTheme.schemes.light.surface,
-  background: materialTheme.schemes.light.background,
 };
 
 const brandDarkOverrides = {
@@ -154,7 +177,7 @@ function mergeAndValidateTheme(
   navigationTheme: NavigationTheme,
   materialScheme: Partial<MD3Theme["colors"]>,
   overrides: Partial<MD3Theme["colors"]> = {},
-): MD3Theme {
+): AppTheme {
   const finalSurface =
     overrides.surface ?? materialScheme.surface ?? paperTheme.colors.surface;
 
@@ -183,7 +206,7 @@ function mergeAndValidateTheme(
     roundness: 2,
   };
 
-  return merged as MD3Theme;
+  return merged as unknown as AppTheme;
 }
 
 /**
