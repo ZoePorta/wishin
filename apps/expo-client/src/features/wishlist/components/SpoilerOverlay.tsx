@@ -14,6 +14,12 @@ interface SpoilerOverlayProps {
 /**
  * Overlay component that blurs the content and shows a two-stage confirmation dialog.
  * Used when a user accesses their own public wishlist to prevent spoilers.
+ *
+ * @param {SpoilerOverlayProps} props - The component props.
+ * @param {boolean} props.isVisible - Whether the spoiler protection is active.
+ * @param {() => void} props.onReveal - Callback when the user decides to reveal the list.
+ * @returns {JSX.Element | null} The rendered spoiler overlay portal, or null if not visible.
+ * @throws {never} This component does not throw.
  */
 export const SpoilerOverlay: React.FC<SpoilerOverlayProps> = ({
   isVisible,

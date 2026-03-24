@@ -27,14 +27,15 @@ export default function WishlistDetail() {
   const { wishlist, loading, error, refetch }: UseWishlistReturn =
     useWishlist(id);
   const theme = useTheme();
-  const { userId } = useUser();
+  const { userId, isSessionReliable } = useUser();
   const [hasShownSuggestion, setHasShownSuggestion] = useState(false);
   const [isSpoilerRevealed, setIsSpoilerRevealed] = useState(false);
 
-  const isOwner = useMemo(
-    () => !!userId && !!wishlist && userId === wishlist.ownerId,
-    [userId, wishlist],
-  );
+  const isOwner = useMemo(() => {
+    // Return false while session resolution is indeterminate to prevent temporary owner UI exposure (ADR 027)
+    if (!isSessionReliable) return false;
+    return !!userId && !!wishlist && userId === wishlist.ownerId;
+  }, [userId, wishlist, isSessionReliable]);
 
   const handleSuggestionShown = useCallback(() => {
     setHasShownSuggestion(true);
@@ -73,9 +74,17 @@ export default function WishlistDetail() {
         wishlistId={wishlist?.id ?? ""}
         hasShownSuggestion={hasShownSuggestion}
         onSuggestionShown={handleSuggestionShown}
+        isOwner={isOwner}
+        isSpoilerRevealed={isSpoilerRevealed}
       />
     ),
-    [wishlist, hasShownSuggestion, handleSuggestionShown],
+    [
+      wishlist,
+      hasShownSuggestion,
+      handleSuggestionShown,
+      isOwner,
+      isSpoilerRevealed,
+    ],
   );
 
   if (loading) {
