@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { Portal, Dialog, Button, Text, useTheme } from "react-native-paper";
@@ -28,6 +28,13 @@ export const SpoilerOverlay: React.FC<SpoilerOverlayProps> = ({
   const [stage, setStage] = useState<1 | 2>(1);
   const theme = useTheme();
   const router = useRouter();
+
+  // Reset stage to 1 when it becomes visible
+  useEffect(() => {
+    if (isVisible) {
+      setStage(1);
+    }
+  }, [isVisible]);
 
   const handleContinue = useCallback(() => {
     if (stage === 1) {
@@ -64,8 +71,17 @@ export const SpoilerOverlay: React.FC<SpoilerOverlayProps> = ({
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={handleGoBack}>Go Back</Button>
-            <Button mode="contained" onPress={handleContinue}>
+            <Button
+              onPress={handleGoBack}
+              contentStyle={styles.actionButtonContent}
+            >
+              Go Back
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleContinue}
+              contentStyle={styles.actionButtonContent}
+            >
               Continue
             </Button>
           </Dialog.Actions>
@@ -78,5 +94,9 @@ export const SpoilerOverlay: React.FC<SpoilerOverlayProps> = ({
 const styles = StyleSheet.create({
   title: {
     textAlign: "center",
+  },
+  actionButtonContent: {
+    minWidth: 44,
+    minHeight: 44,
   },
 });

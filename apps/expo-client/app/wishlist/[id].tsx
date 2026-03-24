@@ -1,5 +1,5 @@
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
 import {
   Text,
@@ -36,6 +36,11 @@ export default function WishlistDetail() {
     if (!isSessionReliable) return false;
     return !!userId && !!wishlist && userId === wishlist.ownerId;
   }, [userId, wishlist, isSessionReliable]);
+
+  // Reset spoiler revealed state when switching between wishlists (ADR 027 reinforcement)
+  useEffect(() => {
+    setIsSpoilerRevealed(false);
+  }, [id]);
 
   const handleSuggestionShown = useCallback(() => {
     setHasShownSuggestion(true);
