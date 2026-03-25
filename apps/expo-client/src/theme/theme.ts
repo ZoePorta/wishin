@@ -11,32 +11,186 @@ import {
 import type { Theme as NavigationTheme } from "@react-navigation/native";
 import materialTheme from "./material-theme.json";
 
+import "react-native-paper";
+
+declare module "react-native-paper" {
+  export interface MD3Colors {
+    surfaceContainerLow: string;
+    surfaceContainer: string;
+    surfaceContainerHigh: string;
+    surfaceContainerHighest: string;
+    surfaceContainerLowest: string;
+    surfaceDim: string;
+    surfaceBright: string;
+  }
+}
+
 /**
- * 1. Brand Logic Overrides
- * Targets a "Joyful" aesthetic using chromatic palettes.
+ * Extension of the React Native Paper MD3Theme that includes
+ * additional Material Design 3 surface container color tokens.
+ *
+ * This interface ensures that the theme used throughout the application
+ * provides the standard MD3 elevation levels and surface variants.
  */
-const brandLightOverrides = {
-  // Soft lavender for the main background
-  background: materialTheme.palettes.secondary[95],
+export interface AppTheme extends MD3Theme {
+  colors: MD3Theme["colors"] & {
+    /**
+     * Used for content on surfaces with the lowest emphasis.
+     */
+    surfaceContainerLow: string;
+    /**
+     * The standard container color for content.
+     */
+    surfaceContainer: string;
+    /**
+     * Used for content on surfaces with high emphasis.
+     */
+    surfaceContainerHigh: string;
+    /**
+     * Used for content on surfaces with the highest emphasis.
+     */
+    surfaceContainerHighest: string;
+    /**
+     * Used for content on surfaces with the lowest emphasis (lower than Low).
+     */
+    surfaceContainerLowest: string;
+    /**
+     * A darker variant of the surface color.
+     */
+    surfaceDim: string;
+    /**
+     * A brighter variant of the surface color.
+     */
+    surfaceBright: string;
+  };
+}
 
-  // Pure white for surfaces to make cards stand out
-  surface: materialTheme.palettes.neutral[100],
-
-  // Saturated pink for primary actions
-  primary: materialTheme.palettes.primary[50],
-  onPrimary: materialTheme.palettes.primary[100],
-
-  // Pastel variants for inputs and containers
-  surfaceVariant: materialTheme.palettes.primary[95],
-  secondaryContainer: materialTheme.palettes.secondary[90],
-
-  // UI details and outlines
-  outline: materialTheme.palettes.secondary[80],
-  onSurfaceVariant: materialTheme.palettes.secondary[30],
+/**
+ * 1. Typography Configuration
+ * Uses Aclonica for headlines and Varela Round for body/labels.
+ */
+const typography = {
+  displayLarge: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 57,
+    lineHeight: 80,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  displayMedium: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 45,
+    lineHeight: 52,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  displaySmall: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 36,
+    lineHeight: 44,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  headlineLarge: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 32,
+    lineHeight: 40,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  headlineMedium: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 28,
+    lineHeight: 36,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  headlineSmall: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  titleLarge: {
+    fontFamily: "Aclonica_400Regular",
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
+  titleMedium: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: 0.15,
+    fontWeight: "400" as const,
+  },
+  titleSmall: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.1,
+    fontWeight: "400" as const,
+  },
+  labelLarge: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.1,
+    fontWeight: "400" as const,
+  },
+  labelMedium: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.5,
+    fontWeight: "400" as const,
+  },
+  labelSmall: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 11,
+    lineHeight: 16,
+    letterSpacing: 0.5,
+    fontWeight: "400" as const,
+  },
+  bodyLarge: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: 0.15,
+    fontWeight: "400" as const,
+  },
+  bodyMedium: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.25,
+    fontWeight: "400" as const,
+  },
+  bodySmall: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+    fontWeight: "400" as const,
+  },
 };
 
 /**
- * 2. Navigation Adaptation
+ * 2. Brand Logic Overrides
+ * Targets a "Joyful" aesthetic using chromatic palettes.
+ */
+const brandLightOverrides = {
+  ...materialTheme.schemes.light,
+};
+
+const brandDarkOverrides = {
+  ...materialTheme.schemes.dark,
+};
+
+/**
+ * 3. Navigation Adaptation
  */
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -44,47 +198,64 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 });
 
 /**
- * 3. Theme Merging Logic
- * Deeply merges Paper, Navigation and Material schemes.
- * Order: Paper -> Navigation -> Material Scheme -> Brand Overrides
- */
-/**
- * Merges MD3 Paper, Navigation, and Material schemes into a final application theme.
- *
- * @param paperTheme - The base MD3 Paper theme (Light or Dark).
- * @param navigationTheme - The adapted Navigation theme.
- * @param materialScheme - Raw Material Design 3 color tokens from JSON.
- * @param overrides - High-priority brand color overrides.
- *
- * @remarks
- * Merge Precedence: Paper < Navigation < Material Scheme < Overrides.
- * This function also forces elevation tokens to match the resolve surface color
- * to prevent MD3's automatic tinting for elevated cards.
- *
- * @returns {MD3Theme} The fully merged and validated theme object.
+ * 4. Theme Merging Logic
  */
 function mergeAndValidateTheme(
   paperTheme: MD3Theme,
   navigationTheme: NavigationTheme,
   materialScheme: Partial<MD3Theme["colors"]>,
   overrides: Partial<MD3Theme["colors"]> = {},
-): MD3Theme {
+): AppTheme {
   const finalSurface =
     overrides.surface ?? materialScheme.surface ?? paperTheme.colors.surface;
 
-  const merged = {
+  const merged: AppTheme = {
     ...paperTheme,
     ...navigationTheme,
     colors: {
       ...paperTheme.colors,
       ...navigationTheme.colors,
-      ...materialScheme, // Raw M3 Schemes from JSON
-      ...overrides, // FINAL AUTHORITY: Your Joyful/Friendly overrides
+      ...materialScheme,
+      ...overrides,
+      // Explicitly pull surface container tokens to satisfy AppTheme interface
+      surfaceContainerLow:
+        (overrides as Record<string, string | undefined>).surfaceContainerLow ??
+        (materialScheme as Record<string, string | undefined>)
+          .surfaceContainerLow ??
+        finalSurface,
+      surfaceContainer:
+        (overrides as Record<string, string | undefined>).surfaceContainer ??
+        (materialScheme as Record<string, string | undefined>)
+          .surfaceContainer ??
+        finalSurface,
+      surfaceContainerHigh:
+        (overrides as Record<string, string | undefined>)
+          .surfaceContainerHigh ??
+        (materialScheme as Record<string, string | undefined>)
+          .surfaceContainerHigh ??
+        finalSurface,
+      surfaceContainerHighest:
+        (overrides as Record<string, string | undefined>)
+          .surfaceContainerHighest ??
+        (materialScheme as Record<string, string | undefined>)
+          .surfaceContainerHighest ??
+        finalSurface,
+      surfaceContainerLowest:
+        (overrides as Record<string, string | undefined>)
+          .surfaceContainerLowest ??
+        (materialScheme as Record<string, string | undefined>)
+          .surfaceContainerLowest ??
+        finalSurface,
+      surfaceDim:
+        (overrides as Record<string, string | undefined>).surfaceDim ??
+        (materialScheme as Record<string, string | undefined>).surfaceDim ??
+        finalSurface,
+      surfaceBright:
+        (overrides as Record<string, string | undefined>).surfaceBright ??
+        (materialScheme as Record<string, string | undefined>).surfaceBright ??
+        finalSurface,
       elevation: {
         ...paperTheme.colors.elevation,
-        // Override all elevation levels to use the intended surface color.
-        // This prevents MD3 from applying automatic tint overlays that
-        // make white surfaces look gray.
         level1: finalSurface,
         level2: finalSurface,
         level3: finalSurface,
@@ -92,17 +263,56 @@ function mergeAndValidateTheme(
         level5: finalSurface,
       },
     },
-    // Preserve MD3 typography and structure
-    fonts: paperTheme.fonts,
+    fonts: {
+      ...paperTheme.fonts,
+      ...typography,
+    },
     animation: paperTheme.animation,
-    roundness: paperTheme.roundness,
+    roundness: 2,
   };
 
-  return merged as MD3Theme;
+  // Runtime assertion for required tokens
+  const requiredColors = [
+    "surface",
+    "surfaceContainerLow",
+    "surfaceContainer",
+    "surfaceContainerHigh",
+    "surfaceContainerHighest",
+    "surfaceContainerLowest",
+    "surfaceDim",
+    "surfaceBright",
+  ] as const;
+  const missingColors = requiredColors.filter((key) => !merged.colors[key]);
+
+  const requiredElevations = [
+    "level1",
+    "level2",
+    "level3",
+    "level4",
+    "level5",
+  ] as const;
+  const missingElevations = requiredElevations.filter(
+    (key) => !merged.colors.elevation[key],
+  );
+
+  if (missingColors.length > 0 || missingElevations.length > 0) {
+    const errorPrefix = `Theme validation failed for ${paperTheme.dark ? "dark" : "light"} scheme.`;
+    const colorError =
+      missingColors.length > 0
+        ? ` Missing colors: ${missingColors.join(", ")}.`
+        : "";
+    const elevationError =
+      missingElevations.length > 0
+        ? ` Missing elevation levels: ${missingElevations.join(", ")}.`
+        : "";
+    throw new Error(`${errorPrefix}${colorError}${elevationError}`);
+  }
+
+  return merged;
 }
 
 /**
- * 4. Final Exports
+ * 5. Final Exports
  */
 export const combinedTheme = {
   light: mergeAndValidateTheme(
@@ -115,6 +325,21 @@ export const combinedTheme = {
     MD3DarkTheme,
     DarkTheme,
     materialTheme.schemes.dark,
-    {}, // Add dark overrides here if needed
+    brandDarkOverrides,
   ),
+};
+
+/**
+ * Fallback theme used when custom fonts fail to load.
+ * Uses system fonts instead of Aclonica/Varela Round.
+ */
+export const fallbackTheme: { light: AppTheme; dark: AppTheme } = {
+  light: {
+    ...combinedTheme.light,
+    fonts: MD3LightTheme.fonts,
+  },
+  dark: {
+    ...combinedTheme.dark,
+    fonts: MD3DarkTheme.fonts,
+  },
 };

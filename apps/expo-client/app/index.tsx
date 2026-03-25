@@ -1,18 +1,16 @@
 import React, { useCallback, useState, useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, Platform } from "react-native";
 import { Text, Surface, ActivityIndicator, useTheme } from "react-native-paper";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useUser } from "../src/contexts/UserContext";
 import { AuthPanel } from "../src/components/auth/AuthPanel";
 import { useAuthRepository } from "../src/contexts/WishlistRepositoryContext";
 import { validateRedirect } from "../src/utils/url";
+import { LandingPage } from "../src/features/landing/LandingPage";
 
 /**
  * Root screen for the Expo client.
  * Orchestrates authentication and initial navigation.
- * Uses Material Design 3 components.
- *
- * @returns {JSX.Element} The root screen React element.
  */
 export default function Index() {
   const theme = useTheme();
@@ -79,6 +77,11 @@ export default function Index() {
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </Surface>
     );
+  }
+
+  // SHOW LANDING ONLY ON WEB
+  if (Platform.OS === "web" && sessionType !== "registered") {
+    return <LandingPage />;
   }
 
   if (sessionType === "registered") {

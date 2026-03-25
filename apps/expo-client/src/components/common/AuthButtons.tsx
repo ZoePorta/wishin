@@ -5,16 +5,42 @@ import { useRouter } from "expo-router";
 import { useUser } from "../../contexts/UserContext";
 import { AuthModal } from "../auth/AuthModal";
 import { useAuthRepository } from "../../contexts/WishlistRepositoryContext";
-import { commonStyles } from "../../theme/common-styles";
+
+/**
+ * Configuration props for AuthButtons.
+ * These props allow for overriding the default authentication actions (which normally trigger an internal modal).
+ *
+ * @property {() => void} [onLogin] - Optional callback function called when the "Log In" button is pressed.
+ * If provided, this overrides the internal modal trigger for the login flow.
+ * @property {() => void} [onRegister] - Optional callback function called when the "Get Started" button is pressed.
+ * If provided, this overrides the internal modal trigger for the registration flow.
+ *
+ * @note Providing only one of these results in "mixed" control behavior, where the missing action
+ * still triggers the internal AuthModal. For fully external control, both should be provided.
+ */
+interface AuthButtonsProps {
+  /** Optional override for the login action */
+  onLogin?: () => void;
+  /** Optional override for the register/get-started action */
+  onRegister?: () => void;
+}
 
 /**
  * Component that displays authentication buttons in the header.
  * Shows "Logout" if the user is registered or has an incomplete profile.
- * Shows "Login" and "Register" links if the user is anonymous.
+ * Shows "Log In" and "Get Started" links if the user is anonymous.
  *
+ * @param {AuthButtonsProps} props - The component props.
  * @returns {JSX.Element} The authentication buttons.
+ *
+ * @section Exceptions
+ * - Documentation of exceptions for internal state management is omitted.
+ * - Errors during logout, session refetch or navigation are caught and logged to the console.
  */
-export const AuthButtons: React.FC = () => {
+export const AuthButtons: React.FC<AuthButtonsProps> = ({
+  onLogin,
+  onRegister,
+}) => {
   const theme = useTheme();
   const router = useRouter();
   const { sessionType, refetch, isSessionReliable } = useUser();
@@ -22,13 +48,48 @@ export const AuthButtons: React.FC = () => {
   const [authModalVisible, setAuthModalVisible] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<"login" | "register">("login");
 
+  // Determine if the component is being used in controlled vs uncontrolled mode.
+  // We require both to be provided to consider the component "fully controlled" externally.
+  const isControlled = onLogin !== undefined && onRegister !== undefined;
+
+  React.useEffect(() => {
+    // Fire warning only when exactly one callback is provided (partial control).
+    const isPartiallyControlled =
+      (onLogin !== undefined && onRegister === undefined) ||
+      (onLogin === undefined && onRegister !== undefined);
+
+    if (isPartiallyControlled) {
+      console.warn(
+        "AuthButtons: Detected partial external control. Both 'onLogin' and 'onRegister' should be provided for fully external behavior. Falling back to mixed behavior for the missing handler.",
+      );
+    }
+  }, [onLogin, onRegister]);
+
   const handleLogout = async () => {
     try {
       await authRepo.logout();
       await refetch();
       router.replace("/");
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("AuthButtons: Logout failed:", error);
+    }
+  };
+
+  const handleLoginPress = () => {
+    if (onLogin) {
+      onLogin();
+    } else {
+      setAuthMode("login");
+      setAuthModalVisible(true);
+    }
+  };
+
+  const handleRegisterPress = () => {
+    if (onRegister) {
+      onRegister();
+    } else {
+      setAuthMode("register");
+      setAuthModalVisible(true);
     }
   };
 
@@ -46,6 +107,9 @@ export const AuthButtons: React.FC = () => {
           }}
           accessibilityLabel="Logout"
           iconColor={theme.colors.primary}
+          size={24}
+          style={styles.touchTarget}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         />
       </View>
     );
@@ -56,35 +120,40 @@ export const AuthButtons: React.FC = () => {
       <View style={styles.container}>
         <Button
           mode="text"
-          onPress={() => {
-            setAuthMode("login");
-            setAuthModalVisible(true);
-          }}
-          contentStyle={commonStyles.minimumTouchTarget}
-          labelStyle={{ color: theme.colors.primary }}
+          onPress={handleLoginPress}
+          textColor={theme.colors.onSurfaceVariant}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Log in"
+          style={styles.touchTarget}
+          contentStyle={styles.touchTargetContent}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          Login
+          Log In
         </Button>
         <Button
-          mode="text"
-          onPress={() => {
-            setAuthMode("register");
-            setAuthModalVisible(true);
-          }}
-          contentStyle={commonStyles.minimumTouchTarget}
-          labelStyle={{ color: theme.colors.primary }}
+          mode="contained"
+          onPress={handleRegisterPress}
+          style={[styles.getStartedBtn, styles.touchTarget]}
+          contentStyle={styles.touchTargetContent}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Get started"
         >
-          Register
+          Get Started
         </Button>
       </View>
 
-      <AuthModal
-        visible={authModalVisible}
-        onDismiss={() => {
-          setAuthModalVisible(false);
-        }}
-        initialMode={authMode}
-      />
+      {!isControlled && (
+        <AuthModal
+          visible={authModalVisible}
+          onDismiss={() => {
+            setAuthModalVisible(false);
+          }}
+          initialMode={authMode}
+        />
+      )}
     </>
   );
 };
@@ -93,6 +162,19 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 24,
     paddingRight: 8,
+  },
+  getStartedBtn: {
+    borderRadius: 100,
+    paddingHorizontal: 16,
+  },
+  touchTarget: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  touchTargetContent: {
+    minHeight: 44,
   },
 });
