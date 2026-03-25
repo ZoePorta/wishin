@@ -22,8 +22,8 @@ interface AuthButtonsProps {
  * @returns {JSX.Element} The authentication buttons.
  *
  * @section Exceptions
- * - Throws an error if the logout process fails in the repository layer.
- * - Errors during session refetch or navigation are caught and logged to the console.
+ * - Documentation of exceptions for internal state management is omitted.
+ * - Errors during logout, session refetch or navigation are caught and logged to the console.
  */
 export const AuthButtons: React.FC<AuthButtonsProps> = ({
   onLogin,
@@ -36,13 +36,43 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
   const [authModalVisible, setAuthModalVisible] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<"login" | "register">("login");
 
+  // Determine if the component is being used in controlled vs uncontrolled mode.
+  // We require both or neither to avoid mixed behavior.
+  const isControlled = onLogin !== undefined || onRegister !== undefined;
+
+  React.useEffect(() => {
+    if (isControlled && (!onLogin || !onRegister)) {
+      console.warn(
+        "AuthButtons: Detected partial external control. Both 'onLogin' and 'onRegister' should be provided for fully external behavior. Falling back to mixed behavior is discouraged.",
+      );
+    }
+  }, [isControlled, onLogin, onRegister]);
+
   const handleLogout = async () => {
     try {
       await authRepo.logout();
       await refetch();
       router.replace("/");
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("AuthButtons: Logout failed:", error);
+    }
+  };
+
+  const handleLoginPress = () => {
+    if (onLogin) {
+      onLogin();
+    } else {
+      setAuthMode("login");
+      setAuthModalVisible(true);
+    }
+  };
+
+  const handleRegisterPress = () => {
+    if (onRegister) {
+      onRegister();
+    } else {
+      setAuthMode("register");
+      setAuthModalVisible(true);
     }
   };
 
@@ -73,14 +103,7 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
       <View style={styles.container}>
         <Button
           mode="text"
-          onPress={() => {
-            if (onLogin) {
-              onLogin();
-            } else {
-              setAuthMode("login");
-              setAuthModalVisible(true);
-            }
-          }}
+          onPress={handleLoginPress}
           textColor={theme.colors.onSurfaceVariant}
           accessible
           accessibilityRole="button"
@@ -93,14 +116,7 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
         </Button>
         <Button
           mode="contained"
-          onPress={() => {
-            if (onRegister) {
-              onRegister();
-            } else {
-              setAuthMode("register");
-              setAuthModalVisible(true);
-            }
-          }}
+          onPress={handleRegisterPress}
           style={[styles.getStartedBtn, styles.touchTarget]}
           contentStyle={styles.touchTargetContent}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -112,13 +128,15 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
         </Button>
       </View>
 
-      <AuthModal
-        visible={authModalVisible}
-        onDismiss={() => {
-          setAuthModalVisible(false);
-        }}
-        initialMode={authMode}
-      />
+      {!isControlled && (
+        <AuthModal
+          visible={authModalVisible}
+          onDismiss={() => {
+            setAuthModalVisible(false);
+          }}
+          initialMode={authMode}
+        />
+      )}
     </>
   );
 };
