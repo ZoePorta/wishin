@@ -5,16 +5,26 @@ import { useRouter } from "expo-router";
 import { useUser } from "../../contexts/UserContext";
 import { AuthModal } from "../auth/AuthModal";
 import { useAuthRepository } from "../../contexts/WishlistRepositoryContext";
-import { commonStyles } from "../../theme/common-styles";
+
+interface AuthButtonsProps {
+  /** Optional override for the login action */
+  onLogin?: () => void;
+  /** Optional override for the register/get-started action */
+  onRegister?: () => void;
+}
 
 /**
  * Component that displays authentication buttons in the header.
  * Shows "Logout" if the user is registered or has an incomplete profile.
- * Shows "Login" and "Register" links if the user is anonymous.
+ * Shows "Log In" and "Get Started" links if the user is anonymous.
  *
+ * @param {AuthButtonsProps} props - The component props.
  * @returns {JSX.Element} The authentication buttons.
  */
-export const AuthButtons: React.FC = () => {
+export const AuthButtons: React.FC<AuthButtonsProps> = ({
+  onLogin,
+  onRegister,
+}) => {
   const theme = useTheme();
   const router = useRouter();
   const { sessionType, refetch, isSessionReliable } = useUser();
@@ -57,24 +67,39 @@ export const AuthButtons: React.FC = () => {
         <Button
           mode="text"
           onPress={() => {
-            setAuthMode("login");
-            setAuthModalVisible(true);
+            if (onLogin) {
+              onLogin();
+            } else {
+              setAuthMode("login");
+              setAuthModalVisible(true);
+            }
           }}
-          contentStyle={commonStyles.minimumTouchTarget}
-          labelStyle={{ color: theme.colors.primary }}
+          textColor={theme.colors.onSurfaceVariant}
+          labelStyle={styles.loginLabel}
+          compact
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Log in"
         >
-          Login
+          Log In
         </Button>
         <Button
-          mode="text"
+          mode="contained"
           onPress={() => {
-            setAuthMode("register");
-            setAuthModalVisible(true);
+            if (onRegister) {
+              onRegister();
+            } else {
+              setAuthMode("register");
+              setAuthModalVisible(true);
+            }
           }}
-          contentStyle={commonStyles.minimumTouchTarget}
-          labelStyle={{ color: theme.colors.primary }}
+          style={styles.getStartedBtn}
+          labelStyle={styles.getStartedLabel}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Get started"
         >
-          Register
+          Get Started
         </Button>
       </View>
 
@@ -93,6 +118,19 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 24,
     paddingRight: 8,
+  },
+  loginLabel: {
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  getStartedBtn: {
+    borderRadius: 100,
+    paddingHorizontal: 16,
+  },
+  getStartedLabel: {
+    fontWeight: "900",
+    fontSize: 14,
   },
 });

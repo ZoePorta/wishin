@@ -1,9 +1,10 @@
 import React from "react";
 import Logo from "../../../assets/wishinlogo.svg";
 import { StyleSheet, View, Image, Platform } from "react-native";
-import { Button, useTheme } from "react-native-paper";
+import { useTheme } from "react-native-paper";
 import { type AppTheme } from "../../theme/theme";
 import { MotiView } from "moti";
+import { AuthButtons } from "../common/AuthButtons";
 
 interface HeaderProps {
   onLogin?: () => void;
@@ -38,32 +39,7 @@ export const Header = ({ onLogin, onGetStarted }: HeaderProps) => {
         </MotiView>
 
         <View style={styles.navActions}>
-          <Button
-            mode="text"
-            onPress={onLogin}
-            textColor={theme.colors.onSurfaceVariant}
-            labelStyle={styles.loginLabel}
-            compact
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel="Log in"
-          >
-            Log In
-          </Button>
-          <MotiView
-            from={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 200 }}
-          >
-            <Button
-              mode="contained"
-              style={styles.getStartedBtn}
-              labelStyle={styles.getStartedLabel}
-              onPress={onGetStarted}
-            >
-              Get Started
-            </Button>
-          </MotiView>
+          <AuthButtons onLogin={onLogin} onRegister={onGetStarted} />
         </View>
       </View>
     </View>
@@ -93,11 +69,5 @@ const styles = StyleSheet.create({
   logo: { height: 40, width: 100 },
   navLinks: { flexDirection: "row", gap: 32 },
   navLink: { fontWeight: "700", fontSize: 16 },
-  navActions: { flexDirection: "row", alignItems: "center", gap: 24 },
-  loginLabel: {
-    fontWeight: "700",
-    fontSize: 16,
-  },
-  getStartedBtn: { borderRadius: 100, paddingHorizontal: 16 },
-  getStartedLabel: { fontWeight: "900", fontSize: 14 },
+  navActions: { flexDirection: "row", alignItems: "center" },
 });

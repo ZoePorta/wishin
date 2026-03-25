@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { useState, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, useColorScheme, Platform } from "react-native";
-import { PaperProvider, Surface } from "react-native-paper";
+import { PaperProvider, Surface, useTheme } from "react-native-paper";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { combinedTheme, fallbackTheme } from "../src/theme";
 import type { AppTheme } from "../src/theme";
@@ -10,7 +10,8 @@ import { AppErrorBoundary } from "../src/components/core/AppErrorBoundary";
 import { ConfigErrorScreen } from "../src/components/core/ConfigErrorScreen";
 import { GeneralErrorScreen } from "../src/components/core/GeneralErrorScreen";
 import { CoreProvider } from "../src/providers/CoreProvider";
-import { AuthButtons } from "../src/components/common/AuthButtons";
+import { useUser } from "../src/contexts/UserContext";
+import { Header } from "../src/components/layout/Header";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { Aclonica_400Regular } from "@expo-google-fonts/aclonica";
@@ -47,7 +48,7 @@ export default function Root() {
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) {
+  if (!fontsLoaded && !fontError && Platform.OS !== "web") {
     return null;
   }
 
@@ -63,7 +64,7 @@ export default function Root() {
         ) : (
           <AppErrorBoundary fallback={<GeneralErrorScreen />}>
             <CoreProvider onConfigError={setInitError}>
-              <RootLayout theme={theme} />
+              <RootLayout />
             </CoreProvider>
           </AppErrorBoundary>
         )}
@@ -74,26 +75,18 @@ export default function Root() {
 
 /**
  * UI shell for the application including navigation and theme management.
- *
- * @param {AppTheme} theme - The current UI theme or color mode.
  */
-function RootLayout({ theme }: { theme: AppTheme }) {
+function RootLayout() {
+  const theme = useTheme<AppTheme>();
   const colorScheme = useColorScheme();
+  const { sessionType } = useUser();
 
   return (
     <Surface style={styles.container}>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <Stack
         screenOptions={{
-          headerStyle: {
-            backgroundColor: theme.colors.surface,
-          },
-          headerTintColor: theme.colors.onSurface,
-          headerShadowVisible: false,
-          headerTitleStyle: {
-            fontWeight: "bold",
-          },
-          headerRight: () => <AuthButtons />,
+          header: () => <Header />,
           contentStyle: {
             backgroundColor: theme.colors.background,
           },
@@ -103,7 +96,7 @@ function RootLayout({ theme }: { theme: AppTheme }) {
           name="index"
           options={{
             title: "Welcome to Wishin",
-            headerShown: Platform.OS !== "web",
+            headerShown: Platform.OS !== "web" || sessionType === "registered",
           }}
         />
         <Stack.Screen name="wishlist/[id]" options={{ title: "Wishlist" }} />

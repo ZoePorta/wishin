@@ -16,7 +16,29 @@
     <script>
       // Extract theme tokens from URL
       const params = new URLSearchParams(window.location.search);
-      let themeTokens = {
+      function isObject(item) {
+        return item && typeof item === "object" && !Array.isArray(item);
+      }
+
+      function deepMerge(target, source) {
+        let output = { ...target };
+        if (isObject(target) && isObject(source)) {
+          Object.keys(source).forEach((key) => {
+            if (isObject(source[key])) {
+              if (!(key in target)) {
+                Object.assign(output, { [key]: source[key] });
+              } else {
+                output[key] = deepMerge(target[key], source[key]);
+              }
+            } else {
+              Object.assign(output, { [key]: source[key] });
+            }
+          });
+        }
+        return output;
+      }
+
+      const defaultTokens = {
         colors: {
           "on-surface": "#2e1a28",
           primary: "#e040a0",
@@ -25,19 +47,36 @@
           background: "#fef7ff",
           "on-surface-variant": "#604868",
           "surface-container": "#f8eef8",
+          surface: "#ffffff",
+          "outline-variant": "#ebddff",
+          "primary-fixed": "#ffd6ee",
+          "on-primary-fixed-variant": "#a02070",
+          "secondary-fixed": "#eedcff",
+          "tertiary-fixed": "#c8eaff",
         },
         fonts: { headline: "Aclonica", body: "Varela Round" },
         borderRadius: { DEFAULT: "1rem" },
       };
 
+      let themeTokens = defaultTokens;
+
       try {
         const tokensParam = params.get("tokens");
         if (tokensParam) {
-          themeTokens = JSON.parse(tokensParam);
+          const parsed = JSON.parse(tokensParam);
+          if (isObject(parsed)) {
+            themeTokens = deepMerge(defaultTokens, parsed);
+          }
         }
       } catch (e) {
         console.error("Failed to parse theme tokens", e);
       }
+
+      // Ensure mandatory structure exists
+      themeTokens.colors = themeTokens.colors || defaultTokens.colors;
+      themeTokens.fonts = themeTokens.fonts || defaultTokens.fonts;
+      themeTokens.borderRadius =
+        themeTokens.borderRadius || defaultTokens.borderRadius;
 
       tailwind.config = {
         theme: {
@@ -54,12 +93,30 @@
 
       // Inject CSS variables for non-tailwind use
       const root = document.documentElement;
+      function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result
+          ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+          : null;
+      }
+
       Object.entries(themeTokens.colors).forEach(([key, value]) => {
         root.style.setProperty(`--color-${key}`, value);
+        const rgb = hexToRgb(value);
+        if (rgb) {
+          root.style.setProperty(`--color-${key}-rgb`, rgb);
+        }
       });
       root.style.setProperty("--font-body", themeTokens.fonts.body);
     </script>
     <style>
+      :root {
+        --shadow-primary: 0 8px 24px rgba(var(--color-primary-rgb), 0.3);
+        --shadow-secondary: 0 8px 24px rgba(var(--color-secondary-rgb), 0.3);
+        --shadow-elevation: 0 24px 48px rgba(var(--color-primary-rgb), 0.15);
+        --shadow-elevation-low: 0 12px 24px
+          rgba(var(--color-on-surface-rgb), 0.08);
+      }
       body {
         font-family: var(--font-body, "Varela Round"), sans-serif;
         background-color: var(--color-background, #fef7ff);
@@ -95,7 +152,7 @@
       <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
         <div class="space-y-8">
           <div
-            class="inline-flex items-center gap-2 px-4 py-2 bg-primary-fixed rounded-full text-on-primary-fixed-variant font-bold text-sm"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-primary-fixed)] rounded-full text-[var(--color-on-primary-fixed-variant)] font-bold text-sm"
           >
             <span
               class="material-symbols-outlined text-sm"
@@ -117,7 +174,8 @@
           </p>
           <div class="flex flex-wrap gap-4">
             <button
-              class="bg-primary text-on-primary px-8 py-4 rounded-full font-black text-lg shadow-[0_8px_24px_rgba(224,64,160,0.3)] bouncy-hover"
+              data-action="create-list"
+              class="bg-primary text-on-primary px-8 py-4 rounded-full font-black text-lg shadow-[var(--shadow-primary)] bouncy-hover"
             >
               Create Your Free List
             </button>
@@ -131,7 +189,7 @@
             class="absolute -bottom-20 -left-20 w-80 h-80 bg-tertiary/10 rounded-full blur-3xl"
           ></div>
           <div
-            class="relative bg-white p-4 rounded-[2.5rem] shadow-[0_24px_48px_rgba(224,64,160,0.15)] border border-pink-50"
+            class="relative bg-[var(--color-surface)] p-4 rounded-[2.5rem] shadow-[var(--shadow-elevation)] border border-[var(--color-outline-variant)]"
           >
             <img
               alt="Celebration background"
@@ -162,7 +220,7 @@
             class="bg-surface p-8 rounded-xl shadow-sm border border-outline-variant hover:shadow-lg transition-all bouncy-hover group"
           >
             <div
-              class="w-16 h-16 bg-primary-fixed rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto group-hover:rotate-6 transition-transform"
+              class="w-16 h-16 bg-[var(--color-primary-fixed)] rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto group-hover:rotate-6 transition-transform"
             >
               <span
                 class="material-symbols-outlined text-4xl"
@@ -180,7 +238,7 @@
             class="bg-surface p-8 rounded-xl shadow-sm border border-outline-variant hover:shadow-lg transition-all bouncy-hover group"
           >
             <div
-              class="w-16 h-16 bg-secondary-fixed rounded-2xl flex items-center justify-center text-secondary mb-6 mx-auto group-hover:-rotate-6 transition-transform"
+              class="w-16 h-16 bg-[var(--color-secondary-fixed)] rounded-2xl flex items-center justify-center text-secondary mb-6 mx-auto group-hover:-rotate-6 transition-transform"
             >
               <span
                 class="material-symbols-outlined text-4xl"
@@ -198,7 +256,7 @@
             class="bg-surface p-8 rounded-xl shadow-sm border border-outline-variant hover:shadow-lg transition-all bouncy-hover group"
           >
             <div
-              class="w-16 h-16 bg-tertiary-fixed rounded-2xl flex items-center justify-center text-tertiary mb-6 mx-auto group-hover:rotate-6 transition-transform"
+              class="w-16 h-16 bg-[var(--color-tertiary-fixed)] rounded-2xl flex items-center justify-center text-tertiary mb-6 mx-auto group-hover:rotate-6 transition-transform"
             >
               <span
                 class="material-symbols-outlined text-4xl"
@@ -232,10 +290,10 @@
           </div>
           <!-- Feature 1 -->
           <div
-            class="bg-white p-8 rounded-[2rem] shadow-[0_12px_24px_rgba(0,150,204,0.08)] border border-tertiary-fixed border-opacity-30 bouncy-hover"
+            class="bg-[var(--color-surface)] p-8 rounded-[2.5rem] shadow-[var(--shadow-elevation-low)] border border-[var(--color-tertiary-fixed)] border-opacity-30 bouncy-hover"
           >
             <div
-              class="w-12 h-12 bg-tertiary-fixed rounded-full flex items-center justify-center text-tertiary mb-6"
+              class="w-12 h-12 bg-[var(--color-tertiary-fixed)] rounded-full flex items-center justify-center text-tertiary mb-6"
             >
               <span
                 class="material-symbols-outlined"
@@ -255,10 +313,10 @@
           </div>
           <!-- Feature 2 -->
           <div
-            class="bg-white p-8 rounded-[2rem] shadow-[0_12px_24px_rgba(124,82,170,0.08)] border border-secondary-fixed border-opacity-30 bouncy-hover"
+            class="bg-[var(--color-surface)] p-8 rounded-[2.5rem] shadow-[var(--shadow-elevation-low)] border border-[var(--color-secondary-fixed)] border-opacity-30 bouncy-hover"
           >
             <div
-              class="w-12 h-12 bg-secondary-fixed rounded-full flex items-center justify-center text-secondary mb-6"
+              class="w-12 h-12 bg-[var(--color-secondary-fixed)] rounded-full flex items-center justify-center text-secondary mb-6"
             >
               <span
                 class="material-symbols-outlined"
@@ -278,10 +336,10 @@
           </div>
           <!-- Feature 3 -->
           <div
-            class="bg-white p-8 rounded-[2rem] shadow-[0_12px_24px_rgba(224,64,160,0.08)] border border-primary-fixed border-opacity-30 bouncy-hover"
+            class="bg-[var(--color-surface)] p-8 rounded-[2.5rem] shadow-[var(--shadow-elevation-low)] border border-[var(--color-primary-fixed)] border-opacity-30 bouncy-hover"
           >
             <div
-              class="w-12 h-12 bg-primary-fixed rounded-full flex items-center justify-center text-primary mb-6"
+              class="w-12 h-12 bg-[var(--color-primary-fixed)] rounded-full flex items-center justify-center text-primary mb-6"
             >
               <span
                 class="material-symbols-outlined"
@@ -300,7 +358,7 @@
           </div>
           <!-- Feature 4 -->
           <div
-            class="md:col-span-3 bg-surface-container p-10 rounded-[2rem] flex flex-col md:flex-row items-center gap-8 border border-white"
+            class="md:col-span-3 bg-surface-container p-10 rounded-[2rem] flex flex-col md:flex-row items-center gap-8 border border-[var(--color-surface)]"
           >
             <div class="flex-1">
               <div
@@ -323,7 +381,7 @@
               </p>
             </div>
             <div
-              class="w-full md:w-1/3 h-48 bg-white/60 rounded-xl overflow-hidden shadow-inner"
+              class="w-full md:w-1/3 h-48 bg-[rgba(var(--color-surface-rgb),0.6)] rounded-xl overflow-hidden shadow-inner"
             >
               <img
                 alt="Wrapped gift"
@@ -364,7 +422,7 @@
             </div>
             <ul class="space-y-4">
               <li
-                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                class="flex items-start gap-3 p-4 bg-[var(--color-surface)] rounded-2xl shadow-sm hover:shadow-md transition-shadow"
               >
                 <span class="material-symbols-outlined text-primary"
                   >check_circle</span
@@ -377,7 +435,7 @@
                 </div>
               </li>
               <li
-                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                class="flex items-start gap-3 p-4 bg-[var(--color-surface)] rounded-2xl shadow-sm hover:shadow-md transition-shadow"
               >
                 <span class="material-symbols-outlined text-primary"
                   >check_circle</span
@@ -390,7 +448,7 @@
                 </div>
               </li>
               <li
-                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                class="flex items-start gap-3 p-4 bg-[var(--color-surface)] rounded-2xl shadow-sm hover:shadow-md transition-shadow"
               >
                 <span class="material-symbols-outlined text-primary"
                   >check_circle</span
@@ -423,7 +481,7 @@
             </div>
             <ul class="space-y-4">
               <li
-                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                class="flex items-start gap-3 p-4 bg-[var(--color-surface)] rounded-2xl shadow-sm hover:shadow-md transition-shadow"
               >
                 <span class="material-symbols-outlined text-secondary"
                   >check_circle</span
@@ -436,7 +494,7 @@
                 </div>
               </li>
               <li
-                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                class="flex items-start gap-3 p-4 bg-[var(--color-surface)] rounded-2xl shadow-sm hover:shadow-md transition-shadow"
               >
                 <span class="material-symbols-outlined text-secondary"
                   >check_circle</span
@@ -449,7 +507,7 @@
                 </div>
               </li>
               <li
-                class="flex items-start gap-3 p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                class="flex items-start gap-3 p-4 bg-[var(--color-surface)] rounded-2xl shadow-sm hover:shadow-md transition-shadow"
               >
                 <span class="material-symbols-outlined text-secondary"
                   >check_circle</span
@@ -469,10 +527,10 @@
     <!-- Closing CTA -->
     <section class="py-24 px-6 overflow-hidden">
       <div
-        class="max-w-5xl mx-auto relative bg-gradient-to-r from-primary-fixed-dim to-secondary-fixed-dim rounded-[3rem] p-12 md:p-20 text-center shadow-[0_32px_64px_rgba(124,82,170,0.15)]"
+        class="max-w-5xl mx-auto relative bg-gradient-to-r from-primary-fixed-dim to-secondary-fixed-dim rounded-[3rem] p-12 md:p-20 text-center shadow-[var(--shadow-elevation)]"
       >
         <div
-          class="absolute -top-10 -left-10 w-40 h-40 bg-white/20 rounded-full blur-2xl"
+          class="absolute -top-10 -left-10 w-40 h-40 bg-[rgba(var(--color-surface-rgb),0.2)] rounded-full blur-2xl"
         ></div>
         <div
           class="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/20 rounded-full blur-2xl"
@@ -488,7 +546,8 @@
             wishlist today and experience the joy of organized giving.
           </p>
           <button
-            class="bg-primary text-on-primary px-12 py-5 rounded-full font-black text-xl shadow-[0_8px_24px_rgba(224,64,160,0.3)] bouncy-hover"
+            data-action="create-list"
+            class="bg-primary text-on-primary px-12 py-5 rounded-full font-black text-xl shadow-[var(--shadow-primary)] bouncy-hover"
           >
             Get Started for Free
           </button>
@@ -500,7 +559,7 @@
     </section>
     <!-- Footer -->
     <footer
-      class="w-full rounded-t-[40px] mt-20 bg-[#fef7ff] dark:bg-zinc-950 border-t border-pink-100 dark:border-zinc-800"
+      class="w-full rounded-t-[40px] mt-20 bg-[var(--color-background)] dark:bg-zinc-950 border-t border-[var(--color-outline-variant)] dark:border-zinc-800"
     >
       <div
         class="flex flex-col md:flex-row justify-between items-center px-10 py-12 max-w-7xl mx-auto"
@@ -510,33 +569,29 @@
             class="text-xl font-bold text-[#e040a0] mb-4 block font-['Aclonica']"
             >Wishin</span
           >
-          <p class="text-sm text-zinc-500 max-w-xs">
+          <p class="text-sm text-[var(--color-on-surface-variant)] max-w-xs">
             The easiest way to gift and get gifted. Share the joy, skip the
             stress
           </p>
         </div>
         <div class="text-center md:text-right">
-          <p class="text-sm text-zinc-500">© 2026 Wishin. Made with joy</p>
+          <p class="text-sm text-[var(--color-on-surface-variant)]">
+            © 2026 Wishin. Made with joy
+          </p>
         </div>
       </div>
     </footer>
     <!-- Scripts -->
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        const createButtons = document.querySelectorAll("button");
+        const createButtons = document.querySelectorAll(
+          '[data-action="create-list"]',
+        );
         createButtons.forEach((btn) => {
-          if (
-            btn.textContent.includes("Create Your Free List") ||
-            btn.textContent.includes("Get Started for Free")
-          ) {
-            btn.addEventListener("click", (e) => {
-              e.preventDefault();
-              window.parent.postMessage(
-                "open-register",
-                window.location.origin,
-              );
-            });
-          }
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.parent.postMessage("open-register", window.location.origin);
+          });
         });
       });
     </script>
