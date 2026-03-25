@@ -4,7 +4,8 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet, useColorScheme, Platform } from "react-native";
 import { PaperProvider, Surface } from "react-native-paper";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { combinedTheme, fallbackTheme, AppTheme } from "../src/theme";
+import { combinedTheme, fallbackTheme } from "../src/theme";
+import type { AppTheme } from "../src/theme";
 import { AppErrorBoundary } from "../src/components/core/AppErrorBoundary";
 import { ConfigErrorScreen } from "../src/components/core/ConfigErrorScreen";
 import { GeneralErrorScreen } from "../src/components/core/GeneralErrorScreen";
@@ -31,13 +32,8 @@ export default function Root() {
     VarelaRound_400Regular,
   });
 
-  const theme = fontError
-    ? colorScheme === "dark"
-      ? fallbackTheme.dark
-      : fallbackTheme.light
-    : colorScheme === "dark"
-      ? combinedTheme.dark
-      : combinedTheme.light;
+  const baseTheme = fontError ? fallbackTheme : combinedTheme;
+  const theme = colorScheme === "dark" ? baseTheme.dark : baseTheme.light;
 
   useEffect(() => {
     if (fontError) {
@@ -78,6 +74,8 @@ export default function Root() {
 
 /**
  * UI shell for the application including navigation and theme management.
+ *
+ * @param {AppTheme} theme - The current UI theme or color mode.
  */
 function RootLayout({ theme }: { theme: AppTheme }) {
   const colorScheme = useColorScheme();

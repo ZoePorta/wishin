@@ -209,7 +209,7 @@ function mergeAndValidateTheme(
   const finalSurface =
     overrides.surface ?? materialScheme.surface ?? paperTheme.colors.surface;
 
-  const merged = {
+  const merged: AppTheme = {
     ...paperTheme,
     ...navigationTheme,
     colors: {
@@ -217,6 +217,43 @@ function mergeAndValidateTheme(
       ...navigationTheme.colors,
       ...materialScheme,
       ...overrides,
+      // Explicitly pull surface container tokens to satisfy AppTheme interface
+      surfaceContainerLow:
+        (overrides as Record<string, string | undefined>).surfaceContainerLow ??
+        (materialScheme as Record<string, string | undefined>)
+          .surfaceContainerLow ??
+        finalSurface,
+      surfaceContainer:
+        (overrides as Record<string, string | undefined>).surfaceContainer ??
+        (materialScheme as Record<string, string | undefined>)
+          .surfaceContainer ??
+        finalSurface,
+      surfaceContainerHigh:
+        (overrides as Record<string, string | undefined>)
+          .surfaceContainerHigh ??
+        (materialScheme as Record<string, string | undefined>)
+          .surfaceContainerHigh ??
+        finalSurface,
+      surfaceContainerHighest:
+        (overrides as Record<string, string | undefined>)
+          .surfaceContainerHighest ??
+        (materialScheme as Record<string, string | undefined>)
+          .surfaceContainerHighest ??
+        finalSurface,
+      surfaceContainerLowest:
+        (overrides as Record<string, string | undefined>)
+          .surfaceContainerLowest ??
+        (materialScheme as Record<string, string | undefined>)
+          .surfaceContainerLowest ??
+        finalSurface,
+      surfaceDim:
+        (overrides as Record<string, string | undefined>).surfaceDim ??
+        (materialScheme as Record<string, string | undefined>).surfaceDim ??
+        finalSurface,
+      surfaceBright:
+        (overrides as Record<string, string | undefined>).surfaceBright ??
+        (materialScheme as Record<string, string | undefined>).surfaceBright ??
+        finalSurface,
       elevation: {
         ...paperTheme.colors.elevation,
         level1: finalSurface,
@@ -235,7 +272,16 @@ function mergeAndValidateTheme(
   };
 
   // Runtime assertion for required tokens
-  const requiredColors = ["surface"] as const;
+  const requiredColors = [
+    "surface",
+    "surfaceContainerLow",
+    "surfaceContainer",
+    "surfaceContainerHigh",
+    "surfaceContainerHighest",
+    "surfaceContainerLowest",
+    "surfaceDim",
+    "surfaceBright",
+  ] as const;
   const missingColors = requiredColors.filter((key) => !merged.colors[key]);
 
   const requiredElevations = [
@@ -262,7 +308,7 @@ function mergeAndValidateTheme(
     throw new Error(`${errorPrefix}${colorError}${elevationError}`);
   }
 
-  return merged as unknown as AppTheme;
+  return merged;
 }
 
 /**
@@ -287,7 +333,7 @@ export const combinedTheme = {
  * Fallback theme used when custom fonts fail to load.
  * Uses system fonts instead of Aclonica/Varela Round.
  */
-export const fallbackTheme = {
+export const fallbackTheme: { light: AppTheme; dark: AppTheme } = {
   light: {
     ...combinedTheme.light,
     fonts: MD3LightTheme.fonts,
