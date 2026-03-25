@@ -42,16 +42,21 @@
         colors: {
           "on-surface": "#2e1a28",
           primary: "#e040a0",
+          "on-primary": "#ffffff",
           secondary: "#7c52aa",
+          "on-secondary": "#ffffff",
           tertiary: "#0096cc",
           background: "#fef7ff",
           "on-surface-variant": "#604868",
           "surface-container": "#f8eef8",
+          "surface-container-low": "#fff7ff",
           surface: "#ffffff",
           "outline-variant": "#ebddff",
           "primary-fixed": "#ffd6ee",
+          "primary-fixed-dim": "#e040a0",
           "on-primary-fixed-variant": "#a02070",
           "secondary-fixed": "#eedcff",
+          "secondary-fixed-dim": "#7c52aa",
           "tertiary-fixed": "#c8eaff",
         },
         fonts: { headline: "Aclonica", body: "Varela Round" },
@@ -65,6 +70,12 @@
         if (tokensParam) {
           const parsed = JSON.parse(tokensParam);
           if (isObject(parsed)) {
+            // Validate nested sections before merging
+            if (parsed.colors && !isObject(parsed.colors)) delete parsed.colors;
+            if (parsed.fonts && !isObject(parsed.fonts)) delete parsed.fonts;
+            if (parsed.borderRadius && !isObject(parsed.borderRadius))
+              delete parsed.borderRadius;
+
             themeTokens = deepMerge(defaultTokens, parsed);
           }
         }
@@ -72,11 +83,16 @@
         console.error("Failed to parse theme tokens", e);
       }
 
-      // Ensure mandatory structure exists
-      themeTokens.colors = themeTokens.colors || defaultTokens.colors;
-      themeTokens.fonts = themeTokens.fonts || defaultTokens.fonts;
-      themeTokens.borderRadius =
-        themeTokens.borderRadius || defaultTokens.borderRadius;
+      // Ensure mandatory structure exists with fallback to defaults
+      themeTokens.colors = isObject(themeTokens.colors)
+        ? themeTokens.colors
+        : defaultTokens.colors;
+      themeTokens.fonts = isObject(themeTokens.fonts)
+        ? themeTokens.fonts
+        : defaultTokens.fonts;
+      themeTokens.borderRadius = isObject(themeTokens.borderRadius)
+        ? themeTokens.borderRadius
+        : defaultTokens.borderRadius;
 
       tailwind.config = {
         theme: {
@@ -162,7 +178,7 @@
             Joyful gifting for everyone
           </div>
           <h1
-            class="text-5xl md:text-7xl font-black text-on-surface leading-[1.1] tracking-tight font-['Aclonica']"
+            class="text-5xl md:text-7xl font-black text-on-surface leading-[1.1] tracking-tight font-headline"
           >
             Stop guessing.<br />
             <span class="text-primary">Start gifting.</span>
@@ -192,9 +208,8 @@
             class="relative bg-[var(--color-surface)] p-4 rounded-[2.5rem] shadow-[var(--shadow-elevation)] border border-[var(--color-outline-variant)]"
           >
             <img
-              alt="Celebration background"
+              alt="A hand holding a present with confetti falling all around"
               class="rounded-[2rem] w-full aspect-[4/3] object-cover"
-              data-alt="People laughing and celebrating with confetti and gifts"
               src="image1.png"
             />
           </div>
@@ -205,12 +220,12 @@
     <section class="py-20 bg-surface-container-low">
       <div class="max-w-7xl mx-auto px-6 text-center">
         <h2
-          class="text-primary font-black uppercase tracking-widest text-sm mb-4 font-['Aclonica']"
+          class="text-primary font-black uppercase tracking-widest text-sm mb-4 font-headline"
         >
           Simple. Seamless. Stress-free.
         </h2>
         <h3
-          class="text-4xl md:text-5xl font-black text-on-surface mb-16 font-['Aclonica']"
+          class="text-4xl md:text-5xl font-black text-on-surface mb-16 font-headline"
         >
           Gift giving in three easy steps
         </h3>
@@ -280,7 +295,7 @@
           <div
             class="md:col-span-2 bg-gradient-to-br from-primary to-secondary p-12 rounded-[2rem] text-on-primary flex flex-col justify-center"
           >
-            <h2 class="text-4xl mb-6 font-['Aclonica']">
+            <h2 class="text-4xl mb-6 font-headline">
               Why Wishin is the gold standard
             </h2>
             <p class="text-lg opacity-90 leading-relaxed">
@@ -301,9 +316,7 @@
                 >format_list_bulleted</span
               >
             </div>
-            <h4
-              class="text-xl font-black mb-3 text-on-surface font-['Aclonica']"
-            >
+            <h4 class="text-xl font-black mb-3 text-on-surface font-headline">
               One List to Rule Them All
             </h4>
             <p class="text-on-surface-variant text-sm">
@@ -324,9 +337,7 @@
                 >person_add</span
               >
             </div>
-            <h4
-              class="text-xl font-black mb-3 text-on-surface font-['Aclonica']"
-            >
+            <h4 class="text-xl font-black mb-3 text-on-surface font-headline">
               Guest-Friendly
             </h4>
             <p class="text-on-surface-variant text-sm">
@@ -347,9 +358,7 @@
                 >do_not_disturb_on</span
               >
             </div>
-            <h4
-              class="text-xl font-black mb-3 text-on-surface font-['Aclonica']"
-            >
+            <h4 class="text-xl font-black mb-3 text-on-surface font-headline">
               No More Duplicates
             </h4>
             <p class="text-on-surface-variant text-sm">
@@ -371,7 +380,7 @@
                 >
               </div>
               <h4
-                class="text-2xl font-black mb-3 text-on-surface font-['Aclonica']"
+                class="text-2xl font-black mb-3 text-on-surface font-headline"
               >
                 Keep it a Surprise
               </h4>
@@ -398,7 +407,7 @@
     <section class="py-24 bg-[var(--color-background)]">
       <div class="max-w-7xl mx-auto px-6">
         <div class="text-center mb-16">
-          <h3 class="text-4xl font-black text-on-surface font-['Aclonica']">
+          <h3 class="text-4xl font-black text-on-surface font-headline">
             Features for Everyone
           </h3>
           <div class="w-24 h-1.5 bg-primary mx-auto mt-4 rounded-full"></div>
@@ -416,7 +425,7 @@
                   >face</span
                 >
               </div>
-              <h4 class="text-3xl font-black text-on-surface font-['Aclonica']">
+              <h4 class="text-3xl font-black text-on-surface font-headline">
                 For You (Owner)
               </h4>
             </div>
@@ -475,7 +484,7 @@
                   >groups</span
                 >
               </div>
-              <h4 class="text-3xl font-black text-on-surface font-['Aclonica']">
+              <h4 class="text-3xl font-black text-on-surface font-headline">
                 For Them (Giver)
               </h4>
             </div>
@@ -537,7 +546,7 @@
         ></div>
         <div class="relative z-10">
           <h2
-            class="text-4xl md:text-6xl font-black text-on-surface mb-6 font-['Aclonica']"
+            class="text-4xl md:text-6xl font-black text-on-surface mb-6 font-headline"
           >
             Make your next celebration better
           </h2>
@@ -559,14 +568,14 @@
     </section>
     <!-- Footer -->
     <footer
-      class="w-full rounded-t-[40px] mt-20 bg-[var(--color-background)] dark:bg-zinc-950 border-t border-[var(--color-outline-variant)] dark:border-zinc-800"
+      class="w-full rounded-t-[40px] mt-20 bg-[var(--color-background)] dark:bg-[var(--color-background)] border-t border-[var(--color-outline-variant)] dark:border-[var(--color-outline-variant)]"
     >
       <div
         class="flex flex-col md:flex-row justify-between items-center px-10 py-12 max-w-7xl mx-auto"
       >
         <div class="mb-8 md:mb-0 text-center md:text-left">
           <span
-            class="text-xl font-bold text-[#e040a0] mb-4 block font-['Aclonica']"
+            class="text-xl font-bold text-[#e040a0] mb-4 block font-headline"
             >Wishin</span
           >
           <p class="text-sm text-[var(--color-on-surface-variant)] max-w-xs">

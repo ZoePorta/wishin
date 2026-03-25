@@ -20,6 +20,10 @@ interface AuthButtonsProps {
  *
  * @param {AuthButtonsProps} props - The component props.
  * @returns {JSX.Element} The authentication buttons.
+ *
+ * @section Exceptions
+ * - Throws an error if the logout process fails in the repository layer.
+ * - Errors during session refetch or navigation are caught and logged to the console.
  */
 export const AuthButtons: React.FC<AuthButtonsProps> = ({
   onLogin,
@@ -56,6 +60,9 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
           }}
           accessibilityLabel="Logout"
           iconColor={theme.colors.primary}
+          size={24}
+          style={styles.touchTarget}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         />
       </View>
     );
@@ -75,10 +82,12 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
             }
           }}
           textColor={theme.colors.onSurfaceVariant}
-          compact
           accessible
           accessibilityRole="button"
           accessibilityLabel="Log in"
+          style={styles.touchTarget}
+          contentStyle={styles.touchTargetContent}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           Log In
         </Button>
@@ -92,7 +101,9 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
               setAuthModalVisible(true);
             }
           }}
-          style={styles.getStartedBtn}
+          style={[styles.getStartedBtn, styles.touchTarget]}
+          contentStyle={styles.touchTargetContent}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessible
           accessibilityRole="button"
           accessibilityLabel="Get started"
@@ -122,5 +133,13 @@ const styles = StyleSheet.create({
   getStartedBtn: {
     borderRadius: 100,
     paddingHorizontal: 16,
+  },
+  touchTarget: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  touchTargetContent: {
+    minHeight: 44,
   },
 });
