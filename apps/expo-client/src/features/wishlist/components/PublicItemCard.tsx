@@ -22,10 +22,14 @@ interface PublicItemCardProps {
   wishlistId: string;
   hasShownSuggestion: boolean;
   onSuggestionShown: () => void;
+  /** Whether the current user is the owner of the wishlist. */
+  isOwner: boolean;
+  /** Whether the owner has revealed spoilers. */
+  isSpoilerRevealed: boolean;
 }
 
 /**
- * Component to display a single wishlist item to VISITORS.
+ * Component to display a single wishlist item to VISITORS (and owners on public view).
  * Uses Material Design 3 components.
  *
  * @param {PublicItemCardProps} props - The component props.
@@ -33,13 +37,17 @@ interface PublicItemCardProps {
  * @param {string} props.wishlistId - The ID of the wishlist this item belongs to.
  * @param {boolean} props.hasShownSuggestion - Whether the guest suggestion has been shown.
  * @param {() => void} props.onSuggestionShown - Callback when the guest suggestion is shown.
- * @returns {JSX.Element} The rendered public item card.
+ * @param {boolean} props.isOwner - Whether the current user is the owner.
+ * @param {boolean} props.isSpoilerRevealed - Whether spoilers are revealed.
+ * @returns {JSX.Element | null} The rendered public item card, or null if hidden.
  */
 export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   item,
   wishlistId,
   hasShownSuggestion,
   onSuggestionShown,
+  isOwner,
+  isSpoilerRevealed,
 }) => {
   const theme = useTheme();
   const { userId, sessionType, loginAsGuest, isSessionReliable } = useUser();
@@ -53,6 +61,17 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
 
   const isCompleted =
     !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
+
+  const isReserved =
+    !item.isUnlimited &&
+    !isCompleted &&
+    item.reservedQuantity + item.purchasedQuantity >= item.totalQuantity;
+
+  // Completed items are hidden globally from the list (ADR 028)
+  // They are only visible to the owner if they have explicitly revealed spoilers.
+  if (isCompleted && !(isOwner && isSpoilerRevealed)) {
+    return null;
+  }
 
   const handleOpenUrl = useCallback(async (url?: string) => {
     if (!url) return;
@@ -135,6 +154,8 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     executePurchase,
     hasShownSuggestion,
     onSuggestionShown,
+    isSessionReliable,
+    isOwner,
   ]);
 
   const handleContinueAsGuest = useCallback(async () => {
@@ -170,7 +191,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
           />
         )}
 
-        {isCompleted && (
+        {isReserved && (
           <View style={styles.overlayContainer}>
             <Surface
               style={[
@@ -180,7 +201,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
               elevation={2}
             >
               <Text variant="labelLarge" style={styles.overlayLabel}>
-                COMPLETED
+                RESERVED
               </Text>
             </Surface>
           </View>
@@ -241,7 +262,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
               onPress={() => {
                 void handlePurchasePress();
               }}
-              disabled={isCompleted || purchaseLoading}
+              disabled={isCompleted || isReserved || isOwner || purchaseLoading}
               loading={purchaseLoading}
               contentStyle={commonStyles.minimumTouchTarget}
               icon="gift-outline"
