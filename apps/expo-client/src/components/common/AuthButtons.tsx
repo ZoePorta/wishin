@@ -6,6 +6,18 @@ import { useUser } from "../../contexts/UserContext";
 import { AuthModal } from "../auth/AuthModal";
 import { useAuthRepository } from "../../contexts/WishlistRepositoryContext";
 
+/**
+ * Configuration props for AuthButtons.
+ * These props allow for overriding the default authentication actions (which normally trigger an internal modal).
+ *
+ * @property {() => void} [onLogin] - Optional callback function called when the "Log In" button is pressed.
+ * If provided, this overrides the internal modal trigger for the login flow.
+ * @property {() => void} [onRegister] - Optional callback function called when the "Get Started" button is pressed.
+ * If provided, this overrides the internal modal trigger for the registration flow.
+ *
+ * @note Providing only one of these results in "mixed" control behavior, where the missing action
+ * still triggers the internal AuthModal. For fully external control, both should be provided.
+ */
 interface AuthButtonsProps {
   /** Optional override for the login action */
   onLogin?: () => void;
@@ -37,16 +49,21 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
   const [authMode, setAuthMode] = React.useState<"login" | "register">("login");
 
   // Determine if the component is being used in controlled vs uncontrolled mode.
-  // We require both or neither to avoid mixed behavior.
-  const isControlled = onLogin !== undefined || onRegister !== undefined;
+  // We require both to be provided to consider the component "fully controlled" externally.
+  const isControlled = onLogin !== undefined && onRegister !== undefined;
 
   React.useEffect(() => {
-    if (isControlled && (!onLogin || !onRegister)) {
+    // Fire warning only when exactly one callback is provided (partial control).
+    const isPartiallyControlled =
+      (onLogin !== undefined && onRegister === undefined) ||
+      (onLogin === undefined && onRegister !== undefined);
+
+    if (isPartiallyControlled) {
       console.warn(
-        "AuthButtons: Detected partial external control. Both 'onLogin' and 'onRegister' should be provided for fully external behavior. Falling back to mixed behavior is discouraged.",
+        "AuthButtons: Detected partial external control. Both 'onLogin' and 'onRegister' should be provided for fully external behavior. Falling back to mixed behavior for the missing handler.",
       );
     }
-  }, [isControlled, onLogin, onRegister]);
+  }, [onLogin, onRegister]);
 
   const handleLogout = async () => {
     try {
