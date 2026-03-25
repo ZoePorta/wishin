@@ -1,5 +1,5 @@
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
 import {
   Text,
@@ -13,6 +13,8 @@ import { useWishlist } from "../../src/hooks/useWishlist";
 import type { UseWishlistReturn } from "../../src/hooks/useWishlist";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { PublicItemCard } from "../../src/features/wishlist/components/PublicItemCard";
+import { useUser } from "../../src/contexts/UserContext";
+import { SpoilerOverlay } from "../../src/features/wishlist/components/SpoilerOverlay";
 
 /**
  * Display the details of a specific wishlist.
@@ -25,7 +27,20 @@ export default function WishlistDetail() {
   const { wishlist, loading, error, refetch }: UseWishlistReturn =
     useWishlist(id);
   const theme = useTheme();
+  const { userId, isSessionReliable } = useUser();
   const [hasShownSuggestion, setHasShownSuggestion] = useState(false);
+  const [isSpoilerRevealed, setIsSpoilerRevealed] = useState(false);
+
+  const isOwner = useMemo(() => {
+    // Return false while session resolution is indeterminate to prevent temporary owner UI exposure (ADR 027)
+    if (!isSessionReliable) return false;
+    return !!userId && !!wishlist && userId === wishlist.ownerId;
+  }, [userId, wishlist, isSessionReliable]);
+
+  // Reset spoiler revealed state when switching between wishlists (ADR 027 reinforcement)
+  useEffect(() => {
+    setIsSpoilerRevealed(false);
+  }, [id]);
 
   const handleSuggestionShown = useCallback(() => {
     setHasShownSuggestion(true);
@@ -64,9 +79,17 @@ export default function WishlistDetail() {
         wishlistId={wishlist?.id ?? ""}
         hasShownSuggestion={hasShownSuggestion}
         onSuggestionShown={handleSuggestionShown}
+        isOwner={isOwner}
+        isSpoilerRevealed={isSpoilerRevealed}
       />
     ),
-    [wishlist, hasShownSuggestion, handleSuggestionShown],
+    [
+      wishlist,
+      hasShownSuggestion,
+      handleSuggestionShown,
+      isOwner,
+      isSpoilerRevealed,
+    ],
   );
 
   if (loading) {
@@ -141,6 +164,12 @@ export default function WishlistDetail() {
           </View>
         }
         showsVerticalScrollIndicator={false}
+      />
+      <SpoilerOverlay
+        isVisible={isOwner && !isSpoilerRevealed}
+        onReveal={() => {
+          setIsSpoilerRevealed(true);
+        }}
       />
     </Surface>
   );
