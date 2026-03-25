@@ -86,7 +86,7 @@ function RootLayout() {
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <Stack
         screenOptions={{
-          header: () => <Header />,
+          header: (props) => <Header {...props} />,
           contentStyle: {
             backgroundColor: theme.colors.background,
           },
@@ -96,7 +96,10 @@ function RootLayout() {
           name="index"
           options={{
             title: "Welcome to Wishin",
-            headerShown: Platform.OS !== "web" || sessionType === "registered",
+            headerShown:
+              Platform.OS !== "web" ||
+              sessionType === "registered" ||
+              sessionType === null,
           }}
         />
         <Stack.Screen name="wishlist/[id]" options={{ title: "Wishlist" }} />

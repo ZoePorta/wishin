@@ -75,7 +75,6 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
             }
           }}
           textColor={theme.colors.onSurfaceVariant}
-          labelStyle={styles.loginLabel}
           compact
           accessible
           accessibilityRole="button"
@@ -94,7 +93,6 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
             }
           }}
           style={styles.getStartedBtn}
-          labelStyle={styles.getStartedLabel}
           accessible
           accessibilityRole="button"
           accessibilityLabel="Get started"
@@ -121,16 +119,8 @@ const styles = StyleSheet.create({
     gap: 24,
     paddingRight: 8,
   },
-  loginLabel: {
-    fontWeight: "700",
-    fontSize: 16,
-  },
   getStartedBtn: {
     borderRadius: 100,
     paddingHorizontal: 16,
-  },
-  getStartedLabel: {
-    fontWeight: "900",
-    fontSize: 14,
   },
 });
