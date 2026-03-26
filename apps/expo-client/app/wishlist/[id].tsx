@@ -15,6 +15,7 @@ import type { WishlistItemOutput } from "@wishin/domain";
 import { PublicItemCard } from "../../src/features/wishlist/components/PublicItemCard";
 import { useUser } from "../../src/contexts/UserContext";
 import { SpoilerOverlay } from "../../src/features/wishlist/components/SpoilerOverlay";
+import { Layout } from "../../src/constants/Layout";
 
 /**
  * Display the details of a specific wishlist.
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
-    marginTop: Platform.OS === "web" ? 70 : 0,
+    marginTop: Platform.OS === "web" ? Layout.headerHeightWeb : 0,
     marginBottom: 32,
   },
   headerTitle: {

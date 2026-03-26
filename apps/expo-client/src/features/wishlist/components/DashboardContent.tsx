@@ -19,6 +19,7 @@ interface DashboardContentProps {
  * @param {WishlistOutput} props.wishlist - The wishlist object containing items to display.
  * @param {function} props.onRemoveItem - Callback to handle item removal.
  * @param {function} props.onEditItem - Callback to handle item editing.
+ * @param {React.ReactElement | null} [props.ListHeaderComponent] - Optional header element rendered at the top of the list.
  * @returns {JSX.Element} The rendered dashboard content.
  */
 export const DashboardContent: React.FC<DashboardContentProps> = ({

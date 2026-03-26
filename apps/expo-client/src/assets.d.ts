@@ -1,3 +1,5 @@
+import { ImageSourcePropType } from "react-native";
+
 declare global {
   const Sentry: {
     addBreadcrumb: (breadcrumb: {
@@ -12,21 +14,23 @@ declare global {
 }
 
 declare module "*.svg" {
-  const content: import("react-native").ImageSourcePropType;
+  const content: ImageSourcePropType;
   export default content;
 }
 
 declare module "*.png" {
-  const content: import("react-native").ImageSourcePropType;
+  const content: ImageSourcePropType;
   export default content;
 }
 
 declare module "*.jpg" {
-  const content: import("react-native").ImageSourcePropType;
+  const content: ImageSourcePropType;
   export default content;
 }
 
 declare module "*.jpeg" {
-  const content: import("react-native").ImageSourcePropType;
+  const content: ImageSourcePropType;
   export default content;
 }
+
+export {};

@@ -1,3 +1,4 @@
+import React from "react";
 import { IconButton, useTheme } from "react-native-paper";
 import { type AppTheme } from "../../theme/theme";
 import { MotiView, AnimatePresence } from "moti";
@@ -14,6 +15,7 @@ import {
   Text,
 } from "react-native";
 import { BlurView } from "expo-blur";
+import { Layout } from "../../constants/Layout";
 import Logo from "../../../assets/wishinlogo.svg";
 
 interface HeaderProps extends Partial<NativeStackHeaderProps> {
@@ -35,7 +37,7 @@ export const Header = ({
   back,
 }: HeaderProps) => {
   const theme = useTheme<AppTheme>();
-  const styles = makeStyles(theme);
+  const styles = React.useMemo(() => makeStyles(theme), [theme]);
   const isBackAvailable = !!back && !!navigation;
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768; // Tablet and Desktop
@@ -107,10 +109,13 @@ export const Header = ({
                     styles.logoPressable,
                     { opacity: pressed ? 0.7 : 1 },
                   ]}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
                   <View style={styles.brandingWrapper}>
                     <Image
-                      source={Logo}
+                      source={
+                        Logo as unknown as import("react-native").ImageSourcePropType
+                      }
                       style={styles.logo}
                       resizeMode="contain"
                     />
@@ -146,7 +151,7 @@ const makeStyles = (theme: AppTheme) =>
   StyleSheet.create({
     nav: {
       paddingHorizontal: 24,
-      height: 70,
+      height: Layout.headerHeightWeb,
       justifyContent: "center",
       zIndex: 100,
       borderBottomWidth: 1,

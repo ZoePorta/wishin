@@ -12,6 +12,7 @@ import type { Theme as NavigationTheme } from "@react-navigation/native";
 import materialTheme from "./material-theme.json";
 
 import "react-native-paper";
+import { addAlpha } from "../utils/colors";
 
 declare module "react-native-paper" {
   export interface MD3Colors {
@@ -259,9 +260,7 @@ function mergeAndValidateTheme(
         (overrides as Record<string, string | undefined>).surfaceBright ??
         (materialScheme as Record<string, string | undefined>).surfaceBright ??
         finalSurface,
-      surfaceGlass: paperTheme.dark
-        ? "rgba(20, 20, 20, 0.5)"
-        : "rgba(252, 247, 255, 0.5)",
+      surfaceGlass: addAlpha(finalSurface, 0.5),
       elevation: {
         ...paperTheme.colors.elevation,
         level1: finalSurface,

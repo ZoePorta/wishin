@@ -2,6 +2,7 @@ import React from "react";
 import { View, StyleSheet, Platform } from "react-native";
 import { Text, Divider } from "react-native-paper";
 import { type WishlistOutput } from "@wishin/domain";
+import { Layout } from "../../../constants/Layout";
 
 interface DashboardHeaderProps {
   wishlist: WishlistOutput;
@@ -41,7 +42,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 32,
-    marginTop: Platform.OS === "web" ? 70 : 0,
+    marginTop: Platform.OS === "web" ? Layout.headerHeightWeb : 0,
   },
   leftBlock: {
     flex: 1,

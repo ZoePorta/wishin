@@ -1,16 +1,11 @@
 import React from "react";
-import {
-  StyleSheet,
-  View,
-  Text,
-  useWindowDimensions,
-  Pressable,
-} from "react-native";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { Button, IconButton, useTheme } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useUser } from "../../contexts/UserContext";
 import { AuthModal } from "../auth/AuthModal";
 import { useAuthRepository } from "../../contexts/WishlistRepositoryContext";
+import { addAlpha } from "../../utils/colors";
 
 /**
  * Configuration props for AuthButtons.
@@ -55,8 +50,11 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
   const authRepo = useAuthRepository();
   const [authModalVisible, setAuthModalVisible] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<"login" | "register">("login");
-  const [isLoginHovered, setIsLoginHovered] = React.useState(false);
-  const [isLoginPressed, setIsLoginPressed] = React.useState(false);
+
+  const isRegistered = isSessionReliable && sessionType === "registered";
+  const isAuthenticated =
+    isSessionReliable &&
+    (sessionType === "registered" || sessionType === "incomplete");
 
   // Determine if the component is being used in controlled vs uncontrolled mode.
   // We require both to be provided to consider the component "fully controlled" externally.
@@ -103,24 +101,22 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
     }
   };
 
-  const isAuthenticated =
-    isSessionReliable &&
-    (sessionType === "registered" || sessionType === "incomplete");
-
   if (isAuthenticated) {
     return (
       <View style={styles.container}>
-        <IconButton
-          icon="heart-outline"
-          onPress={() => {
-            router.push("/owner/dashboard");
-          }}
-          accessibilityLabel="My wishlist"
-          iconColor={theme.colors.primary}
-          size={24}
-          style={styles.touchTarget}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        />
+        {isRegistered && (
+          <IconButton
+            icon="heart-outline"
+            onPress={() => {
+              router.push("/owner/dashboard");
+            }}
+            accessibilityLabel="My wishlist"
+            iconColor={theme.colors.primary}
+            size={24}
+            style={styles.touchTarget}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          />
+        )}
         <IconButton
           icon="logout"
           onPress={() => {
@@ -139,41 +135,19 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
   return (
     <>
       <View style={[styles.container, isMobileS && styles.containerMobileS]}>
-        <Pressable
+        <Button
+          mode="text"
           onPress={handleLoginPress}
-          onPressIn={() => {
-            setIsLoginPressed(true);
-          }}
-          onPressOut={() => {
-            setIsLoginPressed(false);
-          }}
-          onHoverIn={() => {
-            setIsLoginHovered(true);
-          }}
-          onHoverOut={() => {
-            setIsLoginHovered(false);
-          }}
           accessible
           accessibilityRole="button"
           accessibilityLabel="Log in"
-          style={styles.loginRipple}
+          textColor={theme.colors.onSurfaceVariant}
+          rippleColor={addAlpha(theme.colors.primary, 0.12)}
+          style={styles.touchTarget}
+          labelStyle={styles.loginText}
         >
-          <View style={styles.loginContent}>
-            <Text
-              style={[
-                styles.loginText,
-                {
-                  color:
-                    isLoginPressed || isLoginHovered
-                      ? theme.colors.primary
-                      : theme.colors.onSurfaceVariant,
-                },
-              ]}
-            >
-              Log In
-            </Text>
-          </View>
-        </Pressable>
+          Log In
+        </Button>
         <Button
           mode="contained"
           onPress={handleRegisterPress}
