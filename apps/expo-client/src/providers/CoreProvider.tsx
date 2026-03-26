@@ -45,6 +45,7 @@ const OBSERVABILITY: ObservabilityService = {
     if (process.env.NODE_ENV === "production") {
       try {
         if (typeof Sentry !== "undefined") {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
           Sentry.addBreadcrumb({ message, category, data });
         } else {
           console.warn(`[Sentry Missing] ${category ?? "info"}: ${message}`);
@@ -60,6 +61,7 @@ const OBSERVABILITY: ObservabilityService = {
     if (process.env.NODE_ENV === "production") {
       try {
         if (typeof posthog !== "undefined") {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
           posthog.capture(name, props);
         } else {
           console.warn(`[PostHog Missing] ${name}`);
