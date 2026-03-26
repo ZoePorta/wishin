@@ -10,7 +10,6 @@ import { AppErrorBoundary } from "../src/components/core/AppErrorBoundary";
 import { ConfigErrorScreen } from "../src/components/core/ConfigErrorScreen";
 import { GeneralErrorScreen } from "../src/components/core/GeneralErrorScreen";
 import { CoreProvider } from "../src/providers/CoreProvider";
-import { useUser } from "../src/contexts/UserContext";
 import { Header } from "../src/components/layout/Header";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
@@ -79,7 +78,6 @@ export default function Root() {
 function RootLayout() {
   const theme = useTheme<AppTheme>();
   const colorScheme = useColorScheme();
-  const { sessionType } = useUser();
 
   return (
     <Surface style={styles.container}>
@@ -96,10 +94,7 @@ function RootLayout() {
           name="index"
           options={{
             title: "Welcome to Wishin",
-            headerShown:
-              Platform.OS !== "web" ||
-              sessionType === "registered" ||
-              sessionType === null,
+            headerShown: true,
           }}
         />
         <Stack.Screen name="wishlist/[id]" options={{ title: "Wishlist" }} />

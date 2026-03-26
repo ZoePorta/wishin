@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { StyleSheet, View } from "react-native";
-import { Header } from "../../components/layout/Header";
 import { themeTokens } from "../../theme/themeConfig";
 import { AuthModal } from "../../components/auth/AuthModal";
 
@@ -43,14 +42,6 @@ export const LandingPage = () => {
 
   return (
     <View style={styles.container}>
-      <Header
-        onLogin={() => {
-          handleOpenAuth("login");
-        }}
-        onGetStarted={() => {
-          handleOpenAuth("register");
-        }}
-      />
       <View style={styles.content}>
         <iframe
           src={`/landing-content.html?${themeParams}`}
@@ -77,11 +68,6 @@ const styles = StyleSheet.create({
     flexDirection: "column",
   },
   content: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
+    flex: 1,
   },
 });

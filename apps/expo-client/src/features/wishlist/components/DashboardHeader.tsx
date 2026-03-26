@@ -1,6 +1,6 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
-import { Text, Surface } from "react-native-paper";
+import { View, StyleSheet, Platform } from "react-native";
+import { Text, Divider } from "react-native-paper";
 import { type WishlistOutput } from "@wishin/domain";
 
 interface DashboardHeaderProps {
@@ -19,18 +19,19 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   wishlist,
 }) => {
   return (
-    <Surface style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.leftBlock}>
         <Text variant="headlineMedium" style={styles.title}>
           {wishlist.title}
         </Text>
         {wishlist.description && (
-          <Text variant="bodyMedium" style={styles.description}>
+          <Text variant="bodyLarge" style={styles.description}>
             {wishlist.description}
           </Text>
         )}
+        <Divider style={styles.divider} />
       </View>
-    </Surface>
+    </View>
   );
 };
 
@@ -39,18 +40,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    padding: 16,
-    paddingBottom: 8,
+    marginBottom: 32,
+    marginTop: Platform.OS === "web" ? 70 : 0,
   },
   leftBlock: {
     flex: 1,
-    marginRight: 16,
   },
   title: {
-    fontWeight: "bold",
+    fontWeight: "700",
   },
   description: {
-    marginTop: 4,
-    opacity: 0.7,
+    marginTop: 8,
+    lineHeight: 24,
+  },
+  divider: {
+    marginTop: 24,
   },
 });

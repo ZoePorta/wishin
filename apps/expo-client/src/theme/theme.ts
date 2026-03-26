@@ -22,6 +22,7 @@ declare module "react-native-paper" {
     surfaceContainerLowest: string;
     surfaceDim: string;
     surfaceBright: string;
+    surfaceGlass: string;
   }
 }
 
@@ -62,6 +63,10 @@ export interface AppTheme extends MD3Theme {
      * A brighter variant of the surface color.
      */
     surfaceBright: string;
+    /**
+     * A semi-transparent surface color for glass/blur effects.
+     */
+    surfaceGlass: string;
   };
 }
 
@@ -254,6 +259,9 @@ function mergeAndValidateTheme(
         (overrides as Record<string, string | undefined>).surfaceBright ??
         (materialScheme as Record<string, string | undefined>).surfaceBright ??
         finalSurface,
+      surfaceGlass: paperTheme.dark
+        ? "rgba(20, 20, 20, 0.5)"
+        : "rgba(252, 247, 255, 0.5)",
       elevation: {
         ...paperTheme.colors.elevation,
         level1: finalSurface,
@@ -281,8 +289,11 @@ function mergeAndValidateTheme(
     "surfaceContainerLowest",
     "surfaceDim",
     "surfaceBright",
+    "surfaceGlass",
   ] as const;
-  const missingColors = requiredColors.filter((key) => !merged.colors[key]);
+  const missingColors = requiredColors.filter(
+    (key) => !merged.colors[key as keyof typeof merged.colors],
+  );
 
   const requiredElevations = [
     "level1",

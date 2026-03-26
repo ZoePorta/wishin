@@ -1,5 +1,11 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Text,
+  useWindowDimensions,
+  Pressable,
+} from "react-native";
 import { Button, IconButton, useTheme } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useUser } from "../../contexts/UserContext";
@@ -43,10 +49,14 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
 }) => {
   const theme = useTheme();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isMobileS = width <= 360;
   const { sessionType, refetch, isSessionReliable } = useUser();
   const authRepo = useAuthRepository();
   const [authModalVisible, setAuthModalVisible] = React.useState(false);
   const [authMode, setAuthMode] = React.useState<"login" | "register">("login");
+  const [isLoginHovered, setIsLoginHovered] = React.useState(false);
+  const [isLoginPressed, setIsLoginPressed] = React.useState(false);
 
   // Determine if the component is being used in controlled vs uncontrolled mode.
   // We require both to be provided to consider the component "fully controlled" externally.
@@ -101,12 +111,23 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
     return (
       <View style={styles.container}>
         <IconButton
+          icon="heart-outline"
+          onPress={() => {
+            router.push("/owner/dashboard");
+          }}
+          accessibilityLabel="My wishlist"
+          iconColor={theme.colors.primary}
+          size={24}
+          style={styles.touchTarget}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        />
+        <IconButton
           icon="logout"
           onPress={() => {
             void handleLogout();
           }}
           accessibilityLabel="Logout"
-          iconColor={theme.colors.primary}
+          iconColor={theme.colors.onSurfaceVariant}
           size={24}
           style={styles.touchTarget}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -117,25 +138,55 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
 
   return (
     <>
-      <View style={styles.container}>
-        <Button
-          mode="text"
+      <View style={[styles.container, isMobileS && styles.containerMobileS]}>
+        <Pressable
           onPress={handleLoginPress}
-          textColor={theme.colors.onSurfaceVariant}
+          onPressIn={() => {
+            setIsLoginPressed(true);
+          }}
+          onPressOut={() => {
+            setIsLoginPressed(false);
+          }}
+          onHoverIn={() => {
+            setIsLoginHovered(true);
+          }}
+          onHoverOut={() => {
+            setIsLoginHovered(false);
+          }}
           accessible
           accessibilityRole="button"
           accessibilityLabel="Log in"
-          style={styles.touchTarget}
-          contentStyle={styles.touchTargetContent}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={styles.loginRipple}
         >
-          Log In
-        </Button>
+          <View style={styles.loginContent}>
+            <Text
+              style={[
+                styles.loginText,
+                {
+                  color:
+                    isLoginPressed || isLoginHovered
+                      ? theme.colors.primary
+                      : theme.colors.onSurfaceVariant,
+                },
+              ]}
+            >
+              Log In
+            </Text>
+          </View>
+        </Pressable>
         <Button
           mode="contained"
           onPress={handleRegisterPress}
           style={[styles.getStartedBtn, styles.touchTarget]}
-          contentStyle={styles.touchTargetContent}
+          contentStyle={[
+            styles.touchTargetContent,
+            styles.getStartedContent,
+            isMobileS && styles.getStartedContentMobileS,
+          ]}
+          labelStyle={[
+            styles.loginText,
+            isMobileS && styles.getStartedLabelMobileS,
+          ]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessible
           accessibilityRole="button"
@@ -165,9 +216,22 @@ const styles = StyleSheet.create({
     gap: 24,
     paddingRight: 8,
   },
+  containerMobileS: {
+    gap: 12,
+    paddingRight: 0,
+  },
   getStartedBtn: {
     borderRadius: 100,
+  },
+  getStartedContent: {
     paddingHorizontal: 16,
+  },
+  getStartedContentMobileS: {
+    paddingHorizontal: 0,
+  },
+  getStartedLabelMobileS: {
+    fontSize: 13,
+    marginHorizontal: 8,
   },
   touchTarget: {
     minWidth: 44,
@@ -176,5 +240,20 @@ const styles = StyleSheet.create({
   },
   touchTargetContent: {
     minHeight: 44,
+  },
+  loginRipple: {
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  loginContent: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 8,
+  },
+  loginText: {
+    fontWeight: "700",
+    fontSize: 16,
   },
 });

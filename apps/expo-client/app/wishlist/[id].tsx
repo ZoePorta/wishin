@@ -1,6 +1,6 @@
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useMemo, useCallback, useState, useEffect } from "react";
-import { View, FlatList, StyleSheet } from "react-native";
+import { View, FlatList, StyleSheet, Platform } from "react-native";
 import {
   Text,
   ActivityIndicator,
@@ -190,6 +190,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
+    marginTop: Platform.OS === "web" ? 70 : 0,
     marginBottom: 32,
   },
   headerTitle: {
