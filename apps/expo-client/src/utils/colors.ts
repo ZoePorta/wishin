@@ -16,7 +16,8 @@ export const addAlpha = (color: string, alpha: number): string => {
     b = 0;
 
   // Handle Hex
-  if (cleanColor.startsWith("#") || /^[0-9a-fA-F]{3,6}$/.test(cleanColor)) {
+  const hexRegex = /^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
+  if (hexRegex.test(cleanColor)) {
     const hex = cleanColor.startsWith("#")
       ? cleanColor.substring(1)
       : cleanColor;

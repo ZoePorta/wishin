@@ -47,4 +47,14 @@ describe("addAlpha", () => {
     expect(addAlpha("#ffffff", -0.5)).toBe("rgba(255, 255, 255, 0)");
     expect(addAlpha("#ffffff", 1.5)).toBe("rgba(255, 255, 255, 1)");
   });
+
+  it("should return original on invalid hex characters", () => {
+    expect(addAlpha("#gggggg", 0.5)).toBe("#gggggg");
+    expect(addAlpha("ggg", 0.5)).toBe("ggg");
+  });
+
+  it("should return original on invalid hex length", () => {
+    expect(addAlpha("#abcd", 0.5)).toBe("#abcd");
+    expect(addAlpha("abcde", 0.5)).toBe("abcde");
+  });
 });
