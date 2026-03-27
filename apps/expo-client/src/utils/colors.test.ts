@@ -38,4 +38,13 @@ describe("addAlpha", () => {
   it("should handle empty string with black fallback", () => {
     expect(addAlpha("", 0.5)).toBe("rgba(0, 0, 0, 0.5)");
   });
+
+  it("should handle whitespace-only string with black fallback", () => {
+    expect(addAlpha("   ", 0.5)).toBe("rgba(0, 0, 0, 0.5)");
+  });
+
+  it("should clamp alpha between 0 and 1", () => {
+    expect(addAlpha("#ffffff", -0.5)).toBe("rgba(255, 255, 255, 0)");
+    expect(addAlpha("#ffffff", 1.5)).toBe("rgba(255, 255, 255, 1)");
+  });
 });

@@ -6,12 +6,14 @@
  * @returns {string} The rgba color string or the original color if parsing fails.
  */
 export const addAlpha = (color: string, alpha: number): string => {
-  if (!color) return `rgba(0, 0, 0, ${alpha.toString()})`;
+  const cleanColor = (color || "").trim();
+  const clampedAlpha = Math.max(0, Math.min(1, alpha));
+
+  if (!cleanColor) return `rgba(0, 0, 0, ${clampedAlpha.toString()})`;
 
   let r = 0,
     g = 0,
     b = 0;
-  const cleanColor = color.trim();
 
   // Handle Hex
   if (cleanColor.startsWith("#") || /^[0-9a-fA-F]{3,6}$/.test(cleanColor)) {
@@ -32,7 +34,7 @@ export const addAlpha = (color: string, alpha: number): string => {
       return color;
     }
 
-    return `rgba(${Math.round(r).toString()}, ${Math.round(g).toString()}, ${Math.round(b).toString()}, ${alpha.toString()})`;
+    return `rgba(${Math.round(r).toString()}, ${Math.round(g).toString()}, ${Math.round(b).toString()}, ${clampedAlpha.toString()})`;
   }
 
   // Handle rgb/rgba
@@ -43,7 +45,7 @@ export const addAlpha = (color: string, alpha: number): string => {
     r = parseInt(rgbMatch[1], 10);
     g = parseInt(rgbMatch[2], 10);
     b = parseInt(rgbMatch[3], 10);
-    return `rgba(${r.toString()}, ${g.toString()}, ${b.toString()}, ${alpha.toString()})`;
+    return `rgba(${r.toString()}, ${g.toString()}, ${b.toString()}, ${clampedAlpha.toString()})`;
   }
 
   // Final fallback: return original color (might not work for transparency, but won't be black)

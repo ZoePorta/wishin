@@ -215,17 +215,6 @@ const styles = StyleSheet.create({
   touchTargetContent: {
     minHeight: 44,
   },
-  loginRipple: {
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  loginContent: {
-    minWidth: 44,
-    minHeight: 44,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 8,
-  },
   loginText: {
     fontWeight: "700",
     fontSize: 16,
