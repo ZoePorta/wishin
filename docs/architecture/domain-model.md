@@ -49,6 +49,7 @@ classDiagram
         +number? itemPrice
         +string? itemCurrency
         +string? itemDescription
+        +string? itemImageUrl
         +string? ownerUsername
         +TransactionStatus status
         +number quantity
@@ -170,6 +171,7 @@ When a transaction is initiated (`createReservation` or `createPurchase`), the c
 | `itemName`           | Reservation/Purchase Creation | Identifies what was targeted at the time of the action   |
 | `itemPrice/Currency` | Reservation/Purchase Creation | Preserves the financial context of the gift              |
 | `itemDescription`    | Reservation/Purchase Creation | Provides additional item context for the history view    |
+| `itemImageUrl`       | Reservation/Purchase Creation | Preserves the visual context of the item for history     |
 | `ownerUsername`      | Reservation/Purchase Creation | Identifies the recipient for the Buyer's gifting history |
 
 #### 4.6.2 Immutability & Consistency

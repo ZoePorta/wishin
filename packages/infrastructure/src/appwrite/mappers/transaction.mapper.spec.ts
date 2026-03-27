@@ -17,6 +17,7 @@ describe("TransactionMapper", () => {
     itemPrice: 100,
     itemCurrency: "USD",
     itemDescription: "Test description",
+    itemImageUrl: "https://example.com/image.png",
     ownerUsername: "testuser",
     status: TransactionStatus.RESERVED,
     quantity: 1,
@@ -36,6 +37,7 @@ describe("TransactionMapper", () => {
         itemPrice: validProps.itemPrice,
         itemCurrency: validProps.itemCurrency,
         itemDescription: validProps.itemDescription,
+        itemImageUrl: validProps.itemImageUrl,
         ownerUsername: validProps.ownerUsername,
         status: validProps.status,
         quantity: validProps.quantity,
@@ -61,6 +63,7 @@ describe("TransactionMapper", () => {
         itemPrice: 100,
         itemCurrency: "USD",
         itemDescription: "Test description",
+        itemImageUrl: "https://example.com/image.png",
         ownerUsername: "testuser",
         status: TransactionStatus.RESERVED,
         quantity: 1,
@@ -78,6 +81,7 @@ describe("TransactionMapper", () => {
       expect(result.itemPrice).toBe(100);
       expect(result.itemCurrency).toBe("USD");
       expect(result.itemDescription).toBe("Test description");
+      expect(result.itemImageUrl).toBe("https://example.com/image.png");
       expect(result.ownerUsername).toBe("testuser");
       // Verify timestamps are correctly mapped from $ fields
       expect(result.createdAt.toISOString()).toBe(now.toISOString());

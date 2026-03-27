@@ -237,6 +237,7 @@ const schema: CollectionSchema[] = [
       { key: "itemPrice", type: "double", required: false },
       { key: "itemCurrency", type: "string", required: false, size: 3 },
       { key: "itemDescription", type: "string", required: false, size: 200 },
+      { key: "itemImageUrl", type: "string", required: false, size: 2048 },
       { key: "ownerUsername", type: "string", required: false, size: 30 },
     ],
   },
