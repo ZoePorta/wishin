@@ -1,12 +1,12 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { StyleSheet, View, Platform } from "react-native";
 import { Text, Surface, ActivityIndicator, useTheme } from "react-native-paper";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 import { useUser } from "../src/contexts/UserContext";
 import { AuthPanel } from "../src/components/auth/AuthPanel";
 import { useAuthRepository } from "../src/contexts/WishlistRepositoryContext";
 import { validateRedirect } from "../src/utils/url";
-import { LandingPage } from "../src/features/landing/LandingPage";
+import { LandingPage } from "../src/features/landing/LandingPage.web";
 
 /**
  * Root screen for the Expo client.
@@ -115,6 +115,7 @@ export default function Index() {
     <Surface
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
+      <Stack.Screen options={{ headerShown: true }} />
       <View style={styles.header}>
         <Text
           variant="displayLarge"

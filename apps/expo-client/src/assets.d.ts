@@ -13,11 +13,6 @@ declare global {
   };
 }
 
-declare module "*.svg" {
-  const content: ImageSourcePropType;
-  export default content;
-}
-
 declare module "*.png" {
   const content: ImageSourcePropType;
   export default content;

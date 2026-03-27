@@ -93,11 +93,10 @@ function RootLayout() {
         <Stack.Screen
           name="index"
           options={{
-            title: "Welcome to Wishin",
             headerShown: true,
           }}
         />
-        <Stack.Screen name="wishlist/[id]" options={{ title: "Wishlist" }} />
+        <Stack.Screen name="wishlist/[id]" options={{}} />
       </Stack>
     </Surface>
   );

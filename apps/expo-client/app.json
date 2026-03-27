@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "app",
+    "name": "Wishin",
     "slug": "app",
     "scheme": "wishin",
     "plugins": [
@@ -36,7 +36,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon.png"
     }
   }
 }

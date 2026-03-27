@@ -140,7 +140,6 @@ export default function WishlistDetail() {
     >
       <Stack.Screen
         options={{
-          title: wishlist.title,
           headerStyle: { backgroundColor: theme.colors.surface },
           headerTintColor: theme.colors.onSurface,
         }}
