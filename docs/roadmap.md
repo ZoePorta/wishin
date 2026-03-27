@@ -133,7 +133,7 @@
   - **Triggers**: `WishlistItem` metadata updates or `Profile` username changes.
   - **Sync Rules**:
     - `ownerUsername`: Always synchronized across all transactions (informative).
-    - `itemName`, `itemPrice`, `itemCurrency`, `itemDescription`:
+    - `itemName`, `itemPrice`, `itemCurrency`, `itemDescription`, `itemImageUrl`:
       - **Sync-able**: Only for transactions in `RESERVED` status.
       - **Immutable**: Frozen for `PURCHASED` status to preserve audit/financial integrity of the purchase.
   - **Operational Strategy**: Use paginated background processing with exponential backoff and idempotent retries to handle items with large transaction volumes (popular items).

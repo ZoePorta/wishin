@@ -11,6 +11,7 @@ export interface TransactionDocument extends Models.Document {
   itemPrice: number | null;
   itemCurrency: string | null;
   itemDescription: string | null;
+  itemImageUrl: string | null;
   ownerUsername: string | null;
   status: TransactionStatus;
   quantity: number;
@@ -43,6 +44,7 @@ export const TransactionMapper = {
       itemPrice: props.itemPrice,
       itemCurrency: props.itemCurrency,
       itemDescription: props.itemDescription,
+      itemImageUrl: props.itemImageUrl,
       ownerUsername: props.ownerUsername,
       status: props.status,
       quantity: props.quantity,
@@ -70,6 +72,7 @@ export const TransactionMapper = {
       itemPrice: data.itemPrice,
       itemCurrency: data.itemCurrency,
       itemDescription: data.itemDescription,
+      itemImageUrl: data.itemImageUrl,
       ownerUsername: data.ownerUsername,
       status: data.status,
       quantity: data.quantity,

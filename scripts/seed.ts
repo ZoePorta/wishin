@@ -72,6 +72,12 @@ interface TransactionData {
   userId?: string;
   status: TransactionStatus;
   quantity: number;
+  itemName?: string;
+  itemPrice?: number;
+  itemCurrency?: string;
+  itemDescription?: string;
+  ownerUsername?: string;
+  itemImageUrl?: string;
 }
 type TransactionRow = TransactionData & Models.Row;
 
@@ -307,6 +313,12 @@ async function seed() {
         userId: user2.$id,
         status: TransactionStatus.PURCHASED,
         quantity: 1,
+        itemName: item7.name,
+        itemPrice: item7.price,
+        itemCurrency: item7.currency,
+        itemDescription: item7.description,
+        ownerUsername: user1.username,
+        itemImageUrl: item7.imageUrl,
       },
     });
     // Item 1: Anonymous purchase (for validation)
@@ -319,6 +331,12 @@ async function seed() {
         userId: "550e8400-e29b-41d4-a716-44665544000x", // Maria (Anonymous)
         status: TransactionStatus.PURCHASED,
         quantity: 1,
+        itemName: item1.name,
+        itemPrice: item1.price,
+        itemCurrency: item1.currency,
+        itemDescription: item1.description,
+        ownerUsername: user1.username,
+        itemImageUrl: item1.imageUrl,
       },
     });
 
