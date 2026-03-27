@@ -61,68 +61,67 @@
 ### 3.4 UI & Presentation
 
 - [x] Owner Dashboard: Form for wishlist creation and item management.
-- [ ] **UI Polish:** Refine styles, add micro-animations, and improve layout for the owner dashboard.
 - [x] **Image Upload — Infrastructure & Use Cases:** Core storage repository and domain logic.
-- [ ] **Image Upload — UI & Integration Testing:** User interface integration and end-to-end verification.
+- [x] **Image Upload — UI & Integration Testing:** User interface integration and end-to-end verification.
 
 ---
 
 ## Phase 4: Gifting & Direct Purchase (MVP Focus)
 
-### 4.1 Domain Refinement
+### 4.1 Domain & Application (TDD)
 
 - [x] Define `TransactionRepository` interface.
 - [x] Refine `WishlistItem` invariants for atomic stock updates.
-
-### 4.2 Application Layer (TDD)
-
 - [x] **DTOs Definition:** `PurchaseItemInput` (Main focus), `UndoPurchaseInput`.
-- [ ] **TDD - Gifting Cycles (Direct Purchase):**
+- [x] **TDD - Gifting Cycles (Direct Purchase):**
   - [x] **DirectPurchase:** RED (Anonymous/Registered) -> GREEN (Immediate stock update).
-  - [ ] **Undo (Immediate):** RED (Hard delete within window) -> GREEN (Implementation).
+  - [x] **Undo (Immediate):** RED (Hard delete within window) -> GREEN (Implementation).
 
-### 4.3 Infrastructure Layer (Appwrite)
+### 4.2 Infrastructure Layer (Appwrite)
 
 - [x] **Schema Definition:** Create `Transactions` collection.
-- [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI).
-- [ ] **Integration Tests:** Test transaction persistence and stock consistency.
+- [x] **Appwrite Repository:** Implement `AppwriteTransactionRepository`.
+- [x] **Infrastructure (Serverless):** `sync-item-stats` Function (Atomic counters for `purchasedQuantity`).
+- [x] **Integration Tests:** Test transaction persistence and stock consistency.
 
-### 4.4 UI & Presentation
+### 4.3 UI & Presentation
 
-- [ ] Guest/Anonymous interaction: Simple "Buy" button with immediate "Undo" snackbar.
-- [ ] Clean UI: No "Reserved" status shown during MVP (ADR 025).
+- [x] Guest interaction: "Buy" button integration.
+- [x] Clean UI: No "Reserved" status shown during MVP (ADR 025).
 
 ---
 
-## Phase 5: Identity & Evolution
+## Phase 5: Identity & Security
 
-### 5.1 Application Layer
+### 5.1 Application & Logic
 
-- [ ] **TDD - Auth:** `RegisterUser` and `LoginUser` use cases.
-- [ ] **TDD - History:** `GetGiftingHistory` (Purchases only for MVP).
+- [x] **TDD - Auth:** `RegisterUser` and `LoginUser` use cases.
+- [x] **Identity Mapping & Evolution:** Seamless conversion from anonymous to registered users (ADR 018).
 
 ### 5.2 Infrastructure Layer
 
-- [ ] **Appwrite Auth:** Implement `AuthService` adapter (Using Anonymous Sessions - ADR 018).
+- [x] **Appwrite Auth:** Implement `AuthService` adapter implementation (Using Anonymous Sessions - ADR 018).
 - [ ] **Security & Permissions:** Configure Appwrite collection/attribute permissions in `provision.ts`.
-- [ ] **Identity Mapping & Evolution:** Seamless conversion from anonymous to registered users (ADR 018).
-
-### 5.3 UI & Presentation
-
-- [ ] User Profile & "My Gifting" Dashboard.
-- [ ] Final Polish: Theme system and micro-animations.
 
 ---
 
-## Phase 6: Automated Notifications & Advanced Integrity
+## Phase 6: UI Polish & Presentation
 
-- [ ] **Pruning Alerts**: Implement Appwrite Function (DB Trigger) to notify users when a transaction status changes to `CANCELLED_BY_OWNER`.
-- [ ] **Transactional Atomicity (Server-side)**: Implement Appwrite Functions to handle complex multi-entity updates (e.g., Stock + Transaction + Wishlist Version) atomically on the server. This supersedes the client-side sequential saves for critical paths.
-- [ ] **Task: Server-side Counters Integration**: Implement Appwrite Functions triggered by transaction creations/deletions to update `WishlistItem` counters (`reservedQuantity`, `purchasedQuantity`) atomically on the server for improved consistency and performance.
+- [ ] **UI:** Immediate "Undo" snackbar after purchase.
+- [ ] **Final Polish:** Theme system refinement and micro-animations.
+- [ ] **Web Responsiveness:** Ensure a premium and fully responsive experience for the web client across all viewports.
 
 ---
 
 ## Post-MVP / Future Enhancements
+
+- [ ] **Mobile Apps:** Native iOS and Android versions (using Expo).
+- [ ] **Google OAuth2:** Login/Register integration (UI implementation).
+- [ ] **History:** `GetGiftingHistory` Use Case (Purchases only for MVP).
+- [ ] **UI:** User Profile & "My Gifting" Dashboard.
+- [ ] **Pruning Alerts**: Implement Appwrite Function (DB Trigger) to notify users when a transaction status changes to `CANCELLED_BY_OWNER`.
+- [ ] **Advanced Transactional Atomicity**: Implement Appwrite Functions to handle complex multi-entity updates (e.g., Stock + Transaction + Wishlist Version) atomically on the server.
+- [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI).
 
 - [ ] **Reservations System**: Full implementation of the "soft lock" flow.
   - [ ] `ReserveItem` use case integration.
@@ -138,3 +137,5 @@
       - **Sync-able**: Only for transactions in `RESERVED` status.
       - **Immutable**: Frozen for `PURCHASED` status to preserve audit/financial integrity of the purchase.
   - **Operational Strategy**: Use paginated background processing with exponential backoff and idempotent retries to handle items with large transaction volumes (popular items).
+- [ ] **TDD - History:** `GetGiftingHistory` (Purchases only for MVP).
+- [ ] User Profile & "My Gifting" Dashboard.
