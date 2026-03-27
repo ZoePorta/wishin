@@ -32,6 +32,7 @@ export interface TransactionProps {
   itemPrice: number | null;
   itemCurrency: string | null;
   itemDescription: string | null;
+  itemImageUrl: string | null;
   ownerUsername: string | null;
   status: TransactionStatus;
   quantity: number;
@@ -132,6 +133,14 @@ export class Transaction {
   }
 
   /**
+   * The image URL of the item at the time of transaction.
+   * @returns {string | null}
+   */
+  public get itemImageUrl(): string | null {
+    return this.props.itemImageUrl;
+  }
+
+  /**
    * The username of the wishlist owner.
    * @returns {string | null}
    */
@@ -180,6 +189,7 @@ export class Transaction {
       itemPrice: props.itemPrice ?? null,
       itemCurrency: props.itemCurrency ?? null,
       itemDescription: props.itemDescription ?? null,
+      itemImageUrl: props.itemImageUrl ?? null,
       ownerUsername: props.ownerUsername ?? null,
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),
@@ -211,6 +221,7 @@ export class Transaction {
    * @param {number|null} props.itemPrice - The item price.
    * @param {string|null} props.itemCurrency - The currency code.
    * @param {string|null} props.itemDescription - The item details.
+   * @param {string|null} props.itemImageUrl - The item image URL.
    * @param {string} props.ownerUsername - The owner's username.
    * @returns {Transaction}
    * @throws {InvalidAttributeError} If validation fails.
@@ -221,6 +232,7 @@ export class Transaction {
       itemPrice: number | null;
       itemCurrency: string | null;
       itemDescription: string | null;
+      itemImageUrl: string | null;
       ownerUsername: string;
     },
   ): Transaction {
@@ -245,6 +257,7 @@ export class Transaction {
    * @param {number|null} props.itemPrice - The item price.
    * @param {string|null} props.itemCurrency - The currency code.
    * @param {string|null} props.itemDescription - The item details.
+   * @param {string|null} props.itemImageUrl - The item image URL.
    * @param {string} props.ownerUsername - The owner's username.
    * @returns {Transaction}
    * @throws {InvalidAttributeError} If validation fails.
@@ -255,6 +268,7 @@ export class Transaction {
       itemPrice: number | null;
       itemCurrency: string | null;
       itemDescription: string | null;
+      itemImageUrl: string | null;
       ownerUsername: string;
     },
   ): Transaction {
@@ -438,6 +452,9 @@ export class Transaction {
       throw new InvalidAttributeError(
         "Invalid itemDescription: Must be a string",
       );
+    }
+    if (this.itemImageUrl !== null && typeof this.itemImageUrl !== "string") {
+      throw new InvalidAttributeError("Invalid itemImageUrl: Must be a string");
     }
     if (this.ownerUsername !== null && typeof this.ownerUsername !== "string") {
       throw new InvalidAttributeError(

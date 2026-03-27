@@ -92,6 +92,7 @@ export class PurchaseItemUseCase {
       itemPrice: item.price ?? null,
       itemCurrency: item.currency ?? null,
       itemDescription: item.description ?? null,
+      itemImageUrl: item.imageUrl ?? null,
       ownerUsername,
     });
 
