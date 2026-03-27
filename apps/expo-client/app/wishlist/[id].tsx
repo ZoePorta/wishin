@@ -1,6 +1,6 @@
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useMemo, useCallback, useState, useEffect } from "react";
-import { View, FlatList, StyleSheet } from "react-native";
+import { View, FlatList, StyleSheet, Platform } from "react-native";
 import {
   Text,
   ActivityIndicator,
@@ -15,6 +15,7 @@ import type { WishlistItemOutput } from "@wishin/domain";
 import { PublicItemCard } from "../../src/features/wishlist/components/PublicItemCard";
 import { useUser } from "../../src/contexts/UserContext";
 import { SpoilerOverlay } from "../../src/features/wishlist/components/SpoilerOverlay";
+import { Layout } from "../../src/constants/Layout";
 
 /**
  * Display the details of a specific wishlist.
@@ -190,6 +191,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
+    marginTop: Platform.OS === "web" ? Layout.headerHeightWeb : 0,
     marginBottom: 32,
   },
   headerTitle: {

@@ -8,6 +8,7 @@ interface DashboardContentProps {
   wishlist: WishlistOutput;
   onRemoveItem: (id: string) => void;
   onEditItem: (item: WishlistItemOutput) => void;
+  ListHeaderComponent?: React.ReactElement | null;
 }
 
 /**
@@ -18,12 +19,14 @@ interface DashboardContentProps {
  * @param {WishlistOutput} props.wishlist - The wishlist object containing items to display.
  * @param {function} props.onRemoveItem - Callback to handle item removal.
  * @param {function} props.onEditItem - Callback to handle item editing.
+ * @param {React.ReactElement | null} [props.ListHeaderComponent] - Optional header element rendered at the top of the list.
  * @returns {JSX.Element} The rendered dashboard content.
  */
 export const DashboardContent: React.FC<DashboardContentProps> = ({
   wishlist,
   onRemoveItem,
   onEditItem,
+  ListHeaderComponent,
 }) => {
   return (
     <Surface style={styles.container}>
@@ -47,6 +50,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             </Text>
           </View>
         )}
+        ListHeaderComponent={ListHeaderComponent}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
@@ -59,7 +63,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 80, // Space for FAB
   },
   emptyContainer: {

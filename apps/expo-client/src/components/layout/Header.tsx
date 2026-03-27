@@ -1,10 +1,21 @@
+import React from "react";
 import { IconButton, useTheme } from "react-native-paper";
 import { type AppTheme } from "../../theme/theme";
 import { MotiView, AnimatePresence } from "moti";
 import { AuthButtons } from "../common/AuthButtons";
 import { router } from "expo-router";
 import { type NativeStackHeaderProps } from "@react-navigation/native-stack";
-import { StyleSheet, View, Image, Platform, Pressable } from "react-native";
+import {
+  StyleSheet,
+  View,
+  Image,
+  Platform,
+  Pressable,
+  useWindowDimensions,
+  Text,
+} from "react-native";
+import { BlurView } from "expo-blur";
+import { Layout } from "../../constants/Layout";
 import Logo from "../../../assets/wishinlogo.svg";
 
 interface HeaderProps extends Partial<NativeStackHeaderProps> {
@@ -26,7 +37,11 @@ export const Header = ({
   back,
 }: HeaderProps) => {
   const theme = useTheme<AppTheme>();
+  const styles = React.useMemo(() => makeStyles(theme), [theme]);
   const isBackAvailable = !!back && !!navigation;
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768; // Tablet and Desktop
+  const isMobileS = width <= 360;
 
   const handleLogoPress = () => {
     if (isBackAvailable) {
@@ -41,11 +56,26 @@ export const Header = ({
       style={[
         styles.nav,
         {
-          backgroundColor: theme.colors.surfaceContainerLow,
-          borderBottomColor: theme.colors.outlineVariant,
+          borderBottomColor: "transparent",
+          // Fixed background for web backdrop-filter, or BlurView for native
+          backgroundColor:
+            Platform.OS === "web" ? theme.colors.surfaceGlass : "transparent",
         },
+        Platform.OS === "web" && {
+          // @ts-expect-error - backdropFilter is supported on most modern browsers
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+        },
+        isMobileS && styles.navMobileS,
       ]}
     >
+      {Platform.OS !== "web" && (
+        <BlurView
+          intensity={80}
+          tint={theme.dark ? "dark" : "light"}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
       <View style={styles.navContent}>
         <View style={styles.logoContainer}>
           <AnimatePresence exitBeforeEnter>
@@ -79,12 +109,30 @@ export const Header = ({
                     styles.logoPressable,
                     { opacity: pressed ? 0.7 : 1 },
                   ]}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                  <Image
-                    source={Logo}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
+                  <View style={styles.brandingWrapper}>
+                    <Image
+                      source={
+                        Logo as unknown as import("react-native").ImageSourcePropType
+                      }
+                      style={styles.logo}
+                      resizeMode="contain"
+                    />
+                    {isDesktop && (
+                      <Text
+                        style={[
+                          styles.brandText,
+                          {
+                            color: theme.colors.primary,
+                            ...theme.fonts.headlineSmall,
+                          },
+                        ]}
+                      >
+                        Wishin
+                      </Text>
+                    )}
+                  </View>
                 </Pressable>
               </MotiView>
             )}
@@ -99,37 +147,55 @@ export const Header = ({
   );
 };
 
-const styles = StyleSheet.create({
-  nav: {
-    paddingHorizontal: 24,
-    height: 70,
-    justifyContent: "center",
-    zIndex: 100,
-    borderBottomWidth: 1,
-    position: (Platform.OS === "web" ? "fixed" : "relative") as "relative",
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-  navContent: {
-    maxWidth: 1280,
-    width: "100%",
-    marginHorizontal: "auto",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  logoContainer: {
-    height: 48,
-    minWidth: 48,
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  logoPressable: {
-    paddingVertical: 4,
-  },
-  logo: { height: 32, width: 80 },
-  navLinks: { flexDirection: "row", gap: 32 },
-  navLink: { fontWeight: "700", fontSize: 16 },
-  navActions: { flexDirection: "row", alignItems: "center" },
-});
+const makeStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    nav: {
+      paddingHorizontal: 24,
+      height: Layout.headerHeightWeb,
+      justifyContent: "center",
+      zIndex: 100,
+      borderBottomWidth: 1,
+      position: (Platform.OS === "web" ? "fixed" : "relative") as "relative",
+      top: 0,
+      left: 0,
+      right: 0,
+      // Elevation/Shadow
+      elevation: 3,
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 20,
+    },
+    navMobileS: {
+      paddingHorizontal: 12,
+    },
+    navContent: {
+      maxWidth: 1280,
+      width: "100%",
+      marginHorizontal: "auto",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    logoContainer: {
+      height: 48,
+      minWidth: 48,
+      justifyContent: "center",
+      alignItems: "flex-start",
+    },
+    logoPressable: {
+      paddingVertical: 4,
+    },
+    logo: { height: 32, width: 32 },
+    brandingWrapper: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    brandText: {
+      marginLeft: 4,
+    },
+    navLinks: { flexDirection: "row", gap: 32 },
+    navLink: { fontWeight: "700", fontSize: 16 },
+    navActions: { flexDirection: "row", alignItems: "center" },
+  });

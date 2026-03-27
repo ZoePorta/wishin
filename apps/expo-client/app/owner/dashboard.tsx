@@ -143,8 +143,6 @@ export default function OwnerDashboard() {
           </View>
         ) : (
           <View style={styles.mainContent}>
-            <DashboardHeader wishlist={wishlist} />
-
             <DashboardContent
               wishlist={wishlist}
               onRemoveItem={handleRemoveItem}
@@ -152,6 +150,7 @@ export default function OwnerDashboard() {
                 setEditingItem(item);
                 setIsItemModalVisible(true);
               }}
+              ListHeaderComponent={<DashboardHeader wishlist={wishlist} />}
             />
 
             <Portal>

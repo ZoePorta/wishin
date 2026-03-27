@@ -66,7 +66,12 @@ export default tseslint.config(
     },
   },
   {
-    files: ["eslint.config.js", "vitest.config.ts", "vitest.config.*.ts"],
+    files: [
+      "eslint.config.js",
+      "vitest.config.ts",
+      "vitest.config.*.ts",
+      "apps/expo-client/metro.config.js",
+    ],
     ...tseslint.configs.disableTypeChecked,
   },
   {
