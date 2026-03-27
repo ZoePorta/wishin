@@ -113,9 +113,7 @@ export const Header = ({
                 >
                   <View style={styles.brandingWrapper}>
                     <Image
-                      source={
-                        Logo as unknown as import("react-native").ImageSourcePropType
-                      }
+                      source={Logo}
                       style={styles.logo}
                       resizeMode="contain"
                     />
