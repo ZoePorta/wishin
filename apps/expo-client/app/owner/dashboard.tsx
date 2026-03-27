@@ -119,7 +119,6 @@ export default function OwnerDashboard() {
       >
         <Stack.Screen
           options={{
-            title: "My Dashboard",
             headerStyle: { backgroundColor: theme.colors.surface },
             headerTintColor: theme.colors.onSurface,
           }}
