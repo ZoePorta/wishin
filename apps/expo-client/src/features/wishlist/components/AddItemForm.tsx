@@ -489,6 +489,7 @@ const styles = StyleSheet.create({
   },
   surface: {
     padding: 8,
+    borderRadius: 28,
   },
   modalTitle: {
     padding: 16,

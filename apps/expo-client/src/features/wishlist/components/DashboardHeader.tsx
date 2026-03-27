@@ -22,7 +22,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.leftBlock}>
-        <Text variant="headlineMedium" style={styles.title}>
+        <Text variant="headlineLarge" style={styles.title}>
           {wishlist.title}
         </Text>
         {wishlist.description && (

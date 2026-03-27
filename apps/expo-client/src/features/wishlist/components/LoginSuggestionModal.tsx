@@ -1,6 +1,14 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Portal, Modal, Card, Text, Button } from "react-native-paper";
+import {
+  Portal,
+  Modal,
+  Card,
+  Text,
+  Button,
+  useTheme,
+} from "react-native-paper";
+import { type AppTheme } from "../../../theme/theme";
 import { commonStyles } from "../../../theme/common-styles";
 
 interface LoginSuggestionModalProps {
@@ -22,6 +30,8 @@ export const LoginSuggestionModal: React.FC<LoginSuggestionModalProps> = ({
   onGuest,
   loading,
 }) => {
+  const theme = useTheme<AppTheme>();
+  const styles = React.useMemo(() => makeStyles(theme), [theme]);
   return (
     <Portal>
       <Modal
@@ -81,25 +91,29 @@ export const LoginSuggestionModal: React.FC<LoginSuggestionModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  modalContainer: {
-    padding: 20,
-  },
-  card: {
-    borderRadius: 16,
-    padding: 4,
-  },
-  text: {
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  actions: {
-    justifyContent: "space-between",
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-  },
-  rightActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-});
+const makeStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    modalContainer: {
+      padding: 20,
+    },
+    card: {
+      borderRadius: 28,
+      padding: 4,
+      backgroundColor: theme.colors.surfaceContainerLowest,
+      borderWidth: 1,
+      borderColor: theme.colors.outlineVariant,
+    },
+    text: {
+      marginBottom: 8,
+      lineHeight: 20,
+    },
+    actions: {
+      justifyContent: "space-between",
+      paddingHorizontal: 8,
+      paddingBottom: 8,
+    },
+    rightActions: {
+      flexDirection: "row",
+      gap: 8,
+    },
+  });

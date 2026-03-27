@@ -8,6 +8,7 @@ interface DashboardContentProps {
   wishlist: WishlistOutput;
   onRemoveItem: (id: string) => void;
   onEditItem: (item: WishlistItemOutput) => void;
+  onItemPress: (item: WishlistItemOutput) => void;
   ListHeaderComponent?: React.ReactElement | null;
 }
 
@@ -26,6 +27,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   wishlist,
   onRemoveItem,
   onEditItem,
+  onItemPress,
   ListHeaderComponent,
 }) => {
   return (
@@ -38,6 +40,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             item={item}
             onEdit={onEditItem}
             onRemove={onRemoveItem}
+            onPress={onItemPress}
           />
         )}
         ListEmptyComponent={() => (
