@@ -166,7 +166,10 @@ describe("AppwriteAuthRepository", () => {
         userId: "unique-id",
         email,
         password,
-        name: "testuser",
+      });
+      expect(mockCreateEmailPasswordSession).toHaveBeenCalledWith({
+        email,
+        password,
       });
       expect(result.isNewUser).toBe(true);
     });
@@ -192,7 +195,6 @@ describe("AppwriteAuthRepository", () => {
         email,
         password,
       });
-      expect(mockUpdateName).toHaveBeenCalledWith({ name: "testuser" });
       expect(result.isNewUser).toBe(false);
     });
   });
