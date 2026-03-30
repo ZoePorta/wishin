@@ -1,5 +1,11 @@
 import React, { useCallback, useState, useEffect } from "react";
-import { View, Linking, Alert, StyleSheet } from "react-native";
+import {
+  View,
+  Linking,
+  Alert,
+  StyleSheet,
+  type ImageSourcePropType,
+} from "react-native";
 import {
   Card,
   Text,
@@ -20,6 +26,8 @@ import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
 import { commonStyles } from "../../../theme/common-styles";
 import { addAlpha } from "../../../utils/colors";
 import { Config } from "../../../constants/Config";
+// @ts-expect-error - New asset might not be indexed by TS yet
+import ITEM_IMAGE_PLACEHOLDER from "../../../../assets/images/item_image_placeholder.png";
 
 interface PublicItemCardProps {
   item: WishlistItemOutput;
@@ -190,11 +198,15 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
       >
         <View style={styles.imageWrapper}>
           <Card.Cover
-            source={{
-              uri: item.imageUrl?.startsWith("/")
-                ? `${Config.baseUrl}${item.imageUrl}`
-                : (item.imageUrl ?? ""),
-            }}
+            source={
+              item.imageUrl
+                ? {
+                    uri: item.imageUrl.startsWith("/")
+                      ? `${Config.baseUrl}${item.imageUrl}`
+                      : item.imageUrl,
+                  }
+                : (ITEM_IMAGE_PLACEHOLDER as unknown as ImageSourcePropType)
+            }
             accessibilityLabel={item.name}
             style={[styles.cardImage, isCompleted && styles.completedImage]}
             resizeMode="cover"

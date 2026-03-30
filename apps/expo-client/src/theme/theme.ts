@@ -292,8 +292,17 @@ export const combinedTheme = {
 };
 
 /**
- * Fallback theme used when custom fonts fail to load.
- * Uses system fonts instead of Aclonica/Varela Round.
+ * Fallback theme used when custom fonts (Aclonica/Varela Round) fail to load.
+ *
+ * The spread order in the fonts object is intentional:
+ * 1. `...typography`: Standard application typography configuration.
+ * 2. `...MD3LightTheme.fonts` / `...MD3DarkTheme.fonts`: Default MD3 system fonts
+ *    override custom font families with system fallbacks to ensure readability.
+ * 3. `titleLargeVarela`: Explicitly set after both spreads to ensure this specific
+ *    variant (using Varela Round fallback) is preserved.
+ *
+ * This ensures that if the custom font assets aren't available, the app gracefully
+ * reverts to native system fonts while maintaining the intended hierarchy.
  */
 export const fallbackTheme: { light: AppTheme; dark: AppTheme } = {
   light: {

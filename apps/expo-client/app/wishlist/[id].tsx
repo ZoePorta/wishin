@@ -103,19 +103,24 @@ export default function WishlistDetail() {
 
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => {
-      let itemWidth: "100%" | "50%" | "33.33%" | "25%" = "100%";
-      if (numColumns === 2) itemWidth = "50%";
-      else if (numColumns === 3) itemWidth = "33.33%";
-      else if (numColumns === 4) itemWidth = "25%";
+      const itemWidth =
+        Layout.columnWidths[numColumns as keyof typeof Layout.columnWidths] ??
+        "100%";
 
       return (
         <View
           style={{
             width: itemWidth,
-            padding: 10,
+            padding: Layout.gridItemPadding,
           }}
         >
-          <View style={{ width: "100%", maxWidth: 500, alignSelf: "center" }}>
+          <View
+            style={{
+              width: "100%",
+              maxWidth: Layout.gridItemMaxWidth,
+              alignSelf: "center",
+            }}
+          >
             <PublicItemCard
               item={item}
               wishlistId={wishlist?.id ?? ""}
@@ -240,7 +245,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 10,
-    paddingTop: 0,
+    paddingTop: Layout.pagePadding,
     flexGrow: 1,
   },
   header: {

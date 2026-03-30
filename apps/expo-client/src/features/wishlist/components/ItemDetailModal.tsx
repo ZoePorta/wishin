@@ -42,6 +42,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   onEdit,
 }) => {
   const theme = useTheme<AppTheme>();
+  const styles = React.useMemo(() => makeStyles(theme), [theme]);
   if (!item) return null;
 
   const handleOpenUrl = React.useCallback(async () => {
@@ -73,7 +74,11 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           >
             {item.name}
           </Text>
-          <IconButton icon="close" onPress={onDismiss} />
+          <IconButton
+            icon="close"
+            onPress={onDismiss}
+            accessibilityLabel="Close item details"
+          />
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -182,84 +187,84 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  modalContent: {
-    margin: 20,
-    padding: 24,
-    borderRadius: 28,
-    maxHeight: "85%",
-    maxWidth: 600,
-    width: "100%",
-    alignSelf: "center",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  headerTitle: {
-    flex: 1,
-    fontWeight: "600",
-  },
-  imageContainer: {
-    width: "100%",
-    maxWidth: 350,
-    aspectRatio: 1.2,
-    borderRadius: 16,
-    overflow: "hidden",
-    backgroundColor: "#f5f5f5",
-    marginBottom: 20,
-    alignSelf: "center",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  content: {
-    paddingBottom: 16,
-  },
-  titleRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginBottom: 16,
-  },
-  linkButton: {
-    alignSelf: "flex-end",
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-    gap: 16,
-  },
-  statItem: {
-    flex: 1,
-  },
-  statLabel: {
-    opacity: 0.6,
-    marginBottom: 4,
-    textTransform: "uppercase",
-  },
-  priorityRow: {
-    marginBottom: 20,
-  },
-  priorityBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-  },
-  descriptionSection: {
-    marginTop: 8,
-  },
-  descriptionText: {
-    lineHeight: 24,
-  },
-  footer: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 16,
-  },
-  footerButton: {
-    flex: 1,
-  },
-});
+const makeStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    modalContent: {
+      marginVertical: 20,
+      padding: 24,
+      borderRadius: 28,
+      maxHeight: "85%",
+      maxWidth: 600,
+      alignSelf: "center",
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    headerTitle: {
+      flex: 1,
+      fontWeight: "600",
+    },
+    imageContainer: {
+      width: "100%",
+      maxWidth: 350,
+      aspectRatio: 1.2,
+      borderRadius: 16,
+      overflow: "hidden",
+      backgroundColor: theme.colors.surfaceVariant,
+      marginBottom: 20,
+      alignSelf: "center",
+    },
+    image: {
+      width: "100%",
+      height: "100%",
+    },
+    content: {
+      paddingBottom: 16,
+    },
+    titleRow: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      marginBottom: 16,
+    },
+    linkButton: {
+      alignSelf: "flex-end",
+    },
+    statsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 20,
+      gap: 16,
+    },
+    statItem: {
+      flex: 1,
+    },
+    statLabel: {
+      opacity: 0.6,
+      marginBottom: 4,
+      textTransform: "uppercase",
+    },
+    priorityRow: {
+      marginBottom: 20,
+    },
+    priorityBadge: {
+      alignSelf: "flex-start",
+      paddingHorizontal: 12,
+    },
+    descriptionSection: {
+      marginTop: 8,
+    },
+    descriptionText: {
+      lineHeight: 24,
+    },
+    footer: {
+      flexDirection: "row",
+      gap: 12,
+      marginTop: 16,
+    },
+    footerButton: {
+      flex: 1,
+    },
+  });

@@ -1,10 +1,19 @@
 import React, { useCallback } from "react";
-import { View, Linking, Alert, StyleSheet, Image } from "react-native";
+import {
+  View,
+  Linking,
+  Alert,
+  StyleSheet,
+  Image,
+  type ImageSourcePropType,
+} from "react-native";
 import { Card, Text, Badge, useTheme, IconButton } from "react-native-paper";
 import { type AppTheme } from "../../../theme/theme";
 import { type WishlistItemOutput } from "@wishin/domain";
 import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
 import { Config } from "../../../constants/Config";
+// @ts-expect-error - New asset might not be indexed by TS yet
+import ITEM_IMAGE_PLACEHOLDER from "../../../../assets/images/item_image_placeholder.png";
 
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
@@ -21,6 +30,7 @@ interface DashboardItemCardProps {
  * @param {WishlistItemOutput} props.item - The wishlist item object to display.
  * @param {function} props.onEdit - Callback to handle editing the item.
  * @param {function} props.onRemove - Callback to handle removing the item.
+ * @param {function} props.onPress - Callback invoked when the card is pressed. Receives the {@link WishlistItemOutput} item.
  * @returns {JSX.Element} The rendered dashboard item card.
  */
 export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
@@ -54,11 +64,15 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
       <View style={styles.mainRow}>
         <View style={styles.imageWrapper}>
           <Image
-            source={{
-              uri: item.imageUrl?.startsWith("/")
-                ? `${Config.baseUrl}${item.imageUrl}`
-                : (item.imageUrl ?? ""),
-            }}
+            source={
+              item.imageUrl
+                ? {
+                    uri: item.imageUrl.startsWith("/")
+                      ? `${Config.baseUrl}${item.imageUrl}`
+                      : item.imageUrl,
+                  }
+                : (ITEM_IMAGE_PLACEHOLDER as unknown as ImageSourcePropType)
+            }
             accessibilityLabel={item.name}
             style={styles.image}
             resizeMode="cover"
@@ -71,8 +85,11 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
               <View style={styles.nameRow}>
                 <Text
                   variant="titleMedium"
-                  numberOfLines={2}
+                  numberOfLines={1}
                   style={styles.nameText}
+                  onPress={
+                    item.url ? () => void handleOpenUrl(item.url) : undefined
+                  }
                 >
                   {item.name}
                 </Text>
@@ -111,27 +128,24 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
             </Text>
           )}
 
-          <View style={styles.footerRow}>
-            <View />
-            <View style={styles.actionIcons}>
-              <IconButton
-                icon="pencil-outline"
-                size={20}
-                onPress={() => {
-                  onEdit(item);
-                }}
-                accessibilityLabel="Edit item"
-              />
-              <IconButton
-                icon="trash-can-outline"
-                size={20}
-                iconColor={theme.colors.error}
-                onPress={() => {
-                  onRemove(item.id);
-                }}
-                accessibilityLabel="Delete item"
-              />
-            </View>
+          <View style={styles.actionIcons}>
+            <IconButton
+              icon="pencil-outline"
+              size={20}
+              onPress={() => {
+                onEdit(item);
+              }}
+              accessibilityLabel="Edit item"
+            />
+            <IconButton
+              icon="trash-can-outline"
+              size={20}
+              iconColor={theme.colors.error}
+              onPress={() => {
+                onRemove(item.id);
+              }}
+              accessibilityLabel="Delete item"
+            />
           </View>
         </View>
       </View>
@@ -146,7 +160,7 @@ const makeStyles = (theme: AppTheme) =>
       borderRadius: 16,
       backgroundColor: theme.colors.surfaceContainerLowest,
       borderColor: theme.colors.outlineVariant,
-      overflow: "hidden",
+      overflow: "visible",
       maxWidth: 800,
       width: "100%",
       alignSelf: "center",
@@ -159,7 +173,6 @@ const makeStyles = (theme: AppTheme) =>
     infoContainer: {
       flex: 1,
       marginLeft: 12,
-      justifyContent: "space-between",
     },
     infoTopHeader: {
       flexDirection: "row",
@@ -172,10 +185,9 @@ const makeStyles = (theme: AppTheme) =>
     nameRow: {
       flexDirection: "row",
       alignItems: "center",
-      flexWrap: "wrap",
     },
     nameText: {
-      flexShrink: 1,
+      flex: 1,
     },
     linkIcon: {
       margin: 0,
@@ -186,24 +198,14 @@ const makeStyles = (theme: AppTheme) =>
       opacity: 0.7,
     },
     actionIcons: {
+      position: "absolute",
+      right: -10,
+      bottom: -10,
       flexDirection: "row",
-      marginRight: -16, // Pull towards edge
-      marginBottom: -12,
     },
     priceText: {
-      marginTop: 4,
       fontWeight: "700",
       color: theme.colors.primary,
-    },
-    description: {
-      marginTop: 4,
-      opacity: 0.8,
-    },
-    footerRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginTop: 8,
     },
     badge: {
       alignSelf: "flex-start",

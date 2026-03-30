@@ -3,6 +3,7 @@ import { FlatList, View, StyleSheet } from "react-native";
 import { Text, Surface } from "react-native-paper";
 import { type WishlistOutput, type WishlistItemOutput } from "@wishin/domain";
 import { DashboardItemCard } from "./DashboardItemCard";
+import { Layout } from "../../../constants/Layout";
 
 interface DashboardContentProps {
   wishlist: WishlistOutput;
@@ -20,6 +21,7 @@ interface DashboardContentProps {
  * @param {WishlistOutput} props.wishlist - The wishlist object containing items to display.
  * @param {function} props.onRemoveItem - Callback to handle item removal.
  * @param {function} props.onEditItem - Callback to handle item editing.
+ * @param {function} props.onItemPress - Callback invoked when an item is pressed.
  * @param {React.ReactElement | null} [props.ListHeaderComponent] - Optional header element rendered at the top of the list.
  * @returns {JSX.Element} The rendered dashboard content.
  */
@@ -66,7 +68,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    padding: 20,
+    padding: Layout.pagePadding,
     paddingBottom: 80, // Space for FAB
   },
   emptyContainer: {
