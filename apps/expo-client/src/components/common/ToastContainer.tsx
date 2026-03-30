@@ -17,19 +17,33 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+/**
+ * Props for the ToastContainer component.
+ */
 interface ToastContainerProps {
+  /** Array of active toast notifications. */
   toasts: Toast[];
+  /** Callback function to dismiss a toast by its ID. */
   onDismiss: (id: string) => void;
 }
 
+/**
+ * Container component that manages the layout and stacking of toast notifications.
+ * Uses LayoutAnimation for smooth transitions when toasts are added or removed.
+ *
+ * @param {ToastContainerProps} props - The component props.
+ * @returns {JSX.Element | null} The rendered container or null if no toasts.
+ */
 export const ToastContainer: React.FC<ToastContainerProps> = ({
   toasts,
   onDismiss,
 }) => {
+  const toastCount = toasts.length;
+
   // Use LayoutAnimation for smooth stacking transitions
   React.useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  }, [toasts]);
+  }, [toastCount]);
 
   if (toasts.length === 0) return null;
 

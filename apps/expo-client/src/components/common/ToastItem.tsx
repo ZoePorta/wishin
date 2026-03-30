@@ -9,13 +9,27 @@ import {
 } from "react-native-paper";
 import { commonStyles } from "../../theme/common-styles";
 
+/**
+ * Props for the ToastItem component.
+ */
 interface ToastItemProps {
+  /** Unique identifier for the toast. */
   id: string;
+  /** The message text to display. */
   message: string;
+  /** Optional callback for an "Undo" action. */
   onUndo?: () => void;
+  /** Callback function to dismiss the toast. */
   onDismiss: (id: string) => void;
 }
 
+/**
+ * Component that renders an individual toast notification.
+ * Includes the message, an optional "Undo" button, and a "Close" icon button.
+ *
+ * @param {ToastItemProps} props - The component props.
+ * @returns {JSX.Element} The rendered toast item.
+ */
 export const ToastItem: React.FC<ToastItemProps> = ({
   id,
   message,
@@ -59,6 +73,7 @@ export const ToastItem: React.FC<ToastItemProps> = ({
               onDismiss(id);
             }}
             style={styles.closeButton}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           />
         </View>
       </View>

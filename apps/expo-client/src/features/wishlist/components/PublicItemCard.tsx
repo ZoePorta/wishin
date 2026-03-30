@@ -102,6 +102,27 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     }
   }, []);
 
+  const handleUndoPurchase = useCallback(
+    async (transactionId: string) => {
+      if (!userId) return;
+
+      try {
+        await undoPurchase({
+          wishlistId,
+          transactionId,
+          userId,
+        });
+        showToast("Purchase undone successfully.");
+      } catch (err: unknown) {
+        Alert.alert(
+          "Undo Failed",
+          err instanceof Error ? err.message : "Something went wrong",
+        );
+      }
+    },
+    [undoPurchase, wishlistId, userId, showToast],
+  );
+
   const executePurchase = useCallback(
     async (buyerId: string) => {
       try {
@@ -125,7 +146,14 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         );
       }
     },
-    [purchaseItem, wishlistId, item.id, showToast],
+    [
+      purchaseItem,
+      wishlistId,
+      item.id,
+      item.name,
+      showToast,
+      handleUndoPurchase,
+    ],
   );
 
   useEffect(() => {
@@ -163,27 +191,6 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     onSuggestionShown,
     isSessionReliable,
   ]);
-
-  const handleUndoPurchase = useCallback(
-    async (transactionId: string) => {
-      if (!userId) return;
-
-      try {
-        await undoPurchase({
-          wishlistId,
-          transactionId,
-          userId,
-        });
-        showToast("Purchase undone successfully.");
-      } catch (err: unknown) {
-        Alert.alert(
-          "Undo Failed",
-          err instanceof Error ? err.message : "Something went wrong",
-        );
-      }
-    },
-    [undoPurchase, wishlistId, userId, showToast],
-  );
 
   const handleContinueAsGuest = useCallback(async () => {
     if (!isSessionReliable) return;
