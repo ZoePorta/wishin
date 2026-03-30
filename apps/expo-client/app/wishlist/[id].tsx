@@ -16,6 +16,7 @@ import { PublicItemCard } from "../../src/features/wishlist/components/PublicIte
 import { useUser } from "../../src/contexts/UserContext";
 import { SpoilerOverlay } from "../../src/features/wishlist/components/SpoilerOverlay";
 import { Layout } from "../../src/constants/Layout";
+import { Avatar } from "../../src/components/common/Avatar";
 
 /**
  * Display the details of a specific wishlist.
@@ -57,6 +58,19 @@ export default function WishlistDetail() {
         >
           {wishlist.title}
         </Text>
+        <View style={styles.creatorContainer}>
+          <Avatar
+            uri={wishlist.ownerAvatarUrl}
+            size={24}
+            style={styles.creatorAvatar}
+          />
+          <Text
+            variant="bodyMedium"
+            style={{ color: theme.colors.onSurfaceVariant, fontWeight: "500" }}
+          >
+            {wishlist.ownerName ?? "Unknown"}
+          </Text>
+        </View>
         {wishlist.description && (
           <Text
             variant="bodyLarge"
@@ -195,10 +209,19 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: "700",
-    marginBottom: 8,
+    marginBottom: 4,
+  },
+  creatorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  creatorAvatar: {
+    marginRight: 8,
   },
   description: {
     lineHeight: 24,
+    marginTop: 8,
   },
   divider: {
     marginTop: 24,
