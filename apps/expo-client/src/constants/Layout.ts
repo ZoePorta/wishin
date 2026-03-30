@@ -1,4 +1,4 @@
-import { DimensionValue } from "react-native";
+import type { DimensionValue } from "react-native";
 
 /**
  * Layout constants for the application.
@@ -30,5 +30,5 @@ export const Layout = {
     2: "50%",
     3: "33.33%",
     4: "25%",
-  } as Record<number, DimensionValue>,
+  } as const satisfies Record<1 | 2 | 3 | 4, DimensionValue>,
 };

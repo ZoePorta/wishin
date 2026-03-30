@@ -204,6 +204,20 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 /**
  * 3. Theme Merging Logic
  */
+/**
+ * Merges the React Native Paper theme, Navigation theme, and a partial Material color scheme
+ * into a single unified AppTheme.
+ *
+ * This function also performs runtime validation to ensure all required surface container
+ * and variant tokens are present. It provides fallback behavior for missing surface tokens
+ * by using the primary surface color and computes `surfaceGlass` using {@link addAlpha}.
+ *
+ * @param {MD3Theme} paperTheme - The base React Native Paper Material Design 3 theme.
+ * @param {NavigationTheme} navigationTheme - The React Navigation theme to merge.
+ * @param {Partial<MD3Theme["colors"]>} materialScheme - The Material Design color scheme (from dynamic colors or JSON).
+ * @returns {AppTheme} The merged and validated application theme.
+ * @throws {Error} If any required color tokens (e.g., surfaceContainerLow, surfaceDim) are missing after merging.
+ */
 function mergeAndValidateTheme(
   paperTheme: MD3Theme,
   navigationTheme: NavigationTheme,

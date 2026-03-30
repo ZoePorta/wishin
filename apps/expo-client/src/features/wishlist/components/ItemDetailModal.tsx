@@ -20,8 +20,17 @@ import {
 import { type WishlistItemOutput } from "@wishin/domain";
 import { type AppTheme } from "../../../theme/theme";
 import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
-import { Config } from "../../../constants/Config";
+import { getItemImageSource } from "../utils/images";
 
+/**
+ * Props for the {@link ItemDetailModal} component.
+ *
+ * @interface ItemDetailModalProps
+ * @property {boolean} visible - Whether the modal is currently shown.
+ * @property {WishlistItemOutput | null} item - The wishlist item being displayed, or null if none.
+ * @property {() => void} onDismiss - Callback invoked when the modal should be closed.
+ * @property {(item: WishlistItemOutput) => void} onEdit - Callback invoked when the user requests to edit the item.
+ */
 interface ItemDetailModalProps {
   visible: boolean;
   item: WishlistItemOutput | null;
@@ -84,11 +93,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         <ScrollView showsVerticalScrollIndicator={false}>
           <Surface style={styles.imageContainer} elevation={1}>
             <Image
-              source={{
-                uri: item.imageUrl?.startsWith("/")
-                  ? `${Config.baseUrl}${item.imageUrl}`
-                  : (item.imageUrl ?? ""),
-              }}
+              source={getItemImageSource(item.imageUrl)}
               style={styles.image}
               resizeMode="cover"
             />

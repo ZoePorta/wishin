@@ -117,9 +117,7 @@ export default function WishlistDetail() {
 
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => {
-      const itemWidth =
-        Layout.columnWidths[numColumns as keyof typeof Layout.columnWidths] ??
-        "100%";
+      const itemWidth = Layout.columnWidths[numColumns];
 
       return (
         <View

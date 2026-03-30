@@ -1,19 +1,10 @@
 import React, { useCallback } from "react";
-import {
-  View,
-  Linking,
-  Alert,
-  StyleSheet,
-  Image,
-  type ImageSourcePropType,
-} from "react-native";
+import { View, Linking, Alert, StyleSheet, Image } from "react-native";
 import { Card, Text, Badge, useTheme, IconButton } from "react-native-paper";
 import { type AppTheme } from "../../../theme/theme";
 import { type WishlistItemOutput } from "@wishin/domain";
 import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
-import { Config } from "../../../constants/Config";
-// @ts-expect-error - New asset might not be indexed by TS yet
-import ITEM_IMAGE_PLACEHOLDER from "../../../../assets/images/item_image_placeholder.png";
+import { getItemImageSource } from "../utils/images";
 
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
@@ -64,15 +55,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
       <View style={styles.mainRow}>
         <View style={styles.imageWrapper}>
           <Image
-            source={
-              item.imageUrl
-                ? {
-                    uri: item.imageUrl.startsWith("/")
-                      ? `${Config.baseUrl}${item.imageUrl}`
-                      : item.imageUrl,
-                  }
-                : (ITEM_IMAGE_PLACEHOLDER as unknown as ImageSourcePropType)
-            }
+            source={getItemImageSource(item.imageUrl)}
             accessibilityLabel={item.name}
             style={styles.image}
             resizeMode="cover"
