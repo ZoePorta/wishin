@@ -1,4 +1,5 @@
 import { WishlistRepository } from "../repositories/wishlist.repository";
+import { ProfileRepository } from "../repositories/profile.repository";
 import { GetWishlistInput, WishlistOutput } from "./dtos/get-wishlist.dto";
 import { NotFoundError } from "../errors/domain-errors";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
@@ -7,7 +8,10 @@ import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
  * Use case to fetch a wishlist by its unique identifier.
  */
 export class GetWishlistByUUIDUseCase {
-  constructor(private readonly wishlistRepo: WishlistRepository) {}
+  constructor(
+    private readonly wishlistRepo: WishlistRepository,
+    private readonly profileRepo: ProfileRepository,
+  ) {}
 
   /**
    * Executes the use case.
@@ -22,6 +26,8 @@ export class GetWishlistByUUIDUseCase {
       throw new NotFoundError("Wishlist not found");
     }
 
-    return WishlistOutputMapper.toDTO(wishlist);
+    const ownerProfile = await this.profileRepo.findById(wishlist.ownerId);
+
+    return WishlistOutputMapper.toDTO(wishlist, ownerProfile ?? undefined);
   }
 }

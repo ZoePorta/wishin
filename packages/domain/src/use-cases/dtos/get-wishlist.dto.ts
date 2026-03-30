@@ -48,6 +48,8 @@ export interface WishlistOutput {
   title: string;
   description?: string;
   ownerId: string;
+  ownerName?: string;
+  ownerAvatarUrl?: string;
   visibility: Visibility;
   participation: Participation;
   items: WishlistItemOutput[];
