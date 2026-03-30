@@ -274,6 +274,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
                   }}
                   accessibilityLabel={`View Online, ${item.name}`}
                   style={styles.headerLinkIcon}
+                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                 />
               )}
             </View>
@@ -406,7 +407,6 @@ const makeStyles = (theme: AppTheme) =>
     titleText: {
       flex: 1,
       fontFamily: theme.fonts.titleLargeVarela.fontFamily,
-      fontWeight: "600",
     },
     imageWrapper: {
       position: "relative",

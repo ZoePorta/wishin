@@ -5,6 +5,7 @@ import { type AppTheme } from "../../../theme/theme";
 import { type WishlistItemOutput } from "@wishin/domain";
 import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
 import { getItemImageSource } from "../utils/images";
+import { commonStyles } from "../../../theme/common-styles";
 
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
@@ -80,7 +81,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
                   <IconButton
                     icon="open-in-new"
                     size={16}
-                    style={styles.linkIcon}
+                    style={[styles.linkIcon, commonStyles.minimumTouchTarget]}
                     onPress={() => {
                       void handleOpenUrl(item.url);
                     }}
@@ -115,6 +116,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
             <IconButton
               icon="pencil-outline"
               size={20}
+              style={commonStyles.minimumTouchTarget}
               onPress={() => {
                 onEdit(item);
               }}
@@ -124,6 +126,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
               icon="trash-can-outline"
               size={20}
               iconColor={theme.colors.error}
+              style={commonStyles.minimumTouchTarget}
               onPress={() => {
                 onRemove(item.id);
               }}
