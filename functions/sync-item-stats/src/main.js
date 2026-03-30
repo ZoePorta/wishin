@@ -30,18 +30,15 @@ export default async ({ req, res, log, error }) => {
   const event = req.headers["x-appwrite-event"] || "";
 
   // Dynamic collection prefix detection
-  const collectionIdMatch = event.match(/collections\.([^.]+)/);
+  // Supports both "collections.[ID]" and "tables.[ID]" formats
+  const collectionIdMatch = event.match(/(?:collections|tables)\.([^.]+)/);
   const triggerCollectionId = collectionIdMatch ? collectionIdMatch[1] : "";
-
-  log(`Debug: triggerCollectionId detected as "${triggerCollectionId}"`);
 
   // Logic: if it's "dev_transactions", prefix is "dev_".
   // If it's "transactions" (no underscore), prefix is "".
   // We split by underscore: if parts.length > 1, first part is the prefix.
   const parts = triggerCollectionId.split("_");
   const prefix = parts.length > 1 ? parts[0] + "_" : "";
-
-  log(`Debug: prefix detected as "${prefix}"`);
 
   const itemsTable = prefix + process.env.ITEMS_COLLECTION_ID;
   const processedEventsTable =
