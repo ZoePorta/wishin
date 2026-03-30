@@ -33,11 +33,15 @@ export default async ({ req, res, log, error }) => {
   const collectionIdMatch = event.match(/collections\.([^.]+)/);
   const triggerCollectionId = collectionIdMatch ? collectionIdMatch[1] : "";
 
+  log(`Debug: triggerCollectionId detected as "${triggerCollectionId}"`);
+
   // Logic: if it's "dev_transactions", prefix is "dev_".
   // If it's "transactions" (no underscore), prefix is "".
   // We split by underscore: if parts.length > 1, first part is the prefix.
   const parts = triggerCollectionId.split("_");
   const prefix = parts.length > 1 ? parts[0] + "_" : "";
+
+  log(`Debug: prefix detected as "${prefix}"`);
 
   const itemsTable = prefix + process.env.ITEMS_COLLECTION_ID;
   const processedEventsTable =
