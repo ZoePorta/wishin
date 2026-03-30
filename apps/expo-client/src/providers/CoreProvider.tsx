@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, type ReactNode } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { WishlistRepositoryProvider } from "../contexts/WishlistRepositoryContext";
 import { UserProvider } from "../contexts/UserContext";
+import { ToastProvider } from "../contexts/ToastContext";
 import {
   AppwriteWishlistRepository,
   AppwriteTransactionRepository,
@@ -268,7 +269,9 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
       logger={consoleLogger}
       observability={OBSERVABILITY}
     >
-      <UserProvider>{children}</UserProvider>
+      <UserProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </UserProvider>
     </WishlistRepositoryProvider>
   );
 };

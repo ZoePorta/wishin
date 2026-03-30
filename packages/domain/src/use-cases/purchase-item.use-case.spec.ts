@@ -140,7 +140,8 @@ describe("PurchaseItemUseCase", () => {
     const savedTransaction = transactionRepo.save.mock.calls[0][0];
     expect(savedTransaction.toProps().status).toBe(TransactionStatus.PURCHASED);
     expect(savedTransaction.toProps().quantity).toBe(2);
-    expect(result.items[0].purchasedQuantity).toBe(2);
+    expect(result.wishlist.items[0].purchasedQuantity).toBe(2);
+    expect(result.transactionId).toBe(transactionId);
 
     // Verify Observability
     expect(observability.trackEvent).toHaveBeenCalledWith(

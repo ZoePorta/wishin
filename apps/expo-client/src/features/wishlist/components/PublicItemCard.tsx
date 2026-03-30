@@ -13,13 +13,14 @@ import {
   Badge,
   Surface,
   useTheme,
-  Snackbar,
   IconButton,
 } from "react-native-paper";
 import { type AppTheme } from "../../../theme/theme";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { useUser } from "../../../contexts/UserContext";
+import { useToast } from "../../../contexts/ToastContext";
 import { usePurchaseItem } from "../hooks/usePurchaseItem";
+import { useUndoPurchase } from "../hooks/useUndoPurchase";
 import { LoginSuggestionModal } from "./LoginSuggestionModal";
 import { AuthModal } from "../../../components/auth/AuthModal";
 import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
@@ -65,11 +66,12 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   const styles = React.useMemo(() => makeStyles(theme), [theme]);
   const { userId, sessionType, loginAsGuest, isSessionReliable } = useUser();
   const { purchaseItem, loading: purchaseLoading } = usePurchaseItem();
+  const { undoPurchase } = useUndoPurchase();
+  const { showToast } = useToast();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [authModalVisible, setAuthModalVisible] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
-  const [successVisible, setSuccessVisible] = useState(false);
   const [pendingPurchase, setPendingPurchase] = useState(false);
 
   const isCompleted =
@@ -113,16 +115,42 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     }
   }, []);
 
+  const handleUndoPurchase = useCallback(
+    async (transactionId: string) => {
+      if (!userId) return;
+
+      try {
+        await undoPurchase({
+          wishlistId,
+          transactionId,
+          userId,
+        });
+        showToast("Purchase undone successfully.");
+      } catch (err: unknown) {
+        Alert.alert(
+          "Undo Failed",
+          err instanceof Error ? err.message : "Something went wrong",
+        );
+      }
+    },
+    [undoPurchase, wishlistId, userId, showToast],
+  );
+
   const executePurchase = useCallback(
     async (buyerId: string) => {
       try {
-        await purchaseItem({
+        const result = await purchaseItem({
           wishlistId,
           itemId: item.id,
           userId: buyerId,
           quantity: 1, // Defaulting to 1 for this UI button
         });
-        setSuccessVisible(true);
+
+        showToast(`Awesome! You've marked 1 x ${item.name} as purchased.`, {
+          onUndo: () => {
+            void handleUndoPurchase(result.transactionId);
+          },
+        });
       } catch (err: unknown) {
         // usePurchaseItem (via useAsyncActionEx) re-throws errors, so we catch them here
         Alert.alert(
@@ -131,7 +159,14 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         );
       }
     },
-    [purchaseItem, wishlistId, item.id],
+    [
+      purchaseItem,
+      wishlistId,
+      item.id,
+      item.name,
+      showToast,
+      handleUndoPurchase,
+    ],
   );
 
   useEffect(() => {
@@ -168,7 +203,6 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     hasShownSuggestion,
     onSuggestionShown,
     isSessionReliable,
-    isOwner,
   ]);
 
   const handleContinueAsGuest = useCallback(async () => {
@@ -311,23 +345,6 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         }}
         loading={guestLoading}
       />
-
-      <Snackbar
-        visible={successVisible}
-        onDismiss={() => {
-          setSuccessVisible(false);
-        }}
-        duration={3000}
-        action={{
-          label: "Close",
-          onPress: () => {
-            setSuccessVisible(false);
-          },
-        }}
-      >
-        Item marked as purchased!
-      </Snackbar>
-
       <AuthModal
         visible={authModalVisible}
         onDismiss={() => {

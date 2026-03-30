@@ -2,12 +2,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GetWishlistByUUIDUseCase } from "./get-wishlist-by-uuid.use-case";
 import { WishlistRepository } from "../repositories/wishlist.repository";
+import { ProfileRepository } from "../repositories/profile.repository";
+import { Profile } from "../aggregates/profile";
 import { Wishlist } from "../aggregates/wishlist";
 import { Visibility, Participation } from "../value-objects";
 
 describe("GetWishlistByUUIDUseCase", () => {
   let useCase: GetWishlistByUUIDUseCase;
   let mockRepo: WishlistRepository;
+  let mockProfileRepo: ProfileRepository;
 
   beforeEach(() => {
     mockRepo = {
@@ -16,7 +19,11 @@ describe("GetWishlistByUUIDUseCase", () => {
       save: vi.fn(),
       delete: vi.fn(),
     };
-    useCase = new GetWishlistByUUIDUseCase(mockRepo);
+    mockProfileRepo = {
+      findById: vi.fn(),
+      save: vi.fn(),
+    };
+    useCase = new GetWishlistByUUIDUseCase(mockRepo, mockProfileRepo);
   });
 
   it("should return a wishlist DTO when found", async () => {
@@ -39,15 +46,25 @@ describe("GetWishlistByUUIDUseCase", () => {
     });
 
     vi.mocked(mockRepo.findById).mockResolvedValue(wishlist);
+    vi.mocked(mockProfileRepo.findById).mockResolvedValue(
+      Profile.reconstitute({
+        id: ownerId,
+        username: "zoe_user",
+        imageUrl: "https://example.com/avatar.png",
+      }),
+    );
 
     // Act
     const result = await useCase.execute({ id: wishlistId });
 
     // Assert
     expect(mockRepo.findById).toHaveBeenCalledWith(wishlistId);
+    expect(mockProfileRepo.findById).toHaveBeenCalledWith(ownerId);
     expect(result).toBeDefined();
     expect(result.id).toBe(wishlistId);
     expect(result.title).toBe("My Christmas List");
+    expect(result.ownerName).toBe("zoe_user");
+    expect(result.ownerAvatarUrl).toBe("https://example.com/avatar.png");
     expect(result.items).toEqual([]);
   });
 

@@ -8,14 +8,14 @@ import {
   useObservability,
 } from "../../../contexts/WishlistRepositoryContext";
 import { PurchaseItemUseCase } from "@wishin/domain";
-import type { PurchaseItemInput, WishlistOutput } from "@wishin/domain";
+import type { PurchaseItemInput, PurchaseItemOutput } from "@wishin/domain";
 
 /**
  * Return type for the usePurchaseItem hook.
  */
 export interface UsePurchaseItemReturn {
   /** The function to execute the purchase. */
-  purchaseItem: (input: PurchaseItemInput) => Promise<WishlistOutput>;
+  purchaseItem: (input: PurchaseItemInput) => Promise<PurchaseItemOutput>;
   /** Whether the purchase is in progress. */
   loading: boolean;
   /** The error message if the purchase failed, or null. */

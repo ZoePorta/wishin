@@ -10,8 +10,10 @@ import type { ProfileRepository } from "../repositories/profile.repository";
 import type { TransactionRepository } from "../repositories/transaction.repository";
 import type { Logger } from "../common/logger";
 import type { ObservabilityService } from "../common/observability";
-import type { PurchaseItemInput } from "./dtos/transaction-actions.dto";
-import type { WishlistOutput } from "./dtos/get-wishlist.dto";
+import type {
+  PurchaseItemInput,
+  PurchaseItemOutput,
+} from "./dtos/transaction-actions.dto";
 
 /**
  * Use case for purchasing an item from a wishlist.
@@ -56,12 +58,12 @@ export class PurchaseItemUseCase {
    * 3. Recording a new purchase transaction.
    *
    * @param {PurchaseItemInput} input - The payload containing wishlistId, itemId, userId, and quantity.
-   * @returns {Promise<WishlistOutput>} A promise that resolves to the updated wishlist data (optimistic DTO).
+   * @returns {Promise<PurchaseItemOutput>} A promise that resolves to the purchase result containing updated wishlist and transactionId.
    * @throws {WishlistNotFoundError} If the wishlist is not found.
    * @throws {InvalidOperationError} If the item is missing or quantity is invalid.
    * @throws {Error} If persistence or other operations fail.
    */
-  async execute(input: PurchaseItemInput): Promise<WishlistOutput> {
+  async execute(input: PurchaseItemInput): Promise<PurchaseItemOutput> {
     const { wishlistId, itemId, userId, quantity } = input;
 
     const wishlist = await this.wishlistRepository.findById(wishlistId);
@@ -149,7 +151,10 @@ export class PurchaseItemUseCase {
       quantity: quantity,
     });
 
-    return WishlistOutputMapper.toDTO(updatedWishlist);
+    return {
+      wishlist: WishlistOutputMapper.toDTO(updatedWishlist),
+      transactionId: transaction.id,
+    };
   }
 
   /**
