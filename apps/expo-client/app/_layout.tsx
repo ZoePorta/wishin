@@ -97,6 +97,7 @@ function RootLayout() {
           }}
         />
         <Stack.Screen name="wishlist/[id]" options={{}} />
+        <Stack.Screen name="owner/profile" options={{ title: "My Profile" }} />
       </Stack>
     </Surface>
   );
