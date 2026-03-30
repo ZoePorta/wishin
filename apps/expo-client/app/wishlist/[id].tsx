@@ -1,6 +1,12 @@
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useMemo, useCallback, useState, useEffect } from "react";
-import { View, FlatList, StyleSheet, Platform } from "react-native";
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  Platform,
+  useWindowDimensions,
+} from "react-native";
 import {
   Text,
   ActivityIndicator,
@@ -32,6 +38,14 @@ export default function WishlistDetail() {
   const { userId, isSessionReliable } = useUser();
   const [hasShownSuggestion, setHasShownSuggestion] = useState(false);
   const [isSpoilerRevealed, setIsSpoilerRevealed] = useState(false);
+  const { width } = useWindowDimensions();
+
+  const numColumns = useMemo(() => {
+    if (width >= 1200) return 4;
+    if (width >= 900) return 3;
+    if (width >= 600) return 2;
+    return 1;
+  }, [width]);
 
   const isOwner = useMemo(() => {
     // Return false while session resolution is indeterminate to prevent temporary owner UI exposure (ADR 027)
@@ -48,12 +62,26 @@ export default function WishlistDetail() {
     setHasShownSuggestion(true);
   }, []);
 
+  const visibleItems = useMemo(() => {
+    if (!wishlist) return [];
+    return wishlist.items.filter((item) => {
+      const isCompleted =
+        !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
+      // Completed items are hidden globally from the list (ADR 028)
+
+      if (isCompleted) {
+        return false;
+      }
+      return true;
+    });
+  }, [wishlist]);
+
   const ListHeader = useMemo(() => {
     if (!wishlist) return null;
     return (
       <View style={styles.header}>
         <Text
-          variant="headlineMedium"
+          variant="headlineLarge"
           style={[styles.headerTitle, { color: theme.colors.onSurface }]}
         >
           {wishlist.title}
@@ -88,22 +116,42 @@ export default function WishlistDetail() {
   }, [wishlist, theme]);
 
   const renderItem = useCallback(
-    ({ item }: { item: WishlistItemOutput }) => (
-      <PublicItemCard
-        item={item}
-        wishlistId={wishlist?.id ?? ""}
-        hasShownSuggestion={hasShownSuggestion}
-        onSuggestionShown={handleSuggestionShown}
-        isOwner={isOwner}
-        isSpoilerRevealed={isSpoilerRevealed}
-      />
-    ),
+    ({ item }: { item: WishlistItemOutput }) => {
+      const itemWidth = Layout.columnWidths[numColumns];
+
+      return (
+        <View
+          style={{
+            width: itemWidth,
+            padding: Layout.gridItemPadding,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: Layout.gridItemMaxWidth,
+              alignSelf: "center",
+            }}
+          >
+            <PublicItemCard
+              item={item}
+              wishlistId={wishlist?.id ?? ""}
+              hasShownSuggestion={hasShownSuggestion}
+              onSuggestionShown={handleSuggestionShown}
+              isOwner={isOwner}
+              isSpoilerRevealed={isSpoilerRevealed}
+            />
+          </View>
+        </View>
+      );
+    },
     [
       wishlist,
       hasShownSuggestion,
       handleSuggestionShown,
       isOwner,
       isSpoilerRevealed,
+      numColumns,
     ],
   );
 
@@ -159,8 +207,11 @@ export default function WishlistDetail() {
         }}
       />
       <FlatList
+        key={numColumns}
+        numColumns={numColumns}
+        style={styles.list}
         contentContainerStyle={styles.listContent}
-        data={wishlist.items}
+        data={visibleItems}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={ListHeader}
@@ -199,8 +250,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 24,
   },
+  list: {
+    width: "100%",
+    maxWidth: 1400,
+    alignSelf: "center",
+  },
   listContent: {
-    padding: 20,
+    padding: 10,
+    paddingTop: Layout.pagePadding,
     flexGrow: 1,
   },
   header: {

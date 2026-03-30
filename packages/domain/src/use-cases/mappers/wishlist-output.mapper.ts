@@ -35,7 +35,7 @@ export const WishlistOutputMapper = {
           price: itemProps.price,
           currency: itemProps.currency,
           priority: itemProps.priority,
-          imageUrl: itemProps.imageUrl,
+          imageUrl: itemProps.imageUrl ?? null,
           totalQuantity: itemProps.totalQuantity,
           reservedQuantity: itemProps.reservedQuantity,
           purchasedQuantity: itemProps.purchasedQuantity,

@@ -69,6 +69,9 @@ export interface AppTheme extends MD3Theme {
      */
     surfaceGlass: string;
   };
+  fonts: MD3Theme["fonts"] & {
+    titleLargeVarela: MD3Theme["fonts"]["titleLarge"];
+  };
 }
 
 /**
@@ -181,22 +184,17 @@ const typography = {
     letterSpacing: 0.4,
     fontWeight: "400" as const,
   },
+  titleLargeVarela: {
+    fontFamily: "VarelaRound_400Regular",
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: 0,
+    fontWeight: "400" as const,
+  },
 };
 
 /**
- * 2. Brand Logic Overrides
- * Targets a "Joyful" aesthetic using chromatic palettes.
- */
-const brandLightOverrides = {
-  ...materialTheme.schemes.light,
-};
-
-const brandDarkOverrides = {
-  ...materialTheme.schemes.dark,
-};
-
-/**
- * 3. Navigation Adaptation
+ * 2. Navigation Adaptation
  */
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -204,16 +202,28 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 });
 
 /**
- * 4. Theme Merging Logic
+ * 3. Theme Merging Logic
+ */
+/**
+ * Merges the React Native Paper theme, Navigation theme, and a partial Material color scheme
+ * into a single unified AppTheme.
+ *
+ * This function also performs runtime validation to ensure all required surface container
+ * and variant tokens are present. It provides fallback behavior for missing surface tokens
+ * by using the primary surface color and computes `surfaceGlass` using {@link addAlpha}.
+ *
+ * @param {MD3Theme} paperTheme - The base React Native Paper Material Design 3 theme.
+ * @param {NavigationTheme} navigationTheme - The React Navigation theme to merge.
+ * @param {Partial<MD3Theme["colors"]>} materialScheme - The Material Design color scheme (from dynamic colors or JSON).
+ * @returns {AppTheme} The merged and validated application theme.
+ * @throws {Error} If any required color tokens (e.g., surfaceContainerLow, surfaceDim) are missing after merging.
  */
 function mergeAndValidateTheme(
   paperTheme: MD3Theme,
   navigationTheme: NavigationTheme,
   materialScheme: Partial<MD3Theme["colors"]>,
-  overrides: Partial<MD3Theme["colors"]> = {},
 ): AppTheme {
-  const finalSurface =
-    overrides.surface ?? materialScheme.surface ?? paperTheme.colors.surface;
+  const finalSurface = materialScheme.surface ?? paperTheme.colors.surface;
 
   const merged: AppTheme = {
     ...paperTheme,
@@ -222,60 +232,36 @@ function mergeAndValidateTheme(
       ...paperTheme.colors,
       ...navigationTheme.colors,
       ...materialScheme,
-      ...overrides,
       // Explicitly pull surface container tokens to satisfy AppTheme interface
       surfaceContainerLow:
-        (overrides as Record<string, string | undefined>).surfaceContainerLow ??
         (materialScheme as Record<string, string | undefined>)
-          .surfaceContainerLow ??
-        finalSurface,
+          .surfaceContainerLow ?? finalSurface,
       surfaceContainer:
-        (overrides as Record<string, string | undefined>).surfaceContainer ??
         (materialScheme as Record<string, string | undefined>)
-          .surfaceContainer ??
-        finalSurface,
+          .surfaceContainer ?? finalSurface,
       surfaceContainerHigh:
-        (overrides as Record<string, string | undefined>)
-          .surfaceContainerHigh ??
         (materialScheme as Record<string, string | undefined>)
-          .surfaceContainerHigh ??
-        finalSurface,
+          .surfaceContainerHigh ?? finalSurface,
       surfaceContainerHighest:
-        (overrides as Record<string, string | undefined>)
-          .surfaceContainerHighest ??
         (materialScheme as Record<string, string | undefined>)
-          .surfaceContainerHighest ??
-        finalSurface,
+          .surfaceContainerHighest ?? finalSurface,
       surfaceContainerLowest:
-        (overrides as Record<string, string | undefined>)
-          .surfaceContainerLowest ??
         (materialScheme as Record<string, string | undefined>)
-          .surfaceContainerLowest ??
-        finalSurface,
+          .surfaceContainerLowest ?? finalSurface,
       surfaceDim:
-        (overrides as Record<string, string | undefined>).surfaceDim ??
         (materialScheme as Record<string, string | undefined>).surfaceDim ??
         finalSurface,
       surfaceBright:
-        (overrides as Record<string, string | undefined>).surfaceBright ??
         (materialScheme as Record<string, string | undefined>).surfaceBright ??
         finalSurface,
       surfaceGlass: addAlpha(finalSurface, 0.5),
-      elevation: {
-        ...paperTheme.colors.elevation,
-        level1: finalSurface,
-        level2: finalSurface,
-        level3: finalSurface,
-        level4: finalSurface,
-        level5: finalSurface,
-      },
     },
     fonts: {
       ...paperTheme.fonts,
       ...typography,
     },
     animation: paperTheme.animation,
-    roundness: 2,
+    roundness: 4, // Increased for a more "Joyful" aesthetic (pill-shaped buttons)
   };
 
   // Runtime assertion for required tokens
@@ -294,62 +280,59 @@ function mergeAndValidateTheme(
     (key) => !merged.colors[key as keyof typeof merged.colors],
   );
 
-  const requiredElevations = [
-    "level1",
-    "level2",
-    "level3",
-    "level4",
-    "level5",
-  ] as const;
-  const missingElevations = requiredElevations.filter(
-    (key) => !merged.colors.elevation[key],
-  );
-
-  if (missingColors.length > 0 || missingElevations.length > 0) {
+  if (missingColors.length > 0) {
     const errorPrefix = `Theme validation failed for ${paperTheme.dark ? "dark" : "light"} scheme.`;
-    const colorError =
-      missingColors.length > 0
-        ? ` Missing colors: ${missingColors.join(", ")}.`
-        : "";
-    const elevationError =
-      missingElevations.length > 0
-        ? ` Missing elevation levels: ${missingElevations.join(", ")}.`
-        : "";
-    throw new Error(`${errorPrefix}${colorError}${elevationError}`);
+    const colorError = ` Missing colors: ${missingColors.join(", ")}.`;
+    throw new Error(`${errorPrefix}${colorError}`);
   }
 
   return merged;
 }
 
 /**
- * 5. Final Exports
+ * 4. Final Exports
  */
 export const combinedTheme = {
   light: mergeAndValidateTheme(
     MD3LightTheme,
     LightTheme,
     materialTheme.schemes.light,
-    brandLightOverrides,
   ),
   dark: mergeAndValidateTheme(
     MD3DarkTheme,
     DarkTheme,
     materialTheme.schemes.dark,
-    brandDarkOverrides,
   ),
 };
 
 /**
- * Fallback theme used when custom fonts fail to load.
- * Uses system fonts instead of Aclonica/Varela Round.
+ * Fallback theme used when custom fonts (Aclonica/Varela Round) fail to load.
+ *
+ * The spread order in the fonts object is intentional:
+ * 1. `...typography`: Standard application typography configuration.
+ * 2. `...MD3LightTheme.fonts` / `...MD3DarkTheme.fonts`: Default MD3 system fonts
+ *    override custom font families with system fallbacks to ensure readability.
+ * 3. `titleLargeVarela`: Explicitly set after both spreads to ensure this specific
+ *    variant (using Varela Round fallback) is preserved.
+ *
+ * This ensures that if the custom font assets aren't available, the app gracefully
+ * reverts to native system fonts while maintaining the intended hierarchy.
  */
 export const fallbackTheme: { light: AppTheme; dark: AppTheme } = {
   light: {
     ...combinedTheme.light,
-    fonts: MD3LightTheme.fonts,
+    fonts: {
+      ...typography,
+      ...MD3LightTheme.fonts,
+      titleLargeVarela: MD3LightTheme.fonts.titleLarge,
+    },
   },
   dark: {
     ...combinedTheme.dark,
-    fonts: MD3DarkTheme.fonts,
+    fonts: {
+      ...typography,
+      ...MD3DarkTheme.fonts,
+      titleLargeVarela: MD3DarkTheme.fonts.titleLarge,
+    },
   },
 };

@@ -7,7 +7,9 @@ import {
   Badge,
   Surface,
   useTheme,
+  IconButton,
 } from "react-native-paper";
+import { type AppTheme } from "../../../theme/theme";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { useUser } from "../../../contexts/UserContext";
 import { useToast } from "../../../contexts/ToastContext";
@@ -17,6 +19,9 @@ import { LoginSuggestionModal } from "./LoginSuggestionModal";
 import { AuthModal } from "../../../components/auth/AuthModal";
 import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
 import { commonStyles } from "../../../theme/common-styles";
+import { addAlpha } from "../../../utils/colors";
+
+import { getItemImageSource } from "../utils/images";
 
 interface PublicItemCardProps {
   item: WishlistItemOutput;
@@ -50,7 +55,8 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   isOwner,
   isSpoilerRevealed,
 }) => {
-  const theme = useTheme();
+  const theme = useTheme<AppTheme>();
+  const styles = React.useMemo(() => makeStyles(theme), [theme]);
   const { userId, sessionType, loginAsGuest, isSessionReliable } = useUser();
   const { purchaseItem, loading: purchaseLoading } = usePurchaseItem();
   const { undoPurchase } = useUndoPurchase();
@@ -215,15 +221,27 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     <>
       <Card
         style={[styles.card, isCompleted && styles.completedCard]}
-        mode="elevated"
+        mode="outlined"
       >
-        {item.imageUrl && (
+        <View style={styles.imageWrapper}>
           <Card.Cover
-            source={{ uri: item.imageUrl }}
+            source={getItemImageSource(item.imageUrl)}
             accessibilityLabel={item.name}
-            style={isCompleted ? styles.completedImage : undefined}
+            style={[styles.cardImage, isCompleted && styles.completedImage]}
+            resizeMode="cover"
           />
-        )}
+          <Badge
+            size={24}
+            style={[
+              styles.priorityBadge,
+              {
+                backgroundColor: getPriorityColor(item.priority, theme),
+              },
+            ]}
+          >
+            {PRIORITY_LABELS[item.priority]}
+          </Badge>
+        </View>
 
         {isReserved && (
           <View style={styles.overlayContainer}>
@@ -243,51 +261,43 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
 
         <Card.Content style={styles.cardContent}>
           <View style={styles.cardHeader}>
-            <Text variant="titleLarge" style={styles.titleText}>
-              {item.name}
-            </Text>
-            {item.price != null && item.currency != null && (
-              <Text variant="titleMedium">
-                {item.currency} {item.price.toFixed(2)}
+            <View style={styles.titleContainer}>
+              <Text variant="titleLarge" style={styles.titleText}>
+                {item.name}
               </Text>
-            )}
-          </View>
-
-          {item.description && (
-            <Text
-              variant="bodyMedium"
-              numberOfLines={2}
-              style={styles.description}
-            >
-              {item.description}
-            </Text>
-          )}
-
-          <View style={styles.footer}>
-            <View style={styles.badgeContainer}>
-              <Badge
-                size={20}
-                style={[
-                  styles.badge,
-                  {
-                    backgroundColor: getPriorityColor(item.priority, theme),
-                  },
-                ]}
-              >
-                {PRIORITY_LABELS[item.priority]}
-              </Badge>
               {item.url && (
-                <Button
-                  mode="text"
+                <IconButton
+                  icon="open-in-new"
+                  size={18}
                   onPress={() => {
                     void handleOpenUrl(item.url);
                   }}
                   accessibilityLabel={`View Online, ${item.name}`}
-                  contentStyle={commonStyles.minimumTouchTarget}
-                  compact
-                >
-                  View Online
-                </Button>
+                  style={styles.headerLinkIcon}
+                  hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                />
+              )}
+            </View>
+          </View>
+
+          <View style={styles.descriptionWrapper}>
+            {item.description ? (
+              <Text
+                variant="bodyMedium"
+                numberOfLines={2}
+                style={styles.description}
+              >
+                {item.description}
+              </Text>
+            ) : null}
+          </View>
+
+          <View style={styles.footer}>
+            <View style={styles.priceContainer}>
+              {item.price != null && item.currency != null && (
+                <Text variant="titleMedium" style={styles.priceText}>
+                  {item.currency} {item.price.toFixed(2)}
+                </Text>
               )}
             </View>
 
@@ -331,59 +341,88 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    marginBottom: 16,
-    borderRadius: 12,
-  },
-  completedCard: {
-    opacity: 0.9,
-  },
-  cardContent: {
-    paddingTop: 16,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  description: {
-    marginTop: 8,
-  },
-  overlayContainer: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1,
-    borderRadius: 12,
-  },
-  overlayBadge: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  completedImage: {
-    opacity: 0.6,
-  },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 12,
-  },
-  badgeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  badge: {
-    alignSelf: "flex-start",
-  },
-  overlayLabel: {
-    fontWeight: "bold",
-  },
-  titleText: {
-    flex: 1,
-  },
-});
+const makeStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    card: {
+      marginBottom: 24,
+      borderRadius: 28,
+      backgroundColor: theme.colors.surfaceContainerLowest,
+      borderColor: theme.colors.outlineVariant,
+    },
+    completedCard: {
+      opacity: 0.9,
+    },
+    cardContent: {
+      paddingTop: 16,
+    },
+    cardHeader: {
+      marginBottom: 4,
+    },
+    titleContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      minHeight: 60, // Space for 2 lines of titleLargeVarela
+    },
+    headerLinkIcon: {
+      margin: 0,
+      marginRight: -8,
+    },
+    descriptionWrapper: {
+      minHeight: 44, // Space for 2 lines of bodyMedium + margin
+      justifyContent: "center",
+    },
+    description: {
+      marginTop: 4,
+    },
+    overlayContainer: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: addAlpha(theme.colors.inverseSurface, 0.4),
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1,
+      borderRadius: 28, // Updated to match card
+    },
+    overlayBadge: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      borderRadius: 8,
+    },
+    cardImage: {
+      margin: 12,
+      borderRadius: 22,
+    },
+    completedImage: {
+      opacity: 0.6,
+    },
+    footer: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 12,
+    },
+    overlayLabel: {
+      fontWeight: "bold",
+    },
+    titleText: {
+      flex: 1,
+      fontFamily: theme.fonts.titleLargeVarela.fontFamily,
+    },
+    imageWrapper: {
+      position: "relative",
+    },
+    priorityBadge: {
+      position: "absolute",
+      top: 24,
+      right: 24,
+      zIndex: 2,
+    },
+    priceContainer: {
+      flex: 1,
+      justifyContent: "center",
+    },
+    priceText: {
+      fontWeight: "bold",
+      color: theme.colors.primary,
+    },
+  });

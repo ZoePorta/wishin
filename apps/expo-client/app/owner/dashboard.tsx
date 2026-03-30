@@ -24,6 +24,7 @@ import { WishlistForm } from "../../src/features/wishlist/components/WishlistFor
 import { AddItemForm } from "../../src/features/wishlist/components/AddItemForm";
 import { DashboardHeader } from "../../src/features/wishlist/components/DashboardHeader";
 import { DashboardContent } from "../../src/features/wishlist/components/DashboardContent";
+import { ItemDetailModal } from "../../src/features/wishlist/components/ItemDetailModal";
 
 /**
  * Dashboard screen for wishlist owners.
@@ -55,6 +56,7 @@ export default function OwnerDashboard() {
   const [editingItem, setEditingItem] = useState<
     WishlistItemOutput | undefined
   >();
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [isShareSnackbarVisible, setIsShareSnackbarVisible] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
 
@@ -148,6 +150,10 @@ export default function OwnerDashboard() {
               onEditItem={(item) => {
                 setEditingItem(item);
                 setIsItemModalVisible(true);
+              }}
+              onItemPress={(item) => {
+                setEditingItem(item);
+                setIsDetailModalVisible(true);
               }}
               ListHeaderComponent={<DashboardHeader wishlist={wishlist} />}
             />
@@ -368,6 +374,17 @@ export default function OwnerDashboard() {
             >
               Link copied to clipboard
             </Snackbar>
+            <ItemDetailModal
+              visible={isDetailModalVisible}
+              item={editingItem ?? null}
+              onDismiss={() => {
+                setIsDetailModalVisible(false);
+              }}
+              onEdit={(item) => {
+                setEditingItem(item);
+                setIsItemModalVisible(true);
+              }}
+            />
           </View>
         )}
       </Surface>
