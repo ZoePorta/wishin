@@ -1,3 +1,5 @@
+import type { WishlistOutput } from "./get-wishlist.dto";
+
 /**
  * Input DTO for reserving an item.
  */
@@ -40,6 +42,20 @@ export interface PurchaseItemInput {
    * Amount of units to purchase.
    */
   quantity: number;
+}
+
+/**
+ * Output DTO for a successful purchase.
+ */
+export interface PurchaseItemOutput {
+  /**
+   * The updated wishlist state.
+   */
+  wishlist: WishlistOutput;
+  /**
+   * The ID of the transaction that was created.
+   */
+  transactionId: string;
 }
 
 /**

@@ -107,7 +107,7 @@
 
 ## Phase 6: UI Polish & Presentation
 
-- [ ] **UI:** Immediate "Undo" snackbar after purchase.
+- [x] **UI:** Immediate "Undo" snackbar after purchase.
 - [ ] **Final Polish:** Theme system refinement and micro-animations.
 - [ ] **Web Responsiveness:** Ensure a premium and fully responsive experience for the web client across all viewports.
 
