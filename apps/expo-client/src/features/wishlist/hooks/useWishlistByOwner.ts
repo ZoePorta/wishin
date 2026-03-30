@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useWishlistRepository } from "../../../contexts/WishlistRepositoryContext";
+import { useRepositories } from "../../../contexts/WishlistRepositoryContext";
 import { GetWishlistByOwnerUseCase } from "@wishin/domain";
 import type { WishlistOutput } from "@wishin/domain";
 
@@ -10,7 +10,7 @@ import type { WishlistOutput } from "@wishin/domain";
  * @returns An object containing the wishlist, loading state, error, and refetch function.
  */
 export function useWishlistByOwner(ownerId: string | null) {
-  const repository = useWishlistRepository();
+  const { wishlistRepository, profileRepository } = useRepositories();
   const [wishlist, setWishlist] = useState<WishlistOutput | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,10 @@ export function useWishlistByOwner(ownerId: string | null) {
     }
 
     try {
-      const useCase = new GetWishlistByOwnerUseCase(repository);
+      const useCase = new GetWishlistByOwnerUseCase(
+        wishlistRepository,
+        profileRepository,
+      );
       const result = await useCase.execute({ ownerId });
       if (isCurrent()) setWishlist(result);
     } catch (err) {
@@ -51,7 +54,7 @@ export function useWishlistByOwner(ownerId: string | null) {
     } finally {
       if (isCurrent()) setLoading(false);
     }
-  }, [ownerId, repository]);
+  }, [ownerId, wishlistRepository, profileRepository]);
 
   useEffect(() => {
     isMounted.current = true;

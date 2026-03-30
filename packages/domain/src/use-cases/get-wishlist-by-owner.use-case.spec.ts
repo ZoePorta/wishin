@@ -2,12 +2,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GetWishlistByOwnerUseCase } from "./get-wishlist-by-owner.use-case";
 import { WishlistRepository } from "../repositories/wishlist.repository";
+import { ProfileRepository } from "../repositories/profile.repository";
 import { Wishlist } from "../aggregates/wishlist";
+import { Profile } from "../aggregates/profile";
 import { Visibility, Participation } from "../value-objects";
 
 describe("GetWishlistByOwnerUseCase", () => {
   let useCase: GetWishlistByOwnerUseCase;
   let mockRepo: WishlistRepository;
+  let mockProfileRepo: ProfileRepository;
 
   beforeEach(() => {
     mockRepo = {
@@ -16,7 +19,11 @@ describe("GetWishlistByOwnerUseCase", () => {
       save: vi.fn(),
       delete: vi.fn(),
     };
-    useCase = new GetWishlistByOwnerUseCase(mockRepo);
+    mockProfileRepo = {
+      findById: vi.fn(),
+      save: vi.fn(),
+    };
+    useCase = new GetWishlistByOwnerUseCase(mockRepo, mockProfileRepo);
   });
 
   const ownerId = "550e8400-e29b-41d4-a716-446655440000";
@@ -50,16 +57,26 @@ describe("GetWishlistByOwnerUseCase", () => {
     });
 
     vi.mocked(mockRepo.findByOwnerId).mockResolvedValue([wishlist]);
+    vi.mocked(mockProfileRepo.findById).mockResolvedValue(
+      Profile.reconstitute({
+        id: ownerId,
+        username: "zoe_user",
+        imageUrl: "https://example.com/avatar.png",
+      }),
+    );
 
     // Act
     const result = await useCase.execute({ ownerId });
 
     // Assert
     expect(mockRepo.findByOwnerId).toHaveBeenCalledWith(ownerId);
+    expect(mockProfileRepo.findById).toHaveBeenCalledWith(ownerId);
     expect(result).not.toBeNull();
     expect(result?.id).toBe(wishlistId);
     expect(result?.title).toBe("My Wishlist");
     expect(result?.ownerId).toBe(ownerId);
+    expect(result?.ownerName).toBe("zoe_user");
+    expect(result?.ownerAvatarUrl).toBe("https://example.com/avatar.png");
   });
 
   it("should verify findByOwnerId is called with the provided ownerId", async () => {

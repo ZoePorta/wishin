@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useWishlistRepository } from "../contexts/WishlistRepositoryContext";
-import { WishlistOutputMapper } from "@wishin/domain";
+import { useRepositories } from "../contexts/WishlistRepositoryContext";
+import { GetWishlistByUUIDUseCase } from "@wishin/domain";
 import type { WishlistOutput } from "@wishin/domain";
 
 /**
@@ -20,7 +20,7 @@ export interface UseWishlistReturn {
  * @returns An object containing the wishlist data, loading state, error message, and a refetch function.
  */
 export function useWishlist(id: string): UseWishlistReturn {
-  const repository = useWishlistRepository();
+  const { wishlistRepository, profileRepository } = useRepositories();
   const [wishlist, setWishlist] = useState<WishlistOutput | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,26 +38,29 @@ export function useWishlist(id: string): UseWishlistReturn {
     try {
       setLoading(true);
       setError(null);
-      const data = await repository.findById(id);
+
+      const useCase = new GetWishlistByUUIDUseCase(
+        wishlistRepository,
+        profileRepository,
+      );
+      const data = await useCase.execute({ id });
 
       if (fetchId === fetchIdRef.current) {
-        if (data) {
-          setWishlist(WishlistOutputMapper.toDTO(data));
-        } else {
-          setWishlist(null);
-        }
+        setWishlist(data);
       }
     } catch (err) {
       if (fetchId === fetchIdRef.current) {
+        // Handle 404 specially if needed, but GetWishlistByUUIDUseCase throws NotFoundError
         console.error("Error fetching wishlist:", err);
         setError(err instanceof Error ? err.message : "An error occurred");
+        setWishlist(null);
       }
     } finally {
       if (fetchId === fetchIdRef.current) {
         setLoading(false);
       }
     }
-  }, [id, repository]);
+  }, [id, wishlistRepository, profileRepository]);
 
   useEffect(() => {
     void loadWishlist();

@@ -1,4 +1,5 @@
 import type { WishlistRepository } from "../repositories/wishlist.repository";
+import type { ProfileRepository } from "../repositories/profile.repository";
 import type { GetWishlistByOwnerInput, WishlistOutput } from "./dtos";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
 
@@ -12,8 +13,12 @@ export class GetWishlistByOwnerUseCase {
    * Initializes the use case with dependencies.
    *
    * @param wishlistRepository - The repository for fetching wishlists.
+   * @param profileRepository - The repository for fetching owner profiles.
    */
-  constructor(private readonly wishlistRepository: WishlistRepository) {}
+  constructor(
+    private readonly wishlistRepository: WishlistRepository,
+    private readonly profileRepository: ProfileRepository,
+  ) {}
 
   /**
    * Executes the use case to find a wishlist by owner ID.
@@ -34,6 +39,11 @@ export class GetWishlistByOwnerUseCase {
     }
 
     // Returning the first one as per current MVP rules
-    return WishlistOutputMapper.toDTO(wishlists[0]);
+    const wishlist = wishlists[0];
+    const ownerProfile = await this.profileRepository.findById(
+      wishlist.ownerId,
+    );
+
+    return WishlistOutputMapper.toDTO(wishlist, ownerProfile ?? undefined);
   }
 }
