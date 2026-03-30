@@ -29,7 +29,23 @@ export default async ({ req, res, log, error }) => {
   const quantity = Number(transaction.quantity);
   const event = req.headers["x-appwrite-event"] || "";
 
-  log(`Processing transaction for Item ID: ${itemId}. Event: ${event}`);
+  // Dynamic collection prefix detection
+  const collectionIdMatch = event.match(/collections\.([^.]+)/);
+  const triggerCollectionId = collectionIdMatch ? collectionIdMatch[1] : "";
+
+  // Logic: if it's "dev_transactions", prefix is "dev_".
+  // If it's "transactions" (no underscore), prefix is "".
+  // We split by underscore: if parts.length > 1, first part is the prefix.
+  const parts = triggerCollectionId.split("_");
+  const prefix = parts.length > 1 ? parts[0] + "_" : "";
+
+  const itemsTable = prefix + process.env.ITEMS_COLLECTION_ID;
+  const processedEventsTable =
+    prefix + process.env.PROCESSED_EVENTS_COLLECTION_ID;
+
+  log(
+    `Processing transaction for Item ID: ${itemId}. Event: ${event}. Using Tables: ${itemsTable}, ${processedEventsTable}`,
+  );
 
   if (!itemId) {
     error("Error: itemId is missing in the transaction document.");
@@ -66,7 +82,7 @@ export default async ({ req, res, log, error }) => {
   try {
     await tablesDb.getRow({
       databaseId: process.env.DATABASE_ID,
-      tableId: process.env.PROCESSED_EVENTS_COLLECTION_ID,
+      tableId: processedEventsTable,
       rowId: idempotencyKey,
     });
     log(`Transaction ${transaction.$id} already processed. Skipping sync.`);
@@ -90,14 +106,14 @@ export default async ({ req, res, log, error }) => {
       // Fetch item to get totalQuantity for capping
       const item = await tablesDb.getRow({
         databaseId: process.env.DATABASE_ID,
-        tableId: process.env.ITEMS_COLLECTION_ID,
+        tableId: itemsTable,
         rowId: itemId,
       });
 
       // Increment purchasedQuantity
       const incrementPayload = {
         databaseId: process.env.DATABASE_ID,
-        tableId: process.env.ITEMS_COLLECTION_ID,
+        tableId: itemsTable,
         rowId: itemId,
         column: "purchasedQuantity",
         value: quantity,
@@ -117,7 +133,7 @@ export default async ({ req, res, log, error }) => {
 
       const result = await tablesDb.decrementRowColumn({
         databaseId: process.env.DATABASE_ID,
-        tableId: process.env.ITEMS_COLLECTION_ID,
+        tableId: itemsTable,
         rowId: itemId,
         column: "purchasedQuantity",
         value: quantity,
@@ -136,7 +152,7 @@ export default async ({ req, res, log, error }) => {
     try {
       await tablesDb.createRow({
         databaseId: process.env.DATABASE_ID,
-        tableId: process.env.PROCESSED_EVENTS_COLLECTION_ID,
+        tableId: processedEventsTable,
         rowId: idempotencyKey,
         data: {
           processedAt: new Date().toISOString(),
