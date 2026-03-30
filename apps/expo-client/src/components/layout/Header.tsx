@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
   Text,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Layout } from "../../constants/Layout";
 import Logo from "../../../assets/wishinlogo.svg";
@@ -37,7 +38,11 @@ export const Header = ({
   back,
 }: HeaderProps) => {
   const theme = useTheme<AppTheme>();
-  const styles = React.useMemo(() => makeStyles(theme), [theme]);
+  const insets = useSafeAreaInsets();
+  const styles = React.useMemo(
+    () => makeStyles(theme, insets),
+    [theme, insets],
+  );
   const isBackAvailable = !!back && !!navigation;
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768; // Tablet and Desktop
@@ -145,11 +150,15 @@ export const Header = ({
   );
 };
 
-const makeStyles = (theme: AppTheme) =>
+const makeStyles = (theme: AppTheme, insets: { top: number }) =>
   StyleSheet.create({
     nav: {
       paddingHorizontal: 24,
-      height: Layout.headerHeightWeb,
+      paddingTop: Platform.OS === "web" ? 0 : insets.top,
+      height:
+        Platform.OS === "web"
+          ? Layout.headerHeightWeb
+          : Layout.headerHeightWeb + insets.top,
       justifyContent: "center",
       zIndex: 100,
       borderBottomWidth: 1,
