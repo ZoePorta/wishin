@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { StyleSheet, useColorScheme, Platform } from "react-native";
 import { PaperProvider, Surface, useTheme } from "react-native-paper";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { combinedTheme, fallbackTheme } from "../src/theme";
 import type { AppTheme } from "../src/theme";
 import { AppErrorBoundary } from "../src/components/core/AppErrorBoundary";
@@ -15,6 +16,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { Aclonica_400Regular } from "@expo-google-fonts/aclonica";
 import { VarelaRound_400Regular } from "@expo-google-fonts/varela-round";
+import { Layout } from "../src/constants/Layout";
 
 SplashScreen.preventAutoHideAsync().catch((e: unknown) => {
   console.error("Failed to prevent splash screen auto hide", e);
@@ -53,21 +55,23 @@ export default function Root() {
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <PaperProvider theme={theme}>
-        {initError ? (
-          <ConfigErrorScreen
-            onRetry={() => {
-              setInitError(null);
-            }}
-          />
-        ) : (
-          <AppErrorBoundary fallback={<GeneralErrorScreen />}>
-            <CoreProvider onConfigError={setInitError}>
-              <RootLayout />
-            </CoreProvider>
-          </AppErrorBoundary>
-        )}
-      </PaperProvider>
+      <SafeAreaProvider>
+        <PaperProvider theme={theme}>
+          {initError ? (
+            <ConfigErrorScreen
+              onRetry={() => {
+                setInitError(null);
+              }}
+            />
+          ) : (
+            <AppErrorBoundary fallback={<GeneralErrorScreen />}>
+              <CoreProvider onConfigError={setInitError}>
+                <RootLayout />
+              </CoreProvider>
+            </AppErrorBoundary>
+          )}
+        </PaperProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
@@ -87,6 +91,7 @@ function RootLayout() {
           header: (props) => <Header {...props} />,
           contentStyle: {
             backgroundColor: theme.colors.background,
+            paddingTop: Platform.OS === "web" ? Layout.headerHeightWeb : 0,
           },
         }}
       >

@@ -178,7 +178,7 @@ export class AppwriteAuthRepository
   async register(
     email: string,
     password: string,
-    username: string,
+    _username: string,
   ): Promise<AuthenticatedAuthResult> {
     let isAnonymous = false;
     let userId: string = ID.unique();
@@ -205,14 +205,17 @@ export class AppwriteAuthRepository
         email,
         password,
       });
-      // Update name after promotion
-      await this.account.updateName({ name: username });
     } else {
       user = await this.account.create({
         userId,
         email,
         password,
-        name: username,
+      });
+
+      // Auto-login after registration for new users
+      await this.account.createEmailPasswordSession({
+        email,
+        password,
       });
     }
 

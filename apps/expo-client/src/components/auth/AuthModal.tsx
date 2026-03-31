@@ -2,8 +2,13 @@ import React, { useCallback, useState } from "react";
 import { StyleSheet } from "react-native";
 import { Portal, Modal, IconButton, useTheme } from "react-native-paper";
 import { AuthPanel } from "./AuthPanel";
-import { useAuthRepository } from "../../contexts/WishlistRepositoryContext";
+import {
+  useAuthRepository,
+  useProfileRepository,
+  useLogger,
+} from "../../contexts/WishlistRepositoryContext";
 import { useUser } from "../../contexts/UserContext";
+import { RegisterUserUseCase } from "@wishin/domain";
 
 /**
  * Props for the authentication modal.
@@ -27,11 +32,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
   const theme = useTheme();
   const authRepo = useAuthRepository();
+  const profileRepo = useProfileRepository();
+  const logger = useLogger();
   const { refetch } = useUser();
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [lastVisible, setLastVisible] = useState(false);
+
+  // Memoize the register use case
+  const registerUseCase = React.useMemo(
+    () => new RegisterUserUseCase(authRepo, profileRepo, logger),
+    [authRepo, profileRepo, logger],
+  );
 
   // Reset state when visibility changes
   React.useEffect(() => {
@@ -65,7 +78,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setLoading(true);
       setRegisterError(null);
       try {
-        await authRepo.register(email, password, username);
+        await registerUseCase.execute({ email, password, username });
         await refetch();
         onDismiss();
       } catch (error: unknown) {
@@ -76,7 +89,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setLoading(false);
       }
     },
-    [authRepo, refetch, onDismiss],
+    [registerUseCase, refetch, onDismiss],
   );
 
   return (

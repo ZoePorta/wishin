@@ -29,7 +29,37 @@ export default async ({ req, res, log, error }) => {
   const quantity = Number(transaction.quantity);
   const event = req.headers["x-appwrite-event"] || "";
 
-  log(`Processing transaction for Item ID: ${itemId}. Event: ${event}`);
+  // Dynamic collection prefix detection
+  // Supports both "collections.[ID]" and "tables.[ID]" formats
+  const collectionIdMatch = event.match(/(?:collections|tables)\.([^.]+)/);
+  const triggerCollectionId = collectionIdMatch ? collectionIdMatch[1] : "";
+
+  const txTable = process.env.TRANSACTIONS_COLLECTION_ID;
+  let prefix;
+
+  if (triggerCollectionId === txTable) {
+    prefix = "";
+  } else if (triggerCollectionId.endsWith("_" + txTable)) {
+    prefix = triggerCollectionId.slice(0, -1 - txTable.length) + "_";
+  } else {
+    // Fail closed: if we can't determine the prefix from the triggering table,
+    // we don't know which environment's items/processed_events to update.
+    error(
+      `Unknown trigger collection: ${triggerCollectionId}. Expected ${txTable} or {prefix}_${txTable}`,
+    );
+    return res.json(
+      { success: false, message: "Unknown trigger collection" },
+      400,
+    );
+  }
+
+  const itemsTable = prefix + process.env.ITEMS_COLLECTION_ID;
+  const processedEventsTable =
+    prefix + process.env.PROCESSED_EVENTS_COLLECTION_ID;
+
+  log(
+    `Processing transaction for Item ID: ${itemId}. Event: ${event}. Using Tables: ${itemsTable}, ${processedEventsTable}`,
+  );
 
   if (!itemId) {
     error("Error: itemId is missing in the transaction document.");
@@ -66,7 +96,7 @@ export default async ({ req, res, log, error }) => {
   try {
     await tablesDb.getRow({
       databaseId: process.env.DATABASE_ID,
-      tableId: process.env.PROCESSED_EVENTS_COLLECTION_ID,
+      tableId: processedEventsTable,
       rowId: idempotencyKey,
     });
     log(`Transaction ${transaction.$id} already processed. Skipping sync.`);
@@ -90,14 +120,14 @@ export default async ({ req, res, log, error }) => {
       // Fetch item to get totalQuantity for capping
       const item = await tablesDb.getRow({
         databaseId: process.env.DATABASE_ID,
-        tableId: process.env.ITEMS_COLLECTION_ID,
+        tableId: itemsTable,
         rowId: itemId,
       });
 
       // Increment purchasedQuantity
       const incrementPayload = {
         databaseId: process.env.DATABASE_ID,
-        tableId: process.env.ITEMS_COLLECTION_ID,
+        tableId: itemsTable,
         rowId: itemId,
         column: "purchasedQuantity",
         value: quantity,
@@ -117,7 +147,7 @@ export default async ({ req, res, log, error }) => {
 
       const result = await tablesDb.decrementRowColumn({
         databaseId: process.env.DATABASE_ID,
-        tableId: process.env.ITEMS_COLLECTION_ID,
+        tableId: itemsTable,
         rowId: itemId,
         column: "purchasedQuantity",
         value: quantity,
@@ -136,7 +166,7 @@ export default async ({ req, res, log, error }) => {
     try {
       await tablesDb.createRow({
         databaseId: process.env.DATABASE_ID,
-        tableId: process.env.PROCESSED_EVENTS_COLLECTION_ID,
+        tableId: processedEventsTable,
         rowId: idempotencyKey,
         data: {
           processedAt: new Date().toISOString(),

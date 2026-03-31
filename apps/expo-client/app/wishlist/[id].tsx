@@ -1,12 +1,6 @@
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useMemo, useCallback, useState, useEffect } from "react";
-import {
-  View,
-  FlatList,
-  StyleSheet,
-  Platform,
-  useWindowDimensions,
-} from "react-native";
+import { View, FlatList, StyleSheet, useWindowDimensions } from "react-native";
 import {
   Text,
   ActivityIndicator,
@@ -261,7 +255,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   header: {
-    marginTop: Platform.OS === "web" ? Layout.headerHeightWeb : 0,
     marginBottom: 32,
   },
   headerTitle: {
