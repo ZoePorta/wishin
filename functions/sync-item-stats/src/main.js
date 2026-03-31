@@ -34,11 +34,24 @@ export default async ({ req, res, log, error }) => {
   const collectionIdMatch = event.match(/(?:collections|tables)\.([^.]+)/);
   const triggerCollectionId = collectionIdMatch ? collectionIdMatch[1] : "";
 
-  // Logic: if it's "dev_transactions", prefix is "dev_".
-  // If it's "transactions" (no underscore), prefix is "".
-  // We split by underscore: if parts.length > 1, first part is the prefix.
-  const parts = triggerCollectionId.split("_");
-  const prefix = parts.length > 1 ? parts[0] + "_" : "";
+  const txTable = process.env.TRANSACTIONS_COLLECTION_ID;
+  let prefix;
+
+  if (triggerCollectionId === txTable) {
+    prefix = "";
+  } else if (triggerCollectionId.endsWith("_" + txTable)) {
+    prefix = triggerCollectionId.slice(0, -1 - txTable.length) + "_";
+  } else {
+    // Fail closed: if we can't determine the prefix from the triggering table,
+    // we don't know which environment's items/processed_events to update.
+    error(
+      `Unknown trigger collection: ${triggerCollectionId}. Expected ${txTable} or {prefix}_${txTable}`,
+    );
+    return res.json(
+      { success: false, message: "Unknown trigger collection" },
+      400,
+    );
+  }
 
   const itemsTable = prefix + process.env.ITEMS_COLLECTION_ID;
   const processedEventsTable =
