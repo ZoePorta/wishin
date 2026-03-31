@@ -2,6 +2,7 @@ import type { WishlistRepository } from "../repositories/wishlist.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
 import type { GetWishlistByOwnerInput, WishlistOutput } from "./dtos";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
+import { ProfileOutputMapper } from "./mappers/profile-output.mapper";
 
 /**
  * Use case for retrieving a wishlist by its owner's ID.
@@ -44,6 +45,9 @@ export class GetWishlistByOwnerUseCase {
       wishlist.ownerId,
     );
 
-    return WishlistOutputMapper.toDTO(wishlist, ownerProfile ?? undefined);
+    return WishlistOutputMapper.toDTO(
+      wishlist,
+      ownerProfile ? ProfileOutputMapper.toDTO(ownerProfile) : undefined,
+    );
   }
 }

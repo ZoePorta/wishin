@@ -3,3 +3,4 @@ export * from "./create-wishlist.dto";
 export * from "./update-wishlist-input.dto";
 export * from "./wishlist-item-actions.dto";
 export * from "./transaction-actions.dto";
+export * from "./profile.dto";

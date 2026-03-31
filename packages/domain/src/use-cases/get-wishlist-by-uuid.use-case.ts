@@ -3,6 +3,7 @@ import { ProfileRepository } from "../repositories/profile.repository";
 import { GetWishlistInput, WishlistOutput } from "./dtos/get-wishlist.dto";
 import { NotFoundError } from "../errors/domain-errors";
 import { WishlistOutputMapper } from "./mappers/wishlist-output.mapper";
+import { ProfileOutputMapper } from "./mappers/profile-output.mapper";
 
 /**
  * Use case to fetch a wishlist by its unique identifier.
@@ -28,6 +29,9 @@ export class GetWishlistByUUIDUseCase {
 
     const ownerProfile = await this.profileRepo.findById(wishlist.ownerId);
 
-    return WishlistOutputMapper.toDTO(wishlist, ownerProfile ?? undefined);
+    return WishlistOutputMapper.toDTO(
+      wishlist,
+      ownerProfile ? ProfileOutputMapper.toDTO(ownerProfile) : undefined,
+    );
   }
 }
