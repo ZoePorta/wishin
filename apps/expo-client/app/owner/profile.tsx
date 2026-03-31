@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
@@ -5,6 +6,7 @@ import {
   ScrollView,
   Platform,
   KeyboardAvoidingView,
+  Alert,
 } from "react-native";
 import {
   Text,
@@ -18,10 +20,25 @@ import {
   Snackbar,
 } from "react-native-paper";
 import { Stack } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
+import {
+  UploadImageUseCase,
+  GetImagePreviewUseCase,
+  type FileData,
+} from "@wishin/domain";
 import { useUser } from "../../src/contexts/UserContext";
 import { useProfile } from "../../src/features/profile/hooks/useProfile";
+import { useUpdateProfile } from "../../src/features/profile/hooks/useUpdateProfile";
+import { useStorageRepository } from "../../src/contexts/WishlistRepositoryContext";
 import { Avatar } from "../../src/components/common/Avatar";
 import { Layout } from "../../src/constants/Layout";
+
+interface SelectedImage {
+  uri: string;
+  name: string;
+  type: string;
+  size: number;
+}
 
 /**
  * Profile Screen allows users to view and edit their public metadata.
@@ -35,28 +52,160 @@ export default function ProfileScreen() {
     error,
     refetch,
   } = useProfile(userId ?? undefined);
+  const { updateProfile, updating: updateLoading } = useUpdateProfile();
+  const storageRepository = useStorageRepository();
   const theme = useTheme();
 
   const [isEditing, setIsEditing] = useState(false);
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+  const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(
+    null,
+  );
+  const [useInitialImage, setUseInitialImage] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
 
-  // Initialize form state when profile data is loaded
   useEffect(() => {
-    if (profile) {
+    if (profile && !isEditing) {
       setUsername(profile.username);
       setBio(profile.bio ?? "");
+      setUseInitialImage(!!profile.imageUrl);
+      setSelectedImage(null);
     }
-  }, [profile]);
+  }, [profile, isEditing]);
 
-  const handleEditToggle = useCallback(() => {
+  const handleEditToggle = useCallback(async () => {
     if (isEditing) {
-      // TODO: Implement UpdateProfileUseCase to persist changes
-      setSnackbarVisible(true);
+      if (!userId) return;
+      setIsSaving(true);
+      let uploadedFileId: string | null = null;
+
+      try {
+        let finalImageUrl = useInitialImage ? profile?.imageUrl : undefined;
+
+        // Stage 1: Upload new image if selected
+        if (selectedImage) {
+          const fileData: FileData = {
+            uri: selectedImage.uri,
+            filename: selectedImage.name,
+            mimeType: selectedImage.type,
+            size: selectedImage.size,
+          };
+
+          try {
+            const uploadUseCase = new UploadImageUseCase(storageRepository);
+            const fileId = await uploadUseCase.execute(fileData);
+            uploadedFileId = fileId;
+            const previewUseCase = new GetImagePreviewUseCase(
+              storageRepository,
+            );
+            finalImageUrl = await previewUseCase.execute(fileId);
+          } catch (uploadError) {
+            console.error("Error uploading profile image:", uploadError);
+            Alert.alert(
+              "Upload Failed",
+              "There was an error uploading your profile picture. Would you like to save changes without the new picture?",
+              [
+                {
+                  text: "Cancel",
+                  style: "cancel",
+                  onPress: () => {
+                    setIsSaving(false);
+                  },
+                },
+                {
+                  text: "Save anyway",
+                  onPress: () => {
+                    void (async () => {
+                      try {
+                        await updateProfile({
+                          id: userId,
+                          username,
+                          bio,
+                          imageUrl: profile?.imageUrl, // Keep old
+                        });
+                        await refetch();
+                        setSnackbarVisible(true);
+                        setIsEditing(false);
+                      } catch (err) {
+                        console.error("Failed to save anyway", err);
+                      } finally {
+                        setIsSaving(false);
+                      }
+                    })();
+                  },
+                },
+              ],
+            );
+            return;
+          }
+        }
+
+        // Stage 2: Consolidate save
+        await updateProfile({
+          id: userId,
+          username,
+          bio,
+          imageUrl: finalImageUrl,
+        });
+
+        await refetch();
+        setSnackbarVisible(true);
+        setIsEditing(false);
+      } catch (err) {
+        console.error("Failed to update profile", err);
+        // Cleanup on failure
+        if (uploadedFileId) {
+          try {
+            await storageRepository.delete(uploadedFileId);
+          } catch (deleteError) {
+            console.error("Failed to cleanup orphaned upload:", deleteError);
+          }
+        }
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      setIsEditing(true);
     }
-    setIsEditing(!isEditing);
-  }, [isEditing]);
+  }, [
+    isEditing,
+    userId,
+    username,
+    bio,
+    profile?.imageUrl,
+    useInitialImage,
+    selectedImage,
+    updateProfile,
+    refetch,
+    storageRepository,
+  ]);
+
+  const handleImagePick = useCallback(async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setSelectedImage({
+          uri: asset.uri,
+          name: asset.fileName ?? "profile-image.jpg",
+          type: asset.mimeType ?? "image/jpeg",
+          size: asset.fileSize ?? 0,
+        });
+        setUseInitialImage(false);
+      }
+    } catch (err) {
+      console.error("Error picking image:", err);
+      Alert.alert("Error", "Failed to pick an image. Please try again.");
+    }
+  }, []);
 
   const onDismissSnackBar = () => {
     setSnackbarVisible(false);
@@ -104,32 +253,41 @@ export default function ProfileScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Surface mode="outlined" style={styles.card}>
+          <Surface mode="flat" style={styles.card}>
             <View style={styles.cardHeader}>
               <IconButton
                 icon={isEditing ? "check" : "pencil"}
-                mode={isEditing ? "contained" : "ghost"}
+                mode={isEditing ? "contained" : "outlined"}
                 containerColor={isEditing ? theme.colors.primary : undefined}
                 iconColor={
                   isEditing ? theme.colors.onPrimary : theme.colors.primary
                 }
                 size={24}
-                onPress={handleEditToggle}
+                onPress={() => void handleEditToggle()}
+                disabled={isSaving || updateLoading}
                 style={styles.editButton}
               />
             </View>
 
             <View style={styles.avatarSection}>
-              <Avatar uri={profile.imageUrl} size={140} style={styles.avatar} />
+              <Avatar
+                uri={
+                  selectedImage?.uri ??
+                  (useInitialImage
+                    ? (profile.imageUrl ?? undefined)
+                    : undefined)
+                }
+                size={140}
+                style={styles.avatar}
+              />
               {isEditing && (
                 <IconButton
                   icon="camera"
                   mode="contained-tonal"
                   size={24}
                   style={styles.avatarEditButton}
-                  onPress={() => {
-                    /* TODO: Implement Image Picker */
-                  }}
+                  onPress={() => void handleImagePick()}
+                  disabled={isSaving || updateLoading}
                 />
               )}
             </View>
@@ -208,7 +366,7 @@ export default function ProfileScreen() {
               onPress: onDismissSnackBar,
             }}
           >
-            Profile changes saved (Demo)
+            Profile changes saved
           </Snackbar>
         </Portal>
       </Surface>
@@ -259,7 +417,7 @@ const styles = StyleSheet.create({
   avatarEditButton: {
     position: "absolute",
     bottom: -10,
-    right: Platform.OS === "web" ? "calc(50% - 75px)" : "35%",
+    right: Platform.OS === "web" ? "40%" : "35%", // Adjusted for both platforms
   },
   form: {
     width: "100%",

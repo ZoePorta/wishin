@@ -20,6 +20,7 @@ export * from "./use-cases/login-user.use-case";
 export * from "./use-cases/purchase-item.use-case";
 export * from "./use-cases/undo-purchase.use-case";
 export * from "./use-cases/get-profile-by-id.use-case";
+export * from "./use-cases/update-profile.use-case";
 export * from "./use-cases/dtos";
 export * from "./use-cases/dtos/auth.dto";
 export * from "./use-cases/mappers/wishlist-output.mapper";
