@@ -52,16 +52,17 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 }) => {
   const theme = useTheme<AppTheme>();
   const styles = React.useMemo(() => makeStyles(theme), [theme]);
-  if (!item) return null;
 
   const handleOpenUrl = React.useCallback(async () => {
-    if (!item.url) return;
+    if (!item?.url) return;
     try {
       await Linking.openURL(item.url);
     } catch {
       Alert.alert("Error", "Could not open link.");
     }
-  }, [item.url]);
+  }, [item?.url]);
+
+  if (!item) return null;
 
   const priorityColor = getPriorityColor(item.priority, theme);
 
