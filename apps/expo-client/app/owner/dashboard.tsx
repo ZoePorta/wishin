@@ -20,6 +20,7 @@ import { Config } from "../../src/constants/Config";
 import { commonStyles } from "../../src/theme/common-styles";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
 import { useUser } from "../../src/contexts/UserContext";
+import { useProfile } from "../../src/features/profile/hooks/useProfile";
 import { WishlistForm } from "../../src/features/wishlist/components/WishlistForm";
 import { AddItemForm } from "../../src/features/wishlist/components/AddItemForm";
 import { DashboardHeader } from "../../src/features/wishlist/components/DashboardHeader";
@@ -38,7 +39,7 @@ export default function OwnerDashboard() {
   const {
     userId,
     wishlist,
-    loading,
+    loading: wishlistLoading,
     error,
     creating,
     itemActionLoading,
@@ -49,6 +50,9 @@ export default function OwnerDashboard() {
     handleRemoveItem,
     refetch,
   } = useOwnerDashboard();
+
+  const { profile, loading: profileLoading } = useProfile(userId ?? undefined);
+  const loading = wishlistLoading || profileLoading;
 
   const [isEditing, setIsEditing] = useState(false);
   const [isItemModalVisible, setIsItemModalVisible] = useState(false);
@@ -155,7 +159,9 @@ export default function OwnerDashboard() {
                 setEditingItem(item);
                 setIsDetailModalVisible(true);
               }}
-              ListHeaderComponent={<DashboardHeader wishlist={wishlist} />}
+              ListHeaderComponent={
+                <DashboardHeader wishlist={wishlist} profile={profile} />
+              }
             />
 
             <Portal>
