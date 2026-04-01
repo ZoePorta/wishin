@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { Alert } from "react-native";
 import {
@@ -6,8 +6,69 @@ import {
   GetImagePreviewUseCase,
   DeleteImageUseCase,
   type FileData,
+  type StorageRepository,
 } from "@wishin/domain";
 import { useStorageRepository } from "../contexts/WishlistRepositoryContext";
+
+/**
+ * Resolves file metadata for an image asset, including file size.
+ * Uses fetch to determine size if not provided by the asset.
+ *
+ * @param {Object} asset - Image asset data from ImagePicker or manual input.
+ * @returns {Promise<FileData>} Resolved file data with size, uri, filename and mimeType.
+ * @throws {Error} If file size cannot be determined.
+ */
+async function resolveFileData(asset: {
+  uri: string;
+  fileName?: string | null;
+  mimeType?: string;
+  fileSize?: number;
+}): Promise<FileData> {
+  let fileSize = asset.fileSize;
+
+  if (!fileSize || fileSize === 0) {
+    try {
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      fileSize = blob.size;
+    } catch (fetchErr) {
+      console.error("Failed to determine file size via fetch:", fetchErr);
+    }
+  }
+
+  if (!fileSize || fileSize === 0) {
+    throw new Error(
+      "Could not determine image size. Please try another image.",
+    );
+  }
+
+  return {
+    uri: asset.uri,
+    filename: asset.fileName ?? asset.uri.split("/").pop() ?? "image.jpg",
+    mimeType: asset.mimeType ?? "image/jpeg",
+    size: fileSize,
+  };
+}
+
+/**
+ * Executes the upload and preview pipeline for a given file.
+ *
+ * @param {FileData} fileData - The file to upload.
+ * @param {StorageRepository} storageRepository - The storage repository instance.
+ * @returns {Promise<string>} The preview URL of the uploaded image.
+ */
+async function uploadAndGetPreview(
+  fileData: FileData,
+  storageRepository: StorageRepository,
+): Promise<string> {
+  const uploadUseCase = new UploadImageUseCase(storageRepository);
+  const fileId = await uploadUseCase.execute(fileData);
+
+  const previewUseCase = new GetImagePreviewUseCase(storageRepository);
+  const previewUrl = await previewUseCase.execute(fileId);
+
+  return previewUrl;
+}
 
 /**
  * Custom hook to handle picking an image from the device and uploading it to storage.
@@ -26,6 +87,7 @@ export function useImagePickerAndUpload() {
   const [inflightCount, setInflightCount] = useState(0);
   const uploading = inflightCount > 0;
   const [error, setError] = useState<string | null>(null);
+  const latestRequestRef = useRef(0);
 
   /**
    * Triggers the native image picker and uploads the selected image.
@@ -34,7 +96,12 @@ export function useImagePickerAndUpload() {
    * @returns {Promise<string | null>} The preview URL of the uploaded image, or null if canceled/failed.
    */
   const pickAndUpload = useCallback(async (): Promise<string | null> => {
-    setError(null);
+    const requestId = ++latestRequestRef.current;
+
+    if (requestId === latestRequestRef.current) {
+      setError(null);
+    }
+
     let didIncrement = false;
     try {
       // Stage 1: Request Permissions
@@ -56,6 +123,8 @@ export function useImagePickerAndUpload() {
         quality: 0.8,
       });
 
+      if (requestId !== latestRequestRef.current) return null;
+
       if (pickerResult.canceled || pickerResult.assets.length === 0) {
         return null;
       }
@@ -64,48 +133,30 @@ export function useImagePickerAndUpload() {
       didIncrement = true;
 
       const asset = pickerResult.assets[0];
-      let fileSize = asset.fileSize;
-
-      if (!fileSize || fileSize === 0) {
-        try {
-          const response = await fetch(asset.uri);
-          const blob = await response.blob();
-          fileSize = blob.size;
-        } catch (fetchErr) {
-          console.error("Failed to determine file size via fetch:", fetchErr);
-        }
-      }
-
-      if (!fileSize || fileSize === 0) {
-        throw new Error(
-          "Could not determine image size. Please try another image.",
-        );
-      }
-
-      const fileData: FileData = {
+      const fileData = await resolveFileData({
         uri: asset.uri,
-        filename: asset.fileName ?? asset.uri.split("/").pop() ?? "image.jpg",
-        mimeType: asset.mimeType ?? "image/jpeg",
-        size: fileSize,
-      };
+        fileName: asset.fileName,
+        mimeType: asset.mimeType,
+        fileSize: asset.fileSize,
+      });
 
-      // Stage 3: Upload Image
-      const uploadUseCase = new UploadImageUseCase(storageRepository);
-      const fileId = await uploadUseCase.execute(fileData);
+      if (requestId !== latestRequestRef.current) return null;
 
-      // Stage 4: Get Preview URL
-      const previewUseCase = new GetImagePreviewUseCase(storageRepository);
-      const previewUrl = await previewUseCase.execute(fileId);
+      const previewUrl = await uploadAndGetPreview(fileData, storageRepository);
+      if (requestId !== latestRequestRef.current) return null;
 
       return previewUrl;
     } catch (err) {
       console.error("Error in pickAndUpload:", err);
-      const message = err instanceof Error ? err.message : "An error occurred";
-      setError(message);
-      Alert.alert(
-        "Upload Failed",
-        "Could not upload the image. Please try again.",
-      );
+      if (requestId === latestRequestRef.current) {
+        const message =
+          err instanceof Error ? err.message : "An error occurred";
+        setError(message);
+        Alert.alert(
+          "Upload Failed",
+          "Could not upload the image. Please try again.",
+        );
+      }
       return null;
     } finally {
       if (didIncrement) {
@@ -133,52 +184,41 @@ export function useImagePickerAndUpload() {
       mimeType?: string;
       fileSize?: number;
     }): Promise<string | null> => {
-      setError(null);
+      const requestId = ++latestRequestRef.current;
+
+      if (requestId === latestRequestRef.current) {
+        setError(null);
+      }
+
       setInflightCount((prev) => prev + 1);
       try {
-        let fileSize = file.fileSize;
-
-        if (!fileSize || fileSize === 0) {
-          try {
-            const response = await fetch(file.uri);
-            const blob = await response.blob();
-            fileSize = blob.size;
-          } catch (fetchErr) {
-            console.error("Failed to determine file size via fetch:", fetchErr);
-          }
-        }
-
-        if (!fileSize || fileSize === 0) {
-          throw new Error(
-            "Could not determine image size. Please try another image.",
-          );
-        }
-
-        const fileData: FileData = {
+        const fileData = await resolveFileData({
           uri: file.uri,
-          filename: file.fileName ?? file.uri.split("/").pop() ?? "image.jpg",
-          mimeType: file.mimeType ?? "image/jpeg",
-          size: fileSize,
-        };
+          fileName: file.fileName,
+          mimeType: file.mimeType,
+          fileSize: file.fileSize,
+        });
 
-        // Stage 3: Upload Image
-        const uploadUseCase = new UploadImageUseCase(storageRepository);
-        const fileId = await uploadUseCase.execute(fileData);
+        if (requestId !== latestRequestRef.current) return null;
 
-        // Stage 4: Get Preview URL
-        const previewUseCase = new GetImagePreviewUseCase(storageRepository);
-        const previewUrl = await previewUseCase.execute(fileId);
+        const previewUrl = await uploadAndGetPreview(
+          fileData,
+          storageRepository,
+        );
+        if (requestId !== latestRequestRef.current) return null;
 
         return previewUrl;
       } catch (err) {
         console.error("Error in uploadFile:", err);
-        const message =
-          err instanceof Error ? err.message : "An error occurred";
-        setError(message);
-        Alert.alert(
-          "Upload Failed",
-          "Could not upload the image. Please try again.",
-        );
+        if (requestId === latestRequestRef.current) {
+          const message =
+            err instanceof Error ? err.message : "An error occurred";
+          setError(message);
+          Alert.alert(
+            "Upload Failed",
+            "Could not upload the image. Please try again.",
+          );
+        }
         return null;
       } finally {
         setInflightCount((prev) => Math.max(0, prev - 1));
@@ -216,5 +256,6 @@ export function useImagePickerAndUpload() {
     deleteUpload,
     uploading,
     error,
+    inflightCount,
   };
 }
