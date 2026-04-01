@@ -84,7 +84,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     !!initialData?.imageUrl,
   );
   const [error, setError] = useState<string | null>(null);
-  const { pickAndUpload, uploading: isUploading } = useImagePickerAndUpload();
+  const { uploadFile, uploading: isUploading } = useImagePickerAndUpload();
 
   useEffect(() => {
     setName(initialData?.name ?? "");
@@ -131,7 +131,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         isUnlimited,
         imageUrl:
           selectedImage?.uri ??
-          (useInitialImage ? initialData?.imageUrl : undefined),
+          (useInitialImage ? initialData?.imageUrl : null),
         id: initialData?.id,
       };
 
@@ -171,7 +171,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         onImageSelected={(image) => {
           if (image) {
             void (async () => {
-              const url = await pickAndUpload();
+              const url = await uploadFile(image);
               if (url) {
                 setSelectedImage({ ...image, uri: url });
                 setUseInitialImage(false);

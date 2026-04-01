@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { UpdateProfileUseCase } from "./update-profile.use-case";
-import { ProfileRepository } from "../repositories/profile.repository";
-import { StorageRepository } from "../repositories/storage.repository";
+import type { ProfileRepository } from "../repositories/profile.repository";
+import type { StorageRepository } from "../repositories/storage.repository";
 import { Profile } from "../aggregates/profile";
 import { NotFoundError, InvalidAttributeError } from "../errors/domain-errors";
 

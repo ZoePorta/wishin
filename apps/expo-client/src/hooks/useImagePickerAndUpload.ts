@@ -25,6 +25,7 @@ export function useImagePickerAndUpload() {
    * @returns {Promise<string | null>} The preview URL of the uploaded image, or null if canceled/failed.
    */
   const pickAndUpload = useCallback(async (): Promise<string | null> => {
+    setError(null);
     try {
       // Stage 1: Request Permissions
       const { status } =
@@ -50,7 +51,6 @@ export function useImagePickerAndUpload() {
       }
 
       setUploading(true);
-      setError(null);
 
       const asset = pickerResult.assets[0];
       const fileData: FileData = {
@@ -83,8 +83,62 @@ export function useImagePickerAndUpload() {
     }
   }, [storageRepository]);
 
+  /**
+   * Uploads a file from a URI and returns its preview URL.
+   *
+   * @param {Object} file - The file to upload.
+   * @param {string} file.uri - The local URI of the file.
+   * @param {string} [file.fileName] - Optional filename.
+   * @param {string} [file.mimeType] - Optional mime type.
+   * @param {number} [file.fileSize] - Optional file size.
+   * @returns {Promise<string | null>} The preview URL of the uploaded image, or null if failed.
+   */
+  const uploadFile = useCallback(
+    async (file: {
+      uri: string;
+      fileName?: string;
+      mimeType?: string;
+      fileSize?: number;
+    }): Promise<string | null> => {
+      setError(null);
+      setUploading(true);
+      try {
+        const fileData: FileData = {
+          uri: file.uri,
+          filename: file.fileName ?? file.uri.split("/").pop() ?? "image.jpg",
+          mimeType: file.mimeType ?? "image/jpeg",
+          size: file.fileSize ?? 0,
+        };
+
+        // Stage 3: Upload Image
+        const uploadUseCase = new UploadImageUseCase(storageRepository);
+        const fileId = await uploadUseCase.execute(fileData);
+
+        // Stage 4: Get Preview URL
+        const previewUseCase = new GetImagePreviewUseCase(storageRepository);
+        const previewUrl = await previewUseCase.execute(fileId);
+
+        return previewUrl;
+      } catch (err) {
+        console.error("Error in uploadFile:", err);
+        const message =
+          err instanceof Error ? err.message : "An error occurred";
+        setError(message);
+        Alert.alert(
+          "Upload Failed",
+          "Could not upload the image. Please try again.",
+        );
+        return null;
+      } finally {
+        setUploading(false);
+      }
+    },
+    [storageRepository],
+  );
+
   return {
     pickAndUpload,
+    uploadFile,
     uploading,
     error,
   };

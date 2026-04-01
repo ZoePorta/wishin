@@ -23,6 +23,7 @@ import { Config } from "../../src/constants/Config";
 import { commonStyles } from "../../src/theme/common-styles";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
 import { useUser } from "../../src/contexts/UserContext";
+import { useRepositories } from "../../src/contexts/WishlistRepositoryContext";
 import { useProfile } from "../../src/features/profile/hooks/useProfile";
 import { WishlistForm } from "../../src/features/wishlist/components/WishlistForm";
 import { AddItemForm } from "../../src/features/wishlist/components/AddItemForm";
@@ -60,10 +61,12 @@ export default function OwnerDashboard() {
     profile,
     loading: profileLoading,
     refetch: refetchProfile,
+    error: profileError,
   } = useProfile(userId ?? undefined);
   const { updateProfile, updating: profileUpdating } = useUpdateProfile();
   const { pickAndUpload, uploading: imageUploading } =
     useImagePickerAndUpload();
+  const { storageRepository } = useRepositories();
 
   const handleEditAvatar = async () => {
     if (!userId) return;
@@ -73,13 +76,20 @@ export default function OwnerDashboard() {
         await updateProfile({ id: userId, imageUrl: newImageUrl });
         await refetchProfile();
       } catch (err) {
-        console.error("Failed to update profile picture:", err);
-        // Error alerts are handled by the hooks
+        console.error("Failed to update profile picture, cleaning up...", err);
+        // Clean up the uploaded image if the profile update fails
+        const fileId = storageRepository.extractFileId(newImageUrl);
+        if (fileId) {
+          void storageRepository.delete(fileId).catch((deleteErr: unknown) => {
+            console.error("Failed to clean up uploaded image:", deleteErr);
+          });
+        }
       }
     }
   };
 
-  const isAvatarUpdating = profileUpdating || imageUploading;
+  const isAvatarUpdating = imageUploading || profileUpdating;
+  const screenError = error ?? profileError;
   const loading = wishlistLoading || profileLoading;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -167,18 +177,21 @@ export default function OwnerDashboard() {
     );
   }
 
-  if (error) {
+  if (screenError) {
     return (
       <Surface style={styles.centerContainer}>
         <PaperText
           variant="bodyLarge"
           style={[styles.errorText, { color: theme.colors.error }]}
         >
-          {error}
+          {screenError}
         </PaperText>
         <Button
           mode="contained"
-          onPress={() => void refetch()}
+          onPress={() => {
+            void refetch();
+            void refetchProfile();
+          }}
           contentStyle={commonStyles.minimumTouchTarget}
         >
           Retry

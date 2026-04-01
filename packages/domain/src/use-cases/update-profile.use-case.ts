@@ -12,6 +12,7 @@ export class UpdateProfileUseCase {
    * Initializes the use case with dependencies.
    *
    * @param profileRepository - The repository for managing profiles.
+   * @param storageRepository - The repository for managing file storage.
    */
   constructor(
     private readonly profileRepository: ProfileRepository,
@@ -45,7 +46,7 @@ export class UpdateProfileUseCase {
 
     // If imageUrl was updated and there's an original image from our storage, delete the old one.
     if (
-      Object.prototype.hasOwnProperty.call(input, "imageUrl") &&
+      input.imageUrl !== undefined &&
       originalImageUrl &&
       originalImageUrl !== input.imageUrl
     ) {
