@@ -230,6 +230,7 @@ export class AppwriteWishlistRepository implements WishlistRepository {
             tableId: this.wishlistItemsCollectionId,
             rowId: item.id,
             data: WishlistItemMapper.toPersistence(item),
+            permissions: ['read("any")'],
           }),
         );
 
@@ -300,6 +301,7 @@ export class AppwriteWishlistRepository implements WishlistRepository {
         tableId: this.wishlistCollectionId,
         rowId: wishlist.id,
         data: WishlistMapper.toPersistence(wishlist),
+        permissions: ['read("any")'],
       });
     } catch (saveError: unknown) {
       if (saveError instanceof AppwriteException && saveError.code === 404) {
@@ -312,6 +314,7 @@ export class AppwriteWishlistRepository implements WishlistRepository {
             tableId: this.wishlistCollectionId,
             rowId: wishlist.id,
             data: WishlistMapper.toPersistence(wishlist),
+            permissions: ['read("any")'],
           });
           return;
         }
@@ -378,6 +381,7 @@ export class AppwriteWishlistRepository implements WishlistRepository {
           tableId: this.wishlistItemsCollectionId,
           rowId: $id as string,
           data: persistenceData as Record<string, unknown>,
+          permissions: ['read("any")'],
         });
       });
 
