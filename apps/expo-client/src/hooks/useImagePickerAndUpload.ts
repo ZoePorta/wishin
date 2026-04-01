@@ -4,6 +4,7 @@ import { Alert } from "react-native";
 import {
   UploadImageUseCase,
   GetImagePreviewUseCase,
+  DeleteImageUseCase,
   type FileData,
 } from "@wishin/domain";
 import { useStorageRepository } from "../contexts/WishlistRepositoryContext";
@@ -136,9 +137,32 @@ export function useImagePickerAndUpload() {
     [storageRepository],
   );
 
+  /**
+   * Deletes an uploaded file from storage using its preview URL.
+   *
+   * @param {string} url - The preview URL of the file to delete.
+   * @returns {Promise<void>} A promise that resolves when the file is deleted.
+   */
+  const deleteUpload = useCallback(
+    async (url: string): Promise<void> => {
+      const fileId = storageRepository.extractFileId(url);
+      if (!fileId) return;
+
+      try {
+        const deleteUseCase = new DeleteImageUseCase(storageRepository);
+        await deleteUseCase.execute(fileId);
+      } catch (err) {
+        console.error("Error in deleteUpload:", err);
+        // We don't alert the user for cleanup failures as it's an internal background task
+      }
+    },
+    [storageRepository],
+  );
+
   return {
     pickAndUpload,
     uploadFile,
+    deleteUpload,
     uploading,
     error,
   };

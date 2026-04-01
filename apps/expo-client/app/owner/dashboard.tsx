@@ -72,23 +72,30 @@ export default function OwnerDashboard() {
     if (!userId) return;
     const newImageUrl = await pickAndUpload();
     if (newImageUrl) {
+      let mutationSucceeded = false;
       try {
         await updateProfile({ id: userId, imageUrl: newImageUrl });
+        mutationSucceeded = true;
         await refetchProfile();
       } catch (err) {
         console.error("Failed to update profile picture, cleaning up...", err);
-        // Clean up the uploaded image if the profile update fails
-        const fileId = storageRepository.extractFileId(newImageUrl);
-        if (fileId) {
-          void storageRepository.delete(fileId).catch((deleteErr: unknown) => {
-            console.error("Failed to clean up uploaded image:", deleteErr);
-          });
+        // Clean up the uploaded image ONLY if the profile update mutation itself failed
+        if (!mutationSucceeded) {
+          const fileId = storageRepository.extractFileId(newImageUrl);
+          if (fileId) {
+            void storageRepository
+              .delete(fileId)
+              .catch((deleteErr: unknown) => {
+                console.error("Failed to clean up uploaded image:", deleteErr);
+              });
+          }
         }
       }
     }
   };
 
-  const isAvatarUpdating = imageUploading || profileUpdating;
+  const isAvatarUpdating = imageUploading;
+  const isUsernameSaving = profileUpdating;
   const screenError = error ?? profileError;
   const loading = wishlistLoading || profileLoading;
 
@@ -518,8 +525,8 @@ export default function OwnerDashboard() {
                     onPress={() => {
                       void handleUpdateUsername();
                     }}
-                    loading={profileUpdating}
-                    disabled={!newUsername.trim() || profileUpdating}
+                    loading={isUsernameSaving}
+                    disabled={!newUsername.trim() || isUsernameSaving}
                   >
                     Save
                   </Button>

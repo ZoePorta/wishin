@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { View, ScrollView, StyleSheet, FlatList } from "react-native";
 import {
   TextInput,
@@ -84,7 +84,23 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     !!initialData?.imageUrl,
   );
   const [error, setError] = useState<string | null>(null);
-  const { uploadFile, uploading: isUploading } = useImagePickerAndUpload();
+  const {
+    uploadFile,
+    deleteUpload,
+    uploading: isUploading,
+  } = useImagePickerAndUpload();
+
+  const stagedImageUrl = useRef<string | null>(null);
+  const isSubmitted = useRef(false);
+
+  // Cleanup staged image on unmount if form wasn't submitted
+  useEffect(() => {
+    return () => {
+      if (stagedImageUrl.current && !isSubmitted.current) {
+        void deleteUpload(stagedImageUrl.current);
+      }
+    };
+  }, [deleteUpload]);
 
   useEffect(() => {
     setName(initialData?.name ?? "");
@@ -136,9 +152,18 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       };
 
       await onSubmit(payload);
+      isSubmitted.current = true;
+      stagedImageUrl.current = null;
     } catch (submitError) {
       console.error("Error submitting form:", submitError);
       setError(mapErrorToMessage(submitError));
+
+      // Clean up staged image on submission failure
+      if (stagedImageUrl.current) {
+        void deleteUpload(stagedImageUrl.current);
+        stagedImageUrl.current = null;
+        setSelectedImage(null);
+      }
     }
   }, [
     name,
@@ -173,11 +198,21 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             void (async () => {
               const url = await uploadFile(image);
               if (url) {
+                // Clean up previous staged image if it exists
+                if (stagedImageUrl.current) {
+                  void deleteUpload(stagedImageUrl.current);
+                }
+                stagedImageUrl.current = url;
                 setSelectedImage({ ...image, uri: url });
                 setUseInitialImage(false);
               }
             })();
           } else {
+            // Clean up staged image if cleared
+            if (stagedImageUrl.current) {
+              void deleteUpload(stagedImageUrl.current);
+              stagedImageUrl.current = null;
+            }
             setSelectedImage(null);
             setUseInitialImage(false);
           }

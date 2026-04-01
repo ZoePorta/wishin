@@ -4,7 +4,13 @@ import { UpdateProfileUseCase } from "@wishin/domain";
 import type { UpdateProfileInput, ProfileOutput } from "@wishin/domain";
 
 /**
- * Interface for the object returned by the useUpdateProfile hook.
+ * Interface representing the state and actions returned by the {@link useUpdateProfile} hook.
+ *
+ * @property updateProfile - An asynchronous function to update the user's profile.
+ *                           Accepts an `UpdateProfileInput` object and returns a `Promise<ProfileOutput>`.
+ *                           May throw errors if validation fails or persistence issues occur.
+ * @property updating - A boolean flag indicating if a profile update operation is currently in progress.
+ * @property error - A nullable string containing the error message from the last failed update, or null if successful.
  */
 export interface UseUpdateProfileReturn {
   updateProfile: (input: UpdateProfileInput) => Promise<ProfileOutput>;
