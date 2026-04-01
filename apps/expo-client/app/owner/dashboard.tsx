@@ -189,7 +189,11 @@ export default function OwnerDashboard() {
                             setIsItemModalVisible(true);
                             setFabOpen(false);
                           }}
-                          style={styles.webFabAction}
+                          style={[
+                            styles.webFabAction,
+                            { backgroundColor: theme.colors.primary },
+                          ]}
+                          color={theme.colors.onPrimary}
                         />
                         <FAB
                           icon="share-variant"
@@ -198,7 +202,11 @@ export default function OwnerDashboard() {
                             void handleShare();
                             setFabOpen(false);
                           }}
-                          style={styles.webFabAction}
+                          style={[
+                            styles.webFabAction,
+                            { backgroundColor: theme.colors.primary },
+                          ]}
+                          color={theme.colors.onPrimary}
                         />
                         <FAB
                           icon="pencil"
@@ -207,7 +215,11 @@ export default function OwnerDashboard() {
                             setIsEditing(true);
                             setFabOpen(false);
                           }}
-                          style={styles.webFabAction}
+                          style={[
+                            styles.webFabAction,
+                            { backgroundColor: theme.colors.primary },
+                          ]}
+                          color={theme.colors.onPrimary}
                         />
                       </View>
                     </>
@@ -218,6 +230,8 @@ export default function OwnerDashboard() {
                       setFabOpen(!fabOpen);
                     }}
                     accessibilityLabel="Wishlist actions"
+                    style={{ backgroundColor: theme.colors.primary }}
+                    color={theme.colors.onPrimary}
                   />
                 </View>
               ) : (
@@ -225,6 +239,8 @@ export default function OwnerDashboard() {
                   open={fabOpen}
                   visible
                   icon={fabOpen ? "close" : "dots-vertical"}
+                  color={theme.colors.onPrimary}
+                  fabStyle={{ backgroundColor: theme.colors.primary }}
                   actions={[
                     {
                       icon: "plus",
@@ -233,6 +249,8 @@ export default function OwnerDashboard() {
                         setEditingItem(undefined);
                         setIsItemModalVisible(true);
                       },
+                      color: theme.colors.onPrimary,
+                      style: { backgroundColor: theme.colors.primary },
                     },
                     {
                       icon: "share-variant",
@@ -240,6 +258,8 @@ export default function OwnerDashboard() {
                       onPress: () => {
                         void handleShare();
                       },
+                      color: theme.colors.onPrimary,
+                      style: { backgroundColor: theme.colors.primary },
                     },
                     {
                       icon: "pencil",
@@ -247,6 +267,8 @@ export default function OwnerDashboard() {
                       onPress: () => {
                         setIsEditing(true);
                       },
+                      color: theme.colors.onPrimary,
+                      style: { backgroundColor: theme.colors.primary },
                     },
                   ]}
                   onStateChange={({ open }) => {
