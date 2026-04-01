@@ -15,7 +15,6 @@ const {
   EXPO_PUBLIC_APPWRITE_DATABASE_ID,
   EXPO_PUBLIC_DB_PREFIX,
   CLEANUP,
-  DEV_ALLOW_OPEN_PERMISSIONS,
 } = process.env;
 
 if (
@@ -35,7 +34,6 @@ const apiKey = APPWRITE_API_SECRET;
 const databaseId = EXPO_PUBLIC_APPWRITE_DATABASE_ID;
 const prefix = EXPO_PUBLIC_DB_PREFIX ?? "";
 const isCleanupEnabled = CLEANUP === "true";
-const isDevOpenPermissions = DEV_ALLOW_OPEN_PERMISSIONS === "true";
 
 const client = new Client()
   .setEndpoint(endpoint)
@@ -391,41 +389,42 @@ async function provision() {
       }
     }
 
-    // 2. Collections (Create all first)
-    // We need to create all collections first so we can link them with relationships
+    // 2. Collections (Create or Update all)
+    // We need to ensure all collections exist and have the correct permissions
     for (const coll of schema) {
       const collectionId = prefix ? `${prefix}_${coll.id}` : coll.id;
+
+      // Unified permissions for all collections (ADR 018/027):
+      // 1. All allow public read ('read("any")').
+      // 2. All restrict CRUD to authenticated users ('create("users")', 'update("users")', 'delete("users")').
+      //    Guest access is supported via anonymous sessions.
+      const permissions = [
+        'read("any")',
+        'create("users")',
+        'update("users")',
+        'delete("users")',
+      ];
+
       try {
         await tablesDb.getTable({
           databaseId,
           tableId: collectionId,
         });
+
         console.log(
-          `Collection "${coll.name}" (${collectionId}) already exists.`,
+          `Collection "${coll.name}" (${collectionId}) already exists. Updating permissions...`,
         );
+
+        await tablesDb.updateTable({
+          databaseId,
+          tableId: collectionId,
+          name: coll.name,
+          permissions,
+          enabled: true,
+          rowSecurity: true,
+        });
       } catch (error: unknown) {
         if (isAppwriteError(error) && error.code === 404) {
-          // Permissions logic:
-          // 1. All collections allow public read ('read("any")').
-          // 2. Transactions collection allows public CRUD ('create("any")', 'read("any")', 'update("any")', 'delete("any")') to support guest transactions.
-          // 3. If DEV_ALLOW_OPEN_PERMISSIONS is true, all collections get full public CRUD.
-          const permissions = ['read("any")'];
-
-          if (isDevOpenPermissions) {
-            permissions.push('create("any")', 'update("any")', 'delete("any")');
-          } else if (coll.id === "transactions") {
-            // Guest transactions require public create/read, but restricted update/delete (Phase 5)
-            // For now, keep guest access for transactions to avoid breaking the MVP flow
-            permissions.push('create("any")', 'update("any")', 'delete("any")');
-          } else {
-            // Other collections (profiles, wishlists, items) restricted to members by default
-            permissions.push(
-              'create("users")',
-              'update("users")',
-              'delete("users")',
-            );
-          }
-
           await tablesDb.createTable({
             databaseId,
             tableId: collectionId,

@@ -101,15 +101,15 @@
 ### 5.2 Infrastructure Layer
 
 - [x] **Appwrite Auth:** Implement `AuthService` adapter implementation (Using Anonymous Sessions - ADR 018).
-- [ ] **Security & Permissions:** Configure Appwrite collection/attribute permissions in `provision.ts`.
+- [x] **Security & Permissions:** Configure Appwrite collection/attribute permissions in `provision.ts`.
 
 ---
 
 ## Phase 6: UI Polish & Presentation
 
 - [x] **UI:** Immediate "Undo" snackbar after purchase.
-- [ ] **Final Polish:** Theme system refinement and micro-animations.
-- [ ] **Web Responsiveness:** Ensure a premium and fully responsive experience for the web client across all viewports.
+- [x] **Final Polish:** Theme system refinement.
+- [x] **Web Responsiveness:** Ensure a premium and fully responsive experience for the web client across all viewports.
 
 ---
 
@@ -119,6 +119,7 @@
 - [ ] **Google OAuth2:** Login/Register integration (UI implementation).
 - [ ] **History:** `GetGiftingHistory` Use Case (Purchases only for MVP).
 - [ ] **UI:** User Profile & "My Gifting" Dashboard.
+- [ ] **UI:** Micro-animations for enhanced user experience.
 - [ ] **Pruning Alerts**: Implement Appwrite Function (DB Trigger) to notify users when a transaction status changes to `CANCELLED_BY_OWNER`.
 - [ ] **Advanced Transactional Atomicity**: Implement Appwrite Functions to handle complex multi-entity updates (e.g., Stock + Transaction + Wishlist Version) atomically on the server.
 - [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI).
