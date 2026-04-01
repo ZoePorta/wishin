@@ -92,6 +92,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
   const stagedImageUrl = useRef<string | null>(null);
   const isSubmitted = useRef(false);
+  const isSubmitting = useRef(false);
   const isMounted = useRef(true);
   const lastUploadRequestId = useRef(0);
 
@@ -105,7 +106,11 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   // Cleanup staged image on unmount if form wasn't submitted
   useEffect(() => {
     return () => {
-      if (stagedImageUrl.current && !isSubmitted.current) {
+      if (
+        stagedImageUrl.current &&
+        !isSubmitted.current &&
+        !isSubmitting.current
+      ) {
         void deleteUpload(stagedImageUrl.current);
       }
     };
@@ -141,6 +146,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     }
 
     try {
+      isSubmitting.current = true;
       // Stage 2: Form submission
       const payload: AddItemFormSubmission = {
         wishlistId,
@@ -164,15 +170,14 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       isSubmitted.current = true;
       stagedImageUrl.current = null;
     } catch (submitError) {
+      isSubmitting.current = false;
       console.error("Error submitting form:", submitError);
       setError(mapErrorToMessage(submitError));
 
-      // Clean up staged image on submission failure
+      // Restore initial image state if we were editing and had a staged image
       if (stagedImageUrl.current) {
-        void deleteUpload(stagedImageUrl.current);
         stagedImageUrl.current = null;
         setSelectedImage(null);
-        // Restore initial image state if we were editing
         setUseInitialImage(!!initialData?.imageUrl);
       }
     }
@@ -230,6 +235,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
               }
             })();
           } else {
+            // Invalidate any pending uploads
+            lastUploadRequestId.current++;
             // Clean up staged image if cleared
             if (stagedImageUrl.current) {
               void deleteUpload(stagedImageUrl.current);

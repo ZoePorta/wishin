@@ -16,7 +16,8 @@ import { useStorageRepository } from "../contexts/WishlistRepositoryContext";
  */
 export function useImagePickerAndUpload() {
   const storageRepository = useStorageRepository();
-  const [uploading, setUploading] = useState(false);
+  const [inflightCount, setInflightCount] = useState(0);
+  const uploading = inflightCount > 0;
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -51,7 +52,7 @@ export function useImagePickerAndUpload() {
         return null;
       }
 
-      setUploading(true);
+      setInflightCount((prev) => prev + 1);
 
       const asset = pickerResult.assets[0];
       let fileSize = asset.fileSize;
@@ -98,7 +99,7 @@ export function useImagePickerAndUpload() {
       );
       return null;
     } finally {
-      setUploading(false);
+      setInflightCount((prev) => Math.max(0, prev - 1));
     }
   }, [storageRepository]);
 
@@ -120,7 +121,7 @@ export function useImagePickerAndUpload() {
       fileSize?: number;
     }): Promise<string | null> => {
       setError(null);
-      setUploading(true);
+      setInflightCount((prev) => prev + 1);
       try {
         let fileSize = file.fileSize;
 
@@ -167,7 +168,7 @@ export function useImagePickerAndUpload() {
         );
         return null;
       } finally {
-        setUploading(false);
+        setInflightCount((prev) => Math.max(0, prev - 1));
       }
     },
     [storageRepository],
