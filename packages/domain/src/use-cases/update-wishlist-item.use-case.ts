@@ -44,15 +44,21 @@ export class UpdateWishlistItemUseCase {
     }
 
     const updatedWishlist = wishlist.updateItem(input.itemId, {
-      name: input.name,
-      description: input.description,
-      priority: input.priority,
-      price: input.price,
-      currency: input.currency,
-      url: input.url,
-      imageUrl: input.imageUrl,
-      isUnlimited: input.isUnlimited,
-      totalQuantity: input.totalQuantity,
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.description !== undefined && {
+        description: input.description,
+      }),
+      ...(input.priority !== undefined && { priority: input.priority }),
+      ...(input.price !== undefined && { price: input.price }),
+      ...(input.currency !== undefined && { currency: input.currency }),
+      ...(input.url !== undefined && { url: input.url }),
+      ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl }),
+      ...(input.isUnlimited !== undefined && {
+        isUnlimited: input.isUnlimited,
+      }),
+      ...(input.totalQuantity !== undefined && {
+        totalQuantity: input.totalQuantity,
+      }),
     });
 
     const updatedItem = updatedWishlist.items.find(
