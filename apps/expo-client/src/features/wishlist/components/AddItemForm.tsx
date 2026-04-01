@@ -92,6 +92,15 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
   const stagedImageUrl = useRef<string | null>(null);
   const isSubmitted = useRef(false);
+  const isMounted = useRef(true);
+  const lastUploadRequestId = useRef(0);
+
+  // Track mount status
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Cleanup staged image on unmount if form wasn't submitted
   useEffect(() => {
@@ -163,6 +172,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         void deleteUpload(stagedImageUrl.current);
         stagedImageUrl.current = null;
         setSelectedImage(null);
+        // Restore initial image state if we were editing
+        setUseInitialImage(!!initialData?.imageUrl);
       }
     }
   }, [
@@ -196,7 +207,18 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         onImageSelected={(image) => {
           if (image) {
             void (async () => {
+              const requestId = ++lastUploadRequestId.current;
               const url = await uploadFile(image);
+
+              // If unmounted or request is no longer the latest, clean up the result
+              if (
+                !isMounted.current ||
+                requestId !== lastUploadRequestId.current
+              ) {
+                if (url) void deleteUpload(url);
+                return;
+              }
+
               if (url) {
                 // Clean up previous staged image if it exists
                 if (stagedImageUrl.current) {

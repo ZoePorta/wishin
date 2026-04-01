@@ -32,6 +32,7 @@ import { DashboardContent } from "../../src/features/wishlist/components/Dashboa
 import { ItemDetailModal } from "../../src/features/wishlist/components/ItemDetailModal";
 import { useImagePickerAndUpload } from "../../src/hooks/useImagePickerAndUpload";
 import { useUpdateProfile } from "../../src/features/profile/hooks/useUpdateProfile";
+import { GetProfileByIdUseCase } from "@wishin/domain";
 
 /**
  * Dashboard screen for wishlist owners.
@@ -66,35 +67,48 @@ export default function OwnerDashboard() {
   const { updateProfile, updating: profileUpdating } = useUpdateProfile();
   const { pickAndUpload, uploading: imageUploading } =
     useImagePickerAndUpload();
-  const { storageRepository } = useRepositories();
+  const { storageRepository, profileRepository } = useRepositories();
+  const [localAvatarUpdating, setLocalAvatarUpdating] = useState(false);
 
   const handleEditAvatar = async () => {
     if (!userId) return;
-    const newImageUrl = await pickAndUpload();
-    if (newImageUrl) {
-      let mutationSucceeded = false;
+    setLocalAvatarUpdating(true);
+    try {
+      const newImageUrl = await pickAndUpload();
+      if (!newImageUrl) return;
+
       try {
         await updateProfile({ id: userId, imageUrl: newImageUrl });
-        mutationSucceeded = true;
-        await refetchProfile();
       } catch (err) {
-        console.error("Failed to update profile picture, cleaning up...", err);
-        // Clean up the uploaded image ONLY if the profile update mutation itself failed
-        if (!mutationSucceeded) {
+        console.error("Failed to update profile picture mutation:", err);
+      }
+
+      // Verification stage: refetch from source of truth and only cleanup if not set
+      try {
+        const getProfileUseCase = new GetProfileByIdUseCase(profileRepository);
+        const latestProfile = await getProfileUseCase.execute({ id: userId });
+
+        if (latestProfile.imageUrl !== newImageUrl) {
           const fileId = storageRepository.extractFileId(newImageUrl);
           if (fileId) {
-            void storageRepository
+            await storageRepository
               .delete(fileId)
               .catch((deleteErr: unknown) => {
-                console.error("Failed to clean up uploaded image:", deleteErr);
+                console.error("Failed to clean up orphaned avatar:", deleteErr);
               });
           }
         }
+      } catch (verifyErr) {
+        console.error("Verification of profile update failed:", verifyErr);
       }
+
+      await refetchProfile();
+    } finally {
+      setLocalAvatarUpdating(false);
     }
   };
 
-  const isAvatarUpdating = imageUploading;
+  const isAvatarUpdating = imageUploading || localAvatarUpdating;
   const isUsernameSaving = profileUpdating;
   const screenError = error ?? profileError;
   const loading = wishlistLoading || profileLoading;

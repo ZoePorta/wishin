@@ -54,11 +54,29 @@ export function useImagePickerAndUpload() {
       setUploading(true);
 
       const asset = pickerResult.assets[0];
+      let fileSize = asset.fileSize;
+
+      if (!fileSize || fileSize === 0) {
+        try {
+          const response = await fetch(asset.uri);
+          const blob = await response.blob();
+          fileSize = blob.size;
+        } catch (fetchErr) {
+          console.error("Failed to determine file size via fetch:", fetchErr);
+        }
+      }
+
+      if (!fileSize || fileSize === 0) {
+        throw new Error(
+          "Could not determine image size. Please try another image.",
+        );
+      }
+
       const fileData: FileData = {
         uri: asset.uri,
         filename: asset.fileName ?? asset.uri.split("/").pop() ?? "image.jpg",
         mimeType: asset.mimeType ?? "image/jpeg",
-        size: asset.fileSize ?? 0,
+        size: fileSize,
       };
 
       // Stage 3: Upload Image
@@ -104,11 +122,29 @@ export function useImagePickerAndUpload() {
       setError(null);
       setUploading(true);
       try {
+        let fileSize = file.fileSize;
+
+        if (!fileSize || fileSize === 0) {
+          try {
+            const response = await fetch(file.uri);
+            const blob = await response.blob();
+            fileSize = blob.size;
+          } catch (fetchErr) {
+            console.error("Failed to determine file size via fetch:", fetchErr);
+          }
+        }
+
+        if (!fileSize || fileSize === 0) {
+          throw new Error(
+            "Could not determine image size. Please try another image.",
+          );
+        }
+
         const fileData: FileData = {
           uri: file.uri,
           filename: file.fileName ?? file.uri.split("/").pop() ?? "image.jpg",
           mimeType: file.mimeType ?? "image/jpeg",
-          size: file.fileSize ?? 0,
+          size: fileSize,
         };
 
         // Stage 3: Upload Image
