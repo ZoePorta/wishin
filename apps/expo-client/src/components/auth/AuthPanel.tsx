@@ -1,11 +1,6 @@
 import React, { useState } from "react";
-import {
-  StyleSheet,
-  View,
-  useWindowDimensions,
-  ScrollView,
-} from "react-native";
-import { Surface, Divider, useTheme } from "react-native-paper";
+import { StyleSheet, View, ScrollView } from "react-native";
+import { Surface, useTheme } from "react-native-paper";
 import { LoginForm } from "./LoginForm";
 import { RegisterForm } from "./RegisterForm";
 
@@ -43,46 +38,21 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
   registerError,
   initialMode = "login",
 }) => {
-  const { width } = useWindowDimensions();
   const theme = useTheme();
-  const isDesktop = width >= 768;
   const [showLogin, setShowLogin] = useState(initialMode === "login");
 
   React.useEffect(() => {
     setShowLogin(initialMode === "login");
   }, [initialMode]);
 
-  const renderForms = () => {
-    if (isDesktop) {
-      return (
-        <Surface style={styles.desktopCard} elevation={2}>
-          <View style={styles.formSection}>
-            <LoginForm
-              onLogin={onLogin}
-              onSwitchToRegister={() => {
-                setShowLogin(false);
-              }}
-              loading={loading}
-              authError={loginError}
-            />
-          </View>
-          <Divider style={styles.verticalDivider} />
-          <View style={styles.formSection}>
-            <RegisterForm
-              onRegister={onRegister}
-              onSwitchToLogin={() => {
-                setShowLogin(true);
-              }}
-              loading={loading}
-              authError={registerError}
-            />
-          </View>
-        </Surface>
-      );
-    }
-
-    return (
-      <Surface style={styles.mobileContainer} elevation={0}>
+  return (
+    <View
+      style={[
+        styles.mainContainer,
+        { backgroundColor: theme.colors.background },
+      ]}
+    >
+      <Surface style={styles.container} elevation={0}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -108,17 +78,6 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
           )}
         </ScrollView>
       </Surface>
-    );
-  };
-
-  return (
-    <View
-      style={[
-        styles.mainContainer,
-        { backgroundColor: theme.colors.background },
-      ]}
-    >
-      {renderForms()}
     </View>
   );
 };
@@ -130,38 +89,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  desktopCard: {
-    flexDirection: "row",
-    padding: 16,
-    borderRadius: 28,
-    width: "90%",
-    maxWidth: 900,
-    minHeight: 500,
-    alignSelf: "center",
-  },
-  formSection: {
-    flex: 1,
-    padding: 32,
-    justifyContent: "center",
-  },
-  verticalDivider: {
-    width: 1,
-    height: "80%",
-    alignSelf: "center",
-  },
-  mobileContainer: {
+  container: {
     flex: 1,
     width: "100%",
+    maxWidth: 600,
+    alignSelf: "center",
   },
   scrollContent: {
     padding: 24,
     flexGrow: 1,
     justifyContent: "center",
-  },
-  errorText: {
-    marginBottom: 16,
-    textAlign: "center",
-    width: "90%",
-    maxWidth: 900,
   },
 });
