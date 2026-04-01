@@ -1,4 +1,5 @@
-/** @type {import("@babel/core").ConfigFunction} */
+const path = require("path");
+
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -9,10 +10,19 @@ module.exports = function (api) {
         {
           root: ["./"],
           alias: {
-            "@wishin/domain": "../../packages/domain/src",
-            "@wishin/infrastructure": "../../packages/infrastructure/src",
-            "@wishin/shared": "../../packages/shared/src",
-            "@wishin/expo-client": "./src",
+            "@wishin/domain": path.resolve(
+              __dirname,
+              "../../packages/domain/src",
+            ),
+            "@wishin/infrastructure": path.resolve(
+              __dirname,
+              "../../packages/infrastructure/src",
+            ),
+            "@wishin/shared": path.resolve(
+              __dirname,
+              "../../packages/shared/src",
+            ),
+            "@wishin/expo-client": path.resolve(__dirname, "./src"),
           },
           extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
         },
