@@ -130,9 +130,6 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     overflow: "hidden",
     minHeight: 400,
-    maxWidth: 600,
-    width: "100%",
-    alignSelf: "center",
   },
   closeButton: {
     position: "absolute",
