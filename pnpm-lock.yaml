@@ -149,6 +149,9 @@ importers:
         specifier: ^0.21.2
         version: 0.21.2(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
     devDependencies:
+      '@babel/runtime':
+        specifier: ^7.20.0
+        version: 7.28.6
       '@types/react':
         specifier: ~19.1.0
         version: 19.1.17
@@ -6338,7 +6341,9 @@ snapshots:
       metro-runtime: 0.83.3
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
