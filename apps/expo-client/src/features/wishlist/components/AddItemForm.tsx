@@ -293,6 +293,12 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             mode="outlined"
             keyboardType="decimal-pad"
             disabled={priceUnknown || loading}
+            onFocus={() => {
+              if (priceUnknown) setPriceUnknown(false);
+            }}
+            onPointerDown={() => {
+              if (priceUnknown) setPriceUnknown(false);
+            }}
             right={
               <TextInput.Icon
                 icon="chevron-down"
