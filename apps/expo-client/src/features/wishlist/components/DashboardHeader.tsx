@@ -63,7 +63,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               style={[
                 StyleSheet.absoluteFill,
                 {
-                  backgroundColor: "rgba(255, 255, 255, 0.5)",
+                  backgroundColor: theme.colors.surfaceGlass,
                   justifyContent: "center",
                   alignItems: "center",
                   borderRadius: containerSize / 2,
@@ -81,7 +81,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               containerColor={theme.colors.surface}
               iconColor={theme.colors.primary}
               onPress={onEditAvatar}
-              style={styles.editButton}
+              style={[styles.editButton, { shadowColor: theme.colors.shadow }]}
               accessibilityLabel="Edit profile picture"
             />
           )}
@@ -168,7 +168,6 @@ const styles = StyleSheet.create({
     bottom: 8,
     margin: 0,
     elevation: 4,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
