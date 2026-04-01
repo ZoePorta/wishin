@@ -40,6 +40,7 @@ interface MockRow extends Models.Document {
   itemPrice?: number | null;
   itemCurrency?: string | null;
   itemDescription?: string | null;
+  itemImageUrl?: string | null;
   ownerUsername?: string | null;
   status?: TransactionStatus;
   quantity?: number;
@@ -170,6 +171,7 @@ describe("AppwriteTransactionRepository", () => {
       itemPrice: 99.99,
       itemCurrency: "EUR",
       itemDescription: "A test item description",
+      itemImageUrl: null,
       ownerUsername: "testuser",
       status: TransactionStatus.RESERVED,
       quantity: 1,
@@ -216,6 +218,7 @@ describe("AppwriteTransactionRepository", () => {
       itemPrice: 99.99,
       itemCurrency: "EUR",
       itemDescription: "A test item description",
+      itemImageUrl: null,
       ownerUsername: "testuser",
       status: TransactionStatus.RESERVED,
       quantity: 1,
@@ -244,10 +247,12 @@ describe("AppwriteTransactionRepository", () => {
           itemPrice: transaction.itemPrice,
           itemCurrency: transaction.itemCurrency,
           itemDescription: transaction.itemDescription,
+          itemImageUrl: transaction.itemImageUrl,
           ownerUsername: transaction.ownerUsername,
           status: transaction.status,
           quantity: transaction.quantity,
         }),
+        permissions: ['read("any")'],
       });
     });
   });
