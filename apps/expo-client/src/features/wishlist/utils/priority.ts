@@ -1,6 +1,6 @@
 import { Priority } from "@wishin/domain";
-
 import type { MD3Theme } from "react-native-paper";
+import { type AppTheme } from "../../../theme/theme";
 
 /**
  * Display labels for priority levels.
@@ -14,24 +14,39 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
 };
 
 /**
- * Returns the theme color for a given priority level.
+ * Returns the theme colors for a given priority level.
  *
  * @param {Priority} priority - The priority level.
  * @param {MD3Theme} theme - The Material Design 3 theme object.
- * @returns {string} The hex color from the theme.
+ * @returns {{ background: string; foreground: string }} The background and foreground colors.
  */
-export const getPriorityColor = (
+export const getPriorityColors = (
   priority: Priority,
   theme: MD3Theme,
-): string => {
+): { background: string; foreground: string } => {
+  const appTheme = theme as AppTheme;
   switch (priority) {
     case Priority.URGENT:
+      return {
+        background: appTheme.colors.errorContainer,
+        foreground: appTheme.colors.onErrorContainer,
+      };
     case Priority.HIGH:
-      return theme.colors.error;
+      return {
+        background: appTheme.colors.primaryFixed,
+        foreground: appTheme.colors.onPrimaryFixed,
+      };
     case Priority.MEDIUM:
-      return theme.colors.tertiary;
+      return {
+        background: appTheme.colors.secondaryContainer,
+        foreground: appTheme.colors.onSecondaryContainer,
+      };
+    case Priority.LOW:
     default:
-      return theme.colors.secondary;
+      return {
+        background: appTheme.colors.tertiaryFixed,
+        foreground: appTheme.colors.onTertiaryFixed,
+      };
   }
 };
 

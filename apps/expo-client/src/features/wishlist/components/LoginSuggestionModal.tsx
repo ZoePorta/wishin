@@ -37,7 +37,10 @@ export const LoginSuggestionModal: React.FC<LoginSuggestionModalProps> = ({
       <Modal
         visible={visible}
         onDismiss={onDismiss}
-        contentContainerStyle={styles.modalContainer}
+        contentContainerStyle={[
+          styles.modalContainer,
+          commonStyles.modalContent,
+        ]}
       >
         <Card style={styles.card} mode="elevated">
           <Card.Title

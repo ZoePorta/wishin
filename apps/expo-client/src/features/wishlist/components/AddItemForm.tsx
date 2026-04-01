@@ -389,7 +389,10 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           onDismiss={() => {
             setIsCurrencyModalVisible(false);
           }}
-          contentContainerStyle={styles.modalContent}
+          contentContainerStyle={[
+            styles.modalContent,
+            commonStyles.modalContent,
+          ]}
         >
           <Surface style={styles.surface} elevation={5}>
             <Text variant="titleMedium" style={styles.modalTitle}>

@@ -9,6 +9,7 @@ import {
 } from "../../contexts/WishlistRepositoryContext";
 import { useUser } from "../../contexts/UserContext";
 import { RegisterUserUseCase } from "@wishin/domain";
+import { commonStyles } from "../../theme/common-styles";
 
 /**
  * Props for the authentication modal.
@@ -99,6 +100,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onDismiss={onDismiss}
         contentContainerStyle={[
           styles.modalContent,
+          commonStyles.modalContent,
           { backgroundColor: theme.colors.surface },
         ]}
       >

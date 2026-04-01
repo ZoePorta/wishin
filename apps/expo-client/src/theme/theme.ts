@@ -24,6 +24,12 @@ declare module "react-native-paper" {
     surfaceDim: string;
     surfaceBright: string;
     surfaceGlass: string;
+    primaryFixed: string;
+    onPrimaryFixed: string;
+    secondaryFixed: string;
+    onSecondaryFixed: string;
+    tertiaryFixed: string;
+    onTertiaryFixed: string;
   }
 }
 
@@ -68,6 +74,12 @@ export interface AppTheme extends MD3Theme {
      * A semi-transparent surface color for glass/blur effects.
      */
     surfaceGlass: string;
+    primaryFixed: string;
+    onPrimaryFixed: string;
+    secondaryFixed: string;
+    onSecondaryFixed: string;
+    tertiaryFixed: string;
+    onTertiaryFixed: string;
   };
   fonts: MD3Theme["fonts"] & {
     titleLargeVarela: MD3Theme["fonts"]["titleLarge"];
@@ -255,6 +267,24 @@ function mergeAndValidateTheme(
         (materialScheme as Record<string, string | undefined>).surfaceBright ??
         finalSurface,
       surfaceGlass: addAlpha(finalSurface, 0.5),
+      primaryFixed:
+        (materialScheme as Record<string, string | undefined>).primaryFixed ??
+        paperTheme.colors.primaryContainer,
+      onPrimaryFixed:
+        (materialScheme as Record<string, string | undefined>).onPrimaryFixed ??
+        paperTheme.colors.onPrimaryContainer,
+      secondaryFixed:
+        (materialScheme as Record<string, string | undefined>).secondaryFixed ??
+        paperTheme.colors.secondaryContainer,
+      onSecondaryFixed:
+        (materialScheme as Record<string, string | undefined>)
+          .onSecondaryFixed ?? paperTheme.colors.onSecondaryContainer,
+      tertiaryFixed:
+        (materialScheme as Record<string, string | undefined>).tertiaryFixed ??
+        paperTheme.colors.tertiaryContainer,
+      onTertiaryFixed:
+        (materialScheme as Record<string, string | undefined>)
+          .onTertiaryFixed ?? paperTheme.colors.onTertiaryContainer,
     },
     fonts: {
       ...paperTheme.fonts,
