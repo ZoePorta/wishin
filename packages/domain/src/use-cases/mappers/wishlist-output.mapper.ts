@@ -1,5 +1,5 @@
 import type { Wishlist } from "../../aggregates/wishlist";
-import type { Profile } from "../../aggregates/profile";
+import type { ProfileOutput } from "../dtos/profile.dto";
 import { WishlistOutput } from "../dtos/get-wishlist.dto";
 
 /**
@@ -9,10 +9,10 @@ export const WishlistOutputMapper = {
   /**
    * Converts a Wishlist aggregate to a WishlistOutput DTO.
    * @param wishlist - The Wishlist aggregate root.
-   * @param ownerProfile - Optional owner profile to include in the DTO.
+   * @param ownerProfile - Optional owner profile DTO to include in the DTO.
    * @returns The mapped WishlistOutput DTO.
    */
-  toDTO(wishlist: Wishlist, ownerProfile?: Profile): WishlistOutput {
+  toDTO(wishlist: Wishlist, ownerProfile?: ProfileOutput): WishlistOutput {
     const props = wishlist.toProps();
     return {
       id: props.id,

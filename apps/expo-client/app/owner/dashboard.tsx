@@ -12,6 +12,9 @@ import {
   useTheme,
   Surface,
   Snackbar,
+  Dialog,
+  TextInput,
+  HelperText,
 } from "react-native-paper";
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
@@ -20,11 +23,16 @@ import { Config } from "../../src/constants/Config";
 import { commonStyles } from "../../src/theme/common-styles";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
 import { useUser } from "../../src/contexts/UserContext";
+import { useRepositories } from "../../src/contexts/WishlistRepositoryContext";
+import { useProfile } from "../../src/features/profile/hooks/useProfile";
 import { WishlistForm } from "../../src/features/wishlist/components/WishlistForm";
 import { AddItemForm } from "../../src/features/wishlist/components/AddItemForm";
 import { DashboardHeader } from "../../src/features/wishlist/components/DashboardHeader";
 import { DashboardContent } from "../../src/features/wishlist/components/DashboardContent";
 import { ItemDetailModal } from "../../src/features/wishlist/components/ItemDetailModal";
+import { useImagePickerAndUpload } from "../../src/hooks/useImagePickerAndUpload";
+import { useUpdateProfile } from "../../src/features/profile/hooks/useUpdateProfile";
+import { GetProfileByIdUseCase } from "@wishin/domain";
 
 /**
  * Dashboard screen for wishlist owners.
@@ -38,7 +46,7 @@ export default function OwnerDashboard() {
   const {
     userId,
     wishlist,
-    loading,
+    loading: wishlistLoading,
     error,
     creating,
     itemActionLoading,
@@ -50,6 +58,61 @@ export default function OwnerDashboard() {
     refetch,
   } = useOwnerDashboard();
 
+  const {
+    profile,
+    loading: profileLoading,
+    refetch: refetchProfile,
+    error: profileError,
+  } = useProfile(userId ?? undefined);
+  const { updateProfile, updating: profileUpdating } = useUpdateProfile();
+  const { pickAndUpload, uploading: imageUploading } =
+    useImagePickerAndUpload();
+  const { storageRepository, profileRepository } = useRepositories();
+  const [localAvatarUpdating, setLocalAvatarUpdating] = useState(false);
+
+  const handleEditAvatar = async () => {
+    if (!userId) return;
+    setLocalAvatarUpdating(true);
+    try {
+      const newImageUrl = await pickAndUpload();
+      if (!newImageUrl) return;
+
+      try {
+        await updateProfile({ id: userId, imageUrl: newImageUrl });
+      } catch (err) {
+        console.error("Failed to update profile picture mutation:", err);
+      }
+
+      // Verification stage: refetch from source of truth and only cleanup if not set
+      try {
+        const getProfileUseCase = new GetProfileByIdUseCase(profileRepository);
+        const latestProfile = await getProfileUseCase.execute({ id: userId });
+
+        if (latestProfile.imageUrl !== newImageUrl) {
+          const fileId = storageRepository.extractFileId(newImageUrl);
+          if (fileId) {
+            await storageRepository
+              .delete(fileId)
+              .catch((deleteErr: unknown) => {
+                console.error("Failed to clean up orphaned avatar:", deleteErr);
+              });
+          }
+        }
+      } catch (verifyErr) {
+        console.error("Verification of profile update failed:", verifyErr);
+      }
+
+      await refetchProfile();
+    } finally {
+      setLocalAvatarUpdating(false);
+    }
+  };
+
+  const isAvatarUpdating = imageUploading || localAvatarUpdating;
+  const isUsernameSaving = profileUpdating;
+  const screenError = error ?? profileError;
+  const loading = wishlistLoading || profileLoading;
+
   const [isEditing, setIsEditing] = useState(false);
   const [isItemModalVisible, setIsItemModalVisible] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -59,6 +122,47 @@ export default function OwnerDashboard() {
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [isShareSnackbarVisible, setIsShareSnackbarVisible] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
+  const [isUsernameDialogVisible, setIsUsernameDialogVisible] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+
+  const handleEditUsername = () => {
+    if (!profile) return;
+    setNewUsername(profile.username);
+    setIsUsernameDialogVisible(true);
+  };
+
+  const handleUpdateUsername = async () => {
+    if (!userId || !newUsername.trim()) {
+      setUsernameError("Please enter a username so we know who you are! 😊");
+      return;
+    }
+    try {
+      await updateProfile({ id: userId, username: newUsername.trim() });
+      setIsUsernameDialogVisible(false);
+      setUsernameError(null);
+      await refetchProfile();
+    } catch (err) {
+      console.error("Failed to update username:", err);
+      const errorMessage = err instanceof Error ? err.message : "";
+
+      if (errorMessage.includes("non-empty")) {
+        setUsernameError("Please enter a username so we know who you are! 😊");
+      } else if (errorMessage.includes("length")) {
+        setUsernameError(
+          "Your username should be between 3 and 30 characters. Keep it short and sweet! ✨",
+        );
+      } else if (errorMessage.includes("format")) {
+        setUsernameError(
+          "Only letters, numbers, spaces, and .-_ are allowed. Let's keep it simple! 🖋️",
+        );
+      } else {
+        setUsernameError(
+          "Oops! We couldn't update your username. Please try again. 🛠️",
+        );
+      }
+    }
+  };
 
   const handleShare = async () => {
     if (!wishlist) return;
@@ -94,18 +198,21 @@ export default function OwnerDashboard() {
     );
   }
 
-  if (error) {
+  if (screenError) {
     return (
       <Surface style={styles.centerContainer}>
         <PaperText
           variant="bodyLarge"
           style={[styles.errorText, { color: theme.colors.error }]}
         >
-          {error}
+          {screenError}
         </PaperText>
         <Button
           mode="contained"
-          onPress={() => void refetch()}
+          onPress={() => {
+            void refetch();
+            void refetchProfile();
+          }}
           contentStyle={commonStyles.minimumTouchTarget}
         >
           Retry
@@ -155,7 +262,17 @@ export default function OwnerDashboard() {
                 setEditingItem(item);
                 setIsDetailModalVisible(true);
               }}
-              ListHeaderComponent={<DashboardHeader wishlist={wishlist} />}
+              ListHeaderComponent={
+                <DashboardHeader
+                  wishlist={wishlist}
+                  profile={profile}
+                  onEditAvatar={() => {
+                    void handleEditAvatar();
+                  }}
+                  onEditUsername={handleEditUsername}
+                  isUpdating={isAvatarUpdating}
+                />
+              }
             />
 
             <Portal>
@@ -407,6 +524,51 @@ export default function OwnerDashboard() {
                 setIsItemModalVisible(true);
               }}
             />
+
+            <Portal>
+              <Dialog
+                visible={isUsernameDialogVisible}
+                onDismiss={() => {
+                  setIsUsernameDialogVisible(false);
+                }}
+              >
+                <Dialog.Title>Edit Username</Dialog.Title>
+                <Dialog.Content>
+                  <TextInput
+                    label="Username"
+                    value={newUsername}
+                    onChangeText={(text) => {
+                      setNewUsername(text);
+                      if (usernameError) setUsernameError(null);
+                    }}
+                    autoCapitalize="none"
+                    mode="outlined"
+                    error={!!usernameError}
+                  />
+                  <HelperText type="error" visible={!!usernameError}>
+                    {usernameError}
+                  </HelperText>
+                </Dialog.Content>
+                <Dialog.Actions>
+                  <Button
+                    onPress={() => {
+                      setIsUsernameDialogVisible(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onPress={() => {
+                      void handleUpdateUsername();
+                    }}
+                    loading={isUsernameSaving}
+                    disabled={!newUsername.trim() || isUsernameSaving}
+                  >
+                    Save
+                  </Button>
+                </Dialog.Actions>
+              </Dialog>
+            </Portal>
           </View>
         )}
       </Surface>
