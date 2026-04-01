@@ -106,6 +106,7 @@ describe.skipIf(!shouldRun)(
         tableId: profilesCollectionId,
         rowId: profileId,
         data: { username: "testuser" },
+        permissions: ['read("any")'],
       });
 
       await tablesDb.createRow({
@@ -118,6 +119,7 @@ describe.skipIf(!shouldRun)(
           visibility: "LINK",
           participation: "ANYONE",
         },
+        permissions: ['read("any")'],
       });
 
       await tablesDb.createRow({
@@ -129,6 +131,7 @@ describe.skipIf(!shouldRun)(
           name: "Test Item",
           priority: 1,
         },
+        permissions: ['read("any")'],
       });
 
       return { profileId, wishlistId, itemId };
@@ -265,6 +268,7 @@ describe.skipIf(!shouldRun)(
           status: TransactionStatus.RESERVED,
           quantity: 1,
         },
+        permissions: ['read("any")'],
       });
 
       await tablesDb.createRow({
@@ -277,6 +281,7 @@ describe.skipIf(!shouldRun)(
           status: TransactionStatus.PURCHASED,
           quantity: 1,
         },
+        permissions: ['read("any")'],
       });
 
       try {

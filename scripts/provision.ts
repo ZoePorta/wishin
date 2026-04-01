@@ -398,12 +398,22 @@ async function provision() {
       // 1. All allow public read ('read("any")').
       // 2. All restrict CRUD to authenticated users ('create("users")', 'update("users")', 'delete("users")').
       //    Guest access is supported via anonymous sessions.
-      const permissions = [
+      let permissions = [
         'read("any")',
         'create("users")',
         'update("users")',
         'delete("users")',
       ];
+
+      // Transactions need to be more permissive for guest access (ADR 018)
+      if (coll.id === "transactions") {
+        permissions = [
+          'read("any")',
+          'create("any")',
+          'update("any")',
+          'delete("any")',
+        ];
+      }
 
       try {
         await tablesDb.getTable({

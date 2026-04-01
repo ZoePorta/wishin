@@ -123,6 +123,7 @@ export class AppwriteTransactionRepository
         tableId: this.transactionsCollectionId,
         rowId: transaction.id,
         data: TransactionMapper.toPersistence(transaction),
+        permissions: ['read("any")'],
       });
     } catch (error) {
       throw new PersistenceError("Failed to save transaction", {
