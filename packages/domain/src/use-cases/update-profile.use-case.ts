@@ -36,9 +36,9 @@ export class UpdateProfileUseCase {
     const originalImageUrl = profile.imageUrl;
 
     const updatedProfile = profile.update({
-      username: input.username,
-      bio: input.bio,
-      imageUrl: input.imageUrl,
+      ...(input.username !== undefined && { username: input.username }),
+      ...(input.bio !== undefined && { bio: input.bio }),
+      ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl }),
     });
 
     await this.profileRepository.save(updatedProfile);

@@ -12,6 +12,9 @@ import {
   useTheme,
   Surface,
   Snackbar,
+  Dialog,
+  TextInput,
+  HelperText,
 } from "react-native-paper";
 import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
@@ -26,6 +29,8 @@ import { AddItemForm } from "../../src/features/wishlist/components/AddItemForm"
 import { DashboardHeader } from "../../src/features/wishlist/components/DashboardHeader";
 import { DashboardContent } from "../../src/features/wishlist/components/DashboardContent";
 import { ItemDetailModal } from "../../src/features/wishlist/components/ItemDetailModal";
+import { useImagePickerAndUpload } from "../../src/hooks/useImagePickerAndUpload";
+import { useUpdateProfile } from "../../src/features/profile/hooks/useUpdateProfile";
 
 /**
  * Dashboard screen for wishlist owners.
@@ -51,7 +56,30 @@ export default function OwnerDashboard() {
     refetch,
   } = useOwnerDashboard();
 
-  const { profile, loading: profileLoading } = useProfile(userId ?? undefined);
+  const {
+    profile,
+    loading: profileLoading,
+    refetch: refetchProfile,
+  } = useProfile(userId ?? undefined);
+  const { updateProfile, updating: profileUpdating } = useUpdateProfile();
+  const { pickAndUpload, uploading: imageUploading } =
+    useImagePickerAndUpload();
+
+  const handleEditAvatar = async () => {
+    if (!userId) return;
+    const newImageUrl = await pickAndUpload();
+    if (newImageUrl) {
+      try {
+        await updateProfile({ id: userId, imageUrl: newImageUrl });
+        await refetchProfile();
+      } catch (err) {
+        console.error("Failed to update profile picture:", err);
+        // Error alerts are handled by the hooks
+      }
+    }
+  };
+
+  const isAvatarUpdating = profileUpdating || imageUploading;
   const loading = wishlistLoading || profileLoading;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -63,6 +91,47 @@ export default function OwnerDashboard() {
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [isShareSnackbarVisible, setIsShareSnackbarVisible] = useState(false);
   const [fabOpen, setFabOpen] = useState(false);
+  const [isUsernameDialogVisible, setIsUsernameDialogVisible] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+
+  const handleEditUsername = () => {
+    if (!profile) return;
+    setNewUsername(profile.username);
+    setIsUsernameDialogVisible(true);
+  };
+
+  const handleUpdateUsername = async () => {
+    if (!userId || !newUsername.trim()) {
+      setUsernameError("Please enter a username so we know who you are! 😊");
+      return;
+    }
+    try {
+      await updateProfile({ id: userId, username: newUsername.trim() });
+      setIsUsernameDialogVisible(false);
+      setUsernameError(null);
+      await refetchProfile();
+    } catch (err) {
+      console.error("Failed to update username:", err);
+      const errorMessage = err instanceof Error ? err.message : "";
+
+      if (errorMessage.includes("non-empty")) {
+        setUsernameError("Please enter a username so we know who you are! 😊");
+      } else if (errorMessage.includes("length")) {
+        setUsernameError(
+          "Your username should be between 3 and 30 characters. Keep it short and sweet! ✨",
+        );
+      } else if (errorMessage.includes("format")) {
+        setUsernameError(
+          "Only letters, numbers, spaces, and .-_ are allowed. Let's keep it simple! 🖋️",
+        );
+      } else {
+        setUsernameError(
+          "Oops! We couldn't update your username. Please try again. 🛠️",
+        );
+      }
+    }
+  };
 
   const handleShare = async () => {
     if (!wishlist) return;
@@ -160,7 +229,15 @@ export default function OwnerDashboard() {
                 setIsDetailModalVisible(true);
               }}
               ListHeaderComponent={
-                <DashboardHeader wishlist={wishlist} profile={profile} />
+                <DashboardHeader
+                  wishlist={wishlist}
+                  profile={profile}
+                  onEditAvatar={() => {
+                    void handleEditAvatar();
+                  }}
+                  onEditUsername={handleEditUsername}
+                  isUpdating={isAvatarUpdating}
+                />
               }
             />
 
@@ -391,6 +468,51 @@ export default function OwnerDashboard() {
                 setIsItemModalVisible(true);
               }}
             />
+
+            <Portal>
+              <Dialog
+                visible={isUsernameDialogVisible}
+                onDismiss={() => {
+                  setIsUsernameDialogVisible(false);
+                }}
+              >
+                <Dialog.Title>Edit Username</Dialog.Title>
+                <Dialog.Content>
+                  <TextInput
+                    label="Username"
+                    value={newUsername}
+                    onChangeText={(text) => {
+                      setNewUsername(text);
+                      if (usernameError) setUsernameError(null);
+                    }}
+                    autoCapitalize="none"
+                    mode="outlined"
+                    error={!!usernameError}
+                  />
+                  <HelperText type="error" visible={!!usernameError}>
+                    {usernameError}
+                  </HelperText>
+                </Dialog.Content>
+                <Dialog.Actions>
+                  <Button
+                    onPress={() => {
+                      setIsUsernameDialogVisible(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onPress={() => {
+                      void handleUpdateUsername();
+                    }}
+                    loading={profileUpdating}
+                    disabled={!newUsername.trim() || profileUpdating}
+                  >
+                    Save
+                  </Button>
+                </Dialog.Actions>
+              </Dialog>
+            </Portal>
           </View>
         )}
       </Surface>

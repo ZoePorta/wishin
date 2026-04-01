@@ -176,7 +176,7 @@ export class Profile {
         "Invalid username length: Must be 3-30 characters",
       );
     }
-    const usernameRegex = /^[a-zA-Z0-9]+(?:[._-][a-zA-Z0-9]+)*$/;
+    const usernameRegex = /^[a-zA-Z0-9]+(?:[ ._-][a-zA-Z0-9]+)*$/;
     if (!usernameRegex.test(trimmed)) {
       throw new InvalidAttributeError("Invalid username format");
     }
