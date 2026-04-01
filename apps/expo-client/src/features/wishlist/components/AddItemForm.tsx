@@ -129,6 +129,13 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     setSelectedImage(null);
     setUseInitialImage(!!initialData?.imageUrl);
     setError(null);
+
+    // Reset internal refs for the new session
+    stagedImageUrl.current = null;
+    isSubmitted.current = false;
+    isSubmitting.current = false;
+    isMounted.current = true;
+    lastUploadRequestId.current = 0;
   }, [initialData]);
 
   const handleSubmit = useCallback(async () => {

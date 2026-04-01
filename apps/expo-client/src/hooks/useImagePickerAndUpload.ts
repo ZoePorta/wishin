@@ -11,8 +11,15 @@ import { useStorageRepository } from "../contexts/WishlistRepositoryContext";
 
 /**
  * Custom hook to handle picking an image from the device and uploading it to storage.
+ * Manages multiple concurrent uploads and provides cleaning functions.
  *
- * @returns {Object} An object containing the pickAndUpload function and its state.
+ * @returns {Object} State and functions for image picking and uploading.
+ * @returns {boolean} returns.uploading - Whether any image is currently being uploaded.
+ * @returns {string|null} returns.error - Error message if the last operation failed.
+ * @returns {number} returns.inflightCount - Number of active uploads.
+ * @returns {Function} returns.pickAndUpload - Triggers the image picker and starts an upload.
+ * @returns {Function} returns.uploadFile - Uploads a selected file from its URI.
+ * @returns {Function} returns.deleteUpload - Deletes an uploaded file by its URL.
  */
 export function useImagePickerAndUpload() {
   const storageRepository = useStorageRepository();
@@ -21,13 +28,14 @@ export function useImagePickerAndUpload() {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Triggers the image picker and uploads the selected image.
+   * Triggers the native image picker and uploads the selected image.
+   * Handles permissions, cancellation, and file size resolution.
    *
-   * @param {Object} options - Optional picker options.
    * @returns {Promise<string | null>} The preview URL of the uploaded image, or null if canceled/failed.
    */
   const pickAndUpload = useCallback(async (): Promise<string | null> => {
     setError(null);
+    let didIncrement = false;
     try {
       // Stage 1: Request Permissions
       const { status } =
@@ -53,6 +61,7 @@ export function useImagePickerAndUpload() {
       }
 
       setInflightCount((prev) => prev + 1);
+      didIncrement = true;
 
       const asset = pickerResult.assets[0];
       let fileSize = asset.fileSize;
@@ -99,19 +108,23 @@ export function useImagePickerAndUpload() {
       );
       return null;
     } finally {
-      setInflightCount((prev) => Math.max(0, prev - 1));
+      if (didIncrement) {
+        setInflightCount((prev) => Math.max(0, prev - 1));
+      }
     }
   }, [storageRepository]);
 
   /**
-   * Uploads a file from a URI and returns its preview URL.
+   * Uploads a file from a local URI and returns its preview URL.
+   * Resolves file size if not provided.
    *
-   * @param {Object} file - The file to upload.
-   * @param {string} file.uri - The local URI of the file.
-   * @param {string} [file.fileName] - Optional filename.
-   * @param {string} [file.mimeType] - Optional mime type.
-   * @param {number} [file.fileSize] - Optional file size.
+   * @param {Object} file - The file data to upload.
+   * @param {string} file.uri - Local URI of the file.
+   * @param {string} [file.fileName] - Optional display name for the file.
+   * @param {string} [file.mimeType] - Optional MIME type (defaults to image/jpeg).
+   * @param {number} [file.fileSize] - Optional size in bytes.
    * @returns {Promise<string | null>} The preview URL of the uploaded image, or null if failed.
+   * @throws {Error} If file size cannot be determined.
    */
   const uploadFile = useCallback(
     async (file: {
@@ -176,9 +189,10 @@ export function useImagePickerAndUpload() {
 
   /**
    * Deletes an uploaded file from storage using its preview URL.
+   * Extracts the file ID from the URL before deletion.
    *
    * @param {string} url - The preview URL of the file to delete.
-   * @returns {Promise<void>} A promise that resolves when the file is deleted.
+   * @returns {Promise<void>} Resolves when deletion is attempted.
    */
   const deleteUpload = useCallback(
     async (url: string): Promise<void> => {
