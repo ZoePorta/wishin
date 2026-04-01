@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { View, ScrollView, StyleSheet, FlatList, Alert } from "react-native";
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { View, ScrollView, StyleSheet, FlatList } from "react-native";
 import {
   TextInput,
   Button,
@@ -12,11 +12,7 @@ import {
   Surface,
   HelperText,
 } from "react-native-paper";
-import {
-  Priority,
-  type WishlistItemOutput,
-  type FileData,
-} from "@wishin/domain";
+import { Priority, type WishlistItemOutput } from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from "../utils/currencies";
@@ -26,7 +22,7 @@ import {
   type SelectedImage,
 } from "../../../components/common/ImagePickerField";
 import { mapErrorToMessage, matchesError } from "../utils/error-mapper";
-import { useStorageRepository } from "../../../contexts/WishlistRepositoryContext";
+import { useImagePickerAndUpload } from "../../../hooks/useImagePickerAndUpload";
 
 const MIN_NAME_LENGTH = 3;
 const MAX_NAME_LENGTH = 100;
@@ -87,10 +83,38 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   const [useInitialImage, setUseInitialImage] = useState(
     !!initialData?.imageUrl,
   );
-  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const {
+    uploadFile,
+    deleteUpload,
+    uploading: isUploading,
+  } = useImagePickerAndUpload();
 
-  const storageRepository = useStorageRepository();
+  const stagedImageUrl = useRef<string | null>(null);
+  const isSubmitted = useRef(false);
+  const isSubmitting = useRef(false);
+  const isMounted = useRef(true);
+  const lastUploadRequestId = useRef(0);
+
+  // Track mount status
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Cleanup staged image on unmount if form wasn't submitted
+  useEffect(() => {
+    return () => {
+      if (
+        stagedImageUrl.current &&
+        !isSubmitted.current &&
+        !isSubmitting.current
+      ) {
+        void deleteUpload(stagedImageUrl.current);
+      }
+    };
+  }, [deleteUpload]);
 
   useEffect(() => {
     setName(initialData?.name ?? "");
@@ -105,6 +129,13 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     setSelectedImage(null);
     setUseInitialImage(!!initialData?.imageUrl);
     setError(null);
+
+    // Reset internal refs for the new session
+    stagedImageUrl.current = null;
+    isSubmitted.current = false;
+    isSubmitting.current = false;
+    isMounted.current = true;
+    lastUploadRequestId.current = 0;
   }, [initialData]);
 
   const handleSubmit = useCallback(async () => {
@@ -121,86 +152,8 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       return;
     }
 
-    setIsUploading(true);
-    let uploadedFileId: string | null = null;
-
     try {
-      let finalImageUrl = initialData?.imageUrl;
-
-      // Stage 1: Handle image upload if a new local image is selected
-      if (selectedImage) {
-        console.warn(
-          "Preparing image upload for SelectedImage:",
-          selectedImage.name,
-        );
-        const fileData: FileData = {
-          uri: selectedImage.uri,
-          filename: selectedImage.name,
-          mimeType: selectedImage.type,
-          size: selectedImage.size,
-        };
-
-        try {
-          const fileId = await storageRepository.upload(fileData);
-          uploadedFileId = fileId; // Track for cleanup if save fails
-          console.warn("Image uploaded successfully, fileId:", fileId);
-          finalImageUrl = await storageRepository.getPreview(fileId);
-          console.warn("Image preview URL obtained:", finalImageUrl);
-        } catch (uploadError) {
-          console.error("Error uploading image:", uploadError);
-          Alert.alert(
-            "Upload Failed",
-            "There was an error uploading the image. Would you like to save the item without the image?",
-            [
-              {
-                text: "Cancel",
-                style: "cancel",
-                onPress: () => {
-                  setIsUploading(false);
-                },
-              },
-              {
-                text: "Save anyway",
-                onPress: () => {
-                  void (async () => {
-                    const payload: AddItemFormSubmission = {
-                      wishlistId,
-                      name: name.trim(),
-                      description: description.trim() || undefined,
-                      url: url.trim() || undefined,
-                      price: priceUnknown ? undefined : parseFloat(price) || 0,
-                      currency: priceUnknown ? undefined : currency,
-                      priority: parseInt(priority, 10) as Priority,
-                      totalQuantity: isUnlimited
-                        ? 1
-                        : Math.max(1, parseInt(totalQuantity, 10) || 1),
-                      isUnlimited,
-                      imageUrl: initialData?.imageUrl, // Keep old image or none
-                      id: initialData?.id,
-                    };
-                    try {
-                      await onSubmit(payload);
-                    } catch (submitError) {
-                      console.error("Error saving anyway:", submitError);
-                      Alert.alert(
-                        "Save Failed",
-                        "Could not save the item. Please try again.",
-                      );
-                    } finally {
-                      setIsUploading(false);
-                    }
-                  })();
-                },
-              },
-            ],
-          );
-          return; // Stop execution of the main flow
-        }
-      } else if (!useInitialImage && initialData?.imageUrl) {
-        // Image was explicitly removed
-        finalImageUrl = null;
-      }
-
+      isSubmitting.current = true;
       // Stage 2: Form submission
       const payload: AddItemFormSubmission = {
         wishlistId,
@@ -214,32 +167,26 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           ? 1
           : Math.max(1, parseInt(totalQuantity, 10) || 1),
         isUnlimited,
-        imageUrl: finalImageUrl,
+        imageUrl:
+          selectedImage?.uri ??
+          (useInitialImage ? initialData?.imageUrl : null),
         id: initialData?.id,
       };
 
-      try {
-        await onSubmit(payload);
-      } catch (submitError) {
-        console.error("Error submitting form:", submitError);
+      await onSubmit(payload);
+      isSubmitted.current = true;
+      stagedImageUrl.current = null;
+    } catch (submitError) {
+      isSubmitting.current = false;
+      console.error("Error submitting form:", submitError);
+      setError(mapErrorToMessage(submitError));
 
-        // Cleanup: If we uploaded a new image, delete it since the save failed
-        if (uploadedFileId) {
-          console.warn("Cleaning up orphaned upload:", uploadedFileId);
-          try {
-            await storageRepository.delete(uploadedFileId);
-          } catch (deleteError) {
-            console.error("Failed to cleanup orphaned upload:", deleteError);
-          }
-        }
-
-        setError(mapErrorToMessage(submitError));
+      // Restore initial image state if we were editing and had a staged image
+      if (stagedImageUrl.current) {
+        stagedImageUrl.current = null;
+        setSelectedImage(null);
+        setUseInitialImage(!!initialData?.imageUrl);
       }
-    } catch (unexpectedError) {
-      console.error("Unexpected error in handleSubmit:", unexpectedError);
-      setError(mapErrorToMessage(unexpectedError));
-    } finally {
-      setIsUploading(false);
     }
   }, [
     name,
@@ -256,7 +203,6 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     totalQuantity,
     selectedImage,
     useInitialImage,
-    storageRepository,
     initialData?.imageUrl,
     initialData?.id,
     onSubmit,
@@ -271,11 +217,40 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           (useInitialImage ? (initialData?.imageUrl ?? null) : null)
         }
         onImageSelected={(image) => {
-          setSelectedImage(image);
           if (image) {
-            setUseInitialImage(false); // New image selected
+            void (async () => {
+              const requestId = ++lastUploadRequestId.current;
+              const url = await uploadFile(image);
+
+              // If unmounted or request is no longer the latest, clean up the result
+              if (
+                !isMounted.current ||
+                requestId !== lastUploadRequestId.current
+              ) {
+                if (url) void deleteUpload(url);
+                return;
+              }
+
+              if (url) {
+                // Clean up previous staged image if it exists
+                if (stagedImageUrl.current) {
+                  void deleteUpload(stagedImageUrl.current);
+                }
+                stagedImageUrl.current = url;
+                setSelectedImage({ ...image, uri: url });
+                setUseInitialImage(false);
+              }
+            })();
           } else {
-            setUseInitialImage(false); // Image removed
+            // Invalidate any pending uploads
+            lastUploadRequestId.current++;
+            // Clean up staged image if cleared
+            if (stagedImageUrl.current) {
+              void deleteUpload(stagedImageUrl.current);
+              stagedImageUrl.current = null;
+            }
+            setSelectedImage(null);
+            setUseInitialImage(false);
           }
         }}
         disabled={loading || isUploading}

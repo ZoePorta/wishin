@@ -63,10 +63,12 @@ describe("Profile Entity", () => {
       ).toThrow(InvalidAttributeError);
     });
 
+    it("should allow spaces as separators in username", () => {
+      const profile = Profile.create({ ...validProps, username: "Jane Doe" });
+      expect(profile.username).toBe("Jane Doe");
+    });
+
     it("should throw InvalidAttributeError if username contains invalid characters", () => {
-      expect(
-        () => Profile.create({ ...validProps, username: "user name" }), // spaces
-      ).toThrow(InvalidAttributeError);
       expect(
         () => Profile.create({ ...validProps, username: "user@name" }), // @ symbol
       ).toThrow(InvalidAttributeError);
