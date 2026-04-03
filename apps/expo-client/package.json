@@ -6,20 +6,27 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "build": "expo export --platform web"
   },
   "dependencies": {
     "@expo-google-fonts/aclonica": "^0.4.1",
     "@expo-google-fonts/varela-round": "^0.4.1",
     "@expo/metro-runtime": "~6.1.2",
     "@expo/vector-icons": "^15.1.1",
+    "@wishin/domain": "file:../../packages/domain",
+    "@wishin/infrastructure": "file:../../packages/infrastructure",
+    "@wishin/shared": "file:../../packages/shared",
     "expo": "~54.0.33",
+    "expo-asset": "~12.0.12",
     "expo-blur": "~15.0.8",
     "expo-clipboard": "~8.0.8",
     "expo-constants": "~18.0.13",
+    "expo-file-system": "~19.0.21",
     "expo-font": "~14.0.11",
     "expo-image-picker": "^17.0.8",
     "expo-linking": "~8.0.11",
+    "expo-modules-core": "~3.0.29",
     "expo-router": "~6.0.23",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
@@ -36,6 +43,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "@babel/runtime": "^7.20.0",
     "babel-plugin-module-resolver": "^5.0.2",
     "typescript": "~5.9.2"
   },
