@@ -405,6 +405,7 @@ export default function OwnerDashboard() {
                 }}
                 contentContainerStyle={[
                   styles.modalContent,
+                  commonStyles.modalContent,
                   { backgroundColor: theme.colors.surface },
                 ]}
               >
@@ -455,6 +456,7 @@ export default function OwnerDashboard() {
                 }}
                 contentContainerStyle={[
                   styles.modalContent,
+                  commonStyles.modalContent,
                   { backgroundColor: theme.colors.surface },
                 ]}
               >

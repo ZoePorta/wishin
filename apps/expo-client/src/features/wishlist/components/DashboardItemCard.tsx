@@ -1,11 +1,11 @@
 import React, { useCallback } from "react";
 import { View, Linking, Alert, StyleSheet, Image } from "react-native";
-import { Card, Text, Badge, useTheme, IconButton } from "react-native-paper";
+import { Card, Text, useTheme, IconButton } from "react-native-paper";
 import { type AppTheme } from "../../../theme/theme";
 import { type WishlistItemOutput } from "@wishin/domain";
-import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
 import { getItemImageSource } from "../utils/images";
 import { commonStyles } from "../../../theme/common-styles";
+import { PriorityBadge } from "./PriorityBadge";
 
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
@@ -42,8 +42,6 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
       Alert.alert("Error", "Could not open link.");
     }
   }, []);
-
-  const priorityColor = getPriorityColor(item.priority, theme);
 
   return (
     <Card
@@ -93,17 +91,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
                 Qty: {item.isUnlimited ? "∞" : item.totalQuantity}
               </Text>
             </View>
-            <Badge
-              size={18}
-              style={[
-                styles.badge,
-                {
-                  backgroundColor: priorityColor,
-                },
-              ]}
-            >
-              {PRIORITY_LABELS[item.priority]}
-            </Badge>
+            <PriorityBadge priority={item.priority} size={18} />
           </View>
 
           {item.price != null && item.currency != null && (
@@ -173,11 +161,12 @@ const makeStyles = (theme: AppTheme) =>
       alignItems: "center",
     },
     nameText: {
-      flex: 1,
+      flexShrink: 1,
     },
     linkIcon: {
       margin: 0,
       marginLeft: 4,
+      marginVertical: -10, // Offset 44px touch target to match text height
     },
     qtyText: {
       marginTop: 0,
@@ -192,9 +181,6 @@ const makeStyles = (theme: AppTheme) =>
     priceText: {
       fontWeight: "700",
       color: theme.colors.primary,
-    },
-    badge: {
-      alignSelf: "flex-start",
     },
     imageWrapper: {
       width: 100,

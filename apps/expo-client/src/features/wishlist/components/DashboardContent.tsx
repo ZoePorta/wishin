@@ -32,10 +32,17 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onItemPress,
   ListHeaderComponent,
 }) => {
+  // Sort by creation date reversed (most recent first)
+  // Since Appwrite returns them in chronological order, we just reverse the array.
+  const sortedItems = React.useMemo(
+    () => [...wishlist.items].reverse(),
+    [wishlist.items],
+  );
+
   return (
     <Surface style={styles.container}>
       <FlatList
-        data={wishlist.items}
+        data={sortedItems}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <DashboardItemCard

@@ -14,13 +14,13 @@ import {
   Button,
   IconButton,
   useTheme,
-  Badge,
   Surface,
 } from "react-native-paper";
 import { type WishlistItemOutput } from "@wishin/domain";
 import { type AppTheme } from "../../../theme/theme";
-import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
 import { getItemImageSource } from "../utils/images";
+import { commonStyles } from "../../../theme/common-styles";
+import { PriorityBadge } from "./PriorityBadge";
 
 /**
  * Props for the {@link ItemDetailModal} component.
@@ -64,8 +64,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
   if (!item) return null;
 
-  const priorityColor = getPriorityColor(item.priority, theme);
-
   return (
     <Portal>
       <Modal
@@ -73,6 +71,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         onDismiss={onDismiss}
         contentContainerStyle={[
           styles.modalContent,
+          commonStyles.modalContent,
           { backgroundColor: theme.colors.surface },
         ]}
       >
@@ -144,15 +143,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               <Text variant="labelLarge" style={styles.statLabel}>
                 Priority
               </Text>
-              <Badge
-                size={24}
-                style={[
-                  styles.priorityBadge,
-                  { backgroundColor: priorityColor },
-                ]}
-              >
-                {PRIORITY_LABELS[item.priority]}
-              </Badge>
+              <PriorityBadge priority={item.priority} size={24} />
             </View>
 
             {item.description && (
@@ -254,10 +245,6 @@ const makeStyles = (theme: AppTheme) =>
     },
     priorityRow: {
       marginBottom: 20,
-    },
-    priorityBadge: {
-      alignSelf: "flex-start",
-      paddingHorizontal: 12,
     },
     descriptionSection: {
       marginTop: 8,

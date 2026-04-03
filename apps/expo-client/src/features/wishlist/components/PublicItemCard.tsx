@@ -4,7 +4,6 @@ import {
   Card,
   Text,
   Button,
-  Badge,
   Surface,
   useTheme,
   IconButton,
@@ -17,11 +16,10 @@ import { usePurchaseItem } from "../hooks/usePurchaseItem";
 import { useUndoPurchase } from "../hooks/useUndoPurchase";
 import { LoginSuggestionModal } from "./LoginSuggestionModal";
 import { AuthModal } from "../../../components/auth/AuthModal";
-import { PRIORITY_LABELS, getPriorityColor } from "../utils/priority";
+import { getItemImageSource } from "../utils/images";
 import { commonStyles } from "../../../theme/common-styles";
 import { addAlpha } from "../../../utils/colors";
-
-import { getItemImageSource } from "../utils/images";
+import { PriorityBadge } from "./PriorityBadge";
 
 interface PublicItemCardProps {
   item: WishlistItemOutput;
@@ -215,7 +213,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     } finally {
       setGuestLoading(false);
     }
-  }, [loginAsGuest, userId, onSuggestionShown]);
+  }, [loginAsGuest, userId]);
 
   return (
     <>
@@ -230,17 +228,9 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
             style={[styles.cardImage, isCompleted && styles.completedImage]}
             resizeMode="cover"
           />
-          <Badge
-            size={24}
-            style={[
-              styles.priorityBadge,
-              {
-                backgroundColor: getPriorityColor(item.priority, theme),
-              },
-            ]}
-          >
-            {PRIORITY_LABELS[item.priority]}
-          </Badge>
+          <View style={styles.priorityBadge}>
+            <PriorityBadge priority={item.priority} size={24} />
+          </View>
         </View>
 
         {isReserved && (
@@ -362,7 +352,7 @@ const makeStyles = (theme: AppTheme) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      minHeight: 60, // Space for 2 lines of titleLargeVarela
+      minHeight: 60, // Space for 1-2 lines of title
     },
     headerLinkIcon: {
       margin: 0,
@@ -381,7 +371,7 @@ const makeStyles = (theme: AppTheme) =>
       justifyContent: "center",
       alignItems: "center",
       zIndex: 1,
-      borderRadius: 28, // Updated to match card
+      borderRadius: 28,
     },
     overlayBadge: {
       paddingHorizontal: 20,

@@ -58,16 +58,17 @@ export default function WishlistDetail() {
 
   const visibleItems = useMemo(() => {
     if (!wishlist) return [];
-    return wishlist.items.filter((item) => {
+
+    // 1. Filter out completed items (ADR 028)
+    const filtered = wishlist.items.filter((item) => {
       const isCompleted =
         !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
-      // Completed items are hidden globally from the list (ADR 028)
-
-      if (isCompleted) {
-        return false;
-      }
-      return true;
+      return !isCompleted;
     });
+
+    // 2. Sort by creation date reversed (most recent first)
+    // Since Appwrite returns them in chronological order, we just reverse the array.
+    return [...filtered].reverse();
   }, [wishlist]);
 
   const ListHeader = useMemo(() => {
