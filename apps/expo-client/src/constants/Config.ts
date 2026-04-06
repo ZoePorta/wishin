@@ -20,14 +20,25 @@ function getValidatedBaseUrl(): string {
   const rawEnvUrl = process.env.EXPO_PUBLIC_BASE_URL as string | undefined;
   const trimmedEnvUrl = rawEnvUrl?.trim();
   const isDev = process.env.NODE_ENV === "development";
+  const isWeb = typeof window !== "undefined" && !!window.location;
+
+  // Priority 1: Current web origin (if on web)
+  // This is the most reliable source for sharing links on the current site.
+  if (isWeb && !isDev && window.location.origin) {
+    return window.location.origin.replace(/\/+$/, "");
+  }
 
   if (!trimmedEnvUrl) {
     if (isDev) {
+      // In development, we can fallback to the web origin or localhost
+      if (isWeb && window.location.origin) {
+        return window.location.origin.replace(/\/+$/, "");
+      }
       return "http://localhost:8081";
     }
     throw new Error(
       "Missing EXPO_PUBLIC_BASE_URL. " +
-        "This environment variable is required in non-development environments to generate valid share URLs. " +
+        "This environment variable is required in non-development environments to generate valid share URLs for mobile. " +
         "Check your .env file.",
     );
   }
