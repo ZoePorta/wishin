@@ -9,6 +9,11 @@
 
 Wishin is a high-performance, real-time collaborative platform designed for frictionless gift coordination. By combining a hybrid access model with an atomic inventory system, Wishin ensures that wishlists remain accurate and synchronized, whether contributors are registered members or anonymous guests.
 
+## 🔗 Quick Links
+
+- **Live Demo:** [https://wishin.es/](https://wishin.es/)
+- **Product Presentation:** [docs/product/slides.pdf](docs/product/slides.pdf)
+
 ## Core Functionality
 
 - **Hybrid Participation Model:** Optimized for zero-friction; anonymous guests can mark items as "purchased" via unique sharing URLs, while registered users gain access to a "reservation" phase.
