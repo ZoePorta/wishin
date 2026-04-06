@@ -100,7 +100,7 @@ Follow these steps to set up the project locally for development.
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/wishin.git
+git clone https://github.com/ZoePorta/wishin.git
 cd wishin
 
 # Install dependencies
