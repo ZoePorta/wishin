@@ -1,9 +1,22 @@
-/* eslint-disable */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+interface MockWindow {
+  location: {
+    origin: string;
+  };
+}
 
 describe("Config", () => {
   const originalEnv = process.env;
-  const originalWindow = (global as any).window;
+  const originalWindow = (global as unknown as { window: unknown }).window;
+
+  function setMockWindow(mock?: MockWindow) {
+    if (mock) {
+      (global as unknown as { window: MockWindow }).window = mock;
+    } else {
+      delete (global as unknown as { window?: MockWindow }).window;
+    }
+  }
 
   beforeEach(() => {
     vi.resetModules();
@@ -12,7 +25,7 @@ describe("Config", () => {
 
   afterEach(() => {
     process.env = originalEnv;
-    (global as any).window = originalWindow;
+    (global as unknown as { window: unknown }).window = originalWindow;
     vi.unstubAllEnvs();
   });
 
@@ -40,7 +53,7 @@ describe("Config", () => {
   it("should return default dev URL if EXPO_PUBLIC_BASE_URL is missing in dev (no window)", async () => {
     vi.stubEnv("EXPO_PUBLIC_BASE_URL", "");
     vi.stubEnv("NODE_ENV", "development");
-    delete (global as any).window;
+    setMockWindow(undefined);
     const { Config } = await import("./Config");
     expect(Config.baseUrl).toBe("http://localhost:8081");
   });
@@ -50,7 +63,7 @@ describe("Config", () => {
     vi.stubEnv("NODE_ENV", "production");
 
     // Mock window
-    (global as any).window = { location: { origin: "https://web-app.host/" } };
+    setMockWindow({ location: { origin: "https://web-app.host/" } });
 
     const { Config } = await import("./Config");
     expect(Config.baseUrl).toBe("https://web-app.host");
@@ -61,9 +74,9 @@ describe("Config", () => {
     vi.stubEnv("NODE_ENV", "production");
 
     // Mock window
-    (global as any).window = {
+    setMockWindow({
       location: { origin: "https://actual-site.com" },
-    };
+    });
 
     const { Config } = await import("./Config");
     expect(Config.baseUrl).toBe("https://actual-site.com");
@@ -74,7 +87,7 @@ describe("Config", () => {
     vi.stubEnv("NODE_ENV", "development");
 
     // Mock window
-    (global as any).window = { location: { origin: "http://localhost:19006" } };
+    setMockWindow({ location: { origin: "http://localhost:19006" } });
 
     const { Config } = await import("./Config");
     expect(Config.baseUrl).toBe("http://localhost:19006");
@@ -85,7 +98,7 @@ describe("Config", () => {
     vi.stubEnv("NODE_ENV", "production");
 
     // Ensure window is undefined (simulating mobile)
-    delete (global as any).window;
+    setMockWindow(undefined);
 
     const { Config } = await import("./Config");
     expect(() => Config.baseUrl).toThrow("Missing EXPO_PUBLIC_BASE_URL");
@@ -94,7 +107,7 @@ describe("Config", () => {
   it("should throw error for invalid URL", async () => {
     vi.stubEnv("EXPO_PUBLIC_BASE_URL", "not-a-url");
     vi.stubEnv("NODE_ENV", "production");
-    delete (global as any).window;
+    setMockWindow(undefined);
 
     const { Config } = await import("./Config");
     expect(() => Config.baseUrl).toThrow("Invalid EXPO_PUBLIC_BASE_URL");
@@ -103,7 +116,7 @@ describe("Config", () => {
   it("should throw error for insecure URL in production", async () => {
     vi.stubEnv("EXPO_PUBLIC_BASE_URL", "http://example.com");
     vi.stubEnv("NODE_ENV", "production");
-    delete (global as any).window;
+    setMockWindow(undefined);
 
     const { Config } = await import("./Config");
     expect(() => Config.baseUrl).toThrow(
