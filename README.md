@@ -18,19 +18,11 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 
 ## UI Showcase
 
-```carousel
-![Landing Page (Mobile)](file:///home/zoe/Documents/wishin/docs/assets/screenshots/landing.png)
-<!-- slide -->
-![Landing Page (Desktop)](file:///home/zoe/Documents/wishin/docs/assets/screenshots/landing_desktop.png)
-<!-- slide -->
-![User Dashboard (Mobile)](file:///home/zoe/Documents/wishin/docs/assets/screenshots/dashboard.png)
-<!-- slide -->
-![User Dashboard (Desktop)](file:///home/zoe/Documents/wishin/docs/assets/screenshots/dashboard_desktop.png)
-<!-- slide -->
-![Wishlist View (Mobile)](file:///home/zoe/Documents/wishin/docs/assets/screenshots/wishlist_view.png)
-<!-- slide -->
-![Wishlist View (Desktop)](file:///home/zoe/Documents/wishin/docs/assets/screenshots/wishlist_desktop.png)
-```
+| Feature       | Mobile View                                                   | Desktop View                                                        |
+| :------------ | :------------------------------------------------------------ | :------------------------------------------------------------------ |
+| **Landing**   | ![Landing Mobile](docs/assets/screenshots/landing.png)        | ![Landing Desktop](docs/assets/screenshots/landing_desktop.png)     |
+| **Dashboard** | ![Dashboard Mobile](docs/assets/screenshots/dashboard.png)    | ![Dashboard Desktop](docs/assets/screenshots/dashboard_desktop.png) |
+| **Wishlist**  | ![Wishlist Mobile](docs/assets/screenshots/wishlist_view.png) | ![Wishlist Desktop](docs/assets/screenshots/wishlist_desktop.png)   |
 
 ## Technical Stack
 
