@@ -8,6 +8,7 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
+    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
       "@wishin/domain": ["packages/domain/src/index.ts"],
