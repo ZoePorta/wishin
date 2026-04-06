@@ -1,5 +1,10 @@
 # Wishin
 
+![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)
+![Node](https://img.shields.io/badge/node-%3E%3D20-green.svg)
+![PNPM](https://img.shields.io/badge/pnpm-%3E%3D10-orange.svg)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
+
 ## Vision
 
 Wishin is a high-performance, real-time collaborative platform designed for frictionless gift coordination. By combining a hybrid access model with an atomic inventory system, Wishin ensures that wishlists remain accurate and synchronized, whether contributors are registered members or anonymous guests.
@@ -9,18 +14,26 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - **Hybrid Participation Model:** Optimized for zero-friction; anonymous guests can mark items as "purchased" via unique sharing URLs, while registered users gain access to a "reservation" phase.
 - **Two-Stage Item Commitment:** A robust lifecycle management system with distinct states: `Available`, `Reserved` (temporary lock), and `Purchased` (final state).
 - **Atomic Inventory Control:** A synchronization engine that manages item quantities (including unlimited status) via server-side atomic operations to ensure data integrity.
-- **Real-Time State Updates:** Instant broadcast of status changes across all clients via Appwrite Realtime (WebSockets).
+- **Real-Time State Updates (Planned):** Instant broadcast of status changes across all clients via Appwrite Realtime (WebSockets).
+
+## UI Showcase
+
+| Feature       | Mobile View                                                   | Desktop View                                                        |
+| :------------ | :------------------------------------------------------------ | :------------------------------------------------------------------ |
+| **Landing**   | ![Landing Mobile](docs/assets/screenshots/landing.png)        | ![Landing Desktop](docs/assets/screenshots/landing_desktop.png)     |
+| **Dashboard** | ![Dashboard Mobile](docs/assets/screenshots/dashboard.png)    | ![Dashboard Desktop](docs/assets/screenshots/dashboard_desktop.png) |
+| **Wishlist**  | ![Wishlist Mobile](docs/assets/screenshots/wishlist_view.png) | ![Wishlist Desktop](docs/assets/screenshots/wishlist_desktop.png)   |
 
 ## Technical Stack
 
-| Layer              | Technology                                  |
-| :----------------- | :------------------------------------------ |
-| **Frontend**       | Expo (React Native) + TypeScript            |
-| **Backend (BaaS)** | Appwrite Cloud                              |
-| **Testing Suite**  | Vitest & React Native Testing Library       |
-| **E2E Testing**    | Maestro (Mobile) & Playwright (Web)         |
-| **Observability**  | Sentry (Errors) & PostHog (Analytics)       |
-| **AI Governance**  | CodeRabbit (Automated Architectural Review) |
+| Layer              | Technology                                              |
+| :----------------- | :------------------------------------------------------ |
+| **Frontend**       | Expo (React Native) + TypeScript + React 19 (Web-First) |
+| **Backend (BaaS)** | Appwrite Cloud                                          |
+| **UI Framework**   | React Native Paper (Material Design 3)                  |
+| **Testing Suite**  | Vitest & React Native Testing Library                   |
+| **E2E Testing**    | Playwright (Web) & Maestro (Mobile - Planned)           |
+| **AI Governance**  | CodeRabbit (Automated Architectural Review)             |
 
 ## Quality Gates & Engineering Standards
 
@@ -35,11 +48,30 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - **Test Coverage:** Mandatory minimum threshold of **80% coverage** for Domain and Application layers.
 - **Concurrency Management:** Engineered to handle race conditions between guest purchases and member reservations using atomic database operations.
 
-### 🏗️ Architecture
+### 🏗️ Architecture & Project Structure
+
+Wishin uses a modern monorepo architecture to share domain logic across platforms while keeping infrastructure separate.
+
+```text
+.
+├── apps
+│   └── expo-client          # Expo (React Native) application (Web/Mobile)
+├── packages
+│   ├── domain               # Pure business logic (Entities, Interfaces)
+│   ├── infrastructure       # Appwrite adapters, Storage, Auth implementations
+│   └── shared               # Shared types, constants, and global utilities
+├── docs
+│   ├── adr                  # Architectural Decision Records
+│   └── assets               # Project assets and screenshots
+└── scripts                  # Database provisioning and seeding tools
+```
 
 - **Clean Architecture:** Strict separation of concerns using Domain-Driven Design (DDD).
 - **Decoupled Infrastructure:** Implementation of the **Repository and Adapter Patterns** to isolate the business logic from the Appwrite SDK.
 - **Strict Type Safety:** Comprehensive TypeScript enforcement (`no-explicit-any`) across the entire stack to catch errors at compile time.
+- **Material Design 3:** Full adoption of MD3 principles via `react-native-paper`.
+  - **Theming:** Centralized theme system using MD3 tokens (e.g., `surface`, `onPrimary`) via `useTheme()` hook.
+  - **Components:** Custom components like `PriorityBadge` for consistent status visualization across the app.
 
 ### 🛠️ Development Workflow & Automation
 
@@ -47,11 +79,107 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 - **Commit Validation (Commitlint):** Strict enforcement of the [Conventional Commits specification](https://www.conventionalcommits.org/) at the Git level to ensure transparent version history.
 - **Pre-push Checks:** Final local validation of the full test suite before remote synchronization.
 
-### 🤖 AI Governance & Observability
+### 🤖 AI Governance & Planned Observability
 
 - **Automated AI Review:** Integration of CodeRabbit to enforce architectural constraints and identify logical edge cases in every Pull Request.
-- [x] **Image Upload:** Integrate image upload for wishlist items and profile/wishlist headers.
-- **Real-time Telemetry:** Full visibility into system health and user behavior via Sentry and PostHog.
+- **Observability (Planned):** Full visibility into system health and user behavior via Sentry (Errors) and PostHog (Analytics) is currently in the roadmap.
+- **Real-time Telemetry:** Proactive monitoring of critical state changes and concurrency conflicts.
+
+## 🚀 Getting Started
+
+Follow these steps to set up the project locally for development.
+
+### Prerequisites
+
+- **Node.js**: v20 or higher.
+- **pnpm**: v10 or higher.
+- **Expo Go** (Optional): Available on iOS/Android for mobile testing.
+- **Appwrite Cloud Account**: Needed for the backend (free tier is sufficient).
+
+### Step 1: Clone & Install
+
+```bash
+# Clone the repository
+git clone https://github.com/ZoePorta/wishin.git
+cd wishin
+
+# Install dependencies
+pnpm install
+
+# Initialize husky hooks
+pnpm prepare
+```
+
+### Step 2: Environment Setup
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+2. Open `.env` and fill in your Appwrite credentials (Project ID, Endpoint, API Secret, etc.). See the [Infrastructure](#infrastructure--database-setup) section for details on these variables.
+
+### Step 3: Database Provisioning
+
+Initialize your Appwrite database schema and seed it with test data:
+
+```bash
+# Create collections and attributes
+pnpm db:provision
+
+# (Optional) Seed the database with sample wishlists/items
+pnpm db:seed
+```
+
+---
+
+### Step 4: Running the App (Web-First)
+
+The project currently prioritizes a **responsive web experience**. While Expo allows for native mobile distributions, these are scheduled for the **Post-MVP** phase.
+
+```bash
+# Start the development server for Web
+pnpm --filter @wishin/expo-client web
+```
+
+- Using the `web` command directly ensures the best development experience for the current target.
+- For experimental mobile testing via **Expo Go**, you can use `pnpm --filter @wishin/expo-client start` and scan the QR code.
+
+---
+
+### Step 5: Testing & Quality
+
+Always run tests before pushing any changes.
+
+```bash
+# Run unit tests (Vitest)
+pnpm test
+
+# Run integration tests (Requires environment setup)
+pnpm test:integration
+
+# Run linting and type checks
+pnpm lint
+pnpm type-check
+```
+
+---
+
+### 📜 Monorepo Scripts
+
+The root `package.json` provides unified commands to manage the entire workspace.
+
+| Command                 | Description                                      |
+| :---------------------- | :----------------------------------------------- |
+| `pnpm install`          | Installs all dependencies across all packages.   |
+| `pnpm build`            | Builds all packages and apps.                    |
+| `pnpm test`             | Runs the full test suite (Vitest).               |
+| `pnpm test:integration` | Runs integration tests (requires DB setup).      |
+| `pnpm lint`             | Runs ESLint and Prettier checks.                 |
+| `pnpm type-check`       | Validates TypeScript across the monorepo.        |
+| `pnpm db:provision`     | Initializes Appwrite collections and attributes. |
+| `pnpm db:seed`          | Populates the database with realistic test data. |
+
+---
 
 ## Infrastructure & Database Setup
 
@@ -110,6 +238,10 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 - [ADR 027: Defer Anonymous Session Creation](docs/adr/027-defer-anonymous-session-creation.md)
 - [ADR 028: Accelerate Appwrite Functions for Atomicity and Permission Resolution](docs/adr/028-accelerate-appwrite-functions.md)
 - [ADR 029: Automated Lockfile Synchronization](docs/adr/029-automated-lockfile-synchronization.md)
+
+## Community & Contribution
+
+We welcome contributions from the community! Please read our [**Contributing Guidelines**](CONTRIBUTING.md) before submitting a Pull Request.
 
 ## [Project Roadmap](docs/roadmap.md)
 

@@ -149,7 +149,9 @@ async function seed() {
       data: {
         ownerId: user1.$id,
         title: "Alice's Birthday Wishlist",
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         visibility: Visibility.LINK,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         participation: Participation.ANYONE,
       },
     });
@@ -160,7 +162,9 @@ async function seed() {
       data: {
         ownerId: user2.$id,
         title: "Bob's Holiday Wishlist",
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         visibility: Visibility.LINK,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         participation: Participation.ANYONE,
       },
     });
@@ -236,6 +240,8 @@ async function seed() {
         wishlistId: wishlist1.$id,
         name: "Cozy Wool Socks",
         priority: 4,
+        imageUrl:
+          "https://images.unsplash.com/photo-1582718723469-a2417c8bae88?w=800&q=80",
         isUnlimited: true,
         reservedQuantity: 0,
         purchasedQuantity: 0,
@@ -253,7 +259,7 @@ async function seed() {
         price: 20.0,
         currency: "USD",
         imageUrl:
-          "https://images.unsplash.com/photo-1523362622744-8c1303cc1014?w=800&q=80",
+          "https://images.unsplash.com/photo-1602143399827-bd95efdb29bc?w=800&q=80",
         totalQuantity: 5,
         reservedQuantity: 0,
         purchasedQuantity: 0,
@@ -311,6 +317,7 @@ async function seed() {
       data: {
         itemId: item7.$id,
         userId: user2.$id,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         status: TransactionStatus.PURCHASED,
         quantity: 1,
         itemName: item7.name,
@@ -329,6 +336,7 @@ async function seed() {
       data: {
         itemId: item1.$id,
         userId: "550e8400-e29b-41d4-a716-44665544000x", // Maria (Anonymous)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         status: TransactionStatus.PURCHASED,
         quantity: 1,
         itemName: item1.name,

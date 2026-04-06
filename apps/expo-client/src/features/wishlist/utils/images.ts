@@ -12,8 +12,16 @@ import { Config } from "../../../constants/Config";
 export const getItemImageSource = (
   imageUrl: string | null | undefined,
 ): ImageSourcePropType => {
-  const path = imageUrl ?? "/item_image_placeholder.png";
+  const path =
+    imageUrl && imageUrl.trim() !== ""
+      ? imageUrl
+      : "/item_image_placeholder.png";
 
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return { uri: path };
+  }
+
+  // Handle local public assets
   return {
     uri: path.startsWith("/") ? `${Config.baseUrl}${path}` : path,
   };
