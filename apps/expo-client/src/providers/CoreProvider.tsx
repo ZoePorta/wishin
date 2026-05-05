@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, type ReactNode } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Platform } from "react-native";
+import { makeRedirectUri } from "expo-auth-session";
 import { WishlistRepositoryProvider } from "../contexts/WishlistRepositoryContext";
 import { UserProvider } from "../contexts/UserContext";
 import { ToastProvider } from "../contexts/ToastContext";
@@ -102,6 +103,12 @@ function createRepositories() {
     Config.collections.transactions,
   );
 
+  // Create deep link per Appwrite Expo docs.
+  // makeRedirectUri({ preferLocalhost: true }) generates:
+  //   - Web:    http://localhost:<port>
+  //   - Native: appwrite-callback-<PROJECT_ID>://
+  const oauthRedirectUrl = makeRedirectUri({ preferLocalhost: true });
+
   const authRepository = new AppwriteAuthRepository(
     client,
     Config.appwrite.endpoint,
@@ -109,6 +116,7 @@ function createRepositories() {
     Config.appwrite.databaseId,
     Config.collections.profiles,
     consoleLogger,
+    oauthRedirectUrl,
   );
 
   const profileRepository = new AppwriteProfileRepository(
@@ -187,6 +195,32 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
             reject(new Error("Session resolution timeout"));
           }, Config.SESSION_TIMEOUT_MS);
         });
+
+        // Web OAuth Callback Capture
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const userId = params.get("userId");
+          const secret = params.get("secret");
+
+          if (userId && secret) {
+            try {
+              // Strip the sensitive query parameters from the URL safely
+              const newUrl =
+                window.location.protocol +
+                "//" +
+                window.location.host +
+                window.location.pathname;
+              window.history.replaceState({ path: newUrl }, "", newUrl);
+
+              await repos.authRepository.completeGoogleOAuth(
+                // we mock the callback just by providing the params if our implementation has already changed to explicit
+                `http://localhost?userId=${userId}&secret=${secret}`,
+              );
+            } catch (authError) {
+              console.error("Failed to complete Web OAuth flow", authError);
+            }
+          }
+        }
 
         // attempt to restore session without forcing creation
         try {

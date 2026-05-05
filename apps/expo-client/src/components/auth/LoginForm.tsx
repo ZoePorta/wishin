@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import {
   TextInput,
   Button,
@@ -8,6 +8,7 @@ import {
   Surface,
   Avatar,
   HelperText,
+  Divider,
 } from "react-native-paper";
 import { commonStyles } from "../../theme/common-styles";
 
@@ -16,18 +17,26 @@ import { commonStyles } from "../../theme/common-styles";
  *
  * @param onLogin - Callback function called when the user submits their credentials. Accepts email and password. Returns a promise that resolves when login is successful.
  * @param onSwitchToRegister - Callback function to switch the view to the registration form.
+ * @param onGoogleSignIn - Optional callback for Google OAuth sign-in flow.
  * @param loading - Optional loading flag to indicate an ongoing login attempt.
  * @param authError - Optional external authentication error message.
  */
 interface LoginFormProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onSwitchToRegister: () => void;
+  /**
+   * Callback fired when the user taps the Google sign-in button.
+   * @returns A Promise that resolves when the OAuth flow completes.
+   * @throws {Error} If the OAuth flow fails or is cancelled.
+   */
+  onGoogleSignIn?: () => Promise<void>;
   loading?: boolean;
   authError?: string | null;
 }
 
 /**
  * Premium LoginForm component designed with Material Design 3.
+ * Supports email/password login and Google OAuth2 sign-in.
  *
  * @param props - The properties for the LoginForm component.
  * @returns The rendered React element for the login form.
@@ -36,6 +45,7 @@ interface LoginFormProps {
 export const LoginForm: React.FC<LoginFormProps> = ({
   onLogin,
   onSwitchToRegister,
+  onGoogleSignIn,
   loading,
   authError,
 }) => {
@@ -44,6 +54,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -63,6 +74,30 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
   };
 
+  /**
+   * Handles the Google sign-in button press with independent loading state.
+   * @throws {Error} Propagated from `onGoogleSignIn` if the OAuth flow fails.
+   */
+  const handleGoogleSignIn = async () => {
+    if (!onGoogleSignIn) return;
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      await onGoogleSignIn();
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Google sign-in failed. Please try again!",
+      );
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+  const isAnyLoading = loading || googleLoading;
+
   return (
     <Surface elevation={0} style={styles.container}>
       <Avatar.Icon
@@ -81,6 +116,48 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <Text variant="bodyMedium" style={styles.subtitle}>
         Hi there! Great to see you. Log in to manage your wishlists.
       </Text>
+
+      {onGoogleSignIn && (
+        <>
+          <Button
+            mode="outlined"
+            icon="google"
+            onPress={() => {
+              void handleGoogleSignIn();
+            }}
+            loading={googleLoading}
+            disabled={isAnyLoading}
+            style={styles.googleButton}
+            contentStyle={styles.buttonContent}
+          >
+            Sign in with Google
+          </Button>
+
+          <View style={styles.dividerRow}>
+            <Divider
+              style={[
+                styles.dividerLine,
+                { backgroundColor: theme.colors.outlineVariant },
+              ]}
+            />
+            <Text
+              variant="labelMedium"
+              style={[
+                styles.dividerText,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
+              or
+            </Text>
+            <Divider
+              style={[
+                styles.dividerLine,
+                { backgroundColor: theme.colors.outlineVariant },
+              ]}
+            />
+          </View>
+        </>
+      )}
 
       <TextInput
         label="Email"
@@ -151,7 +228,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           void handleSubmit();
         }}
         loading={loading}
-        disabled={loading}
+        disabled={isAnyLoading}
         style={styles.button}
         contentStyle={styles.buttonContent}
       >
@@ -189,6 +266,23 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: "center",
     opacity: 0.7,
+  },
+  googleButton: {
+    width: "100%",
+    borderRadius: 12,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 12,
   },
   input: {
     width: "100%",

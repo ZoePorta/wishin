@@ -7,12 +7,7 @@ import {
   AppwriteException,
   type Models,
 } from "react-native-appwrite";
-import type {
-  AuthRepository,
-  OAuthInitiation,
-  UserRepository,
-  Logger,
-} from "@wishin/domain";
+import type { AuthRepository, UserRepository, Logger } from "@wishin/domain";
 import type {
   AuthenticatedAuthResult,
   AnonymousAuthResult,
@@ -31,12 +26,6 @@ export class AppwriteAuthRepository
     null;
   private _currentUser: Models.User<Models.Preferences> | null = null;
 
-  private readonly oauthStates: Map<string, { timestamp: number }> = new Map<
-    string,
-    { timestamp: number }
-  >();
-  private static readonly STATE_TTL = 10 * 60 * 1000; // 10 minutes
-
   /**
    * Initializes the repository with an Appwrite Client and a Logger.
    * @param client - The Appwrite Client SDK instance.
@@ -45,6 +34,7 @@ export class AppwriteAuthRepository
    * @param databaseId - The ID of the Appwrite database.
    * @param profileCollectionId - The ID of the profiles collection.
    * @param logger - The domain logger for infrastructure events.
+   * @param oauthRedirectUrl - The deep-link URL to redirect back to after OAuth (e.g. `wishin://`).
    */
   constructor(
     private readonly client: Client,
@@ -53,6 +43,7 @@ export class AppwriteAuthRepository
     private readonly databaseId: string,
     private readonly profileCollectionId: string,
     private readonly logger: Logger,
+    private readonly oauthRedirectUrl = "http://localhost",
   ) {
     this.account = new Account(this.client);
     this.tablesDb = new TablesDB(this.client);
@@ -295,73 +286,38 @@ export class AppwriteAuthRepository
   }
 
   /**
-   * Generates the URL and state to initiate Google OAuth2 flow using the Account service.
-   * @returns A Promise that resolves to the OAuth initiation metadata.
+   * Generates the URL to initiate Google OAuth2 flow using the Account service.
+   *
+   * @returns A Promise that resolves to the OAuth initiation URL.
    * @throws {Error} If the Google OAuth2 URL generation fails.
-   * @throws {Error} If the generated URL is missing the state parameter.
    */
-  async getGoogleOAuthUrl(): Promise<OAuthInitiation> {
+  async getGoogleOAuthUrl(): Promise<string> {
     const oauthUrl = this.account.createOAuth2Token({
       provider: OAuthProvider.Google,
+      success: this.oauthRedirectUrl,
+      failure: this.oauthRedirectUrl,
     });
 
     if (!oauthUrl) {
       throw new Error("Failed to generate Google OAuth2 URL");
     }
 
-    const url = new URL(oauthUrl);
-    const state = url.searchParams.get("state");
-
-    if (!state) {
-      throw new Error("Appwrite OAuth URL missing state parameter");
-    }
-
-    this.cleanupExpiredStates();
-    this.oauthStates.set(state, { timestamp: Date.now() });
-
-    // Appwrite's createOAuth2Token handles redirection, but we return the URL and state
-    // so the caller can track it according to the AuthRepository contract.
-    return {
-      url: oauthUrl.toString(),
-      state,
-    };
+    return oauthUrl.toString();
   }
 
+  /**
   /**
    * Completes the Google OAuth2 flow using the callback URL parameters.
    *
    * @param callbackUrl - The full URL received from the OAuth2 redirect.
-   * @param expectedState - The expected state to verify for CSRF protection.
    * @returns A Promise that resolves to the authentication result.
-   * @throws {Error} If the state parameter is missing or does not match the expected state.
    * @throws {Error} If the callback URL is missing the userId or secret.
    * @throws {AppwriteException} If session creation or account retrieval fails.
    */
   async completeGoogleOAuth(
     callbackUrl: string,
-    expectedState: string,
   ): Promise<AuthenticatedAuthResult> {
-    // 1. Cleanup expired states
-    this.cleanupExpiredStates();
-
     const url = new URL(callbackUrl);
-    const parsedState = url.searchParams.get("state");
-
-    // 2. Validate state
-    if (!parsedState || parsedState !== expectedState) {
-      throw new Error("Mismatched OAuth state: possible CSRF attempt");
-    }
-
-    // 3. Best-effort cache check
-    if (!this.oauthStates.has(parsedState)) {
-      this.logger.warn(
-        "OAuth state missing from local cache. Proceeding with caller-provided expectedState as source of truth.",
-        { hasCacheHit: false },
-      );
-    } else {
-      this.oauthStates.delete(parsedState);
-    }
-
     const userId = url.searchParams.get("userId");
     const secret = url.searchParams.get("secret");
 
@@ -413,20 +369,6 @@ export class AppwriteAuthRepository
       email: user.email,
       isNewUser: undefined,
     };
-  }
-
-  /**
-   * Cleans up expired OAuth states from the memory cache to prevent leakage.
-   *
-   * @private
-   */
-  private cleanupExpiredStates(): void {
-    const now = Date.now();
-    for (const [state, meta] of this.oauthStates.entries()) {
-      if (now - meta.timestamp > AppwriteAuthRepository.STATE_TTL) {
-        this.oauthStates.delete(state);
-      }
-    }
   }
 
   /**
