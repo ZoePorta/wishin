@@ -43,8 +43,13 @@ export class AppwriteAuthRepository
     private readonly databaseId: string,
     private readonly profileCollectionId: string,
     private readonly logger: Logger,
-    private readonly oauthRedirectUrl = "http://localhost",
+    private readonly oauthRedirectUrl: string,
   ) {
+    if (!oauthRedirectUrl) {
+      throw new Error(
+        "oauthRedirectUrl is required in AppwriteAuthRepository constructor",
+      );
+    }
     this.account = new Account(this.client);
     this.tablesDb = new TablesDB(this.client);
   }
@@ -306,7 +311,6 @@ export class AppwriteAuthRepository
   }
 
   /**
-  /**
    * Completes the Google OAuth2 flow using the callback URL parameters.
    *
    * @param callbackUrl - The full URL received from the OAuth2 redirect.
@@ -317,7 +321,13 @@ export class AppwriteAuthRepository
   async completeGoogleOAuth(
     callbackUrl: string,
   ): Promise<AuthenticatedAuthResult> {
-    const url = new URL(callbackUrl);
+    let url: URL;
+    try {
+      url = new URL(callbackUrl);
+    } catch {
+      throw new Error("Invalid OAuth2 callback: missing userId or secret");
+    }
+
     const userId = url.searchParams.get("userId");
     const secret = url.searchParams.get("secret");
 

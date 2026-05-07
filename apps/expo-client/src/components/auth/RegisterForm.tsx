@@ -11,6 +11,7 @@ import {
   Divider,
 } from "react-native-paper";
 import { commonStyles } from "../../theme/common-styles";
+import { useGoogleSignIn } from "../../hooks/useGoogleSignIn";
 
 /**
  * Properties for the RegisterForm component.
@@ -68,7 +69,18 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const {
+    signIn: handleGoogleSignIn,
+    googleLoading,
+    googleError,
+    setGoogleError,
+  } = useGoogleSignIn(
+    onGoogleSignIn,
+    "Google sign-up failed. Please try again!",
+  );
+
+  const combinedError = error ?? googleError;
 
   const handleSubmit = async () => {
     if (!email || !password || !username) {
@@ -80,27 +92,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       await onRegister(email, password, username);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to register");
-    }
-  };
-
-  /**
-   * Handles the Google sign-in button press with independent loading state.
-   * @throws {Error} Propagated from `onGoogleSignIn` if the OAuth flow fails.
-   */
-  const handleGoogleSignIn = async () => {
-    if (!onGoogleSignIn) return;
-    setGoogleLoading(true);
-    setError(null);
-    try {
-      await onGoogleSignIn();
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Google sign-up failed. Please try again!",
-      );
-    } finally {
-      setGoogleLoading(false);
     }
   };
 
@@ -174,6 +165,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         onChangeText={(text) => {
           setUsername(text);
           if (error) setError(null);
+          if (googleError) setGoogleError(null);
         }}
         mode="outlined"
         autoCapitalize="none"
@@ -196,6 +188,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         onChangeText={(text) => {
           setEmail(text);
           if (error) setError(null);
+          if (googleError) setGoogleError(null);
         }}
         mode="outlined"
         keyboardType="email-address"
@@ -219,6 +212,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         onChangeText={(text) => {
           setPassword(text);
           if (error) setError(null);
+          if (googleError) setGoogleError(null);
         }}
         mode="outlined"
         secureTextEntry={!showPassword}
@@ -248,10 +242,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
       <HelperText
         type="error"
-        visible={!!(error ?? authError)}
+        visible={!!(combinedError ?? authError)}
         style={styles.errorText}
       >
-        {error ?? authError}
+        {combinedError ?? authError}
       </HelperText>
 
       <Button

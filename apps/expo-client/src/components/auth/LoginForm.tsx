@@ -11,6 +11,7 @@ import {
   Divider,
 } from "react-native-paper";
 import { commonStyles } from "../../theme/common-styles";
+import { useGoogleSignIn } from "../../hooks/useGoogleSignIn";
 
 /**
  * Props for the LoginForm component.
@@ -54,7 +55,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const {
+    signIn: handleGoogleSignIn,
+    googleLoading,
+    googleError,
+    setGoogleError,
+  } = useGoogleSignIn(
+    onGoogleSignIn,
+    "We couldn't log you in just now. Please check your details or try again in a moment!",
+  );
+
+  const combinedError = error ?? googleError;
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -71,27 +83,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       setError(
         "We couldn't log you in just now. Please check your details or try again in a moment!",
       );
-    }
-  };
-
-  /**
-   * Handles the Google sign-in button press with independent loading state.
-   * @throws {Error} Propagated from `onGoogleSignIn` if the OAuth flow fails.
-   */
-  const handleGoogleSignIn = async () => {
-    if (!onGoogleSignIn) return;
-    setGoogleLoading(true);
-    setError(null);
-    try {
-      await onGoogleSignIn();
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Google sign-in failed. Please try again!",
-      );
-    } finally {
-      setGoogleLoading(false);
     }
   };
 
@@ -165,6 +156,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         onChangeText={(text) => {
           setEmail(text);
           if (error) setError(null);
+          if (googleError) setGoogleError(null);
         }}
         mode="outlined"
         keyboardType="email-address"
@@ -188,6 +180,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         onChangeText={(text) => {
           setPassword(text);
           if (error) setError(null);
+          if (googleError) setGoogleError(null);
         }}
         mode="outlined"
         secureTextEntry={!showPassword}
@@ -216,10 +209,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
       <HelperText
         type="error"
-        visible={!!(error ?? authError)}
+        visible={!!(combinedError ?? authError)}
         style={styles.errorText}
       >
-        {error ?? authError}
+        {combinedError ?? authError}
       </HelperText>
 
       <Button

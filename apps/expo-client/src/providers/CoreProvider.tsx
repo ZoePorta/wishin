@@ -17,6 +17,7 @@ import {
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
 import { PersistenceError, type ObservabilityService } from "@wishin/domain";
+import { UniversalAlert } from "../utils/Alert";
 
 /**
  * Adapter that maps console methods to the Logger interface.
@@ -104,10 +105,13 @@ function createRepositories() {
   );
 
   // Create deep link per Appwrite Expo docs.
-  // makeRedirectUri({ preferLocalhost: true }) generates:
+  // makeRedirectUri({ scheme: `appwrite-callback-${Config.appwrite.projectId}`, preferLocalhost: true }) generates:
   //   - Web:    http://localhost:<port>
   //   - Native: appwrite-callback-<PROJECT_ID>://
-  const oauthRedirectUrl = makeRedirectUri({ preferLocalhost: true });
+  const oauthRedirectUrl = makeRedirectUri({
+    scheme: `appwrite-callback-${Config.appwrite.projectId}`,
+    preferLocalhost: true,
+  });
 
   const authRepository = new AppwriteAuthRepository(
     client,
@@ -190,12 +194,6 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
       try {
         const sessionAwareRepo: SessionAwareRepository = repos.authRepository;
 
-        const timeoutPromise = new Promise((_, reject) => {
-          timerId = setTimeout(() => {
-            reject(new Error("Session resolution timeout"));
-          }, Config.SESSION_TIMEOUT_MS);
-        });
-
         // Web OAuth Callback Capture
         if (Platform.OS === "web" && typeof window !== "undefined") {
           const params = new URLSearchParams(window.location.search);
@@ -204,6 +202,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
 
           if (userId && secret) {
             try {
+              const verbatimUrl = window.location.href;
               // Strip the sensitive query parameters from the URL safely
               const newUrl =
                 window.location.protocol +
@@ -212,15 +211,35 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
                 window.location.pathname;
               window.history.replaceState({ path: newUrl }, "", newUrl);
 
-              await repos.authRepository.completeGoogleOAuth(
-                // we mock the callback just by providing the params if our implementation has already changed to explicit
-                `http://localhost?userId=${userId}&secret=${secret}`,
-              );
+              await repos.authRepository.completeGoogleOAuth(verbatimUrl);
             } catch (authError) {
               console.error("Failed to complete Web OAuth flow", authError);
+
+              if (
+                !(authError instanceof AppwriteException) ||
+                authError.code !== 401
+              ) {
+                onConfigError(
+                  authError instanceof Error
+                    ? authError
+                    : new Error(String(authError)),
+                );
+              }
+
+              const errorMessage =
+                authError instanceof Error
+                  ? authError.message
+                  : "An unknown error occurred during sign in.";
+              UniversalAlert.alert("Sign In Failed", errorMessage);
             }
           }
         }
+
+        const timeoutPromise = new Promise((_, reject) => {
+          timerId = setTimeout(() => {
+            reject(new Error("Session resolution timeout"));
+          }, Config.SESSION_TIMEOUT_MS);
+        });
 
         // attempt to restore session without forcing creation
         try {
