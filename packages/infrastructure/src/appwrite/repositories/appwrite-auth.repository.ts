@@ -183,7 +183,7 @@ export class AppwriteAuthRepository
   async register(
     email: string,
     password: string,
-    _username: string,
+    username: string,
   ): Promise<AuthenticatedAuthResult> {
     let isAnonymous = false;
     let userId: string = ID.unique();
@@ -206,15 +206,19 @@ export class AppwriteAuthRepository
     // while the session is active. It converts the account and preserves the userId.
     let user;
     if (isAnonymous) {
-      user = await this.account.updateEmail({
+      await this.account.updateEmail({
         email,
         password,
+      });
+      user = await this.account.updateName({
+        name: username,
       });
     } else {
       user = await this.account.create({
         userId,
         email,
         password,
+        name: username,
       });
 
       // Auto-login after registration for new users
