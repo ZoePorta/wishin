@@ -88,26 +88,27 @@ describe("AppwriteAuthRepository", () => {
       "database",
       "profiles",
       logger,
+      "wishin://callback",
     );
   });
 
   describe("getGoogleOAuthUrl", () => {
     it("should return the OAuth URL", async () => {
       const mockUrl = "https://appwrite.io/oauth/google";
-      mockCreateOAuth2Token.mockReturnValue(mockUrl);
+      mockCreateOAuth2Token.mockResolvedValue(mockUrl);
 
       const result = await repository.getGoogleOAuthUrl();
 
       expect(result).toBe(mockUrl);
       expect(mockCreateOAuth2Token).toHaveBeenCalledWith({
         provider: OAuthProvider.Google,
-        success: "http://localhost",
-        failure: "http://localhost",
+        success: "wishin://callback",
+        failure: "wishin://callback",
       });
     });
 
     it("should throw if Appwrite fails to generate a URL", async () => {
-      mockCreateOAuth2Token.mockReturnValue("");
+      mockCreateOAuth2Token.mockResolvedValue("");
       await expect(repository.getGoogleOAuthUrl()).rejects.toThrow();
     });
   });

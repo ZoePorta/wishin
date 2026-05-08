@@ -1,4 +1,4 @@
-import { ExpoConfig, ConfigContext } from "expo/config";
+import type { ExpoConfig, ConfigContext } from "expo/config";
 
 /**
  * Provides the dynamic configuration for the Expo application.
@@ -21,7 +21,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       "EXPO_PUBLIC_APPWRITE_PROJECT_ID is missing. Expected scheme format: appwrite-callback-<PROJECT_ID>";
     if (process.env.NODE_ENV !== "development") {
       throw new Error(errorMsg);
-      process.exit(1);
     } else {
       console.warn(`[Config Warning] ${errorMsg}`);
     }

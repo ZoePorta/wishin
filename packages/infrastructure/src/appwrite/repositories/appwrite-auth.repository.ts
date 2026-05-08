@@ -35,6 +35,7 @@ export class AppwriteAuthRepository
    * @param profileCollectionId - The ID of the profiles collection.
    * @param logger - The domain logger for infrastructure events.
    * @param oauthRedirectUrl - The deep-link URL to redirect back to after OAuth (e.g. `wishin://`).
+   * @throws {Error} If oauthRedirectUrl is missing or invalid.
    */
   constructor(
     private readonly client: Client,
@@ -45,9 +46,17 @@ export class AppwriteAuthRepository
     private readonly logger: Logger,
     private readonly oauthRedirectUrl: string,
   ) {
-    if (!oauthRedirectUrl) {
+    if (!oauthRedirectUrl || oauthRedirectUrl.trim() === "") {
       throw new Error(
         "oauthRedirectUrl is required in AppwriteAuthRepository constructor",
+      );
+    }
+    this.oauthRedirectUrl = oauthRedirectUrl.trim();
+    try {
+      new URL(this.oauthRedirectUrl);
+    } catch {
+      throw new Error(
+        "oauthRedirectUrl must be a valid URL in AppwriteAuthRepository constructor",
       );
     }
     this.account = new Account(this.client);
@@ -275,7 +284,7 @@ export class AppwriteAuthRepository
 
     this.invalidateSessionCache();
 
-    // 4. Resolve session with retry (ADR 027)
+    // Resolve session with retry (ADR 027)
     const user = await this.resolveSessionWithRetry();
 
     if (!user) {
@@ -297,7 +306,8 @@ export class AppwriteAuthRepository
    * @throws {Error} If the Google OAuth2 URL generation fails.
    */
   async getGoogleOAuthUrl(): Promise<string> {
-    const oauthUrl = this.account.createOAuth2Token({
+    // eslint-disable-next-line @typescript-eslint/await-thenable
+    const oauthUrl = await this.account.createOAuth2Token({
       provider: OAuthProvider.Google,
       success: this.oauthRedirectUrl,
       failure: this.oauthRedirectUrl,
@@ -325,7 +335,7 @@ export class AppwriteAuthRepository
     try {
       url = new URL(callbackUrl);
     } catch {
-      throw new Error("Invalid OAuth2 callback: missing userId or secret");
+      throw new Error("Invalid OAuth2 callback: malformed URL");
     }
 
     const userId = url.searchParams.get("userId");
@@ -366,7 +376,7 @@ export class AppwriteAuthRepository
 
     this.invalidateSessionCache();
 
-    // 4. Resolve session with retry (ADR 027)
+    // Resolve session with retry (ADR 027)
     const user = await this.resolveSessionWithRetry();
 
     if (!user) {
