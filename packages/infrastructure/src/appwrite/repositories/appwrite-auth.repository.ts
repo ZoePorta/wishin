@@ -230,6 +230,7 @@ export class AppwriteAuthRepository
       type: "authenticated",
       userId: user.$id,
       email: user.email,
+      name: user.name,
       isNewUser: !isAnonymous,
     };
   }
@@ -256,6 +257,7 @@ export class AppwriteAuthRepository
           type: "authenticated",
           userId: priorSession.$id,
           email: priorSession.email,
+          name: priorSession.name,
           isNewUser: false,
         };
       }
@@ -295,6 +297,7 @@ export class AppwriteAuthRepository
       type: "authenticated",
       userId: user.$id,
       email: user.email,
+      name: user.name,
       isNewUser: false,
     };
   }
@@ -387,6 +390,7 @@ export class AppwriteAuthRepository
       type: "authenticated",
       userId: user.$id,
       email: user.email,
+      name: user.name,
       isNewUser: undefined,
     };
   }

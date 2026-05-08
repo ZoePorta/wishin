@@ -16,7 +16,11 @@ import {
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
-import { PersistenceError, type ObservabilityService } from "@wishin/domain";
+import {
+  PersistenceError,
+  EnsureProfileUseCase,
+  type ObservabilityService,
+} from "@wishin/domain";
 import { UniversalAlert } from "../utils/Alert";
 
 /**
@@ -211,7 +215,17 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
                 window.location.pathname;
               window.history.replaceState({ path: newUrl }, "", newUrl);
 
-              await repos.authRepository.completeGoogleOAuth(verbatimUrl);
+              const authResult =
+                await repos.authRepository.completeGoogleOAuth(verbatimUrl);
+              const ensureProfileUseCase = new EnsureProfileUseCase(
+                repos.profileRepository,
+                consoleLogger,
+              );
+              await ensureProfileUseCase.execute(
+                authResult.userId,
+                authResult.name,
+                authResult.isNewUser,
+              );
             } catch (authError) {
               console.error("Failed to complete Web OAuth flow", authError);
 

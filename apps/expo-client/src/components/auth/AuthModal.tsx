@@ -10,7 +10,11 @@ import {
   useLogger,
 } from "../../contexts/WishlistRepositoryContext";
 import { useUser } from "../../contexts/UserContext";
-import { RegisterUserUseCase } from "@wishin/domain";
+import {
+  RegisterUserUseCase,
+  LoginUserUseCase,
+  EnsureProfileUseCase,
+} from "@wishin/domain";
 import { commonStyles } from "../../theme/common-styles";
 
 /**
@@ -44,10 +48,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [lastVisible, setLastVisible] = useState(false);
 
-  // Memoize the register use case
+  // Memoize use cases
   const registerUseCase = React.useMemo(
     () => new RegisterUserUseCase(authRepo, profileRepo, logger),
     [authRepo, profileRepo, logger],
+  );
+
+  const loginUseCase = React.useMemo(
+    () => new LoginUserUseCase(authRepo, profileRepo, logger),
+    [authRepo, profileRepo, logger],
+  );
+
+  const ensureProfileUseCase = React.useMemo(
+    () => new EnsureProfileUseCase(profileRepo, logger),
+    [profileRepo, logger],
   );
 
   // Reset state when visibility changes
@@ -65,7 +79,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setLoading(true);
       setLoginError(null);
       try {
-        await authRepo.login(email, password);
+        await loginUseCase.execute({ email, password });
         await refetch();
         onDismiss();
       } catch (error: unknown) {
@@ -126,10 +140,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    await authRepo.completeGoogleOAuth(result.url);
+    const authResult = await authRepo.completeGoogleOAuth(result.url);
+    await ensureProfileUseCase.execute(
+      authResult.userId,
+      authResult.name,
+      authResult.isNewUser,
+    );
     await refetch();
     onDismiss();
-  }, [authRepo, refetch, onDismiss]);
+  }, [authRepo, ensureProfileUseCase, refetch, onDismiss]);
 
   return (
     <Portal>
