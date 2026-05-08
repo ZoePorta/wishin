@@ -33,9 +33,18 @@ export class EnsureProfileUseCase {
     }
 
     try {
-      const normalizedUsername = Profile.validateUsername(
-        fallbackName ?? "user_" + userId.slice(0, 5),
-      );
+      let safeName = fallbackName ?? "user_" + userId.slice(0, 5);
+      safeName = safeName.replace(/\s+/g, " ").trim();
+      if (safeName.length > 30) {
+        safeName = safeName.slice(0, 30).trim();
+      }
+
+      // Ensure name doesn't become empty or too short after slicing/trimming
+      if (safeName.length < 3) {
+        safeName = "user_" + userId.slice(0, 5);
+      }
+
+      const normalizedUsername = Profile.validateUsername(safeName);
       const newProfile = Profile.create({
         id: userId,
         username: normalizedUsername,
