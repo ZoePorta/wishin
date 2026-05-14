@@ -12,11 +12,13 @@ import type { ExpoConfig, ConfigContext } from "expo/config";
  * required for Appwrite OAuth redirects.
  */
 export default ({ config }: ConfigContext): ExpoConfig => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const projectId: string | undefined =
-    process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID;
+  const rawProjectId = process.env.EXPO_PUBLIC_APPWRITE_PROJECT_ID as
+    | string
+    | undefined;
+  const projectId =
+    rawProjectId?.trim() !== "" ? rawProjectId?.trim() : undefined;
 
-  if (!projectId || projectId.trim() === "") {
+  if (!projectId) {
     const errorMsg =
       "EXPO_PUBLIC_APPWRITE_PROJECT_ID is missing. Expected scheme format: appwrite-callback-<PROJECT_ID>";
     if (process.env.NODE_ENV !== "development") {

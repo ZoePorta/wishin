@@ -15,6 +15,7 @@ export class LoginUserUseCase {
    *
    * @param authRepo - The repository for authentication operations.
    * @param profileRepo - The repository for managing user profiles.
+   * @param logger - The logger used for recording errors during profile recovery.
    */
   constructor(
     private readonly authRepo: AuthRepository,
