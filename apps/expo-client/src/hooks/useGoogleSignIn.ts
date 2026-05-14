@@ -1,12 +1,15 @@
 import { useState } from "react";
 
 /**
- * Custom hook to handle Google Sign-In state and errors.
+ * Manages Google Sign-In state and error handling for a caller-provided sign-in callback.
  *
- * @param onGoogleSignIn - A callback function that performs the actual Google Sign-In operation.
- * @param fallbackErrorMessage - A custom error message to display if the sign-in process fails.
- * @returns An object containing the sign-in trigger function, loading state, error state, and a setter for the error.
- * @throws-like Does not directly throw, but catches internal errors, logs them, and sets the returned error state.
+ * @param onGoogleSignIn - Optional async callback that performs the Google sign-in; if omitted, `signIn` is a no-op.
+ * @param fallbackErrorMessage - Message assigned to `googleError` when the sign-in callback throws (default: `"Google sign-in failed. Please try again!"`).
+ * @returns An object with:
+ *  - `signIn` — trigger function that runs the provided sign-in callback and updates state,
+ *  - `googleLoading` — `true` while a sign-in attempt is in progress, `false` otherwise,
+ *  - `googleError` — current error message or `null` when there is none,
+ *  - `setGoogleError` — setter function to update the error state.
  */
 export function useGoogleSignIn(
   onGoogleSignIn: (() => Promise<void>) | undefined,

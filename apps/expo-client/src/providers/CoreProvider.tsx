@@ -81,9 +81,11 @@ const OBSERVABILITY: ObservabilityService = {
 };
 
 /**
- * Factory function to create new repository instances.
- * This is now a pure function that does not maintain its own cache,
- * allowing the React component to manage the lifecycle.
+ * Constructs and returns Appwrite-backed repository instances used by the app.
+ *
+ * This factory does not cache instances; callers are responsible for managing repository lifecycles.
+ *
+ * @returns An object with the following repositories: `wishlistRepository`, `transactionRepository`, `authRepository`, `profileRepository`, and `storageRepository`.
  */
 function createRepositories() {
   ensureAppwriteConfig();
