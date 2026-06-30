@@ -16,6 +16,12 @@ interface AuthPanelProps {
     password: string,
     username: string,
   ) => Promise<void>;
+  /**
+   * Callback fired when the user taps the Google sign-in button.
+   * @returns A Promise that resolves when the OAuth flow completes.
+   * @throws {Error} If the OAuth flow fails or is cancelled.
+   */
+  onGoogleSignIn?: () => Promise<void>;
   /** Optional loading flag to indicate an ongoing authentication operation. */
   loading?: boolean;
   /** Optional external login error message. */
@@ -33,6 +39,7 @@ interface AuthPanelProps {
 export const AuthPanel: React.FC<AuthPanelProps> = ({
   onLogin,
   onRegister,
+  onGoogleSignIn,
   loading,
   loginError,
   registerError,
@@ -63,6 +70,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
               onSwitchToRegister={() => {
                 setShowLogin(false);
               }}
+              onGoogleSignIn={onGoogleSignIn}
               loading={loading}
               authError={loginError}
             />
@@ -72,6 +80,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({
               onSwitchToLogin={() => {
                 setShowLogin(true);
               }}
+              onGoogleSignIn={onGoogleSignIn}
               loading={loading}
               authError={registerError}
             />

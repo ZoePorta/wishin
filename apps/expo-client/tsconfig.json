@@ -4,5 +4,5 @@
     "baseUrl": "../..",
     "moduleResolution": "bundler"
   },
-  "include": ["src", "app", "assets"]
+  "include": ["src", "app", "assets", "app.config.ts"]
 }

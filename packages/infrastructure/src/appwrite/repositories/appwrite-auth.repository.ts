@@ -7,12 +7,7 @@ import {
   AppwriteException,
   type Models,
 } from "react-native-appwrite";
-import type {
-  AuthRepository,
-  OAuthInitiation,
-  UserRepository,
-  Logger,
-} from "@wishin/domain";
+import type { AuthRepository, UserRepository, Logger } from "@wishin/domain";
 import type {
   AuthenticatedAuthResult,
   AnonymousAuthResult,
@@ -31,12 +26,6 @@ export class AppwriteAuthRepository
     null;
   private _currentUser: Models.User<Models.Preferences> | null = null;
 
-  private readonly oauthStates: Map<string, { timestamp: number }> = new Map<
-    string,
-    { timestamp: number }
-  >();
-  private static readonly STATE_TTL = 10 * 60 * 1000; // 10 minutes
-
   /**
    * Initializes the repository with an Appwrite Client and a Logger.
    * @param client - The Appwrite Client SDK instance.
@@ -45,6 +34,8 @@ export class AppwriteAuthRepository
    * @param databaseId - The ID of the Appwrite database.
    * @param profileCollectionId - The ID of the profiles collection.
    * @param logger - The domain logger for infrastructure events.
+   * @param oauthRedirectUrl - The deep-link URL to redirect back to after OAuth (e.g. `wishin://`).
+   * @throws {Error} If oauthRedirectUrl is missing or invalid.
    */
   constructor(
     private readonly client: Client,
@@ -53,7 +44,21 @@ export class AppwriteAuthRepository
     private readonly databaseId: string,
     private readonly profileCollectionId: string,
     private readonly logger: Logger,
+    private readonly oauthRedirectUrl: string,
   ) {
+    if (!oauthRedirectUrl || oauthRedirectUrl.trim() === "") {
+      throw new Error(
+        "oauthRedirectUrl is required in AppwriteAuthRepository constructor",
+      );
+    }
+    this.oauthRedirectUrl = oauthRedirectUrl.trim();
+    try {
+      new URL(this.oauthRedirectUrl);
+    } catch {
+      throw new Error(
+        "oauthRedirectUrl must be a valid URL in AppwriteAuthRepository constructor",
+      );
+    }
     this.account = new Account(this.client);
     this.tablesDb = new TablesDB(this.client);
   }
@@ -178,7 +183,7 @@ export class AppwriteAuthRepository
   async register(
     email: string,
     password: string,
-    _username: string,
+    username: string,
   ): Promise<AuthenticatedAuthResult> {
     let isAnonymous = false;
     let userId: string = ID.unique();
@@ -201,15 +206,19 @@ export class AppwriteAuthRepository
     // while the session is active. It converts the account and preserves the userId.
     let user;
     if (isAnonymous) {
-      user = await this.account.updateEmail({
+      await this.account.updateEmail({
         email,
         password,
+      });
+      user = await this.account.updateName({
+        name: username,
       });
     } else {
       user = await this.account.create({
         userId,
         email,
         password,
+        name: username,
       });
 
       // Auto-login after registration for new users
@@ -225,6 +234,7 @@ export class AppwriteAuthRepository
       type: "authenticated",
       userId: user.$id,
       email: user.email,
+      name: user.name,
       isNewUser: !isAnonymous,
     };
   }
@@ -251,6 +261,7 @@ export class AppwriteAuthRepository
           type: "authenticated",
           userId: priorSession.$id,
           email: priorSession.email,
+          name: priorSession.name,
           isNewUser: false,
         };
       }
@@ -279,7 +290,7 @@ export class AppwriteAuthRepository
 
     this.invalidateSessionCache();
 
-    // 4. Resolve session with retry (ADR 027)
+    // Resolve session with retry (ADR 027)
     const user = await this.resolveSessionWithRetry();
 
     if (!user) {
@@ -290,76 +301,48 @@ export class AppwriteAuthRepository
       type: "authenticated",
       userId: user.$id,
       email: user.email,
+      name: user.name,
       isNewUser: false,
     };
   }
 
   /**
-   * Generates the URL and state to initiate Google OAuth2 flow using the Account service.
-   * @returns A Promise that resolves to the OAuth initiation metadata.
+   * Generates the URL to initiate Google OAuth2 flow using the Account service.
+   *
+   * @returns A Promise that resolves to the OAuth initiation URL.
    * @throws {Error} If the Google OAuth2 URL generation fails.
-   * @throws {Error} If the generated URL is missing the state parameter.
    */
-  async getGoogleOAuthUrl(): Promise<OAuthInitiation> {
-    const oauthUrl = this.account.createOAuth2Token({
+  async getGoogleOAuthUrl(): Promise<string> {
+    // eslint-disable-next-line @typescript-eslint/await-thenable
+    const oauthUrl = await this.account.createOAuth2Token({
       provider: OAuthProvider.Google,
+      success: this.oauthRedirectUrl,
+      failure: this.oauthRedirectUrl,
     });
 
     if (!oauthUrl) {
       throw new Error("Failed to generate Google OAuth2 URL");
     }
 
-    const url = new URL(oauthUrl);
-    const state = url.searchParams.get("state");
-
-    if (!state) {
-      throw new Error("Appwrite OAuth URL missing state parameter");
-    }
-
-    this.cleanupExpiredStates();
-    this.oauthStates.set(state, { timestamp: Date.now() });
-
-    // Appwrite's createOAuth2Token handles redirection, but we return the URL and state
-    // so the caller can track it according to the AuthRepository contract.
-    return {
-      url: oauthUrl.toString(),
-      state,
-    };
+    return oauthUrl.toString();
   }
 
   /**
    * Completes the Google OAuth2 flow using the callback URL parameters.
    *
    * @param callbackUrl - The full URL received from the OAuth2 redirect.
-   * @param expectedState - The expected state to verify for CSRF protection.
    * @returns A Promise that resolves to the authentication result.
-   * @throws {Error} If the state parameter is missing or does not match the expected state.
    * @throws {Error} If the callback URL is missing the userId or secret.
    * @throws {AppwriteException} If session creation or account retrieval fails.
    */
   async completeGoogleOAuth(
     callbackUrl: string,
-    expectedState: string,
   ): Promise<AuthenticatedAuthResult> {
-    // 1. Cleanup expired states
-    this.cleanupExpiredStates();
-
-    const url = new URL(callbackUrl);
-    const parsedState = url.searchParams.get("state");
-
-    // 2. Validate state
-    if (!parsedState || parsedState !== expectedState) {
-      throw new Error("Mismatched OAuth state: possible CSRF attempt");
-    }
-
-    // 3. Best-effort cache check
-    if (!this.oauthStates.has(parsedState)) {
-      this.logger.warn(
-        "OAuth state missing from local cache. Proceeding with caller-provided expectedState as source of truth.",
-        { hasCacheHit: false },
-      );
-    } else {
-      this.oauthStates.delete(parsedState);
+    let url: URL;
+    try {
+      url = new URL(callbackUrl);
+    } catch {
+      throw new Error("Invalid OAuth2 callback: malformed URL");
     }
 
     const userId = url.searchParams.get("userId");
@@ -400,7 +383,7 @@ export class AppwriteAuthRepository
 
     this.invalidateSessionCache();
 
-    // 4. Resolve session with retry (ADR 027)
+    // Resolve session with retry (ADR 027)
     const user = await this.resolveSessionWithRetry();
 
     if (!user) {
@@ -411,22 +394,9 @@ export class AppwriteAuthRepository
       type: "authenticated",
       userId: user.$id,
       email: user.email,
+      name: user.name,
       isNewUser: undefined,
     };
-  }
-
-  /**
-   * Cleans up expired OAuth states from the memory cache to prevent leakage.
-   *
-   * @private
-   */
-  private cleanupExpiredStates(): void {
-    const now = Date.now();
-    for (const [state, meta] of this.oauthStates.entries()) {
-      if (now - meta.timestamp > AppwriteAuthRepository.STATE_TTL) {
-        this.oauthStates.delete(state);
-      }
-    }
   }
 
   /**

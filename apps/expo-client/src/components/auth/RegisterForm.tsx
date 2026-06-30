@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import {
   TextInput,
   Button,
@@ -8,8 +8,10 @@ import {
   Surface,
   Avatar,
   HelperText,
+  Divider,
 } from "react-native-paper";
 import { commonStyles } from "../../theme/common-styles";
+import { useGoogleSignIn } from "../../hooks/useGoogleSignIn";
 
 /**
  * Properties for the RegisterForm component.
@@ -33,6 +35,12 @@ interface RegisterFormProps {
    */
   onSwitchToLogin: () => void;
   /**
+   * Callback fired when the user taps the Google sign-in button.
+   * @returns A Promise that resolves when the OAuth flow completes.
+   * @throws {Error} If the OAuth flow fails or is cancelled.
+   */
+  onGoogleSignIn?: () => Promise<void>;
+  /**
    * Whether the form is currently submitting.
    */
   loading?: boolean;
@@ -42,7 +50,8 @@ interface RegisterFormProps {
 
 /**
  * Premium RegisterForm component designed with Material Design 3.
- * Handles user input and validation for new account creation.
+ * Handles user input and validation for new account creation,
+ * including Google OAuth2 sign-up.
  *
  * @param props - The component properties.
  * @returns {JSX.Element} The rendered registration form.
@@ -50,6 +59,7 @@ interface RegisterFormProps {
 export const RegisterForm: React.FC<RegisterFormProps> = ({
   onRegister,
   onSwitchToLogin,
+  onGoogleSignIn,
   loading,
   authError,
 }) => {
@@ -60,18 +70,34 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  const {
+    signIn: handleGoogleSignIn,
+    googleLoading,
+    googleError,
+    setGoogleError,
+  } = useGoogleSignIn(
+    onGoogleSignIn,
+    "Google sign-up failed. Please try again!",
+  );
+
+  const combinedError = error ?? googleError;
+
   const handleSubmit = async () => {
     if (!email || !password || !username) {
       setError("Please fill in all fields.");
       return;
     }
     setError(null);
+    setGoogleError(null);
     try {
       await onRegister(email, password, username);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to register");
     }
   };
+
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+  const isAnyLoading = loading || googleLoading;
 
   return (
     <Surface elevation={0} style={styles.container}>
@@ -92,12 +118,56 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         Don't have an account yet? Join Wishin and start sharing your dreams.
       </Text>
 
+      {onGoogleSignIn && (
+        <>
+          <Button
+            mode="outlined"
+            icon="google"
+            onPress={() => {
+              setError(null);
+              void handleGoogleSignIn();
+            }}
+            loading={googleLoading}
+            disabled={isAnyLoading}
+            style={styles.googleButton}
+            contentStyle={styles.buttonContent}
+          >
+            Sign up with Google
+          </Button>
+
+          <View style={styles.dividerRow}>
+            <Divider
+              style={[
+                styles.dividerLine,
+                { backgroundColor: theme.colors.outlineVariant },
+              ]}
+            />
+            <Text
+              variant="labelMedium"
+              style={[
+                styles.dividerText,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
+              or
+            </Text>
+            <Divider
+              style={[
+                styles.dividerLine,
+                { backgroundColor: theme.colors.outlineVariant },
+              ]}
+            />
+          </View>
+        </>
+      )}
+
       <TextInput
         label="Username"
         value={username}
         onChangeText={(text) => {
           setUsername(text);
           if (error) setError(null);
+          if (googleError) setGoogleError(null);
         }}
         mode="outlined"
         autoCapitalize="none"
@@ -120,6 +190,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         onChangeText={(text) => {
           setEmail(text);
           if (error) setError(null);
+          if (googleError) setGoogleError(null);
         }}
         mode="outlined"
         keyboardType="email-address"
@@ -143,6 +214,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         onChangeText={(text) => {
           setPassword(text);
           if (error) setError(null);
+          if (googleError) setGoogleError(null);
         }}
         mode="outlined"
         secureTextEntry={!showPassword}
@@ -172,10 +244,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
       <HelperText
         type="error"
-        visible={!!(error ?? authError)}
+        visible={!!(combinedError ?? authError)}
         style={styles.errorText}
       >
-        {error ?? authError}
+        {combinedError ?? authError}
       </HelperText>
 
       <Button
@@ -184,7 +256,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           void handleSubmit();
         }}
         loading={loading}
-        disabled={loading}
+        disabled={isAnyLoading}
         style={styles.button}
         contentStyle={styles.buttonContent}
       >
@@ -222,6 +294,23 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: "center",
     opacity: 0.7,
+  },
+  googleButton: {
+    width: "100%",
+    borderRadius: 12,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 12,
   },
   input: {
     width: "100%",

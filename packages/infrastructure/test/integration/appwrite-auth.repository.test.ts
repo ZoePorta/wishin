@@ -69,6 +69,7 @@ describe.skipIf(!shouldRun)("AppwriteAuthRepository Integration Test", () => {
       databaseId,
       profileCollectionId,
       logger,
+      "http://localhost/callback", // Dummy oauthRedirectUrl for testing
     );
   });
 

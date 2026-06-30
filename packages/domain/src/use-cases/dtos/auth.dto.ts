@@ -30,6 +30,8 @@ export interface LoginUserInput {
 interface BaseAuthResult {
   /** The unique identifier of the user. */
   userId: string;
+  /** The name of the user from the auth provider */
+  name?: string;
   /** Whether a new user account was created (true) or an existing one was promoted/used (false). Can be undefined if the status is unknown (e.g., OAuth). */
   isNewUser?: boolean;
 }

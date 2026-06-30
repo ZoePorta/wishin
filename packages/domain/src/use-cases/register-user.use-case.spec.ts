@@ -97,7 +97,7 @@ describe("RegisterUserUseCase", () => {
 
     expect(authRepo.cleanupAuthAfterFailedRegistration).not.toHaveBeenCalled();
     expect(logger.error).toHaveBeenCalledWith(
-      "Profile creation failed after auth success",
+      "Profile creation failed while ensuring profile",
       expect.objectContaining({
         userId,
         isNewUser: true,

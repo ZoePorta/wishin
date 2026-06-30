@@ -1,7 +1,9 @@
 import type { LoginUserInput, AuthenticatedAuthResult } from "./dtos/auth.dto";
 import type { AuthRepository } from "../repositories/auth.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
-import { IncompleteRegistrationError } from "../errors/domain-errors";
+
+import { EnsureProfileUseCase } from "./ensure-profile.use-case";
+import type { Logger } from "../common/logger";
 
 /**
  * Use Case: LoginUser
@@ -13,10 +15,12 @@ export class LoginUserUseCase {
    *
    * @param authRepo - The repository for authentication operations.
    * @param profileRepo - The repository for managing user profiles.
+   * @param logger - The logger used for recording errors during profile recovery.
    */
   constructor(
     private readonly authRepo: AuthRepository,
     private readonly profileRepo: ProfileRepository,
+    private readonly logger: Logger,
   ) {}
 
   /**
@@ -29,14 +33,15 @@ export class LoginUserUseCase {
   async execute(input: LoginUserInput): Promise<AuthenticatedAuthResult> {
     const authResult = await this.authRepo.login(input.email, input.password);
 
-    const profile = await this.profileRepo.findById(authResult.userId);
-    if (!profile) {
-      throw new IncompleteRegistrationError(
-        authResult.userId,
-        false, // Not a new user in the context of being just created (it's a login)
-        "Login successful but profile is missing. Registration is incomplete.",
-      );
-    }
+    const ensureProfileUseCase = new EnsureProfileUseCase(
+      this.profileRepo,
+      this.logger,
+    );
+    await ensureProfileUseCase.execute(
+      authResult.userId,
+      authResult.name,
+      authResult.isNewUser,
+    );
 
     return authResult;
   }
