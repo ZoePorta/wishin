@@ -207,7 +207,22 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
           const userId = params.get("userId");
           const secret = params.get("secret");
 
-          if (userId && secret) {
+          if (params.get("oauth_error")) {
+            window.history.replaceState(
+              { path: window.location.pathname },
+              "",
+              window.location.protocol +
+                "//" +
+                window.location.host +
+                window.location.pathname,
+            );
+            if (isMounted) {
+              UniversalAlert.alert(
+                "Sign In Failed",
+                "Google sign-in was cancelled or failed. Please try again.",
+              );
+            }
+          } else if (userId && secret) {
             try {
               const verbatimUrl = window.location.href;
               // Strip the sensitive query parameters from the URL safely

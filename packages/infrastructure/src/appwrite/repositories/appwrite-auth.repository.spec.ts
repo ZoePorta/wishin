@@ -103,7 +103,7 @@ describe("AppwriteAuthRepository", () => {
       expect(mockCreateOAuth2Token).toHaveBeenCalledWith({
         provider: OAuthProvider.Google,
         success: "wishin://callback",
-        failure: "wishin://callback",
+        failure: "wishin://callback?oauth_error=true",
       });
     });
 

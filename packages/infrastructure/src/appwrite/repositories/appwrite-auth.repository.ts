@@ -317,7 +317,7 @@ export class AppwriteAuthRepository
     const oauthUrl = await this.account.createOAuth2Token({
       provider: OAuthProvider.Google,
       success: this.oauthRedirectUrl,
-      failure: this.oauthRedirectUrl,
+      failure: `${this.oauthRedirectUrl}?oauth_error=true`,
     });
 
     if (!oauthUrl) {
