@@ -170,7 +170,7 @@ export class Profile {
         "Invalid username: Must be a non-empty string",
       );
     }
-    const trimmed = username.trim();
+    const trimmed = username.trim().normalize("NFC");
     if (trimmed.length < 3 || trimmed.length > 30) {
       throw new InvalidAttributeError(
         "Invalid username length: Must be 3-30 characters",

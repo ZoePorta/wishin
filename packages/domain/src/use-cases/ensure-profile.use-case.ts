@@ -56,7 +56,7 @@ export class EnsureProfileUseCase {
 
     try {
       let safeName = fallbackName ?? "user_" + userId.slice(0, 5);
-      safeName = safeName.replace(/\s+/g, " ").trim();
+      safeName = safeName.replace(/\s+/g, " ").trim().normalize("NFC");
       if (safeName.length > 30) {
         safeName = safeName.slice(0, 30).trim();
       }

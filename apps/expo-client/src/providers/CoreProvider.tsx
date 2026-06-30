@@ -19,6 +19,7 @@ import { Config, ensureAppwriteConfig } from "../constants/Config";
 import {
   PersistenceError,
   EnsureProfileUseCase,
+  IncompleteRegistrationError,
   type ObservabilityService,
 } from "@wishin/domain";
 import { UniversalAlert } from "../utils/Alert";
@@ -232,8 +233,9 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
               console.error("Failed to complete Web OAuth flow", authError);
 
               if (
-                !(authError instanceof AppwriteException) ||
-                authError.code !== 401
+                !(authError instanceof IncompleteRegistrationError) &&
+                (!(authError instanceof AppwriteException) ||
+                  authError.code !== 401)
               ) {
                 onConfigError(
                   authError instanceof Error

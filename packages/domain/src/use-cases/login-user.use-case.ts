@@ -37,7 +37,11 @@ export class LoginUserUseCase {
       this.profileRepo,
       this.logger,
     );
-    await ensureProfileUseCase.execute(authResult.userId, authResult.name);
+    await ensureProfileUseCase.execute(
+      authResult.userId,
+      authResult.name,
+      authResult.isNewUser,
+    );
 
     return authResult;
   }

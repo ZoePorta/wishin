@@ -88,6 +88,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       return;
     }
     setError(null);
+    setGoogleError(null);
     try {
       await onRegister(email, password, username);
     } catch (err: unknown) {
@@ -123,6 +124,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             mode="outlined"
             icon="google"
             onPress={() => {
+              setError(null);
               void handleGoogleSignIn();
             }}
             loading={googleLoading}

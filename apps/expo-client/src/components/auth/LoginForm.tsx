@@ -74,6 +74,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       return;
     }
     setError(null);
+    setGoogleError(null);
     try {
       await onLogin(email, password);
     } catch (err: unknown) {
@@ -114,6 +115,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             mode="outlined"
             icon="google"
             onPress={() => {
+              setError(null);
               void handleGoogleSignIn();
             }}
             loading={googleLoading}

@@ -32,6 +32,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: config.name ?? "Wishin",
     slug: config.slug ?? "app",
-    scheme: projectId ? `appwrite-callback-${projectId}` : "wishin",
+    scheme: projectId ? [`appwrite-callback-${projectId}`, "wishin"] : "wishin",
   };
 };

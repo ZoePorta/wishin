@@ -119,13 +119,10 @@ describe("EnsureProfileUseCase", () => {
     vi.mocked(profileRepo.findById).mockResolvedValue(null);
     vi.mocked(profileRepo.save).mockRejectedValue(saveError);
 
-    await expect(useCase.execute(userId, "valid name", true)).rejects.toThrow(
-      IncompleteRegistrationError,
-    );
+    const failing = useCase.execute(userId, "valid name", true);
 
-    await expect(
-      useCase.execute(userId, "valid name", true),
-    ).rejects.toMatchObject({
+    await expect(failing).rejects.toThrow(IncompleteRegistrationError);
+    await expect(failing).rejects.toMatchObject({
       cause: saveError,
       userId,
       isNewUser: true,
