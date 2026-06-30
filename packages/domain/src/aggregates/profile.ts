@@ -171,7 +171,7 @@ export class Profile {
       );
     }
     const trimmed = username.trim().normalize("NFC");
-    if (trimmed.length < 3 || trimmed.length > 30) {
+    if (Array.from(trimmed).length < 3 || Array.from(trimmed).length > 30) {
       throw new InvalidAttributeError(
         "Invalid username length: Must be 3-30 characters",
       );

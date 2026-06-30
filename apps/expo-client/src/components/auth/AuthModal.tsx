@@ -88,7 +88,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setLoading(false);
       }
     },
-    [authRepo, refetch, onDismiss],
+    [loginUseCase, refetch, onDismiss],
   );
 
   const handleRegister = useCallback(

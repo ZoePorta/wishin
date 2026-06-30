@@ -233,6 +233,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
               console.error("Failed to complete Web OAuth flow", authError);
 
               if (
+                isMounted &&
                 !(authError instanceof IncompleteRegistrationError) &&
                 (!(authError instanceof AppwriteException) ||
                   authError.code !== 401)
@@ -244,11 +245,13 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
                 );
               }
 
-              const errorMessage =
-                authError instanceof Error
-                  ? authError.message
-                  : "An unknown error occurred during sign in.";
-              UniversalAlert.alert("Sign In Failed", errorMessage);
+              if (isMounted) {
+                const errorMessage =
+                  authError instanceof Error
+                    ? authError.message
+                    : "An unknown error occurred during sign in.";
+                UniversalAlert.alert("Sign In Failed", errorMessage);
+              }
             }
           }
         }

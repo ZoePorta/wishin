@@ -24,11 +24,15 @@ export class LoginUserUseCase {
   ) {}
 
   /**
-   * Logs in a user with their credentials.
+   * Logs in a user with their credentials and ensures their profile exists.
+   *
+   * Delegates to {@link EnsureProfileUseCase} after a successful login to recover
+   * profiles that may have been missed during initial registration.
    *
    * @param input - The login credentials (email, password).
    * @returns A Promise that resolves to the AuthenticatedAuthResult when login is successful.
-   * @throws {Error} If login fails.
+   * @throws {Error} If authentication fails (wrong credentials, network error, etc.).
+   * @throws {IncompleteRegistrationError} If login succeeds but profile creation/recovery fails.
    */
   async execute(input: LoginUserInput): Promise<AuthenticatedAuthResult> {
     const authResult = await this.authRepo.login(input.email, input.password);

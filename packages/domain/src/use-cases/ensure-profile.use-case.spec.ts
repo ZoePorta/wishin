@@ -57,6 +57,7 @@ describe("EnsureProfileUseCase", () => {
     expect(profileRepo.save).toHaveBeenCalledOnce();
 
     const savedProfile = vi.mocked(profileRepo.save).mock.calls[0]?.[0];
+    expect(savedProfile).toBeDefined();
     expect(savedProfile).toBeInstanceOf(Profile);
     expect(savedProfile.username).toBe(Profile.validateUsername("john doe"));
     expect(result).toBeInstanceOf(Profile);
