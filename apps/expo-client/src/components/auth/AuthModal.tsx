@@ -1,6 +1,8 @@
 import React, { useCallback, useState } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { Portal, Modal, IconButton, useTheme } from "react-native-paper";
+import * as WebBrowser from "expo-web-browser";
+import { makeRedirectUri } from "expo-auth-session";
 import { AuthPanel } from "./AuthPanel";
 import {
   useAuthRepository,
@@ -8,7 +10,11 @@ import {
   useLogger,
 } from "../../contexts/WishlistRepositoryContext";
 import { useUser } from "../../contexts/UserContext";
-import { RegisterUserUseCase } from "@wishin/domain";
+import {
+  RegisterUserUseCase,
+  LoginUserUseCase,
+  EnsureProfileUseCase,
+} from "@wishin/domain";
 import { commonStyles } from "../../theme/common-styles";
 
 /**
@@ -25,6 +31,7 @@ interface AuthModalProps {
 
 /**
  * Modal that wraps AuthPanel to allow login/registration without page navigation.
+ * Supports email/password authentication and Google OAuth2 sign-in.
  */
 export const AuthModal: React.FC<AuthModalProps> = ({
   visible,
@@ -41,10 +48,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [lastVisible, setLastVisible] = useState(false);
 
-  // Memoize the register use case
+  // Memoize use cases
   const registerUseCase = React.useMemo(
     () => new RegisterUserUseCase(authRepo, profileRepo, logger),
     [authRepo, profileRepo, logger],
+  );
+
+  const loginUseCase = React.useMemo(
+    () => new LoginUserUseCase(authRepo, profileRepo, logger),
+    [authRepo, profileRepo, logger],
+  );
+
+  const ensureProfileUseCase = React.useMemo(
+    () => new EnsureProfileUseCase(profileRepo, logger),
+    [profileRepo, logger],
   );
 
   // Reset state when visibility changes
@@ -62,7 +79,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setLoading(true);
       setLoginError(null);
       try {
-        await authRepo.login(email, password);
+        await loginUseCase.execute({ email, password });
         await refetch();
         onDismiss();
       } catch (error: unknown) {
@@ -71,7 +88,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setLoading(false);
       }
     },
-    [authRepo, refetch, onDismiss],
+    [loginUseCase, refetch, onDismiss],
   );
 
   const handleRegister = useCallback(
@@ -93,6 +110,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     [registerUseCase, refetch, onDismiss],
   );
 
+  /**
+   * Handles the Google OAuth2 sign-in flow.
+   *
+   * On Web: Fallbacks to default browser redirection since popups often drop opener context
+   * across multiple SSO redirects.
+   * On Native: Opens an in-app browser session via `openAuthSessionAsync` with the derived scheme.
+   *
+   * @throws {Error} If the OAuth URL generation, browser session, or flow completion fails.
+   */
+  const handleGoogleSignIn = useCallback(async () => {
+    const url = await authRepo.getGoogleOAuthUrl();
+
+    if (Platform.OS === "web") {
+      // Direct redirect is more reliable on web than popups due to COOP/opener policies
+      window.location.href = url;
+      // We do not continue here; the app will reload and CoreProvider will handle the redirect payload
+      return;
+    }
+
+    // Native flow:
+    const deepLink = new URL(makeRedirectUri({ preferLocalhost: true }));
+    const scheme = `${deepLink.protocol}//`;
+
+    const result = await WebBrowser.openAuthSessionAsync(url, scheme);
+
+    if (result.type !== "success") {
+      // User cancelled or the browser session failed
+      return;
+    }
+
+    const authResult = await authRepo.completeGoogleOAuth(result.url);
+    await ensureProfileUseCase.execute(
+      authResult.userId,
+      authResult.name,
+      authResult.isNewUser,
+    );
+    await refetch();
+    onDismiss();
+  }, [authRepo, ensureProfileUseCase, refetch, onDismiss]);
+
   return (
     <Portal>
       <Modal
@@ -113,6 +170,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <AuthPanel
           onLogin={handleLogin}
           onRegister={handleRegister}
+          onGoogleSignIn={handleGoogleSignIn}
           loading={loading}
           loginError={loginError}
           registerError={registerError}

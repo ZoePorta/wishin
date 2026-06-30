@@ -170,13 +170,13 @@ export class Profile {
         "Invalid username: Must be a non-empty string",
       );
     }
-    const trimmed = username.trim();
-    if (trimmed.length < 3 || trimmed.length > 30) {
+    const trimmed = username.trim().normalize("NFC");
+    if (Array.from(trimmed).length < 3 || Array.from(trimmed).length > 30) {
       throw new InvalidAttributeError(
         "Invalid username length: Must be 3-30 characters",
       );
     }
-    const usernameRegex = /^[a-zA-Z0-9]+(?:[ ._-][a-zA-Z0-9]+)*$/;
+    const usernameRegex = /^[\p{L}\p{N}]+(?:[ ._'-][\p{L}\p{N}]+)*$/u;
     if (!usernameRegex.test(trimmed)) {
       throw new InvalidAttributeError("Invalid username format");
     }

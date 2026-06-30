@@ -3,7 +3,7 @@ import type { AuthRepository } from "../repositories/auth.repository";
 import type { ProfileRepository } from "../repositories/profile.repository";
 import type { Logger } from "../common/logger";
 import { Profile } from "../aggregates/profile";
-import { IncompleteRegistrationError } from "../errors/domain-errors";
+import { EnsureProfileUseCase } from "./ensure-profile.use-case";
 
 /**
  * Use Case: RegisterUser
@@ -34,33 +34,14 @@ export class RegisterUserUseCase {
       normalizedUsername,
     );
 
-    try {
-      // 3. Create and Save Profile
-      // Using the same ID from Auth as the Profile ID (ADR 014/018)
-      const profile = Profile.create({
-        id: authResult.userId,
-        username: normalizedUsername,
-      });
-
-      await this.profileRepo.save(profile);
-    } catch (error) {
-      // 4. Compensation: Log and surface partial registration (ADR 018)
-      try {
-        this.logger.error("Profile creation failed after auth success", {
-          userId: authResult.userId,
-          isNewUser: authResult.isNewUser,
-          originalError: error instanceof Error ? error.message : String(error),
-        });
-      } catch (_logError) {
-        // Logging is best-effort; avoid throwing here to ensure domain error is propagated
-      }
-
-      throw new IncompleteRegistrationError(
-        authResult.userId,
-        authResult.isNewUser,
-        "User registered but profile creation failed. Registration is incomplete.",
-        { cause: error },
-      );
-    }
+    const ensureProfileUseCase = new EnsureProfileUseCase(
+      this.profileRepo,
+      this.logger,
+    );
+    await ensureProfileUseCase.execute(
+      authResult.userId,
+      normalizedUsername,
+      authResult.isNewUser,
+    );
   }
 }

@@ -4,6 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@10.28.1",
   "scripts": {
+    "start": "pnpm --filter @wishin/expo-client start",
     "build": "pnpm -r run --if-present build",
     "test": "vitest run",
     "test:integration": "pnpm run db:provision:test && cross-env EXPO_PUBLIC_DB_PREFIX=test vitest run -c vitest.integration.config.ts",

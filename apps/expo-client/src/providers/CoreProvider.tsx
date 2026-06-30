@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, type ReactNode } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Platform } from "react-native";
+import { makeRedirectUri } from "expo-auth-session";
 import { WishlistRepositoryProvider } from "../contexts/WishlistRepositoryContext";
 import { UserProvider } from "../contexts/UserContext";
 import { ToastProvider } from "../contexts/ToastContext";
@@ -15,7 +16,13 @@ import {
   type SessionAwareRepository,
 } from "@wishin/infrastructure";
 import { Config, ensureAppwriteConfig } from "../constants/Config";
-import { PersistenceError, type ObservabilityService } from "@wishin/domain";
+import {
+  PersistenceError,
+  EnsureProfileUseCase,
+  IncompleteRegistrationError,
+  type ObservabilityService,
+} from "@wishin/domain";
+import { UniversalAlert } from "../utils/Alert";
 
 /**
  * Adapter that maps console methods to the Logger interface.
@@ -75,9 +82,11 @@ const OBSERVABILITY: ObservabilityService = {
 };
 
 /**
- * Factory function to create new repository instances.
- * This is now a pure function that does not maintain its own cache,
- * allowing the React component to manage the lifecycle.
+ * Constructs and returns Appwrite-backed repository instances used by the app.
+ *
+ * This factory does not cache instances; callers are responsible for managing repository lifecycles.
+ *
+ * @returns An object with the following repositories: `wishlistRepository`, `transactionRepository`, `authRepository`, `profileRepository`, and `storageRepository`.
  */
 function createRepositories() {
   ensureAppwriteConfig();
@@ -102,6 +111,15 @@ function createRepositories() {
     Config.collections.transactions,
   );
 
+  // Create deep link per Appwrite Expo docs.
+  // makeRedirectUri({ scheme: `appwrite-callback-${Config.appwrite.projectId}`, preferLocalhost: true }) generates:
+  //   - Web:    http://localhost:<port>
+  //   - Native: appwrite-callback-<PROJECT_ID>://
+  const oauthRedirectUrl = makeRedirectUri({
+    scheme: `appwrite-callback-${Config.appwrite.projectId}`,
+    preferLocalhost: true,
+  });
+
   const authRepository = new AppwriteAuthRepository(
     client,
     Config.appwrite.endpoint,
@@ -109,6 +127,7 @@ function createRepositories() {
     Config.appwrite.databaseId,
     Config.collections.profiles,
     consoleLogger,
+    oauthRedirectUrl,
   );
 
   const profileRepository = new AppwriteProfileRepository(
@@ -181,6 +200,76 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
     const init = async () => {
       try {
         const sessionAwareRepo: SessionAwareRepository = repos.authRepository;
+
+        // Web OAuth Callback Capture
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const userId = params.get("userId");
+          const secret = params.get("secret");
+
+          if (params.get("oauth_error")) {
+            window.history.replaceState(
+              { path: window.location.pathname },
+              "",
+              window.location.protocol +
+                "//" +
+                window.location.host +
+                window.location.pathname,
+            );
+            if (isMounted) {
+              UniversalAlert.alert(
+                "Sign In Failed",
+                "Google sign-in was cancelled or failed. Please try again.",
+              );
+            }
+          } else if (userId && secret) {
+            try {
+              const verbatimUrl = window.location.href;
+              // Strip the sensitive query parameters from the URL safely
+              const newUrl =
+                window.location.protocol +
+                "//" +
+                window.location.host +
+                window.location.pathname;
+              window.history.replaceState({ path: newUrl }, "", newUrl);
+
+              const authResult =
+                await repos.authRepository.completeGoogleOAuth(verbatimUrl);
+              const ensureProfileUseCase = new EnsureProfileUseCase(
+                repos.profileRepository,
+                consoleLogger,
+              );
+              await ensureProfileUseCase.execute(
+                authResult.userId,
+                authResult.name,
+                authResult.isNewUser,
+              );
+            } catch (authError) {
+              console.error("Failed to complete Web OAuth flow", authError);
+
+              if (
+                isMounted &&
+                !(authError instanceof IncompleteRegistrationError) &&
+                (!(authError instanceof AppwriteException) ||
+                  authError.code !== 401)
+              ) {
+                onConfigError(
+                  authError instanceof Error
+                    ? authError
+                    : new Error(String(authError)),
+                );
+              }
+
+              if (isMounted) {
+                const errorMessage =
+                  authError instanceof Error
+                    ? authError.message
+                    : "An unknown error occurred during sign in.";
+                UniversalAlert.alert("Sign In Failed", errorMessage);
+              }
+            }
+          }
+        }
 
         const timeoutPromise = new Promise((_, reject) => {
           timerId = setTimeout(() => {

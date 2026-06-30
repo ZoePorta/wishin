@@ -12,7 +12,8 @@
           "photosPermission": "Allow Wishin to access your photos",
           "cameraPermission": "Allow Wishin to access your camera"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "version": "1.0.0",
     "orientation": "portrait",

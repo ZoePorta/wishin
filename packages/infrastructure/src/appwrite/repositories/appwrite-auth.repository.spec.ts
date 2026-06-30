@@ -88,41 +88,34 @@ describe("AppwriteAuthRepository", () => {
       "database",
       "profiles",
       logger,
+      "wishin://callback",
     );
   });
 
   describe("getGoogleOAuthUrl", () => {
-    it("should extract state from the URL returned by Appwrite", async () => {
-      const mockState = "extracted-state-123";
-      const mockUrl = `https://appwrite.io/oauth/google?state=${mockState}`;
-      mockCreateOAuth2Token.mockReturnValue(mockUrl);
+    it("should return the OAuth URL", async () => {
+      const mockUrl = "https://appwrite.io/oauth/google";
+      mockCreateOAuth2Token.mockResolvedValue(mockUrl);
 
       const result = await repository.getGoogleOAuthUrl();
 
-      expect(result.url).toBe(mockUrl);
-      expect(result.state).toBe(mockState);
+      expect(result).toBe(mockUrl);
       expect(mockCreateOAuth2Token).toHaveBeenCalledWith({
         provider: OAuthProvider.Google,
+        success: "wishin://callback",
+        failure: "wishin://callback?oauth_error=true",
       });
     });
 
-    it("should throw if Appwrite URL is missing state", async () => {
-      mockCreateOAuth2Token.mockReturnValue("https://appwrite.io/oauth/google");
-      await expect(repository.getGoogleOAuthUrl()).rejects.toThrow();
-    });
-
     it("should throw if Appwrite fails to generate a URL", async () => {
-      mockCreateOAuth2Token.mockReturnValue("");
+      mockCreateOAuth2Token.mockResolvedValue("");
       await expect(repository.getGoogleOAuthUrl()).rejects.toThrow();
     });
   });
 
   describe("completeGoogleOAuth", () => {
-    it("should create a session when state matches", async () => {
-      mockCreateOAuth2Token.mockReturnValue("https://url.com?state=init-state");
-      const initiation = await repository.getGoogleOAuthUrl();
-
-      const callbackUrl = `exp://localhost:8081?userId=user-123&secret=secret-456&state=${initiation.state}`;
+    it("should create a session from the extracted URL tokens", async () => {
+      const callbackUrl = `exp://localhost:8081?userId=user-123&secret=secret-456`;
       const mockUser = { $id: "user-123", email: "test@example.com" };
 
       mockCreateSession.mockResolvedValue({
@@ -131,21 +124,21 @@ describe("AppwriteAuthRepository", () => {
       } as Models.Session);
       mockGet.mockResolvedValue(mockUser as Models.User<Models.Preferences>);
 
-      const result = await repository.completeGoogleOAuth(
-        callbackUrl,
-        initiation.state,
-      );
+      const result = await repository.completeGoogleOAuth(callbackUrl);
+
       expect(result.type).toBe("authenticated");
       expect(result.userId).toBe("user-123");
-      expect(mockCreateSession).toHaveBeenCalled();
+      expect(mockCreateSession).toHaveBeenCalledWith({
+        userId: "user-123",
+        secret: "secret-456",
+      });
     });
 
-    it("should throw if state is invalid", async () => {
-      const state = "expected";
-      const callbackUrl = `exp://localhost:8081?state=mismatch&userId=1&secret=2`;
-      await expect(
-        repository.completeGoogleOAuth(callbackUrl, state),
-      ).rejects.toThrow(/Mismatched OAuth state/);
+    it("should throw if URL is missing userId or secret", async () => {
+      const callbackUrl = `exp://localhost:8081?userId=1`;
+      await expect(repository.completeGoogleOAuth(callbackUrl)).rejects.toThrow(
+        /Invalid OAuth2 callback: missing userId or secret/,
+      );
     });
   });
 
@@ -166,6 +159,7 @@ describe("AppwriteAuthRepository", () => {
         userId: "unique-id",
         email,
         password,
+        name: "testuser",
       });
       expect(mockCreateEmailPasswordSession).toHaveBeenCalledWith({
         email,
