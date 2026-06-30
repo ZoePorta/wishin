@@ -159,6 +159,7 @@ describe("AppwriteAuthRepository", () => {
         userId: "unique-id",
         email,
         password,
+        name: "testuser",
       });
       expect(mockCreateEmailPasswordSession).toHaveBeenCalledWith({
         email,
