@@ -95,12 +95,7 @@ function RootLayout() {
           },
         }}
       >
-        <Stack.Screen
-          name="index"
-          options={{
-            headerShown: true,
-          }}
-        />
+        <Stack.Screen name="index" />
         <Stack.Screen name="wishlist/[id]" options={{}} />
         <Stack.Screen name="owner/profile" options={{ title: "My Profile" }} />
       </Stack>

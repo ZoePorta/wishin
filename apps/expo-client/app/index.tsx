@@ -2,9 +2,16 @@ import React, { useCallback, useState, useEffect } from "react";
 import { StyleSheet, View, Platform } from "react-native";
 import { Text, Surface, ActivityIndicator, useTheme } from "react-native-paper";
 import { useRouter, useLocalSearchParams, Stack } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import { makeRedirectUri } from "expo-auth-session";
 import { useUser } from "../src/contexts/UserContext";
 import { AuthPanel } from "../src/components/auth/AuthPanel";
-import { useAuthRepository } from "../src/contexts/WishlistRepositoryContext";
+import {
+  useAuthRepository,
+  useProfileRepository,
+  useLogger,
+} from "../src/contexts/WishlistRepositoryContext";
+import { EnsureProfileUseCase } from "@wishin/domain";
 import { validateRedirect } from "../src/utils/url";
 import { LandingPage } from "../src/features/landing/LandingPage.web";
 
@@ -16,6 +23,8 @@ export default function Index() {
   const theme = useTheme();
   const { sessionType, loading: userLoading, refetch } = useUser();
   const authRepo = useAuthRepository();
+  const profileRepo = useProfileRepository();
+  const logger = useLogger();
   const router = useRouter();
   const { redirect } = useLocalSearchParams<{
     redirect?: string | string[];
@@ -23,6 +32,11 @@ export default function Index() {
   const [authLoading, setAuthLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [registerError, setRegisterError] = useState<string | null>(null);
+
+  const ensureProfileUseCase = React.useMemo(
+    () => new EnsureProfileUseCase(profileRepo, logger),
+    [profileRepo, logger],
+  );
 
   const normalizedRedirect = Array.isArray(redirect) ? redirect[0] : redirect;
 
@@ -59,6 +73,32 @@ export default function Index() {
     },
     [authRepo, refetch],
   );
+
+  const handleGoogleSignIn = useCallback(async () => {
+    const url = await authRepo.getGoogleOAuthUrl();
+
+    if (Platform.OS === "web") {
+      window.location.href = url;
+      return;
+    }
+
+    const deepLink = new URL(makeRedirectUri({ preferLocalhost: true }));
+    const scheme = `${deepLink.protocol}//`;
+
+    const result = await WebBrowser.openAuthSessionAsync(url, scheme);
+
+    if (result.type !== "success") {
+      return;
+    }
+
+    const authResult = await authRepo.completeGoogleOAuth(result.url);
+    await ensureProfileUseCase.execute(
+      authResult.userId,
+      authResult.name,
+      authResult.isNewUser,
+    );
+    await refetch();
+  }, [authRepo, ensureProfileUseCase, refetch]);
 
   // Redirection logic
   useEffect(() => {
@@ -115,7 +155,7 @@ export default function Index() {
     <Surface
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Stack.Screen options={{ headerShown: true }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <Text
           variant="displayLarge"
@@ -137,6 +177,7 @@ export default function Index() {
       <AuthPanel
         onLogin={handleLogin}
         onRegister={handleRegister}
+        onGoogleSignIn={handleGoogleSignIn}
         loading={authLoading}
         loginError={loginError}
         registerError={registerError}
