@@ -12,6 +12,7 @@ import {
   useLogger,
 } from "../src/contexts/WishlistRepositoryContext";
 import { EnsureProfileUseCase } from "@wishin/domain";
+import { Config } from "../src/constants/Config";
 import { validateRedirect } from "../src/utils/url";
 import { LandingPage } from "../src/features/landing/LandingPage.web";
 
@@ -82,10 +83,13 @@ export default function Index() {
       return;
     }
 
-    const deepLink = new URL(makeRedirectUri({ preferLocalhost: true }));
-    const scheme = `${deepLink.protocol}//`;
+    // Must match the success redirect URL Appwrite was given in getGoogleOAuthUrl().
+    const redirectUri = makeRedirectUri({
+      scheme: `appwrite-callback-${Config.appwrite.projectId}`,
+      preferLocalhost: true,
+    });
 
-    const result = await WebBrowser.openAuthSessionAsync(url, scheme);
+    const result = await WebBrowser.openAuthSessionAsync(url, redirectUri);
 
     if (result.type !== "success") {
       return;

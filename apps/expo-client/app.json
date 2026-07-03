@@ -2,7 +2,6 @@
   "expo": {
     "name": "Wishin",
     "slug": "app",
-    "scheme": "wishin",
     "plugins": [
       "expo-router",
       "./src/plugins/withAndroidQueries",

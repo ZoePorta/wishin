@@ -4,6 +4,7 @@ import { Portal, Modal, IconButton, useTheme } from "react-native-paper";
 import * as WebBrowser from "expo-web-browser";
 import { makeRedirectUri } from "expo-auth-session";
 import { AuthPanel } from "./AuthPanel";
+import { Config } from "../../constants/Config";
 import {
   useAuthRepository,
   useProfileRepository,
@@ -129,11 +130,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    // Native flow:
-    const deepLink = new URL(makeRedirectUri({ preferLocalhost: true }));
-    const scheme = `${deepLink.protocol}//`;
+    // Native flow: must match the success redirect URL Appwrite was given in getGoogleOAuthUrl().
+    const redirectUri = makeRedirectUri({
+      scheme: `appwrite-callback-${Config.appwrite.projectId}`,
+      preferLocalhost: true,
+    });
 
-    const result = await WebBrowser.openAuthSessionAsync(url, scheme);
+    const result = await WebBrowser.openAuthSessionAsync(url, redirectUri);
 
     if (result.type !== "success") {
       // User cancelled or the browser session failed
