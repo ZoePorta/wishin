@@ -1,0 +1,31 @@
+{
+  "cli": {
+    "version": ">= 20.5.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_APPWRITE_ENDPOINT": "https://fra.cloud.appwrite.io/v1",
+        "EXPO_PUBLIC_APPWRITE_PROJECT_ID": "698e0b20000e012269aa",
+        "EXPO_PUBLIC_APPWRITE_DATABASE_ID": "wishin",
+        "EXPO_PUBLIC_APPWRITE_STORAGE_BUCKET_ID": "69a80d16000293c5e79e",
+        "EXPO_PUBLIC_BASE_URL": "https://wishin.es/"
+      }
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

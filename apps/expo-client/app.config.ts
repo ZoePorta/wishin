@@ -33,5 +33,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     name: config.name ?? "Wishin",
     slug: config.slug ?? "app",
     scheme: projectId ? [`appwrite-callback-${projectId}`, "wishin"] : "wishin",
+    android: {
+      ...config.android,
+      package: "es.wishin.app",
+    },
   };
 };

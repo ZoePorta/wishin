@@ -19,7 +19,8 @@
     "android": "pnpm --filter @wishin/expo-client exec expo run:android",
     "android:device": "pnpm --filter @wishin/expo-client exec expo run:android --device",
     "ios": "pnpm --filter @wishin/expo-client exec expo run:ios",
-    "ios:device": "pnpm --filter @wishin/expo-client exec expo run:ios --device"
+    "ios:device": "pnpm --filter @wishin/expo-client exec expo run:ios --device",
+    "build:android:preview": "cross-env EXPO_PUBLIC_APPWRITE_PROJECT_ID=698e0b20000e012269aa pnpm --filter @wishin/expo-client exec eas build --platform android --profile preview"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.0",
