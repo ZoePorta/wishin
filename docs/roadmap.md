@@ -110,13 +110,17 @@
 - [x] **UI:** Immediate "Undo" snackbar after purchase.
 - [ ] **Final Polish:** Theme system refinement.
 - [ ] **Web Responsiveness:** Ensure a premium and fully responsive experience for the web client across all viewports.
+- [ ] **Observability:** Wire up Sentry (error tracking) and PostHog (analytics) — `CoreProvider.tsx`'s `addBreadcrumb`/`trackEvent` currently no-op with console warnings since neither SDK is installed/initialized.
 
 ---
 
 ## Post-MVP / Future Enhancements
 
-- [ ] **Mobile Apps:** Native iOS and Android versions (using Expo).
-- [ ] **Google OAuth2:** Login/Register integration (UI implementation).
+- [ ] **Mobile Apps:**  (using Expo).
+  -  [ ] Native iOS version
+  -  [ ] Native Android version
+- [x] **Google OAuth2:** Login/Register integration (UI implementation).
+- [ ] **Native Google Sign-In:** Replace the web/browser OAuth2 flow with the native Android Credential Manager / One Tap SDK. Requires registering the `es.wishin.app` `applicationId` together with the release signing SHA-1 fingerprint in Google Cloud Console.
 - [ ] **History:** `GetGiftingHistory` Use Case (Purchases only for MVP).
 - [ ] **UI:** User Profile & "My Gifting" Dashboard.
 - [ ] **UI:** Micro-animations for enhanced user experience.
