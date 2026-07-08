@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -18,8 +18,19 @@ if (!projectId) {
   process.exit(1);
 }
 
-execSync(
-  "pnpm --filter @wishin/expo-client exec eas build --platform android --profile preview",
+execFileSync(
+  "pnpm",
+  [
+    "--filter",
+    "@wishin/expo-client",
+    "exec",
+    "eas",
+    "build",
+    "--platform",
+    "android",
+    "--profile",
+    "preview",
+  ],
   {
     stdio: "inherit",
     env: { ...process.env, EXPO_PUBLIC_APPWRITE_PROJECT_ID: projectId },
