@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { StyleSheet, View, Platform } from "react-native";
 import { Text, Surface, ActivityIndicator, useTheme } from "react-native-paper";
-import { useRouter, useLocalSearchParams, Stack } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { makeRedirectUri } from "expo-auth-session";
 import { useUser } from "../src/contexts/UserContext";
@@ -159,7 +159,6 @@ export default function Index() {
     <Surface
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <Text
           variant="displayLarge"

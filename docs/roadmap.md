@@ -107,6 +107,7 @@
 
 ## Phase 6: UI Polish & Presentation
 
+- [ ] **Auth Use-Case Context:** `EnsureProfileUseCase`/`RegisterUserUseCase`/`LoginUserUseCase` are currently instantiated ad-hoc via `useMemo(() => new XxxUseCase(...))` in three places (`app/index.tsx`, `AuthModal.tsx`, `CoreProvider.tsx`), which violates the "UI calls use cases via React contexts" rule in `CLAUDE.md`. Centralize them behind a context hook (e.g. `useAuthUseCases()`) alongside the existing repository hooks — this is also the natural place to wire the `Observability` breadcrumbs below.
 - [x] **UI:** Immediate "Undo" snackbar after purchase.
 - [ ] **Final Polish:** Theme system refinement.
 - [ ] **Web Responsiveness:** Ensure a premium and fully responsive experience for the web client across all viewports.
