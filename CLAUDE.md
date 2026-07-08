@@ -10,7 +10,7 @@ Wishin is a wishlist management app (mobile + web). Users create wishlists, shar
 
 ## Monorepo Structure
 
-```
+```text
 wishin/
 ├── apps/
 │   └── expo-client/        @wishin/expo-client  — React Native + Expo Router (web + native)
@@ -65,7 +65,7 @@ Package manager: `pnpm@10.28.1`. Workspace defined in `pnpm-workspace.yaml`.
 
 ## expo-client Source Layout
 
-```
+```text
 src/
 ├── features/         — Feature slices: auth, wishlist, profile, landing, common, core, layout
 ├── components/       — Shared UI components
@@ -168,6 +168,18 @@ Domain tests live alongside source: `*.spec.ts` next to `*.ts`. Infrastructure h
 - **Husky hooks:**
   - `pre-commit`: lint-staged → eslint + prettier on TS/TSX, `pnpm install --lockfile-only` + stage `pnpm-lock.yaml` on package.json changes
 - Run `pnpm lint` and `pnpm test` before pushing
+
+### Branching Strategy
+
+`main` is production/release; `develop` is the integration branch. **Nothing reaches `main` except through `develop`.**
+
+- **Feature/fix branches always branch from `develop`**, and their PRs always target `develop` — never `main`.
+- **`main` only receives merges from `develop`** (releases via `develop → main` PR).
+- **Hotfix exception:** if production is broken and can't wait for the normal cycle, branch from `main` (`hotfix/x`), PR into `main` — but **immediately** merge/cherry-pick that same fix back into `develop` before doing anything else. Don't defer the back-merge.
+- Never branch a fix off `main` for something that isn't a production emergency — it silently diverges `main` ahead of `develop` and causes "Can't automatically merge" on the next `develop → main` PR.
+- `main` has branch protection requiring PRs; direct pushes are possible only via bypass (admin) and should be avoided except to land an already-reviewed merge commit resolving a `develop`/`main` divergence.
+
+**Incident (2026-07-08):** `fix/reanimated-worklets-conflict` (PR #94) was branched from `main` and merged straight into `main`, skipping `develop`. This diverged the two branches (both later touched `package.json`/`pnpm-lock.yaml` independently), which blocked the next `develop → main` PR with a merge conflict. Fixed by merging `main` back into `develop` (commit `453fb52`) and regenerating `pnpm-lock.yaml` via `pnpm install`.
 
 ---
 

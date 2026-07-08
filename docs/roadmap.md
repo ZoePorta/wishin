@@ -111,7 +111,7 @@
 - [x] **UI:** Immediate "Undo" snackbar after purchase.
 - [ ] **Final Polish:** Theme system refinement.
 - [ ] **Web Responsiveness:** Ensure a premium and fully responsive experience for the web client across all viewports.
-- [ ] **Observability:** Wire up Sentry (error tracking) and PostHog (analytics) — `CoreProvider.tsx`'s `addBreadcrumb`/`trackEvent` currently no-op with console warnings since neither SDK is installed/initialized.
+- [ ] **Observability:** Wire up Sentry (error tracking) and PostHog (analytics) — `CoreProvider.tsx`'s `addBreadcrumb`/`trackEvent` already emit to Sentry/PostHog when those SDKs are available, and fall back to console warnings when they aren't installed/initialized.
 
 ---
 

@@ -96,12 +96,15 @@ export default function Index() {
     }
 
     const authResult = await authRepo.completeGoogleOAuth(result.url);
-    await ensureProfileUseCase.execute(
-      authResult.userId,
-      authResult.name,
-      authResult.isNewUser,
-    );
-    await refetch();
+    try {
+      await ensureProfileUseCase.execute(
+        authResult.userId,
+        authResult.name,
+        authResult.isNewUser,
+      );
+    } finally {
+      await refetch();
+    }
   }, [authRepo, ensureProfileUseCase, refetch]);
 
   // Redirection logic
