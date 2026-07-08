@@ -2,7 +2,6 @@
   "expo": {
     "name": "Wishin",
     "slug": "app",
-    "scheme": "wishin",
     "plugins": [
       "expo-router",
       "./src/plugins/withAndroidQueries",
@@ -38,6 +37,12 @@
     },
     "web": {
       "favicon": "./assets/icon.png"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "80295048-3789-4551-8bd9-0b057f6c64ae"
+      }
     }
   }
 }

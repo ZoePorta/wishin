@@ -15,7 +15,12 @@
     "db:provision:test": "cross-env EXPO_PUBLIC_DB_PREFIX=test CLEANUP=true tsx scripts/provision.ts",
     "db:reset": "cross-env CLEANUP=true tsx scripts/provision.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "db:seed:test": "cross-env EXPO_PUBLIC_DB_PREFIX=test tsx scripts/seed.ts"
+    "db:seed:test": "cross-env EXPO_PUBLIC_DB_PREFIX=test tsx scripts/seed.ts",
+    "android": "pnpm --filter @wishin/expo-client exec expo run:android",
+    "android:device": "pnpm --filter @wishin/expo-client exec expo run:android --device",
+    "ios": "pnpm --filter @wishin/expo-client exec expo run:ios",
+    "ios:device": "pnpm --filter @wishin/expo-client exec expo run:ios --device",
+    "build:android:preview": "tsx scripts/build-android-preview.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.0",
