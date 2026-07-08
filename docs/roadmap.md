@@ -107,16 +107,21 @@
 
 ## Phase 6: UI Polish & Presentation
 
+- [ ] **Auth Use-Case Context:** `EnsureProfileUseCase`/`RegisterUserUseCase`/`LoginUserUseCase` are currently instantiated ad-hoc via `useMemo(() => new XxxUseCase(...))` in three places (`app/index.tsx`, `AuthModal.tsx`, `CoreProvider.tsx`), which violates the "UI calls use cases via React contexts" rule in `CLAUDE.md`. Centralize them behind a context hook (e.g. `useAuthUseCases()`) alongside the existing repository hooks — this is also the natural place to wire the `Observability` breadcrumbs below.
 - [x] **UI:** Immediate "Undo" snackbar after purchase.
 - [ ] **Final Polish:** Theme system refinement.
 - [ ] **Web Responsiveness:** Ensure a premium and fully responsive experience for the web client across all viewports.
+- [ ] **Observability:** Wire up Sentry (error tracking) and PostHog (analytics) — `CoreProvider.tsx`'s `addBreadcrumb`/`trackEvent` already emit to Sentry/PostHog when those SDKs are available, and fall back to console warnings when they aren't installed/initialized.
 
 ---
 
 ## Post-MVP / Future Enhancements
 
-- [ ] **Mobile Apps:** Native iOS and Android versions (using Expo).
-- [ ] **Google OAuth2:** Login/Register integration (UI implementation).
+- [ ] **Mobile Apps:**  (using Expo).
+  -  [ ] Native iOS version
+  -  [ ] Native Android version
+- [x] **Google OAuth2:** Login/Register integration (UI implementation).
+- [ ] **Native Google Sign-In:** Replace the web/browser OAuth2 flow with the native Android Credential Manager / One Tap SDK. Requires registering the `es.wishin.app` `applicationId` together with the release signing SHA-1 fingerprint in Google Cloud Console.
 - [ ] **History:** `GetGiftingHistory` Use Case (Purchases only for MVP).
 - [ ] **UI:** User Profile & "My Gifting" Dashboard.
 - [ ] **UI:** Micro-animations for enhanced user experience.

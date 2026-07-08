@@ -46,9 +46,10 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
-    "@types/react": "~19.1.0",
     "@babel/runtime": "^7.20.0",
+    "@types/react": "~19.1.0",
     "babel-plugin-module-resolver": "^5.0.2",
+    "eas-cli": "^20.5.1",
     "typescript": "~5.9.2"
   },
   "private": true

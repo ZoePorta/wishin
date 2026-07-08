@@ -155,8 +155,10 @@ web-build/
 *.apk
 *.aab
 
-# pnpm
+# pnpm (this repo uses pnpm exclusively — npm/yarn lock files are accidents)
 .pnpm-debug.log*
+package-lock.json
+yarn.lock
 
 # OS Files
 .DS_Store
