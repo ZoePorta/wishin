@@ -20,7 +20,8 @@
     "android:device": "pnpm --filter @wishin/expo-client exec expo run:android --device",
     "ios": "pnpm --filter @wishin/expo-client exec expo run:ios",
     "ios:device": "pnpm --filter @wishin/expo-client exec expo run:ios --device",
-    "build:android:preview": "tsx scripts/build-android-preview.ts"
+    "build:android:preview": "tsx scripts/build-android-preview.ts",
+    "postinstall": "node scripts/link-env.js"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.0",
