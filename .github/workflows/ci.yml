@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: write
@@ -44,6 +44,8 @@ jobs:
     timeout-minutes: 15
     # Only run integration if build succeeds to save resources [cite: 2026-01-26]
     needs: unit_tests
+    # Release gate only: PRs into develop run unit tests alone to save Appwrite quota
+    if: github.event_name == 'push' || github.base_ref == 'main'
     env:
       EXPO_PUBLIC_APPWRITE_ENDPOINT: ${{ vars.EXPO_PUBLIC_APPWRITE_ENDPOINT }}
       EXPO_PUBLIC_APPWRITE_PROJECT_ID: ${{ vars.EXPO_PUBLIC_APPWRITE_PROJECT_ID }}
