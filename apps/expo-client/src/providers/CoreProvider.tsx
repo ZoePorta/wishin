@@ -20,6 +20,7 @@ import {
   PersistenceError,
   EnsureProfileUseCase,
   IncompleteRegistrationError,
+  OAuthCallbackError,
   type ObservabilityService,
 } from "@wishin/domain";
 import { UniversalAlert } from "../utils/Alert";
@@ -222,7 +223,8 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
                 "Google sign-in was cancelled or failed. Please try again.",
               );
             }
-          } else if (userId && secret) {
+          } else if ((userId && secret) || params.has("error")) {
+            // Appwrite may redirect back with `?error=` instead of credentials; completeGoogleOAuth surfaces it as OAuthCallbackError
             try {
               const verbatimUrl = window.location.href;
               // Strip the sensitive query parameters from the URL safely
@@ -250,6 +252,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
               if (
                 isMounted &&
                 !(authError instanceof IncompleteRegistrationError) &&
+                !(authError instanceof OAuthCallbackError) &&
                 (!(authError instanceof AppwriteException) ||
                   authError.code !== 401)
               ) {
