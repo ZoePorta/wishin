@@ -128,7 +128,7 @@ pnpm install
 pnpm prepare
 ```
 
-> **Note:** Expo only reads `.env` from `apps/expo-client/`, so the root `.env` is symlinked there (copied on Windows without developer mode, in which case keep both in sync manually). If you created `.env` after installing, run `node scripts/link-env.js` to create the link. An existing `apps/expo-client/.env` is never overwritten.
+> **Note:** Expo only reads `.env` from `apps/expo-client/`, so the root `.env` is symlinked there (copied on Windows without developer mode, in which case keep both in sync manually). If you created `.env` after installing, run `node scripts/link-env.cjs` to create the link. An existing `apps/expo-client/.env` is never overwritten.
 
 ### Step 4: Database Provisioning
 

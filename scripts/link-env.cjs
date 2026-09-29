@@ -1,4 +1,4 @@
-// scripts/link-env.js
+// scripts/link-env.cjs
 const fs = require('fs');
 const path = require('path');
 
