@@ -95,7 +95,11 @@ function RootLayout() {
           },
         }}
       >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
+        {/* Native index has its own branding; the web landing relies on the shared header. */}
+        <Stack.Screen
+          name="index"
+          options={{ headerShown: Platform.OS === "web" }}
+        />
         <Stack.Screen name="wishlist/[id]" options={{}} />
         <Stack.Screen name="owner/profile" options={{ title: "My Profile" }} />
       </Stack>
