@@ -7,6 +7,7 @@ import {
   AppwriteException,
   type Models,
 } from "react-native-appwrite";
+import { OAuthCallbackError } from "@wishin/domain";
 import type { AuthRepository, UserRepository, Logger } from "@wishin/domain";
 import type {
   AuthenticatedAuthResult,
@@ -332,7 +333,8 @@ export class AppwriteAuthRepository
    *
    * @param callbackUrl - The full URL received from the OAuth2 redirect.
    * @returns A Promise that resolves to the authentication result.
-   * @throws {Error} If the callback URL is missing the userId or secret.
+   * @throws {Error} If the callback URL is malformed.
+   * @throws {OAuthCallbackError} If Appwrite redirected with an error, or the callback lacks userId/secret.
    * @throws {AppwriteException} If session creation or account retrieval fails.
    */
   async completeGoogleOAuth(
@@ -345,11 +347,26 @@ export class AppwriteAuthRepository
       throw new Error("Invalid OAuth2 callback: malformed URL");
     }
 
+    const callbackError = this.parseOAuthCallbackError(url);
+    if (callbackError) {
+      this.logger.error("OAuth2 callback returned an error", {
+        reason: callbackError.reason,
+        cause: callbackError.cause,
+      });
+      throw callbackError;
+    }
+
     const userId = url.searchParams.get("userId");
     const secret = url.searchParams.get("secret");
 
     if (!userId || !secret) {
-      throw new Error("Invalid OAuth2 callback: missing userId or secret");
+      const detail = "Invalid OAuth2 callback: missing userId or secret";
+      this.logger.error(detail, { reason: "invalid_callback" });
+      throw new OAuthCallbackError(
+        "invalid_callback",
+        "Google sign-in couldn't be completed. Please try again.",
+        { cause: detail },
+      );
     }
 
     try {
@@ -397,6 +414,46 @@ export class AppwriteAuthRepository
       name: user.name,
       isNewUser: undefined,
     };
+  }
+
+  /**
+   * Extracts the failure Appwrite reports on an OAuth2 redirect.
+   * Appwrite appends `error` as a JSON-encoded `{ message, type, code }`; our failure
+   * redirect additionally carries `oauth_error=true`.
+   *
+   * @param url - The parsed callback URL.
+   * @returns An OAuthCallbackError describing the failure, or null if the callback reports none.
+   */
+  private parseOAuthCallbackError(url: URL): OAuthCallbackError | null {
+    const rawError = url.searchParams.get("error");
+    if (!rawError && !url.searchParams.has("oauth_error")) {
+      return null;
+    }
+
+    let payload: { message?: unknown; type?: unknown } | null = null;
+    try {
+      payload = rawError
+        ? (JSON.parse(rawError) as { message?: unknown; type?: unknown })
+        : null;
+    } catch {
+      payload = null;
+    }
+
+    if (payload?.type === "user_already_exists") {
+      return new OAuthCallbackError(
+        "account_conflict",
+        "This Google account is linked to a different session open in your browser. Sign out of Wishin in your browser (or clear its site data) and try again.",
+        { cause: payload },
+      );
+    }
+
+    const detail =
+      typeof payload?.message === "string" ? ` ${payload.message}` : "";
+    return new OAuthCallbackError(
+      "provider_error",
+      `Google sign-in failed.${detail}`,
+      { cause: payload ?? rawError },
+    );
   }
 
   /**

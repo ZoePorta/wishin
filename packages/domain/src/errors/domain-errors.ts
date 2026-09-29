@@ -232,3 +232,41 @@ export class IncompleteRegistrationError extends Error {
     Object.setPrototypeOf(this, IncompleteRegistrationError.prototype);
   }
 }
+
+/**
+ * Why an OAuth2 callback could not be turned into a session.
+ * - `account_conflict`: the provider account collides with another user (e.g. the browser
+ *   completing the flow holds a different session, so the identity can't be linked).
+ * - `provider_error`: the auth service reported a failure during the OAuth2 flow.
+ * - `invalid_callback`: the callback carries neither credentials nor an error.
+ */
+export type OAuthCallbackFailureReason =
+  | "account_conflict"
+  | "provider_error"
+  | "invalid_callback";
+
+/**
+ * Error thrown when an OAuth2 redirect callback does not yield a session.
+ *
+ * Its message is written for end users, so the UI may display it as-is.
+ *
+ * @param {OAuthCallbackFailureReason} reason - Machine-readable failure category.
+ * @param {string} message - Human-readable, user-facing error message.
+ * @param {object} [options] - Optional configuration.
+ * @param {unknown} [options.cause] - The original error reported by the auth service.
+ * @returns {OAuthCallbackError} An instance of OAuthCallbackError.
+ */
+export class OAuthCallbackError extends Error {
+  constructor(
+    public readonly reason: OAuthCallbackFailureReason,
+    message: string,
+    options?: { cause?: unknown },
+  ) {
+    super(message);
+    if (options?.cause) {
+      this.cause = options.cause;
+    }
+    this.name = "OAuthCallbackError";
+    Object.setPrototypeOf(this, OAuthCallbackError.prototype);
+  }
+}

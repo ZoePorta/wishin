@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AppwriteAuthRepository } from "./appwrite-auth.repository";
+import { OAuthCallbackError } from "@wishin/domain";
 import {
   Client,
   OAuthProvider,
@@ -136,9 +137,69 @@ describe("AppwriteAuthRepository", () => {
 
     it("should throw if URL is missing userId or secret", async () => {
       const callbackUrl = `exp://localhost:8081?userId=1`;
-      await expect(repository.completeGoogleOAuth(callbackUrl)).rejects.toThrow(
-        /Invalid OAuth2 callback: missing userId or secret/,
+      const promise = repository.completeGoogleOAuth(callbackUrl);
+
+      await expect(promise).rejects.toBeInstanceOf(OAuthCallbackError);
+      await expect(promise).rejects.toMatchObject({
+        reason: "invalid_callback",
+        message: "Google sign-in couldn't be completed. Please try again.",
+        cause: expect.stringMatching(
+          /Invalid OAuth2 callback: missing userId or secret/,
+        ) as unknown,
+      });
+      expect(mockCreateSession).not.toHaveBeenCalled();
+    });
+
+    it("should surface an account conflict when Appwrite redirects with user_already_exists", async () => {
+      // Real callback observed on Android when the browser held another Appwrite session
+      const appwriteError = encodeURIComponent(
+        JSON.stringify({
+          message:
+            "A user with the same id, email, or phone already exists in this project.",
+          type: "user_already_exists",
+          code: 409,
+        }),
       );
+      const callbackUrl = `appwrite-callback-project:///?error=${appwriteError}#`;
+
+      const promise = repository.completeGoogleOAuth(callbackUrl);
+
+      await expect(promise).rejects.toBeInstanceOf(OAuthCallbackError);
+      await expect(promise).rejects.toMatchObject({
+        reason: "account_conflict",
+      });
+      expect(mockCreateSession).not.toHaveBeenCalled();
+    });
+
+    it("should surface other Appwrite errors as provider errors with their message", async () => {
+      const appwriteError = encodeURIComponent(
+        JSON.stringify({
+          message: "Provider is disabled.",
+          type: "project_provider_disabled",
+          code: 412,
+        }),
+      );
+      const callbackUrl = `appwrite-callback-project://?error=${appwriteError}`;
+
+      const promise = repository.completeGoogleOAuth(callbackUrl);
+
+      await expect(promise).rejects.toMatchObject({
+        reason: "provider_error",
+        message: expect.stringContaining("Provider is disabled.") as unknown,
+      });
+      expect(mockCreateSession).not.toHaveBeenCalled();
+    });
+
+    it("should treat a malformed error payload or failure redirect as a provider error", async () => {
+      for (const callbackUrl of [
+        "appwrite-callback-project://?error=not-json",
+        "appwrite-callback-project://?oauth_error=true",
+      ]) {
+        await expect(
+          repository.completeGoogleOAuth(callbackUrl),
+        ).rejects.toMatchObject({ reason: "provider_error" });
+      }
+      expect(mockCreateSession).not.toHaveBeenCalled();
     });
   });
 
