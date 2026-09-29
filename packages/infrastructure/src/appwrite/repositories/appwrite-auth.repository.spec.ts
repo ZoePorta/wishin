@@ -142,10 +142,12 @@ describe("AppwriteAuthRepository", () => {
       await expect(promise).rejects.toBeInstanceOf(OAuthCallbackError);
       await expect(promise).rejects.toMatchObject({
         reason: "invalid_callback",
-        message: expect.stringMatching(
+        message: "Google sign-in couldn't be completed. Please try again.",
+        cause: expect.stringMatching(
           /Invalid OAuth2 callback: missing userId or secret/,
         ) as unknown,
       });
+      expect(mockCreateSession).not.toHaveBeenCalled();
     });
 
     it("should surface an account conflict when Appwrite redirects with user_already_exists", async () => {

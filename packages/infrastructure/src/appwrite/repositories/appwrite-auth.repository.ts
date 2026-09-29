@@ -360,9 +360,12 @@ export class AppwriteAuthRepository
     const secret = url.searchParams.get("secret");
 
     if (!userId || !secret) {
+      const detail = "Invalid OAuth2 callback: missing userId or secret";
+      this.logger.error(detail, { reason: "invalid_callback" });
       throw new OAuthCallbackError(
         "invalid_callback",
-        "Invalid OAuth2 callback: missing userId or secret",
+        "Google sign-in couldn't be completed. Please try again.",
+        { cause: detail },
       );
     }
 
