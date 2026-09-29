@@ -101,21 +101,16 @@ Follow these steps to set up the project locally for development.
 - **Expo Go** (Optional): Available on iOS/Android for mobile testing.
 - **Appwrite Cloud Account**: Needed for the backend (free tier is sufficient).
 
-### Step 1: Clone & Install
+### Step 1: Clone
 
 ```bash
-# Clone the repository
 git clone https://github.com/ZoePorta/wishin.git
 cd wishin
-
-# Install dependencies
-pnpm install
-
-# Initialize husky hooks
-pnpm prepare
 ```
 
 ### Step 2: Environment Setup
+
+Create the `.env` **before** installing dependencies, so the install step can link it into the Expo app.
 
 1. Copy the example environment file:
    ```bash
@@ -123,7 +118,19 @@ pnpm prepare
    ```
 2. Open `.env` and fill in your Appwrite credentials (Project ID, Endpoint, API Secret, etc.). See the [Infrastructure](#infrastructure--database-setup) section for details on these variables.
 
-### Step 3: Database Provisioning
+### Step 3: Install
+
+```bash
+# Install dependencies (postinstall links apps/expo-client/.env -> ../../.env)
+pnpm install
+
+# Initialize husky hooks
+pnpm prepare
+```
+
+> **Note:** Expo only reads `.env` from `apps/expo-client/`, so the root `.env` is symlinked there (copied on Windows without developer mode, in which case keep both in sync manually). If you created `.env` after installing, run `node scripts/link-env.js` to create the link. An existing `apps/expo-client/.env` is never overwritten.
+
+### Step 4: Database Provisioning
 
 Initialize your Appwrite database schema and seed it with test data:
 
@@ -137,7 +144,7 @@ pnpm db:seed
 
 ---
 
-### Step 4: Running the App (Web-First)
+### Step 5: Running the App (Web-First)
 
 The project currently prioritizes a **responsive web experience**. While Expo allows for native mobile distributions, these are scheduled for the **Post-MVP** phase.
 
@@ -151,7 +158,7 @@ pnpm --filter @wishin/expo-client web
 
 ---
 
-### Step 5: Testing & Quality
+### Step 6: Testing & Quality
 
 Always run tests before pushing any changes.
 
@@ -175,7 +182,7 @@ The root `package.json` provides unified commands to manage the entire workspace
 
 | Command                 | Description                                      |
 | :---------------------- | :----------------------------------------------- |
-| `pnpm install`          | Installs all dependencies across all packages.   |
+| `pnpm install`          | Installs all dependencies and links the `.env`.  |
 | `pnpm build`            | Builds all packages and apps.                    |
 | `pnpm test`             | Runs the full test suite (Vitest).               |
 | `pnpm test:integration` | Runs integration tests (requires DB setup).      |
