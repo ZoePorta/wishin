@@ -172,4 +172,4 @@ Thumbs.db
 
 # IDEs
 .vscode/
-.idea/
+.idea/package-lock.json
