@@ -195,6 +195,13 @@
             >
               Create Your Free List
             </button>
+            <button
+              data-action="try-app"
+              class="border-2 border-secondary text-secondary bg-surface px-8 py-4 rounded-full font-black text-lg shadow-[var(--shadow-elevation-low)] bouncy-hover inline-flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined">android</span>
+              Try the App
+            </button>
           </div>
         </div>
         <div class="relative">
@@ -598,6 +605,16 @@
           btn.addEventListener("click", (e) => {
             e.preventDefault();
             window.parent.postMessage("open-register", window.location.origin);
+          });
+        });
+
+        const tryAppButtons = document.querySelectorAll(
+          '[data-action="try-app"]',
+        );
+        tryAppButtons.forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.parent.postMessage("open-try-app", window.location.origin);
           });
         });
       });

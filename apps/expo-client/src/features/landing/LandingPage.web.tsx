@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { themeTokens } from "../../theme/themeConfig";
 import { AuthModal } from "../../components/auth/AuthModal";
+import { TryAppDialog } from "./TryAppDialog";
 
 /**
  * Hybrid LandingPage - Shared Header (React) + Body (iframe)
@@ -9,6 +10,7 @@ import { AuthModal } from "../../components/auth/AuthModal";
 export const LandingPage = () => {
   const [authVisible, setAuthVisible] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("register");
+  const [tryAppVisible, setTryAppVisible] = useState(false);
 
   // Convert tokens to a compact string for the iframe
   const themeParams = new URLSearchParams({
@@ -31,6 +33,8 @@ export const LandingPage = () => {
         handleOpenAuth("register");
       } else if (event.data === "open-login") {
         handleOpenAuth("login");
+      } else if (event.data === "open-try-app") {
+        setTryAppVisible(true);
       }
     };
 
@@ -56,6 +60,12 @@ export const LandingPage = () => {
           setAuthVisible(false);
         }}
         initialMode={authMode}
+      />
+      <TryAppDialog
+        visible={tryAppVisible}
+        onDismiss={() => {
+          setTryAppVisible(false);
+        }}
       />
     </View>
   );
