@@ -26,6 +26,27 @@ import {
 import { UniversalAlert } from "../utils/Alert";
 
 /**
+ * Checks whether a `?error=` query value is the JSON payload Appwrite appends on an
+ * OAuth2 redirect (`{ message, type, code }`), so unrelated `error` params are ignored.
+ *
+ * @param raw - The raw `error` query parameter value.
+ * @returns True if the value is a recognized Appwrite error payload.
+ */
+function isAppwriteOAuthErrorParam(raw: string | null): boolean {
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw) as { type?: unknown; code?: unknown } | null;
+    return (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      (typeof parsed.type === "string" || typeof parsed.code === "number")
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Adapter that maps console methods to the Logger interface.
  */
 const consoleLogger = {
@@ -223,7 +244,10 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
                 "Google sign-in was cancelled or failed. Please try again.",
               );
             }
-          } else if ((userId && secret) || params.has("error")) {
+          } else if (
+            (userId && secret) ||
+            isAppwriteOAuthErrorParam(params.get("error"))
+          ) {
             // Appwrite may redirect back with `?error=` instead of credentials; completeGoogleOAuth surfaces it as OAuthCallbackError
             try {
               const verbatimUrl = window.location.href;

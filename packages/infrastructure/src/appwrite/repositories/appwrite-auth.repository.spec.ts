@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { AppwriteAuthRepository } from "./appwrite-auth.repository";
-import { OAuthCallbackError } from "@wishin/domain";
+import { OAuthCallbackError, type Logger } from "@wishin/domain";
 import {
   Client,
   OAuthProvider,
@@ -71,16 +71,17 @@ vi.mock("react-native-appwrite", () => {
 describe("AppwriteAuthRepository", () => {
   let repository: AppwriteAuthRepository;
   let mockClient: Client;
+  let mockLogger: { [K in keyof Logger]: Mock<Logger[K]> };
 
   beforeEach(() => {
     vi.resetAllMocks();
     mockDeleteSession.mockResolvedValue({} as Models.Session);
     mockClient = new Client();
-    const logger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
+    mockLogger = {
+      debug: vi.fn<Logger["debug"]>(),
+      info: vi.fn<Logger["info"]>(),
+      warn: vi.fn<Logger["warn"]>(),
+      error: vi.fn<Logger["error"]>(),
     };
     repository = new AppwriteAuthRepository(
       mockClient,
@@ -88,7 +89,7 @@ describe("AppwriteAuthRepository", () => {
       "project",
       "database",
       "profiles",
-      logger,
+      mockLogger,
       "wishin://callback",
     );
   });
@@ -171,7 +172,7 @@ describe("AppwriteAuthRepository", () => {
       expect(mockCreateSession).not.toHaveBeenCalled();
     });
 
-    it("should surface other Appwrite errors as provider errors with their message", async () => {
+    it("should surface other Appwrite errors as provider errors without echoing the query-param message", async () => {
       const appwriteError = encodeURIComponent(
         JSON.stringify({
           message: "Provider is disabled.",
@@ -185,9 +186,32 @@ describe("AppwriteAuthRepository", () => {
 
       await expect(promise).rejects.toMatchObject({
         reason: "provider_error",
+        cause: { type: "project_provider_disabled" },
+      });
+      await expect(promise).rejects.not.toMatchObject({
         message: expect.stringContaining("Provider is disabled.") as unknown,
       });
       expect(mockCreateSession).not.toHaveBeenCalled();
+    });
+
+    it("should log only the type and code of the callback error payload", async () => {
+      const appwriteError = encodeURIComponent(
+        JSON.stringify({
+          message: "Provider is disabled.",
+          type: "project_provider_disabled",
+          code: 412,
+        }),
+      );
+
+      await expect(
+        repository.completeGoogleOAuth(
+          `appwrite-callback-project://?error=${appwriteError}`,
+        ),
+      ).rejects.toBeInstanceOf(OAuthCallbackError);
+
+      expect(JSON.stringify(mockLogger.error.mock.calls)).not.toContain(
+        "Provider is disabled.",
+      );
     });
 
     it("should treat a malformed error payload or failure redirect as a provider error", async () => {
