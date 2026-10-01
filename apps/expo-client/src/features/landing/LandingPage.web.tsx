@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import { themeTokens } from "../../theme/themeConfig";
 import { AuthModal } from "../../components/auth/AuthModal";
 import { TryAppDialog } from "./TryAppDialog";
+import { AddToHomeScreenDialog } from "./AddToHomeScreenDialog";
+import { detectApplePlatform, isStandaloneDisplay } from "../../utils/platform";
 
 /**
  * Hybrid LandingPage - Shared Header (React) + Body (iframe)
@@ -11,11 +13,28 @@ export const LandingPage = () => {
   const [authVisible, setAuthVisible] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("register");
   const [tryAppVisible, setTryAppVisible] = useState(false);
+  const [addToHomeVisible, setAddToHomeVisible] = useState(false);
 
-  // Convert tokens to a compact string for the iframe
-  const themeParams = new URLSearchParams({
-    tokens: JSON.stringify(themeTokens),
-  }).toString();
+  const applePlatform = useMemo(
+    () => detectApplePlatform(window.navigator),
+    [],
+  );
+
+  // Convert tokens (and platform hints) to a compact string for the iframe
+  const iframeParams = useMemo(() => {
+    const params = new URLSearchParams({
+      tokens: JSON.stringify(themeTokens),
+    });
+    if (applePlatform) {
+      params.set("platform", applePlatform);
+      const standalone = isStandaloneDisplay(
+        window.navigator as Navigator & { standalone?: boolean },
+        (query) => window.matchMedia(query).matches,
+      );
+      if (standalone) params.set("standalone", "1");
+    }
+    return params.toString();
+  }, [applePlatform]);
 
   const handleOpenAuth = useCallback((mode: "login" | "register") => {
     setAuthMode(mode);
@@ -35,6 +54,8 @@ export const LandingPage = () => {
         handleOpenAuth("login");
       } else if (event.data === "open-try-app") {
         setTryAppVisible(true);
+      } else if (event.data === "open-add-to-home") {
+        setAddToHomeVisible(true);
       }
     };
 
@@ -48,7 +69,7 @@ export const LandingPage = () => {
     <View style={styles.container}>
       <View style={styles.content}>
         <iframe
-          src={`/landing-content.html?${themeParams}`}
+          src={`/landing-content.html?${iframeParams}`}
           style={{ width: "100%", height: "100%", border: "none" }}
           title="Wishin landing content — Features and Getting Started"
           aria-label="Wishin landing content"
@@ -67,6 +88,15 @@ export const LandingPage = () => {
           setTryAppVisible(false);
         }}
       />
+      {applePlatform && (
+        <AddToHomeScreenDialog
+          visible={addToHomeVisible}
+          onDismiss={() => {
+            setAddToHomeVisible(false);
+          }}
+          platform={applePlatform}
+        />
+      )}
     </View>
   );
 };
