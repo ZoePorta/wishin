@@ -64,6 +64,9 @@ if (!skipBuild) {
       "export",
       "--platform",
       "web",
+      // Metro caches transformed modules with EXPO_PUBLIC_* values inlined, so a
+      // stale cache can ship old env values (e.g. a previous project ID).
+      "--clear",
     ],
     { stdio: "inherit", cwd: workspaceRoot, env: process.env },
   );
