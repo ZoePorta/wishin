@@ -82,12 +82,19 @@ if (!existsSync(path.join(distDir, "index.html"))) {
  * so client-side routes (e.g. /wishlist/123) work on reload.
  */
 function resolveFile(urlPath: string): string {
-  const decoded = decodeURIComponent(urlPath.split("?")[0]);
+  const fallback = path.join(distDir, "index.html");
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(urlPath.split("?")[0]);
+  } catch {
+    return fallback;
+  }
   const candidate = path.resolve(distDir, `.${decoded}`);
-  if (!candidate.startsWith(distDir)) return path.join(distDir, "index.html");
+  const relative = path.relative(distDir, candidate);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) return fallback;
   if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
   if (existsSync(`${candidate}.html`)) return `${candidate}.html`;
-  return path.join(distDir, "index.html");
+  return fallback;
 }
 
 const server = createServer((req, res) => {
@@ -98,7 +105,12 @@ const server = createServer((req, res) => {
       "application/octet-stream",
     "Cache-Control": "no-cache",
   });
-  createReadStream(file).pipe(res);
+  createReadStream(file)
+    .on("error", (error) => {
+      console.error(`Failed to read ${file}`, error);
+      res.destroy(error);
+    })
+    .pipe(res);
 });
 
 let tunnel: ChildProcess | undefined;

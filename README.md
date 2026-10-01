@@ -156,6 +156,25 @@ pnpm --filter @wishin/expo-client web
 - Using the `web` command directly ensures the best development experience for the current target.
 - For experimental mobile testing via **Expo Go**, you can use `pnpm --filter @wishin/expo-client start` and scan the QR code.
 
+#### Web Preview (Testing on Other Devices)
+
+To test a production-like web build on other devices (e.g. installing the PWA on a phone), build a static export and serve it, optionally behind a public HTTPS [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/):
+
+```bash
+# Build apps/expo-client/dist, serve it and open a public tunnel
+pnpm web:preview
+
+# Reuse the existing build in dist/
+pnpm web:preview --skip-build
+
+# LAN only (plain http, so no PWA install prompt)
+pnpm web:preview --no-tunnel
+```
+
+- The server listens on port `3000` by default (override with `PORT=4000 pnpm web:preview`) and prints the local, LAN and public (`*.trycloudflare.com`) URLs.
+- Register the tunnel hostname as a **Web platform** in the Appwrite console, otherwise requests fail with CORS errors. Quick tunnel hostnames change on every run.
+- The build output (`apps/expo-client/dist/`) is git-ignored.
+
 ---
 
 ### Step 6: Testing & Quality
@@ -180,16 +199,17 @@ pnpm type-check
 
 The root `package.json` provides unified commands to manage the entire workspace.
 
-| Command                 | Description                                      |
-| :---------------------- | :----------------------------------------------- |
-| `pnpm install`          | Installs all dependencies and links the `.env`.  |
-| `pnpm build`            | Builds all packages and apps.                    |
-| `pnpm test`             | Runs the full test suite (Vitest).               |
-| `pnpm test:integration` | Runs integration tests (requires DB setup).      |
-| `pnpm lint`             | Runs ESLint and Prettier checks.                 |
-| `pnpm type-check`       | Validates TypeScript across the monorepo.        |
-| `pnpm db:provision`     | Initializes Appwrite collections and attributes. |
-| `pnpm db:seed`          | Populates the database with realistic test data. |
+| Command                 | Description                                       |
+| :---------------------- | :------------------------------------------------ |
+| `pnpm install`          | Installs all dependencies and links the `.env`.   |
+| `pnpm build`            | Builds all packages and apps.                     |
+| `pnpm test`             | Runs the full test suite (Vitest).                |
+| `pnpm test:integration` | Runs integration tests (requires DB setup).       |
+| `pnpm lint`             | Runs ESLint and Prettier checks.                  |
+| `pnpm type-check`       | Validates TypeScript across the monorepo.         |
+| `pnpm db:provision`     | Initializes Appwrite collections and attributes.  |
+| `pnpm db:seed`          | Populates the database with realistic test data.  |
+| `pnpm web:preview`      | Builds and serves the web app for device testing. |
 
 ---
 

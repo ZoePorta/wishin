@@ -349,9 +349,15 @@ export class AppwriteAuthRepository
 
     const callbackError = this.parseOAuthCallbackError(url);
     if (callbackError) {
+      // The cause comes from query params; log only its type and code
+      const cause = callbackError.cause as
+        | { type?: unknown; code?: unknown }
+        | null
+        | undefined;
       this.logger.error("OAuth2 callback returned an error", {
         reason: callbackError.reason,
-        cause: callbackError.cause,
+        type: typeof cause?.type === "string" ? cause.type : undefined,
+        code: typeof cause?.code === "number" ? cause.code : undefined,
       });
       throw callbackError;
     }
@@ -447,11 +453,10 @@ export class AppwriteAuthRepository
       );
     }
 
-    const detail =
-      typeof payload?.message === "string" ? ` ${payload.message}` : "";
+    // payload.message is unvalidated query-param content: keep it out of the user-facing text
     return new OAuthCallbackError(
       "provider_error",
-      `Google sign-in failed.${detail}`,
+      "Google sign-in failed. Please try again.",
       { cause: payload ?? rawError },
     );
   }
