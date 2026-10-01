@@ -20,9 +20,31 @@ import {
   PersistenceError,
   EnsureProfileUseCase,
   IncompleteRegistrationError,
+  OAuthCallbackError,
   type ObservabilityService,
 } from "@wishin/domain";
 import { UniversalAlert } from "../utils/Alert";
+
+/**
+ * Checks whether a `?error=` query value is the JSON payload Appwrite appends on an
+ * OAuth2 redirect (`{ message, type, code }`), so unrelated `error` params are ignored.
+ *
+ * @param raw - The raw `error` query parameter value.
+ * @returns True if the value is a recognized Appwrite error payload.
+ */
+function isAppwriteOAuthErrorParam(raw: string | null): boolean {
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw) as { type?: unknown; code?: unknown } | null;
+    return (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      (typeof parsed.type === "string" || typeof parsed.code === "number")
+    );
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Adapter that maps console methods to the Logger interface.
@@ -222,7 +244,11 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
                 "Google sign-in was cancelled or failed. Please try again.",
               );
             }
-          } else if (userId && secret) {
+          } else if (
+            (userId && secret) ||
+            isAppwriteOAuthErrorParam(params.get("error"))
+          ) {
+            // Appwrite may redirect back with `?error=` instead of credentials; completeGoogleOAuth surfaces it as OAuthCallbackError
             try {
               const verbatimUrl = window.location.href;
               // Strip the sensitive query parameters from the URL safely
@@ -250,6 +276,7 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
               if (
                 isMounted &&
                 !(authError instanceof IncompleteRegistrationError) &&
+                !(authError instanceof OAuthCallbackError) &&
                 (!(authError instanceof AppwriteException) ||
                   authError.code !== 401)
               ) {

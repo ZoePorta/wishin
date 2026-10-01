@@ -116,4 +116,10 @@ export const Config = {
    * Ensures that slow network responses do not block the application startup for too long.
    */
   SESSION_TIMEOUT_MS: 10000,
+  /**
+   * Stable download URL for the latest Android APK published on GitHub Releases.
+   * Every release asset must be named `wishin.apk` and the release marked "Latest".
+   */
+  ANDROID_APK_URL:
+    "https://github.com/ZoePorta/wishin/releases/latest/download/wishin.apk",
 } as const;

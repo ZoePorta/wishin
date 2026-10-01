@@ -195,6 +195,20 @@
             >
               Create Your Free List
             </button>
+            <button
+              data-action="try-app"
+              class="border-2 border-secondary text-secondary bg-surface px-8 py-4 rounded-full font-black text-lg shadow-[var(--shadow-elevation-low)] bouncy-hover inline-flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined">android</span>
+              Try the App
+            </button>
+            <button
+              data-action="add-to-home"
+              class="hidden border-2 border-secondary text-secondary bg-surface px-8 py-4 rounded-full font-black text-lg shadow-[var(--shadow-elevation-low)] bouncy-hover items-center gap-2"
+            >
+              <span class="material-symbols-outlined">add_to_home_screen</span>
+              <span data-label>Add to Home Screen</span>
+            </button>
           </div>
         </div>
         <div class="relative">
@@ -598,6 +612,51 @@
           btn.addEventListener("click", (e) => {
             e.preventDefault();
             window.parent.postMessage("open-register", window.location.origin);
+          });
+        });
+
+        // Apple devices can't install the Android APK: offer a home screen
+        // (iOS) / Dock (macOS) shortcut instead. Platform is detected by the
+        // parent page and passed as a query param.
+        const platform = params.get("platform");
+        const isInstalled = params.get("standalone") === "1";
+        if (platform === "ios" || platform === "macos") {
+          document
+            .querySelectorAll('[data-action="try-app"]')
+            .forEach((btn) => btn.remove());
+          document
+            .querySelectorAll('[data-action="add-to-home"]')
+            .forEach((btn) => {
+              if (isInstalled) {
+                btn.remove();
+                return;
+              }
+              if (platform === "macos") {
+                btn.querySelector("[data-label]").textContent = "Add to Dock";
+              }
+              btn.classList.remove("hidden");
+              btn.classList.add("inline-flex");
+              btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                window.parent.postMessage(
+                  "open-add-to-home",
+                  window.location.origin,
+                );
+              });
+            });
+        } else {
+          document
+            .querySelectorAll('[data-action="add-to-home"]')
+            .forEach((btn) => btn.remove());
+        }
+
+        const tryAppButtons = document.querySelectorAll(
+          '[data-action="try-app"]',
+        );
+        tryAppButtons.forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            window.parent.postMessage("open-try-app", window.location.origin);
           });
         });
       });

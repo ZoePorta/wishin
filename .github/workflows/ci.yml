@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 permissions:
   contents: write
@@ -23,19 +23,25 @@ jobs:
           node-version: 20
           cache: "pnpm"
       - name: Install dependencies
+        id: install
         run: pnpm install --frozen-lockfile
         continue-on-error: true
+      # ADR 029: only runs when the frozen install failed. A stale lockfile is
+      # regenerated (and pushed back when the branch is ours); any other install
+      # error (e.g. a broken postinstall) fails here and fails the job.
       - name: Auto-fix lockfile
-        if: |
-          failure() &&
-          (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+        if: steps.install.outcome == 'failure'
+        env:
+          CAN_PUSH: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           pnpm install --no-frozen-lockfile
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add pnpm-lock.yaml
-          git commit -m "chore: update pnpm-lock.yaml [skip ci]" || echo "No changes to commit"
-          git push
+          if [ "$CAN_PUSH" = "true" ] && ! git diff --quiet -- pnpm-lock.yaml; then
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git add pnpm-lock.yaml
+            git commit -m "chore: update pnpm-lock.yaml [skip ci]"
+            git push
+          fi
       - run: pnpm test # This should only run *.spec.ts [cite: 2026-01-30]
 
   # Job 2: Integration Tests (Slow, requires Appwrite)
@@ -44,6 +50,8 @@ jobs:
     timeout-minutes: 15
     # Only run integration if build succeeds to save resources [cite: 2026-01-26]
     needs: unit_tests
+    # Release gate only: PRs into develop run unit tests alone to save Appwrite quota
+    if: github.event_name == 'push' || github.base_ref == 'main'
     env:
       EXPO_PUBLIC_APPWRITE_ENDPOINT: ${{ vars.EXPO_PUBLIC_APPWRITE_ENDPOINT }}
       EXPO_PUBLIC_APPWRITE_PROJECT_ID: ${{ vars.EXPO_PUBLIC_APPWRITE_PROJECT_ID }}
@@ -60,19 +68,25 @@ jobs:
           node-version: 20
           cache: "pnpm"
       - name: Install dependencies
+        id: install
         run: pnpm install --frozen-lockfile
         continue-on-error: true
+      # ADR 029: only runs when the frozen install failed. A stale lockfile is
+      # regenerated (and pushed back when the branch is ours); any other install
+      # error (e.g. a broken postinstall) fails here and fails the job.
       - name: Auto-fix lockfile
-        if: |
-          failure() &&
-          (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+        if: steps.install.outcome == 'failure'
+        env:
+          CAN_PUSH: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           pnpm install --no-frozen-lockfile
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add pnpm-lock.yaml
-          git commit -m "chore: update pnpm-lock.yaml [skip ci]" || echo "No changes to commit"
-          git push
+          if [ "$CAN_PUSH" = "true" ] && ! git diff --quiet -- pnpm-lock.yaml; then
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git add pnpm-lock.yaml
+            git commit -m "chore: update pnpm-lock.yaml [skip ci]"
+            git push
+          fi
       # Critical step: Provision the isolated test environment [cite: 2026-01-30]
       - name: Provision Test DB
         run: pnpm run db:provision:test
