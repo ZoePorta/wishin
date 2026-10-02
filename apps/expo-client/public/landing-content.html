@@ -16,6 +16,12 @@
     <script>
       // Extract theme tokens from URL
       const params = new URLSearchParams(window.location.search);
+
+      // Declare the language passed by the app before first paint, so browsers
+      // (e.g. Safari) don't offer to translate an already-translated page.
+      if (["en", "es"].includes(params.get("lang"))) {
+        document.documentElement.lang = params.get("lang");
+      }
       function isObject(item) {
         return item && typeof item === "object" && !Array.isArray(item);
       }
@@ -758,7 +764,6 @@
 
       document.addEventListener("DOMContentLoaded", () => {
         if (landingDict) {
-          document.documentElement.lang = landingLang;
           document.title = translate("title", document.title);
           document.querySelectorAll("[data-i18n]").forEach((el) => {
             el.textContent = translate(el.dataset.i18n, el.textContent);

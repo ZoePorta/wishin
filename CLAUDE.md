@@ -158,6 +158,7 @@ Domain tests live alongside source: `*.spec.ts` next to `*.ts`. Infrastructure h
 - Never derive UI state from translated text: classify errors with `classifyError()` (`ErrorKind`) and translate at render time.
 - Don't name interpolation variables after `Intl.NumberFormat` options (e.g. `currency`) — i18next forwards them to the formatter and silently drops formatting.
 - The landing iframe (`public/landing-content.html`) has its own inline dictionary keyed by `data-i18n`; update it when changing landing copy.
+- `<html lang>` is set before first paint by inline scripts in `public/index.html` and `public/landing-content.html` (otherwise Safari offers to translate). Each has its own supported-languages list — update both when adding a language.
 
 **Active patch:** `patches/react-native-paper@5.15.0.patch` — fixes `FABGroup` crashing on web by setting `accessibilityRole="none"` on web (upstream bug). Applied automatically by pnpm.
 
