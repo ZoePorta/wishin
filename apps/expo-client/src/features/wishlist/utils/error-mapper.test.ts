@@ -42,6 +42,27 @@ describe("error-mapper", () => {
       expect(classifyError("Failed to fetch")).toBe("network");
     });
 
+    it("should classify wrapped errors whose cause is a network failure", () => {
+      expect(
+        classifyError(
+          new Error("Failed to save", {
+            cause: new TypeError("Network request failed"),
+          }),
+        ),
+      ).toBe("network");
+      expect(
+        classifyError(
+          new Error("Failed to save", { cause: "Failed to fetch" }),
+        ),
+      ).toBe("network");
+    });
+
+    it("should not use the cause for non-network classifications", () => {
+      expect(
+        classifyError(new Error("Failed to save", { cause: "Upload failed" })),
+      ).toBe("unknown");
+    });
+
     it("should classify upload errors", () => {
       expect(classifyError("Upload Failed")).toBe("imageUpload");
       expect(classifyError("Error uploading the image")).toBe("imageUpload");

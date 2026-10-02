@@ -33,8 +33,24 @@ export const ERROR_MESSAGE_KEYS = {
   unknown: "errors.unknown",
 } as const satisfies Record<ErrorKind, string>;
 
+const isNetworkMessage = (message: string): boolean =>
+  message.includes("network request failed") ||
+  message.includes("failed to fetch");
+
+/**
+ * Lowercased message of an error's preserved `cause` (infrastructure adapters
+ * wrap SDK/network failures), or an empty string when there is none.
+ */
+const causeMessage = (err: unknown): string => {
+  if (!(err instanceof Error)) return "";
+  const { cause } = err;
+  if (cause instanceof Error) return cause.message.toLowerCase();
+  return typeof cause === "string" ? cause.toLowerCase() : "";
+};
+
 /**
  * Maps a domain/technical error (or its message) to a user-facing error category.
+ * Network failures are also detected through the error's `cause`.
  *
  * @param err - The error object or message.
  * @returns The matching category, or `unknown` if none applies.
@@ -57,10 +73,7 @@ export const classifyError = (err: unknown): ErrorKind => {
     return "wishlistNotFound";
   }
   if (message.includes("wishlist item with id")) return "itemNotFound";
-  if (
-    message.includes("network request failed") ||
-    message.includes("failed to fetch")
-  ) {
+  if (isNetworkMessage(message) || isNetworkMessage(causeMessage(err))) {
     return "network";
   }
   if (
