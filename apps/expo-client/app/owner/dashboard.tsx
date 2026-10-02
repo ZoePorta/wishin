@@ -33,6 +33,8 @@ import { ItemDetailModal } from "../../src/features/wishlist/components/ItemDeta
 import { useImagePickerAndUpload } from "../../src/hooks/useImagePickerAndUpload";
 import { useUpdateProfile } from "../../src/features/profile/hooks/useUpdateProfile";
 import { GetProfileByIdUseCase } from "@wishin/domain";
+import { useTranslation } from "react-i18next";
+import { mapErrorToMessage } from "../../src/features/wishlist/utils/error-mapper";
 
 /**
  * Dashboard screen for wishlist owners.
@@ -42,6 +44,7 @@ import { GetProfileByIdUseCase } from "@wishin/domain";
  */
 export default function OwnerDashboard() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const { sessionType } = useUser();
   const {
     userId,
@@ -134,7 +137,7 @@ export default function OwnerDashboard() {
 
   const handleUpdateUsername = async () => {
     if (!userId || !newUsername.trim()) {
-      setUsernameError("Please enter a username so we know who you are! 😊");
+      setUsernameError(t("dashboard.username.required"));
       return;
     }
     try {
@@ -147,19 +150,13 @@ export default function OwnerDashboard() {
       const errorMessage = err instanceof Error ? err.message : "";
 
       if (errorMessage.includes("non-empty")) {
-        setUsernameError("Please enter a username so we know who you are! 😊");
+        setUsernameError(t("dashboard.username.required"));
       } else if (errorMessage.includes("length")) {
-        setUsernameError(
-          "Your username should be between 3 and 30 characters. Keep it short and sweet! ✨",
-        );
+        setUsernameError(t("dashboard.username.length"));
       } else if (errorMessage.includes("format")) {
-        setUsernameError(
-          "Only letters, numbers, spaces, and .-_ are allowed. Let's keep it simple! 🖋️",
-        );
+        setUsernameError(t("dashboard.username.format"));
       } else {
-        setUsernameError(
-          "Oops! We couldn't update your username. Please try again. 🛠️",
-        );
+        setUsernameError(t("dashboard.username.failed"));
       }
     }
   };
@@ -177,8 +174,8 @@ export default function OwnerDashboard() {
     } catch (err) {
       console.error("Failed to share wishlist:", err);
       Alert.alert(
-        "Share Failed",
-        "Could not copy the wishlist link to your clipboard. Please try again.",
+        t("dashboard.shareFailedTitle"),
+        t("dashboard.shareFailedMessage"),
       );
     }
   };
@@ -205,7 +202,7 @@ export default function OwnerDashboard() {
           variant="bodyLarge"
           style={[styles.errorText, { color: theme.colors.error }]}
         >
-          {screenError}
+          {mapErrorToMessage(screenError, t)}
         </PaperText>
         <Button
           mode="contained"
@@ -215,7 +212,7 @@ export default function OwnerDashboard() {
           }}
           contentStyle={commonStyles.minimumTouchTarget}
         >
-          Retry
+          {t("common.retry")}
         </Button>
       </Surface>
     );
@@ -239,7 +236,7 @@ export default function OwnerDashboard() {
               variant="headlineSmall"
               style={[styles.sectionTitle, { color: theme.colors.onSurface }]}
             >
-              Create Your Wishlist
+              {t("dashboard.createTitle")}
             </PaperText>
             <WishlistForm
               onSubmit={async (data) => {
@@ -300,7 +297,7 @@ export default function OwnerDashboard() {
                       <View style={styles.webFabActions}>
                         <FAB
                           icon="plus"
-                          label="Add Item"
+                          label={t("dashboard.addItem")}
                           onPress={() => {
                             setEditingItem(undefined);
                             setIsItemModalVisible(true);
@@ -314,7 +311,7 @@ export default function OwnerDashboard() {
                         />
                         <FAB
                           icon="share-variant"
-                          label="Share Wishlist"
+                          label={t("dashboard.shareWishlist")}
                           onPress={() => {
                             void handleShare();
                             setFabOpen(false);
@@ -327,7 +324,7 @@ export default function OwnerDashboard() {
                         />
                         <FAB
                           icon="pencil"
-                          label="Edit Wishlist"
+                          label={t("dashboard.editWishlist")}
                           onPress={() => {
                             setIsEditing(true);
                             setFabOpen(false);
@@ -346,7 +343,7 @@ export default function OwnerDashboard() {
                     onPress={() => {
                       setFabOpen(!fabOpen);
                     }}
-                    accessibilityLabel="Wishlist actions"
+                    accessibilityLabel={t("dashboard.actionsA11y")}
                     style={{ backgroundColor: theme.colors.primary }}
                     color={theme.colors.onPrimary}
                   />
@@ -361,7 +358,7 @@ export default function OwnerDashboard() {
                   actions={[
                     {
                       icon: "plus",
-                      label: "Add Item",
+                      label: t("dashboard.addItem"),
                       onPress: () => {
                         setEditingItem(undefined);
                         setIsItemModalVisible(true);
@@ -371,7 +368,7 @@ export default function OwnerDashboard() {
                     },
                     {
                       icon: "share-variant",
-                      label: "Share Wishlist",
+                      label: t("dashboard.shareWishlist"),
                       onPress: () => {
                         void handleShare();
                       },
@@ -380,7 +377,7 @@ export default function OwnerDashboard() {
                     },
                     {
                       icon: "pencil",
-                      label: "Edit Wishlist",
+                      label: t("dashboard.editWishlist"),
                       onPress: () => {
                         setIsEditing(true);
                       },
@@ -391,7 +388,7 @@ export default function OwnerDashboard() {
                   onStateChange={({ open }) => {
                     setFabOpen(open);
                   }}
-                  accessibilityLabel="Wishlist actions"
+                  accessibilityLabel={t("dashboard.actionsA11y")}
                 />
               )}
             </Portal>
@@ -415,7 +412,9 @@ export default function OwnerDashboard() {
                     accessibilityRole="header"
                     style={{ color: theme.colors.onSurface }}
                   >
-                    {editingItem ? "Edit Item" : "Add Item"}
+                    {editingItem
+                      ? t("dashboard.editItem")
+                      : t("dashboard.addItem")}
                   </PaperText>
                   <IconButton
                     icon="close"
@@ -423,7 +422,7 @@ export default function OwnerDashboard() {
                       setIsItemModalVisible(false);
                       setEditingItem(undefined);
                     }}
-                    accessibilityLabel="Close item modal"
+                    accessibilityLabel={t("dashboard.closeItemModalA11y")}
                   />
                 </View>
                 <AddItemForm
@@ -466,14 +465,14 @@ export default function OwnerDashboard() {
                     accessibilityRole="header"
                     style={{ color: theme.colors.onSurface }}
                   >
-                    Edit Wishlist
+                    {t("dashboard.editWishlist")}
                   </PaperText>
                   <IconButton
                     icon="close"
                     onPress={() => {
                       setIsEditing(false);
                     }}
-                    accessibilityLabel="Close edit wishlist modal"
+                    accessibilityLabel={t("dashboard.closeEditWishlistA11y")}
                   />
                 </View>
                 <WishlistForm
@@ -507,13 +506,13 @@ export default function OwnerDashboard() {
               }}
               duration={3000}
               action={{
-                label: "OK",
+                label: t("common.ok"),
                 onPress: () => {
                   setIsShareSnackbarVisible(false);
                 },
               }}
             >
-              Link copied to clipboard
+              {t("dashboard.linkCopied")}
             </Snackbar>
             <ItemDetailModal
               visible={isDetailModalVisible}
@@ -534,10 +533,12 @@ export default function OwnerDashboard() {
                   setIsUsernameDialogVisible(false);
                 }}
               >
-                <Dialog.Title>Edit Username</Dialog.Title>
+                <Dialog.Title>
+                  {t("dashboard.username.dialogTitle")}
+                </Dialog.Title>
                 <Dialog.Content>
                   <TextInput
-                    label="Username"
+                    label={t("auth.usernameLabel")}
                     value={newUsername}
                     onChangeText={(text) => {
                       setNewUsername(text);
@@ -557,7 +558,7 @@ export default function OwnerDashboard() {
                       setIsUsernameDialogVisible(false);
                     }}
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     onPress={() => {
@@ -566,7 +567,7 @@ export default function OwnerDashboard() {
                     loading={isUsernameSaving}
                     disabled={!newUsername.trim() || isUsernameSaving}
                   >
-                    Save
+                    {t("common.save")}
                   </Button>
                 </Dialog.Actions>
               </Dialog>

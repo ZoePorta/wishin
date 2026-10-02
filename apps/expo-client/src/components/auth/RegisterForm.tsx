@@ -11,7 +11,9 @@ import {
   Divider,
 } from "react-native-paper";
 import { commonStyles } from "../../theme/common-styles";
+import { useTranslation } from "react-i18next";
 import { useGoogleSignIn } from "../../hooks/useGoogleSignIn";
+import { getAuthErrorMessage } from "../../utils/auth-errors";
 
 /**
  * Properties for the RegisterForm component.
@@ -64,6 +66,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   authError,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -75,16 +78,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     googleLoading,
     googleError,
     setGoogleError,
-  } = useGoogleSignIn(
-    onGoogleSignIn,
-    "Google sign-up failed. Please try again!",
-  );
+  } = useGoogleSignIn(onGoogleSignIn, t("auth.register.googleFailed"));
 
   const combinedError = error ?? googleError;
 
   const handleSubmit = async () => {
     if (!email || !password || !username) {
-      setError("Please fill in all fields.");
+      setError(t("auth.register.missingFields"));
       return;
     }
     setError(null);
@@ -92,7 +92,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     try {
       await onRegister(email, password, username);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to register");
+      console.error("Registration attempt failed:", err);
+      setError(getAuthErrorMessage(err, t, "register"));
     }
   };
 
@@ -112,10 +113,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       />
 
       <Text variant="headlineSmall" style={styles.title}>
-        Join Wishin
+        {t("auth.register.title")}
       </Text>
       <Text variant="bodyMedium" style={styles.subtitle}>
-        Don't have an account yet? Join Wishin and start sharing your dreams.
+        {t("auth.register.subtitle")}
       </Text>
 
       {onGoogleSignIn && (
@@ -132,7 +133,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             style={styles.googleButton}
             contentStyle={styles.buttonContent}
           >
-            Sign up with Google
+            {t("auth.register.googleButton")}
           </Button>
 
           <View style={styles.dividerRow}>
@@ -149,7 +150,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 { color: theme.colors.onSurfaceVariant },
               ]}
             >
-              or
+              {t("common.or")}
             </Text>
             <Divider
               style={[
@@ -162,7 +163,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       )}
 
       <TextInput
-        label="Username"
+        label={t("auth.usernameLabel")}
         value={username}
         onChangeText={(text) => {
           setUsername(text);
@@ -185,7 +186,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       />
 
       <TextInput
-        label="Email"
+        label={t("auth.emailLabel")}
         value={email}
         onChangeText={(text) => {
           setEmail(text);
@@ -209,7 +210,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       />
 
       <TextInput
-        label="Password"
+        label={t("auth.passwordLabel")}
         value={password}
         onChangeText={(text) => {
           setPassword(text);
@@ -234,7 +235,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             onPress={() => {
               setShowPassword(!showPassword);
             }}
-            accessibilityLabel="Toggle password visibility"
+            accessibilityLabel={t("auth.togglePasswordVisibility")}
             accessibilityRole="button"
             accessible={true}
           />
@@ -260,7 +261,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         style={styles.button}
         contentStyle={styles.buttonContent}
       >
-        Sign Up
+        {t("auth.register.submit")}
       </Button>
 
       <Button
@@ -270,7 +271,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         labelStyle={styles.switchButtonLabel}
         contentStyle={commonStyles.minimumTouchTarget}
       >
-        Already have an account? Log in!
+        {t("auth.register.switchToLogin")}
       </Button>
     </Surface>
   );

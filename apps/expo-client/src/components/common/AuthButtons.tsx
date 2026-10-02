@@ -6,6 +6,7 @@ import { useUser } from "../../contexts/UserContext";
 import { AuthModal } from "../auth/AuthModal";
 import { useAuthRepository } from "../../contexts/WishlistRepositoryContext";
 import { addAlpha } from "../../utils/colors";
+import { useTranslation } from "react-i18next";
 
 /**
  * Configuration props for AuthButtons.
@@ -43,6 +44,7 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
   onRegister,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobileS = width <= 360;
@@ -110,7 +112,7 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
             onPress={() => {
               router.push("/owner/dashboard");
             }}
-            accessibilityLabel="My wishlist"
+            accessibilityLabel={t("header.myWishlistA11y")}
             iconColor={theme.colors.primary}
             size={24}
             style={styles.touchTarget}
@@ -122,7 +124,7 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
           onPress={() => {
             void handleLogout();
           }}
-          accessibilityLabel="Logout"
+          accessibilityLabel={t("header.logoutA11y")}
           iconColor={theme.colors.onSurfaceVariant}
           size={24}
           style={styles.touchTarget}
@@ -140,13 +142,13 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
           onPress={handleLoginPress}
           accessible
           accessibilityRole="button"
-          accessibilityLabel="Log in"
+          accessibilityLabel={t("header.logInA11y")}
           textColor={theme.colors.onSurfaceVariant}
           rippleColor={addAlpha(theme.colors.primary, 0.12)}
           style={styles.touchTarget}
           labelStyle={styles.loginText}
         >
-          Log In
+          {t("header.logIn")}
         </Button>
         <Button
           mode="contained"
@@ -164,9 +166,9 @@ export const AuthButtons: React.FC<AuthButtonsProps> = ({
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessible
           accessibilityRole="button"
-          accessibilityLabel="Get started"
+          accessibilityLabel={t("header.getStartedA11y")}
         >
-          Get Started
+          {t("header.getStarted")}
         </Button>
       </View>
 

@@ -21,6 +21,7 @@ import { type AppTheme } from "../../../theme/theme";
 import { getItemImageSource } from "../utils/images";
 import { commonStyles } from "../../../theme/common-styles";
 import { PriorityBadge } from "./PriorityBadge";
+import { useTranslation } from "react-i18next";
 
 /**
  * Props for the {@link ItemDetailModal} component.
@@ -51,6 +52,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   onEdit,
 }) => {
   const theme = useTheme<AppTheme>();
+  const { t } = useTranslation();
   const styles = React.useMemo(() => makeStyles(theme), [theme]);
 
   const handleOpenUrl = React.useCallback(async () => {
@@ -58,9 +60,9 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     try {
       await Linking.openURL(item.url);
     } catch {
-      Alert.alert("Error", "Could not open link.");
+      Alert.alert(t("common.error"), t("item.links.couldNotOpen"));
     }
-  }, [item?.url]);
+  }, [item?.url, t]);
 
   if (!item) return null;
 
@@ -86,7 +88,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           <IconButton
             icon="close"
             onPress={onDismiss}
-            accessibilityLabel="Close item details"
+            accessibilityLabel={t("item.closeDetailsA11y")}
           />
         </View>
 
@@ -110,7 +112,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                   }}
                   style={styles.linkButton}
                 >
-                  Visit Store
+                  {t("item.visitStore")}
                 </Button>
               )}
             </View>
@@ -118,20 +120,23 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text variant="labelLarge" style={styles.statLabel}>
-                  Price
+                  {t("item.priceLabel")}
                 </Text>
                 <Text
                   variant="titleLarge"
                   style={{ color: theme.colors.primary }}
                 >
                   {item.price != null
-                    ? `${item.currency ?? ""} ${item.price.toFixed(2)}`
-                    : "Not set"}
+                    ? t("item.price", {
+                        symbol: item.currency ?? "",
+                        amount: item.price,
+                      })
+                    : t("item.priceNotSet")}
                 </Text>
               </View>
               <View style={styles.statItem}>
                 <Text variant="labelLarge" style={styles.statLabel}>
-                  Quantity
+                  {t("item.quantityLabel")}
                 </Text>
                 <Text variant="titleLarge">
                   {item.isUnlimited ? "∞" : item.totalQuantity}
@@ -141,7 +146,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
             <View style={styles.priorityRow}>
               <Text variant="labelLarge" style={styles.statLabel}>
-                Priority
+                {t("item.priorityLabel")}
               </Text>
               <PriorityBadge priority={item.priority} size={24} />
             </View>
@@ -149,7 +154,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             {item.description && (
               <View style={styles.descriptionSection}>
                 <Text variant="labelLarge" style={styles.statLabel}>
-                  Description
+                  {t("item.descriptionLabel")}
                 </Text>
                 <Text variant="bodyLarge" style={styles.descriptionText}>
                   {item.description}
@@ -169,14 +174,14 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             style={styles.footerButton}
             icon="pencil"
           >
-            Edit Item
+            {t("item.edit")}
           </Button>
           <Button
             mode="outlined"
             onPress={onDismiss}
             style={styles.footerButton}
           >
-            Close
+            {t("common.close")}
           </Button>
         </View>
       </Modal>

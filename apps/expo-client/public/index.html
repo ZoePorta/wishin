@@ -2,6 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script>
+      // Declare the UI language before first paint so browsers (e.g. Safari) don't offer
+      // to translate a page that is already in the user's language. Mirrors
+      // resolveLanguage() in src/i18n; useDeviceLanguageSync keeps it updated afterwards.
+      (function () {
+        var supported = ["en", "es"];
+        var preferred = navigator.languages || [navigator.language];
+        for (var i = 0; i < preferred.length; i++) {
+          var code = String(preferred[i] || "")
+            .split("-")[0]
+            .toLowerCase();
+          if (supported.indexOf(code) !== -1) {
+            document.documentElement.lang = code;
+            return;
+          }
+        }
+      })();
+    </script>
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta
       name="viewport"

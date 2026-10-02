@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { Alert } from "react-native";
+import { useTranslation } from "react-i18next";
 import {
   UploadImageUseCase,
   GetImagePreviewUseCase,
@@ -84,6 +85,7 @@ async function uploadAndGetPreview(
  */
 export function useImagePickerAndUpload() {
   const storageRepository = useStorageRepository();
+  const { t } = useTranslation();
   const [inflightCount, setInflightCount] = useState(0);
   const uploading = inflightCount > 0;
   const [error, setError] = useState<string | null>(null);
@@ -109,8 +111,8 @@ export function useImagePickerAndUpload() {
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== ImagePicker.PermissionStatus.GRANTED) {
         Alert.alert(
-          "Permission Required",
-          "Permission to access the photo gallery is required to upload images.",
+          t("imagePicker.permissionTitle"),
+          t("imagePicker.uploadPermission"),
         );
         return null;
       }
@@ -153,8 +155,8 @@ export function useImagePickerAndUpload() {
           err instanceof Error ? err.message : "An error occurred";
         setError(message);
         Alert.alert(
-          "Upload Failed",
-          "Could not upload the image. Please try again.",
+          t("imagePicker.uploadFailedTitle"),
+          t("imagePicker.uploadFailedMessage"),
         );
       }
       return null;
@@ -163,7 +165,7 @@ export function useImagePickerAndUpload() {
         setInflightCount((prev) => Math.max(0, prev - 1));
       }
     }
-  }, [storageRepository]);
+  }, [storageRepository, t]);
 
   /**
    * Uploads a file from a local URI and returns its preview URL.
@@ -215,8 +217,8 @@ export function useImagePickerAndUpload() {
             err instanceof Error ? err.message : "An error occurred";
           setError(message);
           Alert.alert(
-            "Upload Failed",
-            "Could not upload the image. Please try again.",
+            t("imagePicker.uploadFailedTitle"),
+            t("imagePicker.uploadFailedMessage"),
           );
         }
         return null;
@@ -224,7 +226,7 @@ export function useImagePickerAndUpload() {
         setInflightCount((prev) => Math.max(0, prev - 1));
       }
     },
-    [storageRepository],
+    [storageRepository, t],
   );
 
   /**

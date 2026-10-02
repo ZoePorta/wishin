@@ -3,7 +3,8 @@ import { StyleSheet, View } from "react-native";
 import { useTheme, Icon } from "react-native-paper";
 import { Priority } from "@wishin/domain";
 import { type AppTheme } from "../../../theme/theme";
-import { PRIORITY_LABELS, getPriorityColors } from "../utils/priority";
+import { useTranslation } from "react-i18next";
+import { PRIORITY_LABEL_KEYS, getPriorityColors } from "../utils/priority";
 
 /**
  * Props for the {@link PriorityBadge} component.
@@ -49,8 +50,9 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
   size = 24,
 }) => {
   const theme = useTheme<AppTheme>();
+  const { t } = useTranslation();
   const { background, foreground } = getPriorityColors(priority, theme);
-  const label = PRIORITY_LABELS[priority];
+  const label = t(PRIORITY_LABEL_KEYS[priority]);
 
   return (
     <View
@@ -63,7 +65,7 @@ export const PriorityBadge: React.FC<PriorityBadgeProps> = ({
           borderRadius: size / 2,
         },
       ]}
-      accessibilityLabel={`Priority: ${label}`}
+      accessibilityLabel={t("priority.a11y", { label })}
       accessibilityRole="text"
     >
       <Icon

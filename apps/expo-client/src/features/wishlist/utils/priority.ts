@@ -3,15 +3,15 @@ import type { MD3Theme } from "react-native-paper";
 import { type AppTheme } from "../../../theme/theme";
 
 /**
- * Display labels for priority levels.
- * Decoupled from the domain enum to allow for internationalization and presentation changes.
+ * Translation keys for priority level labels.
+ * Decoupled from the domain enum so presentation can change per language.
  */
-export const PRIORITY_LABELS: Record<Priority, string> = {
-  [Priority.LOW]: "LOW",
-  [Priority.MEDIUM]: "MEDIUM",
-  [Priority.HIGH]: "HIGH",
-  [Priority.URGENT]: "URGENT",
-};
+export const PRIORITY_LABEL_KEYS = {
+  [Priority.LOW]: "priority.low",
+  [Priority.MEDIUM]: "priority.medium",
+  [Priority.HIGH]: "priority.high",
+  [Priority.URGENT]: "priority.urgent",
+} as const satisfies Record<Priority, string>;
 
 /**
  * Returns the theme colors for a given priority level.

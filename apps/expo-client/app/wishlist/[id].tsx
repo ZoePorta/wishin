@@ -17,6 +17,8 @@ import { useUser } from "../../src/contexts/UserContext";
 import { SpoilerOverlay } from "../../src/features/wishlist/components/SpoilerOverlay";
 import { Layout } from "../../src/constants/Layout";
 import { Avatar } from "../../src/components/common/Avatar";
+import { useTranslation } from "react-i18next";
+import { mapErrorToMessage } from "../../src/features/wishlist/utils/error-mapper";
 
 /**
  * Display the details of a specific wishlist.
@@ -29,6 +31,7 @@ export default function WishlistDetail() {
   const { wishlist, loading, error, refetch }: UseWishlistReturn =
     useWishlist(id);
   const theme = useTheme();
+  const { t } = useTranslation();
   const { userId, isSessionReliable } = useUser();
   const [hasShownSuggestion, setHasShownSuggestion] = useState(false);
   const [isSpoilerRevealed, setIsSpoilerRevealed] = useState(false);
@@ -91,7 +94,7 @@ export default function WishlistDetail() {
             variant="bodyMedium"
             style={{ color: theme.colors.onSurfaceVariant, fontWeight: "500" }}
           >
-            {wishlist.ownerName ?? "Unknown"}
+            {wishlist.ownerName ?? t("publicWishlist.unknownOwner")}
           </Text>
         </View>
         {wishlist.description && (
@@ -108,7 +111,7 @@ export default function WishlistDetail() {
         <Divider style={styles.divider} />
       </View>
     );
-  }, [wishlist, theme]);
+  }, [wishlist, theme, t]);
 
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => {
@@ -165,14 +168,14 @@ export default function WishlistDetail() {
           variant="bodyLarge"
           style={[styles.errorText, { color: theme.colors.error }]}
         >
-          {error}
+          {mapErrorToMessage(error, t)}
         </Text>
         <Button
           mode="contained"
           onPress={() => void refetch()}
           contentStyle={styles.buttonContent}
         >
-          Tap to Retry
+          {t("common.tapToRetry")}
         </Button>
       </Surface>
     );
@@ -185,7 +188,7 @@ export default function WishlistDetail() {
           variant="bodyLarge"
           style={{ color: theme.colors.onSurfaceVariant }}
         >
-          Wishlist not found.
+          {t("publicWishlist.notFound")}
         </Text>
       </Surface>
     );
@@ -219,7 +222,7 @@ export default function WishlistDetail() {
                 { color: theme.colors.onSurfaceVariant },
               ]}
             >
-              No items in this wishlist yet.
+              {t("publicWishlist.empty")}
             </Text>
           </View>
         }

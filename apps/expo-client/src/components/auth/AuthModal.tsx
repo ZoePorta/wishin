@@ -17,6 +17,8 @@ import {
   EnsureProfileUseCase,
 } from "@wishin/domain";
 import { commonStyles } from "../../theme/common-styles";
+import { useTranslation } from "react-i18next";
+import { getAuthErrorMessage } from "../../utils/auth-errors";
 
 /**
  * Props for the authentication modal.
@@ -40,6 +42,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = "login",
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const authRepo = useAuthRepository();
   const profileRepo = useProfileRepository();
   const logger = useLogger();
@@ -84,12 +87,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         await refetch();
         onDismiss();
       } catch (error: unknown) {
-        setLoginError(error instanceof Error ? error.message : String(error));
+        console.error("Login failed:", error);
+        setLoginError(getAuthErrorMessage(error, t, "login"));
       } finally {
         setLoading(false);
       }
     },
-    [loginUseCase, refetch, onDismiss],
+    [loginUseCase, refetch, onDismiss, t],
   );
 
   const handleRegister = useCallback(
@@ -101,14 +105,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         await refetch();
         onDismiss();
       } catch (error: unknown) {
-        setRegisterError(
-          error instanceof Error ? error.message : String(error),
-        );
+        console.error("Registration failed:", error);
+        setRegisterError(getAuthErrorMessage(error, t, "register"));
       } finally {
         setLoading(false);
       }
     },
-    [registerUseCase, refetch, onDismiss],
+    [registerUseCase, refetch, onDismiss, t],
   );
 
   /**
