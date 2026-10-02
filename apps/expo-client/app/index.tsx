@@ -15,6 +15,8 @@ import { EnsureProfileUseCase } from "@wishin/domain";
 import { Config } from "../src/constants/Config";
 import { validateRedirect } from "../src/utils/url";
 import { LandingPage } from "../src/features/landing/LandingPage.web";
+import { useTranslation } from "react-i18next";
+import { getAuthErrorMessage } from "../src/utils/auth-errors";
 
 /**
  * Root screen for the Expo client.
@@ -22,6 +24,7 @@ import { LandingPage } from "../src/features/landing/LandingPage.web";
  */
 export default function Index() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const { sessionType, loading: userLoading, refetch } = useUser();
   const authRepo = useAuthRepository();
   const profileRepo = useProfileRepository();
@@ -49,12 +52,13 @@ export default function Index() {
         await authRepo.login(email, password);
         await refetch();
       } catch (error: unknown) {
-        setLoginError(error instanceof Error ? error.message : String(error));
+        console.error("Login failed:", error);
+        setLoginError(getAuthErrorMessage(error, t, "login"));
       } finally {
         setAuthLoading(false);
       }
     },
-    [authRepo, refetch],
+    [authRepo, refetch, t],
   );
 
   const handleRegister = useCallback(
@@ -65,14 +69,13 @@ export default function Index() {
         await authRepo.register(email, password, username);
         await refetch();
       } catch (error: unknown) {
-        setRegisterError(
-          error instanceof Error ? error.message : String(error),
-        );
+        console.error("Registration failed:", error);
+        setRegisterError(getAuthErrorMessage(error, t, "register"));
       } finally {
         setAuthLoading(false);
       }
     },
-    [authRepo, refetch],
+    [authRepo, refetch, t],
   );
 
   const handleGoogleSignIn = useCallback(async () => {
@@ -136,7 +139,7 @@ export default function Index() {
       <Surface style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text variant="bodyLarge" style={styles.redirectText}>
-          Redirecting to your dashboard...
+          {t("home.redirecting")}
         </Text>
       </Surface>
     );
@@ -147,11 +150,10 @@ export default function Index() {
       <Surface style={styles.container}>
         <View style={styles.centerContent}>
           <Text variant="headlineLarge" style={styles.title}>
-            Almost there!
+            {t("home.almostThereTitle")}
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
-            Your registration is almost complete. Please wait for the profile
-            setup feature.
+            {t("home.almostThereMessage")}
           </Text>
         </View>
       </Surface>
@@ -176,7 +178,7 @@ export default function Index() {
             { color: theme.colors.onSurfaceVariant },
           ]}
         >
-          Share your wishes with the world
+          {t("home.tagline")}
         </Text>
       </View>
 

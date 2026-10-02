@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { Portal, Dialog, Button, Text, useTheme } from "react-native-paper";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
 
 interface SpoilerOverlayProps {
   /** Whether the spoiler protection is active */
@@ -27,6 +28,7 @@ export const SpoilerOverlay: React.FC<SpoilerOverlayProps> = ({
 }) => {
   const [stage, setStage] = useState<1 | 2>(1);
   const theme = useTheme();
+  const { t } = useTranslation();
   const router = useRouter();
 
   // Reset stage to 1 when it becomes visible
@@ -61,13 +63,11 @@ export const SpoilerOverlay: React.FC<SpoilerOverlayProps> = ({
         <Dialog visible={true} onDismiss={handleGoBack} dismissable={false}>
           <Dialog.Icon icon="eye-off-outline" />
           <Dialog.Title style={styles.title}>
-            {stage === 1 ? "Spoiler Alert!" : "Are you sure?"}
+            {stage === 1 ? t("spoiler.title") : t("spoiler.confirmTitle")}
           </Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">
-              {stage === 1
-                ? "Careful! Continuing might spoil the surprise of your own wishlist."
-                : "You're about to see everything, including reserved and purchased items. Ready?"}
+              {stage === 1 ? t("spoiler.message") : t("spoiler.confirmMessage")}
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
@@ -75,14 +75,14 @@ export const SpoilerOverlay: React.FC<SpoilerOverlayProps> = ({
               onPress={handleGoBack}
               contentStyle={styles.actionButtonContent}
             >
-              Go Back
+              {t("common.goBack")}
             </Button>
             <Button
               mode="contained"
               onPress={handleContinue}
               contentStyle={styles.actionButtonContent}
             >
-              Continue
+              {t("common.continue")}
             </Button>
           </Dialog.Actions>
         </Dialog>

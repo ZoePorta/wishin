@@ -4,6 +4,7 @@ import { Text, Divider, useTheme, IconButton } from "react-native-paper";
 import { type WishlistOutput, type ProfileOutput } from "@wishin/domain";
 import { Avatar } from "../../../components/common/Avatar";
 import { type AppTheme } from "../../../theme/theme";
+import { useTranslation } from "react-i18next";
 
 interface DashboardHeaderProps {
   wishlist: WishlistOutput;
@@ -36,6 +37,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   isUpdating = false,
 }) => {
   const theme = useTheme<AppTheme>();
+  const { t } = useTranslation();
   const [containerSize, setContainerSize] = React.useState(COMPONENT_SIZE);
 
   const responsiveAvatarSize = containerSize - CONTAINER_PADDING * 2;
@@ -82,13 +84,13 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               iconColor={theme.colors.primary}
               onPress={onEditAvatar}
               style={[styles.editButton, { shadowColor: theme.colors.shadow }]}
-              accessibilityLabel="Edit profile picture"
+              accessibilityLabel={t("dashboard.editAvatarA11y")}
             />
           )}
         </View>
         <View style={styles.usernameRow}>
           <Text variant="titleLarge" style={styles.username}>
-            {profile?.username ?? "Owner"}
+            {profile?.username ?? t("dashboard.ownerFallback")}
           </Text>
           {onEditUsername && (
             <IconButton
@@ -96,7 +98,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               size={18}
               onPress={onEditUsername}
               style={styles.usernameEditButton}
-              accessibilityLabel="Edit username"
+              accessibilityLabel={t("dashboard.editUsernameA11y")}
             />
           )}
         </View>

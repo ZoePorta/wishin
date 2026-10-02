@@ -20,6 +20,8 @@ import { getItemImageSource } from "../utils/images";
 import { commonStyles } from "../../../theme/common-styles";
 import { addAlpha } from "../../../utils/colors";
 import { PriorityBadge } from "./PriorityBadge";
+import { useTranslation } from "react-i18next";
+import { mapErrorToMessage } from "../utils/error-mapper";
 
 interface PublicItemCardProps {
   item: WishlistItemOutput;
@@ -54,6 +56,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   isSpoilerRevealed,
 }) => {
   const theme = useTheme<AppTheme>();
+  const { t } = useTranslation();
   const styles = React.useMemo(() => makeStyles(theme), [theme]);
   const { userId, sessionType, loginAsGuest, isSessionReliable } = useUser();
   const { purchaseItem, loading: purchaseLoading } = usePurchaseItem();
@@ -79,32 +82,42 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     return null;
   }
 
-  const handleOpenUrl = useCallback(async (url?: string) => {
-    if (!url) return;
+  const handleOpenUrl = useCallback(
+    async (url?: string) => {
+      if (!url) return;
 
-    const trimmedUrl = url.trim();
+      const trimmedUrl = url.trim();
 
-    try {
-      // Validate scheme
-      const lowerUrl = trimmedUrl.toLowerCase();
-      if (!lowerUrl.startsWith("http://") && !lowerUrl.startsWith("https://")) {
-        Alert.alert("Error", "Only web links (http/https) are supported.");
-        return;
+      try {
+        // Validate scheme
+        const lowerUrl = trimmedUrl.toLowerCase();
+        if (
+          !lowerUrl.startsWith("http://") &&
+          !lowerUrl.startsWith("https://")
+        ) {
+          Alert.alert(t("common.error"), t("item.links.onlyWeb"));
+          return;
+        }
+
+        const supported = await Linking.canOpenURL(trimmedUrl);
+        if (supported) {
+          await Linking.openURL(trimmedUrl);
+        } else {
+          Alert.alert(
+            t("common.error"),
+            t("item.links.cannotOpen", { url: trimmedUrl }),
+          );
+        }
+      } catch (error) {
+        console.error("Failed to open item link:", error);
+        Alert.alert(
+          t("common.error"),
+          t("item.links.cannotOpen", { url: trimmedUrl }),
+        );
       }
-
-      const supported = await Linking.canOpenURL(trimmedUrl);
-      if (supported) {
-        await Linking.openURL(trimmedUrl);
-      } else {
-        Alert.alert("Error", `Cannot open this link: ${trimmedUrl}`);
-      }
-    } catch (error) {
-      Alert.alert(
-        "Error",
-        `Could not open link: ${trimmedUrl}. ${error instanceof Error ? error.message : ""}`,
-      );
-    }
-  }, []);
+    },
+    [t],
+  );
 
   const handleUndoPurchase = useCallback(
     async (transactionId: string) => {
@@ -116,15 +129,16 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
           transactionId,
           userId,
         });
-        showToast("Purchase undone successfully.");
+        showToast(t("item.purchase.undone"));
       } catch (err: unknown) {
+        console.error("Failed to undo purchase:", err);
         Alert.alert(
-          "Undo Failed",
-          err instanceof Error ? err.message : "Something went wrong",
+          t("item.purchase.undoFailedTitle"),
+          mapErrorToMessage(err, t),
         );
       }
     },
-    [undoPurchase, wishlistId, userId, showToast],
+    [undoPurchase, wishlistId, userId, showToast, t],
   );
 
   const executePurchase = useCallback(
@@ -137,17 +151,15 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
           quantity: 1, // Defaulting to 1 for this UI button
         });
 
-        showToast(`Awesome! You've marked 1 x ${item.name} as purchased.`, {
+        showToast(t("item.purchase.success", { name: item.name }), {
           onUndo: () => {
             void handleUndoPurchase(result.transactionId);
           },
         });
       } catch (err: unknown) {
         // usePurchaseItem (via useAsyncActionEx) re-throws errors, so we catch them here
-        Alert.alert(
-          "Purchase Failed",
-          err instanceof Error ? err.message : "Something went wrong",
-        );
+        console.error("Failed to purchase item:", err);
+        Alert.alert(t("item.purchase.failedTitle"), mapErrorToMessage(err, t));
       }
     },
     [
@@ -157,6 +169,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
       item.name,
       showToast,
       handleUndoPurchase,
+      t,
     ],
   );
 
@@ -209,11 +222,11 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
       // If we already have userId, useEffect will trigger the purchase
     } catch (_err: unknown) {
       setPendingPurchase(false);
-      Alert.alert("Error", "Failed to create guest session.");
+      Alert.alert(t("common.error"), t("item.purchase.guestSessionFailed"));
     } finally {
       setGuestLoading(false);
     }
-  }, [loginAsGuest, userId]);
+  }, [loginAsGuest, userId, t]);
 
   return (
     <>
@@ -243,7 +256,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
               elevation={2}
             >
               <Text variant="labelLarge" style={styles.overlayLabel}>
-                RESERVED
+                {t("item.reserved")}
               </Text>
             </Surface>
           </View>
@@ -262,7 +275,9 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
                   onPress={() => {
                     void handleOpenUrl(item.url);
                   }}
-                  accessibilityLabel={`View Online, ${item.name}`}
+                  accessibilityLabel={t("item.viewOnlineA11y", {
+                    name: item.name,
+                  })}
                   style={styles.headerLinkIcon}
                   hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
                 />
@@ -286,7 +301,10 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
             <View style={styles.priceContainer}>
               {item.price != null && item.currency != null && (
                 <Text variant="titleMedium" style={styles.priceText}>
-                  {item.currency} {item.price.toFixed(2)}
+                  {t("item.price", {
+                    symbol: item.currency,
+                    amount: item.price,
+                  })}
                 </Text>
               )}
             </View>
@@ -301,7 +319,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
               contentStyle={commonStyles.minimumTouchTarget}
               icon="gift-outline"
             >
-              got it!
+              {t("item.gotIt")}
             </Button>
           </View>
         </Card.Content>

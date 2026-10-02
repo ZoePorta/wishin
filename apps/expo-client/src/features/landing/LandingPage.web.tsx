@@ -5,11 +5,13 @@ import { AuthModal } from "../../components/auth/AuthModal";
 import { TryAppDialog } from "./TryAppDialog";
 import { AddToHomeScreenDialog } from "./AddToHomeScreenDialog";
 import { detectApplePlatform, isStandaloneDisplay } from "../../utils/platform";
+import { useTranslation } from "react-i18next";
 
 /**
  * Hybrid LandingPage - Shared Header (React) + Body (iframe)
  */
 export const LandingPage = () => {
+  const { t, i18n } = useTranslation();
   const [authVisible, setAuthVisible] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("register");
   const [tryAppVisible, setTryAppVisible] = useState(false);
@@ -20,10 +22,11 @@ export const LandingPage = () => {
     [],
   );
 
-  // Convert tokens (and platform hints) to a compact string for the iframe
+  // Convert tokens (and language/platform hints) to a compact string for the iframe
   const iframeParams = useMemo(() => {
     const params = new URLSearchParams({
       tokens: JSON.stringify(themeTokens),
+      lang: i18n.language,
     });
     if (applePlatform) {
       params.set("platform", applePlatform);
@@ -34,7 +37,7 @@ export const LandingPage = () => {
       if (standalone) params.set("standalone", "1");
     }
     return params.toString();
-  }, [applePlatform]);
+  }, [applePlatform, i18n.language]);
 
   const handleOpenAuth = useCallback((mode: "login" | "register") => {
     setAuthMode(mode);
@@ -71,8 +74,8 @@ export const LandingPage = () => {
         <iframe
           src={`/landing-content.html?${iframeParams}`}
           style={{ width: "100%", height: "100%", border: "none" }}
-          title="Wishin landing content — Features and Getting Started"
-          aria-label="Wishin landing content"
+          title={t("landing.iframeTitle")}
+          aria-label={t("landing.iframeLabel")}
         />
       </View>
       <AuthModal

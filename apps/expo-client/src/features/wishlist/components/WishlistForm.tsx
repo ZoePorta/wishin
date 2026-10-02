@@ -3,7 +3,13 @@ import { ScrollView, StyleSheet } from "react-native";
 import { TextInput, Button, HelperText } from "react-native-paper";
 import { Visibility, Participation } from "@wishin/domain";
 import type { CreateWishlistInput } from "@wishin/domain";
-import { mapErrorToMessage, matchesError } from "../utils/error-mapper";
+import { useTranslation } from "react-i18next";
+import {
+  ERROR_MESSAGE_KEYS,
+  classifyError,
+  isNameError,
+  type ErrorKind,
+} from "../utils/error-mapper";
 import { commonStyles } from "../../../theme/common-styles";
 
 const MIN_TITLE_LENGTH = 3;
@@ -33,11 +39,12 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
   initialData,
   currentUserId,
 }) => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [description, setDescription] = useState(
     initialData?.description ?? "",
   );
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorKind | null>(null);
 
   useEffect(() => {
     setTitle(initialData?.title ?? "");
@@ -51,11 +58,11 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
 
     // Initial local validation (consistent with AddItemForm)
     if (title.trim().length < MIN_TITLE_LENGTH) {
-      setError(mapErrorToMessage("too short"));
+      setError("nameTooShort");
       return;
     }
     if (title.trim().length > MAX_TITLE_LENGTH) {
-      setError(mapErrorToMessage("too long"));
+      setError("nameTooLong");
       return;
     }
 
@@ -70,50 +77,42 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
       });
     } catch (submitError) {
       console.error("Error submitting wishlist form:", submitError);
-      setError(mapErrorToMessage(submitError));
+      setError(classifyError(submitError));
     }
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <TextInput
-        label="Title*"
+        label={t("wishlistForm.titleLabel")}
         value={title}
         onChangeText={(text) => {
           setTitle(text);
-          if (
-            matchesError(error, "title") ||
-            matchesError(error, "short") ||
-            matchesError(error, "long")
-          ) {
+          if (isNameError(error)) {
             setError(null);
           }
         }}
         mode="outlined"
-        placeholder="e.g. Birthday 2026"
-        error={
-          matchesError(error, "title") ||
-          matchesError(error, "short") ||
-          matchesError(error, "long")
-        }
+        placeholder={t("wishlistForm.titlePlaceholder")}
+        error={isNameError(error)}
         disabled={loading}
       />
 
       <TextInput
-        label="Description (Optional)"
+        label={t("wishlistForm.descriptionLabel")}
         value={description}
         onChangeText={setDescription}
         mode="outlined"
         multiline
         numberOfLines={4}
-        placeholder="Tell people what this list is about..."
+        placeholder={t("wishlistForm.descriptionPlaceholder")}
         disabled={loading}
         style={styles.description}
       />
 
       {error && (
         <HelperText type="error" style={styles.errorText}>
-          {error}
+          {t(ERROR_MESSAGE_KEYS[error])}
         </HelperText>
       )}
 
@@ -127,7 +126,7 @@ export const WishlistForm: React.FC<WishlistFormProps> = ({
         style={styles.submitButton}
         contentStyle={commonStyles.minimumTouchTarget}
       >
-        {initialData?.id ? "Update Wishlist" : "Create Wishlist"}
+        {initialData?.id ? t("wishlistForm.update") : t("wishlistForm.create")}
       </Button>
     </ScrollView>
   );

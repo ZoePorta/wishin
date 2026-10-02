@@ -17,6 +17,8 @@ import { useFonts } from "expo-font";
 import { Aclonica_400Regular } from "@expo-google-fonts/aclonica";
 import { VarelaRound_400Regular } from "@expo-google-fonts/varela-round";
 import { Layout } from "../src/constants/Layout";
+import { useTranslation } from "react-i18next";
+import { useDeviceLanguageSync } from "../src/i18n";
 
 SplashScreen.preventAutoHideAsync().catch((e: unknown) => {
   console.error("Failed to prevent splash screen auto hide", e);
@@ -28,6 +30,7 @@ SplashScreen.preventAutoHideAsync().catch((e: unknown) => {
 export default function Root() {
   const [initError, setInitError] = useState<Error | null>(null);
   const colorScheme = useColorScheme();
+  useDeviceLanguageSync();
 
   const [fontsLoaded, fontError] = useFonts({
     Aclonica_400Regular,
@@ -82,6 +85,7 @@ export default function Root() {
 function RootLayout() {
   const theme = useTheme<AppTheme>();
   const colorScheme = useColorScheme();
+  const { t } = useTranslation();
 
   return (
     <Surface style={styles.container}>
@@ -101,7 +105,10 @@ function RootLayout() {
           options={{ headerShown: Platform.OS === "web" }}
         />
         <Stack.Screen name="wishlist/[id]" options={{}} />
-        <Stack.Screen name="owner/profile" options={{ title: "My Profile" }} />
+        <Stack.Screen
+          name="owner/profile"
+          options={{ title: t("navigation.myProfile") }}
+        />
       </Stack>
     </Surface>
   );

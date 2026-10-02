@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Text, Button, Surface, useTheme, Icon } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { createSharedErrorStyles } from "./error-screen.styles";
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
  */
 export function ConfigErrorScreen({ onRetry }: Props) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const styles = createSharedErrorStyles(theme);
 
   return (
@@ -32,12 +34,10 @@ export function ConfigErrorScreen({ onRetry }: Props) {
           />
         </View>
         <Text variant="headlineSmall" style={styles.title}>
-          Configuration Error
+          {t("errorScreens.configTitle")}
         </Text>
         <Text variant="bodyMedium" style={styles.message}>
-          It seems like some required environment variables are missing. Please
-          ensure your .env file is correctly configured with Appwrite
-          credentials.
+          {t("errorScreens.configMessage")}
         </Text>
 
         {onRetry && (
@@ -46,9 +46,9 @@ export function ConfigErrorScreen({ onRetry }: Props) {
             onPress={onRetry}
             style={styles.button}
             contentStyle={localStyles.buttonContent}
-            accessibilityLabel="Try Again"
+            accessibilityLabel={t("errorScreens.tryAgain")}
           >
-            Try Again
+            {t("errorScreens.tryAgain")}
           </Button>
         )}
       </Surface>

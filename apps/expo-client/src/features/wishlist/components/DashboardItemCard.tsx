@@ -6,6 +6,7 @@ import { type WishlistItemOutput } from "@wishin/domain";
 import { getItemImageSource } from "../utils/images";
 import { commonStyles } from "../../../theme/common-styles";
 import { PriorityBadge } from "./PriorityBadge";
+import { useTranslation } from "react-i18next";
 
 interface DashboardItemCardProps {
   item: WishlistItemOutput;
@@ -32,16 +33,20 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
   onPress,
 }) => {
   const theme = useTheme<AppTheme>();
+  const { t } = useTranslation();
   const styles = React.useMemo(() => makeStyles(theme), [theme]);
 
-  const handleOpenUrl = useCallback(async (url?: string) => {
-    if (!url) return;
-    try {
-      await Linking.openURL(url);
-    } catch {
-      Alert.alert("Error", "Could not open link.");
-    }
-  }, []);
+  const handleOpenUrl = useCallback(
+    async (url?: string) => {
+      if (!url) return;
+      try {
+        await Linking.openURL(url);
+      } catch {
+        Alert.alert(t("common.error"), t("item.links.couldNotOpen"));
+      }
+    },
+    [t],
+  );
 
   return (
     <Card
@@ -83,12 +88,14 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
                     onPress={() => {
                       void handleOpenUrl(item.url);
                     }}
-                    accessibilityLabel="Open link"
+                    accessibilityLabel={t("item.openLinkA11y")}
                   />
                 )}
               </View>
               <Text variant="bodySmall" style={styles.qtyText}>
-                Qty: {item.isUnlimited ? "∞" : item.totalQuantity}
+                {t("item.quantityShort", {
+                  quantity: item.isUnlimited ? "∞" : item.totalQuantity,
+                })}
               </Text>
             </View>
             <PriorityBadge priority={item.priority} size={18} />
@@ -96,7 +103,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
 
           {item.price != null && item.currency != null && (
             <Text variant="titleMedium" style={styles.priceText}>
-              {item.currency} {item.price.toFixed(2)}
+              {t("item.price", { symbol: item.currency, amount: item.price })}
             </Text>
           )}
 
@@ -108,7 +115,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
               onPress={() => {
                 onEdit(item);
               }}
-              accessibilityLabel="Edit item"
+              accessibilityLabel={t("item.editA11y")}
             />
             <IconButton
               icon="trash-can-outline"
@@ -118,7 +125,7 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
               onPress={() => {
                 onRemove(item.id);
               }}
-              accessibilityLabel="Delete item"
+              accessibilityLabel={t("item.deleteA11y")}
             />
           </View>
         </View>
