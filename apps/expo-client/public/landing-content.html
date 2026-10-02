@@ -16,6 +16,12 @@
     <script>
       // Extract theme tokens from URL
       const params = new URLSearchParams(window.location.search);
+
+      // Declare the language passed by the app before first paint, so browsers
+      // (e.g. Safari) don't offer to translate an already-translated page.
+      if (["en", "es"].includes(params.get("lang"))) {
+        document.documentElement.lang = params.get("lang");
+      }
       function isObject(item) {
         return item && typeof item === "object" && !Array.isArray(item);
       }
@@ -165,7 +171,9 @@
   </head>
   <body class="text-on-surface">
     <header class="pt-8 pb-12 md:pt-32 md:pb-20 px-6 overflow-hidden">
-      <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 md:gap-12 items-center">
+      <div
+        class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-10 md:gap-12 items-center"
+      >
         <div class="space-y-6 md:space-y-8">
           <div
             class="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-primary-fixed)] rounded-full text-[var(--color-on-primary-fixed-variant)] font-bold text-sm"
@@ -175,15 +183,20 @@
               style="font-variation-settings: &quot;FILL&quot; 1"
               >celebration</span
             >
-            Joyful gifting for everyone
+            <span data-i18n="badge">Joyful gifting for everyone</span>
           </div>
           <h1
             class="text-5xl md:text-7xl font-black text-on-surface leading-[1.1] tracking-tight font-headline"
           >
-            Stop guessing.<br />
-            <span class="text-primary">Start gifting.</span>
+            <span data-i18n="heroTitle1">Stop guessing.</span><br />
+            <span class="text-primary" data-i18n="heroTitle2"
+              >Start gifting.</span
+            >
           </h1>
-          <p class="text-xl text-on-surface-variant leading-relaxed max-w-xl">
+          <p
+            class="text-xl text-on-surface-variant leading-relaxed max-w-xl"
+            data-i18n="heroBody"
+          >
             Create a universal wishlist for any occasion. Share it with friends
             and family, and let them reserve gifts in one click. No duplicates,
             no awkward returns.
@@ -192,6 +205,7 @@
             <button
               data-action="create-list"
               class="bg-primary text-on-primary px-8 py-4 rounded-full font-black text-lg shadow-[var(--shadow-primary)] bouncy-hover"
+              data-i18n="createList"
             >
               Create Your Free List
             </button>
@@ -200,14 +214,14 @@
               class="border-2 border-secondary text-secondary bg-surface px-8 py-4 rounded-full font-black text-lg shadow-[var(--shadow-elevation-low)] bouncy-hover inline-flex items-center gap-2"
             >
               <span class="material-symbols-outlined">android</span>
-              Try the App
+              <span data-i18n="tryApp">Try the App</span>
             </button>
             <button
               data-action="add-to-home"
               class="hidden border-2 border-secondary text-secondary bg-surface px-8 py-4 rounded-full font-black text-lg shadow-[var(--shadow-elevation-low)] bouncy-hover items-center gap-2"
             >
               <span class="material-symbols-outlined">add_to_home_screen</span>
-              <span data-label>Add to Home Screen</span>
+              <span data-label data-i18n="addToHome">Add to Home Screen</span>
             </button>
           </div>
         </div>
@@ -223,6 +237,7 @@
           >
             <img
               alt="A hand holding a present with confetti falling all around"
+              data-i18n-alt="heroImageAlt"
               class="rounded-[2rem] w-full aspect-[4/3] object-cover"
               src="image1.png"
             />
@@ -235,11 +250,13 @@
       <div class="max-w-7xl mx-auto px-6 text-center">
         <h2
           class="text-primary font-black uppercase tracking-widest text-sm mb-4 font-headline"
+          data-i18n="stepsEyebrow"
         >
           Simple. Seamless. Stress-free.
         </h2>
         <h3
           class="text-4xl md:text-5xl font-black text-on-surface mb-10 md:mb-16 font-headline"
+          data-i18n="stepsTitle"
         >
           Gift giving in three easy steps
         </h3>
@@ -257,8 +274,10 @@
                 >add_shopping_cart</span
               >
             </div>
-            <div class="text-2xl font-black mb-4">Step 1: Build Your List</div>
-            <p class="text-on-surface-variant">
+            <div class="text-2xl font-black mb-4" data-i18n="step1Title">
+              Step 1: Build Your List
+            </div>
+            <p class="text-on-surface-variant" data-i18n="step1Body">
               Add items from any store across the web or physical locations
             </p>
           </div>
@@ -275,8 +294,10 @@
                 >share</span
               >
             </div>
-            <div class="text-2xl font-black mb-4">Step 2: Share the Link</div>
-            <p class="text-on-surface-variant">
+            <div class="text-2xl font-black mb-4" data-i18n="step2Title">
+              Step 2: Share the Link
+            </div>
+            <p class="text-on-surface-variant" data-i18n="step2Body">
               Spread the joy via WhatsApp, Email, or social media with one click
             </p>
           </div>
@@ -293,8 +314,10 @@
                 >sync</span
               >
             </div>
-            <div class="text-2xl font-black mb-4">Step 3: Real-Time Sync</div>
-            <p class="text-on-surface-variant">
+            <div class="text-2xl font-black mb-4" data-i18n="step3Title">
+              Step 3: Real-Time Sync
+            </div>
+            <p class="text-on-surface-variant" data-i18n="step3Body">
               Gifts are hidden from others once reserved to avoid duplicates
             </p>
           </div>
@@ -309,10 +332,10 @@
           <div
             class="md:col-span-2 bg-gradient-to-br from-primary to-secondary p-8 md:p-12 rounded-[2rem] text-on-primary flex flex-col justify-center"
           >
-            <h2 class="text-4xl mb-6 font-headline">
+            <h2 class="text-4xl mb-6 font-headline" data-i18n="whyTitle">
               Why Wishin is the gold standard
             </h2>
-            <p class="text-lg opacity-90 leading-relaxed">
+            <p class="text-lg opacity-90 leading-relaxed" data-i18n="whyBody">
               We've obsessed over the details so you can focus on the
               celebration. No more spreadsheet headaches
             </p>
@@ -330,10 +353,13 @@
                 >format_list_bulleted</span
               >
             </div>
-            <h4 class="text-xl font-black mb-3 text-on-surface font-headline">
+            <h4
+              class="text-xl font-black mb-3 text-on-surface font-headline"
+              data-i18n="feature1Title"
+            >
               One List to Rule Them All
             </h4>
-            <p class="text-on-surface-variant text-sm">
+            <p class="text-on-surface-variant text-sm" data-i18n="feature1Body">
               Everything in one place, from designer clothes to grocery gift
               cards
             </p>
@@ -351,10 +377,13 @@
                 >person_add</span
               >
             </div>
-            <h4 class="text-xl font-black mb-3 text-on-surface font-headline">
+            <h4
+              class="text-xl font-black mb-3 text-on-surface font-headline"
+              data-i18n="feature2Title"
+            >
               Guest-Friendly
             </h4>
-            <p class="text-on-surface-variant text-sm">
+            <p class="text-on-surface-variant text-sm" data-i18n="feature2Body">
               No account needed to reserve. Your grandma will find it incredibly
               easy
             </p>
@@ -372,10 +401,13 @@
                 >do_not_disturb_on</span
               >
             </div>
-            <h4 class="text-xl font-black mb-3 text-on-surface font-headline">
+            <h4
+              class="text-xl font-black mb-3 text-on-surface font-headline"
+              data-i18n="feature3Title"
+            >
               No More Duplicates
             </h4>
-            <p class="text-on-surface-variant text-sm">
+            <p class="text-on-surface-variant text-sm" data-i18n="feature3Body">
               Claimed gifts are instantly locked for everyone else in real-time
             </p>
           </div>
@@ -395,10 +427,11 @@
               </div>
               <h4
                 class="text-2xl font-black mb-3 text-on-surface font-headline"
+                data-i18n="feature4Title"
               >
                 Keep it a Surprise
               </h4>
-              <p class="text-on-surface-variant">
+              <p class="text-on-surface-variant" data-i18n="feature4Body">
                 The best part? You won't see what's been bought unless you
                 specifically choose to peek. Maintain the magic of the moment
               </p>
@@ -408,6 +441,7 @@
             >
               <img
                 alt="Beautifully wrapped pink and purple gift box"
+                data-i18n-alt="feature4ImageAlt"
                 class="w-full h-full object-cover"
                 src="/image2.png"
               />
@@ -420,7 +454,10 @@
     <section class="py-12 md:py-24 bg-[var(--color-background)]">
       <div class="max-w-7xl mx-auto px-6">
         <div class="text-center mb-10 md:mb-16">
-          <h3 class="text-4xl font-black text-on-surface font-headline">
+          <h3
+            class="text-4xl font-black text-on-surface font-headline"
+            data-i18n="featuresTitle"
+          >
             Features for Everyone
           </h3>
           <div class="w-24 h-1.5 bg-primary mx-auto mt-4 rounded-full"></div>
@@ -438,7 +475,10 @@
                   >face</span
                 >
               </div>
-              <h4 class="text-3xl font-black text-on-surface font-headline">
+              <h4
+                class="text-3xl font-black text-on-surface font-headline"
+                data-i18n="ownerTitle"
+              >
                 For You (Owner)
               </h4>
             </div>
@@ -450,8 +490,12 @@
                   >check_circle</span
                 >
                 <div>
-                  <span class="font-bold block">Add from anywhere</span>
-                  <span class="text-on-surface-variant text-sm"
+                  <span class="font-bold block" data-i18n="owner1Title"
+                    >Add from anywhere</span
+                  >
+                  <span
+                    class="text-on-surface-variant text-sm"
+                    data-i18n="owner1Body"
                     >Paste any link or type a wish. It’s that simple</span
                   >
                 </div>
@@ -463,8 +507,12 @@
                   >check_circle</span
                 >
                 <div>
-                  <span class="font-bold block">Set priorities</span>
-                  <span class="text-on-surface-variant text-sm"
+                  <span class="font-bold block" data-i18n="owner2Title"
+                    >Set priorities</span
+                  >
+                  <span
+                    class="text-on-surface-variant text-sm"
+                    data-i18n="owner2Body"
                     >Label your "must-haves" and "nice-to-haves"</span
                   >
                 </div>
@@ -476,8 +524,12 @@
                   >check_circle</span
                 >
                 <div>
-                  <span class="font-bold block">Add the details</span>
-                  <span class="text-on-surface-variant text-sm"
+                  <span class="font-bold block" data-i18n="owner3Title"
+                    >Add the details</span
+                  >
+                  <span
+                    class="text-on-surface-variant text-sm"
+                    data-i18n="owner3Body"
                     >Organize your wishes in a clean, beautiful list that’s easy
                     to read</span
                   >
@@ -497,7 +549,10 @@
                   >groups</span
                 >
               </div>
-              <h4 class="text-3xl font-black text-on-surface font-headline">
+              <h4
+                class="text-3xl font-black text-on-surface font-headline"
+                data-i18n="giverTitle"
+              >
                 For Them (Giver)
               </h4>
             </div>
@@ -509,8 +564,12 @@
                   >check_circle</span
                 >
                 <div>
-                  <span class="font-bold block">No login required</span>
-                  <span class="text-on-surface-variant text-sm"
+                  <span class="font-bold block" data-i18n="giver1Title"
+                    >No login required</span
+                  >
+                  <span
+                    class="text-on-surface-variant text-sm"
+                    data-i18n="giver1Body"
                     >Friends can browse and claim in seconds</span
                   >
                 </div>
@@ -522,8 +581,12 @@
                   >check_circle</span
                 >
                 <div>
-                  <span class="font-bold block">Mark as 'Bought'</span>
-                  <span class="text-on-surface-variant text-sm"
+                  <span class="font-bold block" data-i18n="giver2Title"
+                    >Mark as 'Bought'</span
+                  >
+                  <span
+                    class="text-on-surface-variant text-sm"
+                    data-i18n="giver2Body"
                     >Update status so others know the gift is taken</span
                   >
                 </div>
@@ -535,8 +598,12 @@
                   >check_circle</span
                 >
                 <div>
-                  <span class="font-bold block">Mobile-friendly</span>
-                  <span class="text-on-surface-variant text-sm"
+                  <span class="font-bold block" data-i18n="giver3Title"
+                    >Mobile-friendly</span
+                  >
+                  <span
+                    class="text-on-surface-variant text-sm"
+                    data-i18n="giver3Body"
                     >Works perfectly on any smartphone browser</span
                   >
                 </div>
@@ -560,20 +627,28 @@
         <div class="relative z-10">
           <h2
             class="text-4xl md:text-6xl font-black text-on-surface mb-6 font-headline"
+            data-i18n="ctaTitle"
           >
             Make your next celebration better
           </h2>
-          <p class="text-xl text-on-surface-variant/80 mb-10 max-w-2xl mx-auto">
+          <p
+            class="text-xl text-on-surface-variant/80 mb-10 max-w-2xl mx-auto"
+            data-i18n="ctaBody"
+          >
             Join thousands of people making gifting easier. Start your first
             wishlist today and experience the joy of organized giving.
           </p>
           <button
             data-action="create-list"
             class="bg-primary text-on-primary px-12 py-5 rounded-full font-black text-xl shadow-[var(--shadow-primary)] bouncy-hover"
+            data-i18n="ctaButton"
           >
             Get Started for Free
           </button>
-          <p class="mt-6 text-sm font-bold text-on-surface-variant opacity-60">
+          <p
+            class="mt-6 text-sm font-bold text-on-surface-variant opacity-60"
+            data-i18n="ctaNote"
+          >
             No credit card required
           </p>
         </div>
@@ -590,13 +665,19 @@
           <span class="text-xl font-bold text-primary mb-4 block font-headline"
             >Wishin</span
           >
-          <p class="text-sm text-[var(--color-on-surface-variant)] max-w-xs">
+          <p
+            class="text-sm text-[var(--color-on-surface-variant)] max-w-xs"
+            data-i18n="footerTagline"
+          >
             The easiest way to gift and get gifted. Share the joy, skip the
             stress
           </p>
         </div>
         <div class="text-center md:text-right">
-          <p class="text-sm text-[var(--color-on-surface-variant)]">
+          <p
+            class="text-sm text-[var(--color-on-surface-variant)]"
+            data-i18n="footerCopyright"
+          >
             © 2026 Wishin. Made with joy
           </p>
         </div>
@@ -604,7 +685,96 @@
     </footer>
     <!-- Scripts -->
     <script>
+      // Translations for the static landing copy. English lives in the markup;
+      // the parent page passes the UI language detected by the app as `lang`.
+      const LANDING_TRANSLATIONS = {
+        es: {
+          title: "Wishin - Regalar es facilísimo en tres pasos",
+          badge: "Regalar con alegría, para todo el mundo",
+          heroTitle1: "Se acabó adivinar.",
+          heroTitle2: "¡A regalar!",
+          heroBody:
+            "Crea tu lista de deseos para cualquier ocasión, compártela con tu gente y deja que reserven los regalos con un clic. Sin regalos repetidos ni devoluciones incómodas. 🎁",
+          createList: "Crea tu lista, ¡es gratis!",
+          tryApp: "Prueba la app",
+          addToHome: "Añadir a pantalla de inicio",
+          addToDock: "Añadir al Dock",
+          heroImageAlt:
+            "Una mano sostiene un regalo mientras cae confeti a su alrededor",
+          stepsEyebrow: "Fácil. Rápido. Cero estrés.",
+          stepsTitle: "Regalar es así de fácil",
+          step1Title: "1. Apunta tus deseos",
+          step1Body:
+            "Añade lo que quieras, de cualquier tienda online o de la tienda de tu barrio",
+          step2Title: "2. Compártela",
+          step2Body:
+            "Manda el enlace por WhatsApp, correo o redes con un solo clic",
+          step3Title: "3. Todo al día, al momento",
+          step3Body:
+            "En cuanto alguien reserva un regalo, desaparece para los demás. ¡Adiós a los repetidos!",
+          whyTitle: "¿Por qué Wishin?",
+          whyBody:
+            "Hemos cuidado cada detalle para que tú solo te preocupes de celebrar. Olvídate de hojas de cálculo y grupos de chat eternos",
+          feature1Title: "Una lista para todo",
+          feature1Body:
+            "Todo en un mismo sitio: desde esa chaqueta que te encanta hasta una tarjeta regalo del súper",
+          feature2Title: "Sin cuentas ni líos",
+          feature2Body:
+            "Para reservar no hace falta registrarse. ¡Hasta tu abuela lo hará sin despeinarse!",
+          feature3Title: "Nada de regalos repetidos",
+          feature3Body:
+            "Cuando alguien reserva un regalo, se bloquea al instante para el resto",
+          feature4Title: "La sorpresa, intacta",
+          feature4Body:
+            "¿Lo mejor? No verás qué te han comprado a menos que quieras echar un vistazo. Que no se pierda la magia ✨",
+          feature4ImageAlt: "Caja de regalo envuelta en rosa y morado",
+          featuresTitle: "Pensado para todo el mundo",
+          ownerTitle: "Para ti, que pides",
+          owner1Title: "Añade desde cualquier sitio",
+          owner1Body:
+            "Pega un enlace o escribe lo que te apetece. Así de fácil",
+          owner2Title: "Marca lo que más te ilusiona",
+          owner2Body: "Distingue lo «¡lo necesito!» de lo «estaría bien»",
+          owner3Title: "Da todas las pistas",
+          owner3Body:
+            "Talla, color, modelo... todo en una lista bonita y fácil de leer",
+          giverTitle: "Para quien te regala",
+          giver1Title: "Sin registrarse",
+          giver1Body: "Tu gente puede ver la lista y reservar en segundos",
+          giver2Title: "Un toque y «¡lo tengo!»",
+          giver2Body:
+            "Marca el regalo para que el resto sepa que ya está pillado",
+          giver3Title: "Perfecto en el móvil",
+          giver3Body: "Va de maravilla en el navegador de cualquier móvil",
+          ctaTitle: "Que tu próxima celebración sea la mejor",
+          ctaBody:
+            "Únete a miles de personas que ya regalan sin complicaciones. Crea hoy tu primera lista de deseos y descubre lo bonito que es acertar siempre.",
+          ctaButton: "¡Empieza gratis!",
+          ctaNote: "Sin tarjeta de crédito, sin letra pequeña",
+          footerTagline:
+            "La forma más fácil de regalar y de que te regalen. Más alegría, cero estrés",
+          footerCopyright: "© 2026 Wishin. Hecho con mucho cariño 💖",
+        },
+      };
+      const landingLang = params.get("lang");
+      const landingDict = LANDING_TRANSLATIONS[landingLang] || null;
+
+      /** Returns the translation for `key`, or `fallback` when untranslated. */
+      function translate(key, fallback) {
+        return (landingDict && landingDict[key]) || fallback;
+      }
+
       document.addEventListener("DOMContentLoaded", () => {
+        if (landingDict) {
+          document.title = translate("title", document.title);
+          document.querySelectorAll("[data-i18n]").forEach((el) => {
+            el.textContent = translate(el.dataset.i18n, el.textContent);
+          });
+          document.querySelectorAll("[data-i18n-alt]").forEach((el) => {
+            el.alt = translate(el.dataset.i18nAlt, el.alt);
+          });
+        }
+
         const createButtons = document.querySelectorAll(
           '[data-action="create-list"]',
         );
@@ -632,7 +802,10 @@
                 return;
               }
               if (platform === "macos") {
-                btn.querySelector("[data-label]").textContent = "Add to Dock";
+                btn.querySelector("[data-label]").textContent = translate(
+                  "addToDock",
+                  "Add to Dock",
+                );
               }
               btn.classList.remove("hidden");
               btn.classList.add("inline-flex");

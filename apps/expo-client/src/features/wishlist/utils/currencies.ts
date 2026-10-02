@@ -1,12 +1,12 @@
 /**
- * Supported currencies for wishlist items.
+ * Supported currencies for wishlist items, with the translation key of their display name.
  */
 export const SUPPORTED_CURRENCIES = [
-  { code: "€", name: "Euro" },
-  { code: "$", name: "US Dollar" },
-  { code: "£", name: "British Pound" },
-  { code: "¥", name: "Japanese Yen" },
-];
+  { code: "€", nameKey: "currencies.euro" },
+  { code: "$", nameKey: "currencies.usDollar" },
+  { code: "£", nameKey: "currencies.britishPound" },
+  { code: "¥", nameKey: "currencies.japaneseYen" },
+] as const;
 
 /**
  * Default currency to use when none is specified.

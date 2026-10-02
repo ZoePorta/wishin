@@ -11,6 +11,7 @@ import {
   Divider,
 } from "react-native-paper";
 import { commonStyles } from "../../theme/common-styles";
+import { useTranslation } from "react-i18next";
 import { useGoogleSignIn } from "../../hooks/useGoogleSignIn";
 
 /**
@@ -51,6 +52,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   authError,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -61,16 +63,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     googleLoading,
     googleError,
     setGoogleError,
-  } = useGoogleSignIn(
-    onGoogleSignIn,
-    "We couldn't log you in just now. Please check your details or try again in a moment!",
-  );
+  } = useGoogleSignIn(onGoogleSignIn, t("auth.login.failed"));
 
   const combinedError = error ?? googleError;
 
   const handleSubmit = async () => {
     if (!email || !password) {
-      setError("Please enter both email and password.");
+      setError(t("auth.login.missingFields"));
       return;
     }
     setError(null);
@@ -81,9 +80,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       // Secure logging for developers
       console.error("Login attempt failed:", err);
       // Friendly, non-revealing error message for the user
-      setError(
-        "We couldn't log you in just now. Please check your details or try again in a moment!",
-      );
+      setError(t("auth.login.failed"));
     }
   };
 
@@ -103,10 +100,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       />
 
       <Text variant="headlineSmall" style={styles.title}>
-        Welcome Back!
+        {t("auth.login.title")}
       </Text>
       <Text variant="bodyMedium" style={styles.subtitle}>
-        Hi there! Great to see you. Log in to manage your wishlists.
+        {t("auth.login.subtitle")}
       </Text>
 
       {onGoogleSignIn && (
@@ -123,7 +120,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             style={styles.googleButton}
             contentStyle={styles.buttonContent}
           >
-            Sign in with Google
+            {t("auth.login.googleButton")}
           </Button>
 
           <View style={styles.dividerRow}>
@@ -140,7 +137,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 { color: theme.colors.onSurfaceVariant },
               ]}
             >
-              or
+              {t("common.or")}
             </Text>
             <Divider
               style={[
@@ -153,7 +150,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       )}
 
       <TextInput
-        label="Email"
+        label={t("auth.emailLabel")}
         value={email}
         onChangeText={(text) => {
           setEmail(text);
@@ -177,7 +174,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       />
 
       <TextInput
-        label="Password"
+        label={t("auth.passwordLabel")}
         value={password}
         onChangeText={(text) => {
           setPassword(text);
@@ -202,7 +199,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             onPress={() => {
               setShowPassword(!showPassword);
             }}
-            accessibilityLabel="Toggle password visibility"
+            accessibilityLabel={t("auth.togglePasswordVisibility")}
             accessibilityRole="button"
           />
         }
@@ -227,7 +224,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         style={styles.button}
         contentStyle={styles.buttonContent}
       >
-        Log In
+        {t("auth.login.submit")}
       </Button>
 
       <Button
@@ -237,7 +234,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         labelStyle={styles.switchButtonLabel}
         contentStyle={commonStyles.minimumTouchTarget}
       >
-        Don't have an account yet? Join us!
+        {t("auth.login.switchToRegister")}
       </Button>
     </Surface>
   );

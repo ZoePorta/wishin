@@ -14,14 +14,20 @@ import {
 } from "react-native-paper";
 import { Priority, type WishlistItemOutput } from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
-import { PRIORITY_LABELS, SORTED_PRIORITIES } from "../utils/priority";
+import { PRIORITY_LABEL_KEYS, SORTED_PRIORITIES } from "../utils/priority";
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from "../utils/currencies";
 import { commonStyles } from "../../../theme/common-styles";
 import {
   ImagePickerField,
   type SelectedImage,
 } from "../../../components/common/ImagePickerField";
-import { mapErrorToMessage, matchesError } from "../utils/error-mapper";
+import {
+  ERROR_MESSAGE_KEYS,
+  classifyError,
+  isNameError,
+  type ErrorKind,
+} from "../utils/error-mapper";
+import { useTranslation } from "react-i18next";
 import { useImagePickerAndUpload } from "../../../hooks/useImagePickerAndUpload";
 
 const MIN_NAME_LENGTH = 3;
@@ -57,6 +63,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   onSubmit,
   loading = false,
 }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState(initialData?.name ?? "");
   const [description, setDescription] = useState(
     initialData?.description ?? "",
@@ -83,7 +90,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   const [useInitialImage, setUseInitialImage] = useState(
     !!initialData?.imageUrl,
   );
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorKind | null>(null);
   const {
     uploadFile,
     deleteUpload,
@@ -144,11 +151,11 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
     // Initial local validation for name length
     if (name.trim().length < MIN_NAME_LENGTH) {
-      setError(mapErrorToMessage("too short"));
+      setError("nameTooShort");
       return;
     }
     if (name.trim().length > MAX_NAME_LENGTH) {
-      setError(mapErrorToMessage("too long"));
+      setError("nameTooLong");
       return;
     }
 
@@ -179,7 +186,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     } catch (submitError) {
       isSubmitting.current = false;
       console.error("Error submitting form:", submitError);
-      setError(mapErrorToMessage(submitError));
+      setError(classifyError(submitError));
 
       // Restore initial image state if we were editing and had a staged image
       if (stagedImageUrl.current) {
@@ -211,7 +218,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <ImagePickerField
-        accessibilityLabel="Item image"
+        accessibilityLabel={t("itemForm.imageA11y")}
         imageUri={
           selectedImage?.uri ??
           (useInitialImage ? (initialData?.imageUrl ?? null) : null)
@@ -257,29 +264,29 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       />
 
       <TextInput
-        label="Name*"
+        label={t("itemForm.nameLabel")}
         value={name}
         onChangeText={(text) => {
           setName(text);
-          if (matchesError(error, "name")) {
+          if (isNameError(error)) {
             setError(null);
           }
         }}
         mode="outlined"
-        placeholder="Product name..."
+        placeholder={t("itemForm.namePlaceholder")}
         disabled={loading}
         style={styles.input}
-        error={matchesError(error, "name")}
+        error={isNameError(error)}
       />
 
       <TextInput
-        label="Description"
+        label={t("itemForm.descriptionLabel")}
         value={description}
         onChangeText={setDescription}
         mode="outlined"
         multiline
         numberOfLines={3}
-        placeholder="Product description..."
+        placeholder={t("itemForm.descriptionPlaceholder")}
         disabled={loading}
         style={styles.input}
       />
@@ -287,7 +294,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       <View style={styles.row}>
         <View style={styles.flex1}>
           <TextInput
-            label="Price"
+            label={t("itemForm.priceLabel")}
             value={price}
             onChangeText={setPrice}
             mode="outlined"
@@ -311,7 +318,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             left={<TextInput.Affix text={currency} />}
           />
           <Checkbox.Item
-            label="I don't know the price"
+            label={t("itemForm.unknownPrice")}
             status={priceUnknown ? "checked" : "unchecked"}
             onPress={() => {
               setPriceUnknown(!priceUnknown);
@@ -324,7 +331,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
         <View style={styles.quantityContainer}>
           <TextInput
-            label="Quantity"
+            label={t("itemForm.quantityLabel")}
             value={totalQuantity}
             onChangeText={setTotalQuantity}
             mode="outlined"
@@ -332,7 +339,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             disabled={isUnlimited || loading}
           />
           <Checkbox.Item
-            label="Unlimited"
+            label={t("itemForm.unlimited")}
             status={isUnlimited ? "checked" : "unchecked"}
             onPress={() => {
               setIsUnlimited(!isUnlimited);
@@ -345,7 +352,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       </View>
 
       <TextInput
-        label="Link (URL)"
+        label={t("itemForm.urlLabel")}
         value={url}
         onChangeText={setUrl}
         mode="outlined"
@@ -357,14 +364,14 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       />
 
       <Text variant="labelLarge" style={styles.label}>
-        Priority
+        {t("itemForm.priorityLabel")}
       </Text>
       <SegmentedButtons
         value={priority}
         onValueChange={setPriority}
         buttons={SORTED_PRIORITIES.map((p) => ({
           value: String(p),
-          label: PRIORITY_LABELS[p],
+          label: t(PRIORITY_LABEL_KEYS[p]),
           disabled: loading || isUploading,
         }))}
         style={styles.segmentedButtons}
@@ -372,7 +379,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
       {error && (
         <HelperText type="error" style={styles.errorText}>
-          {error}
+          {t(ERROR_MESSAGE_KEYS[error])}
         </HelperText>
       )}
 
@@ -386,7 +393,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         style={styles.submitButton}
         contentStyle={commonStyles.minimumTouchTarget}
       >
-        {initialData ? "Save Changes" : "Add to List"}
+        {initialData ? t("itemForm.save") : t("itemForm.add")}
       </Button>
 
       <Portal>
@@ -402,7 +409,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         >
           <Surface style={styles.surface} elevation={5}>
             <Text variant="titleMedium" style={styles.modalTitle}>
-              Select Currency
+              {t("itemForm.selectCurrency")}
             </Text>
             <FlatList
               style={styles.currencyList}
@@ -410,7 +417,10 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
               keyExtractor={(item) => item.code}
               renderItem={({ item }) => (
                 <List.Item
-                  title={`${item.name} (${item.code})`}
+                  title={t("itemForm.currencyOption", {
+                    name: t(item.nameKey),
+                    code: item.code,
+                  })}
                   onPress={() => {
                     setCurrency(item.code);
                     setIsCurrencyModalVisible(false);

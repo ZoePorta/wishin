@@ -4,6 +4,7 @@ import { Text, Surface } from "react-native-paper";
 import { type WishlistOutput, type WishlistItemOutput } from "@wishin/domain";
 import { DashboardItemCard } from "./DashboardItemCard";
 import { Layout } from "../../../constants/Layout";
+import { useTranslation } from "react-i18next";
 
 interface DashboardContentProps {
   wishlist: WishlistOutput;
@@ -32,6 +33,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onItemPress,
   ListHeaderComponent,
 }) => {
+  const { t } = useTranslation();
   // Sort by creation date reversed (most recent first)
   // Since Appwrite returns them in chronological order, we just reverse the array.
   const sortedItems = React.useMemo(
@@ -55,10 +57,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <Text variant="bodyLarge" style={styles.emptyText}>
-              Your wishlist is empty.
+              {t("dashboard.emptyTitle")}
             </Text>
             <Text variant="bodyMedium" style={styles.emptySubText}>
-              Add your first item using the button below!
+              {t("dashboard.emptySubtitle")}
             </Text>
           </View>
         )}

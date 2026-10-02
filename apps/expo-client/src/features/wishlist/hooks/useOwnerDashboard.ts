@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { UniversalAlert } from "../../../utils/Alert";
 import { useUser } from "../../../contexts/UserContext";
 import { useWishlistByOwner } from "./useWishlistByOwner";
@@ -15,6 +16,7 @@ import { useWishlistItemActions } from "./useWishlistItemActions";
  * @throws {Error} If called outside of a UserProvider.
  */
 export function useOwnerDashboard() {
+  const { t } = useTranslation();
   const {
     userId,
     loading: userLoading,
@@ -74,20 +76,20 @@ export function useOwnerDashboard() {
   const handleRemoveItem = useCallback(
     (itemId: string) => {
       UniversalAlert.alert(
-        "Remove Item",
-        "Are you sure you want to remove this item?",
+        t("dashboard.removeItem.title"),
+        t("dashboard.removeItem.message"),
         [
-          { text: "Cancel", style: "cancel" },
+          { text: t("common.cancel"), style: "cancel" },
           {
-            text: "Remove",
+            text: t("dashboard.removeItem.confirm"),
             style: "destructive",
             onPress: () => {
               void (async () => {
                 const wishlistId = wishlist?.id;
                 if (!wishlistId) {
                   UniversalAlert.alert(
-                    "Error",
-                    "Unable to delete: wishlist not found",
+                    t("common.error"),
+                    t("dashboard.removeItem.noWishlist"),
                   );
                   return;
                 }
@@ -97,14 +99,14 @@ export function useOwnerDashboard() {
                     void refetch();
                   } else {
                     UniversalAlert.alert(
-                      "Error",
-                      "Failed to remove the item. Please try again.",
+                      t("common.error"),
+                      t("dashboard.removeItem.failed"),
                     );
                   }
                 } catch (_) {
                   UniversalAlert.alert(
-                    "Error",
-                    "Failed to remove the item. Please try again.",
+                    t("common.error"),
+                    t("dashboard.removeItem.failed"),
                   );
                 }
               })();
@@ -113,7 +115,7 @@ export function useOwnerDashboard() {
         ],
       );
     },
-    [wishlist?.id, removeItem, refetch],
+    [wishlist?.id, removeItem, refetch, t],
   );
 
   return {

@@ -1,59 +1,92 @@
-import { WishlistItemNotFoundError } from "@wishin/domain";
+import type { TFunction } from "i18next";
+import {
+  InsufficientStockError,
+  WishlistItemNotFoundError,
+  WishlistNotFoundError,
+} from "@wishin/domain";
 
 /**
- * Normalizes an error object or string for consistent comparison.
+ * Categories of errors the UI knows how to explain to the user.
+ * Kept language-agnostic so UI state never depends on the text of a translated message.
  */
-export const normalizeError = (err: unknown): string => {
-  return (err instanceof Error ? err.message : String(err)).toLowerCase();
+export type ErrorKind =
+  | "nameTooShort"
+  | "nameTooLong"
+  | "wishlistNotFound"
+  | "itemNotFound"
+  | "itemUnavailable"
+  | "network"
+  | "imageUpload"
+  | "unknown";
+
+/**
+ * Translation key for each error category.
+ */
+export const ERROR_MESSAGE_KEYS = {
+  nameTooShort: "errors.nameTooShort",
+  nameTooLong: "errors.nameTooLong",
+  wishlistNotFound: "errors.wishlistNotFound",
+  itemNotFound: "errors.itemNotFound",
+  itemUnavailable: "errors.itemUnavailable",
+  network: "errors.network",
+  imageUpload: "errors.imageUpload",
+  unknown: "errors.unknown",
+} as const satisfies Record<ErrorKind, string>;
+
+/**
+ * Maps a domain/technical error (or its message) to a user-facing error category.
+ *
+ * @param err - The error object or message.
+ * @returns The matching category, or `unknown` if none applies.
+ */
+export const classifyError = (err: unknown): ErrorKind => {
+  if (err instanceof WishlistItemNotFoundError) return "itemNotFound";
+  if (err instanceof WishlistNotFoundError) return "wishlistNotFound";
+  if (err instanceof InsufficientStockError) return "itemUnavailable";
+
+  const message = (
+    err instanceof Error ? err.message : String(err)
+  ).toLowerCase();
+
+  if (message.includes("too short")) return "nameTooShort";
+  if (message.includes("too long")) return "nameTooLong";
+  if (
+    message.includes("wishlist not found") ||
+    (message.includes("wishlist with id") && message.includes("not found"))
+  ) {
+    return "wishlistNotFound";
+  }
+  if (message.includes("wishlist item with id")) return "itemNotFound";
+  if (
+    message.includes("network request failed") ||
+    message.includes("failed to fetch")
+  ) {
+    return "network";
+  }
+  if (
+    message.includes("upload failed") ||
+    message.includes("uploading the image")
+  ) {
+    return "imageUpload";
+  }
+  return "unknown";
 };
 
 /**
- * Checks if an error message contains a specific term (case-insensitive).
+ * Whether the error category refers to the name/title field of a form.
+ *
+ * @param kind - The error category, or null when there is no error.
+ * @returns True for name length errors.
  */
-export const matchesError = (
-  error: string | null | undefined,
-  term: string,
-): boolean => {
-  if (!error) return false;
-  return error.toLowerCase().includes(term.toLowerCase());
-};
+export const isNameError = (kind: ErrorKind | null): boolean =>
+  kind === "nameTooShort" || kind === "nameTooLong";
 
 /**
- * Primary error message mapper for friendly, approachable language.
- * Maps domain/technical errors to user-centric feedback.
+ * Maps domain/technical errors to friendly, translated user feedback.
+ *
+ * @param err - The error object or message.
+ * @param t - Translation function for the current language.
+ * @returns The translated message.
  */
-export const mapErrorToMessage = (err: unknown): string => {
-  const message = err instanceof Error ? err.message : String(err);
-  const lowerMessage = message.toLowerCase();
-
-  if (lowerMessage.includes("too short")) {
-    return "Oops! The name is a bit too short. It needs at least 3 characters to look great on your list! ✨";
-  }
-  if (lowerMessage.includes("too long")) {
-    return "Whoa! That's a long name. Try keeping it under 100 characters so it fits perfectly! 📏";
-  }
-
-  if (lowerMessage.includes("wishlist not found")) {
-    return "We couldn't find your wishlist. Please try refreshing the page! 🔄";
-  }
-  if (
-    err instanceof WishlistItemNotFoundError ||
-    lowerMessage.includes("wishlist item with id")
-  ) {
-    return "Couldn’t find that wishlist item. It might have been removed! 🕵️‍♂️";
-  }
-  if (
-    lowerMessage.includes("network request failed") ||
-    lowerMessage.includes("failed to fetch")
-  ) {
-    return "It seems like there's a connection issue. Please check your internet and try again! 📡";
-  }
-  if (
-    lowerMessage.includes("upload failed") ||
-    lowerMessage.includes("uploading the image")
-  ) {
-    return "We had some trouble with the image. Want to try again or save without it? 🖼️";
-  }
-
-  return "Something went wrong on our end. Could you please try again? 🛠️";
-};
+export const mapErrorToMessage = (err: unknown, t: TFunction): string =>
+  t(ERROR_MESSAGE_KEYS[classifyError(err)]);

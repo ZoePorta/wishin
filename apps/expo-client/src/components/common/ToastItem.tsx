@@ -7,6 +7,7 @@ import {
   IconButton,
   useTheme,
 } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { commonStyles } from "../../theme/common-styles";
 
 /**
@@ -37,6 +38,7 @@ export const ToastItem: React.FC<ToastItemProps> = ({
   onDismiss,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
 
   return (
     <Surface
@@ -62,7 +64,7 @@ export const ToastItem: React.FC<ToastItemProps> = ({
               compact
               contentStyle={commonStyles.minimumTouchTarget}
             >
-              Undo
+              {t("common.undo")}
             </Button>
           )}
           <IconButton

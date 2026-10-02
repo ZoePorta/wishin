@@ -270,6 +270,7 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 - [ADR 027: Defer Anonymous Session Creation](docs/adr/027-defer-anonymous-session-creation.md)
 - [ADR 028: Accelerate Appwrite Functions for Atomicity and Permission Resolution](docs/adr/028-accelerate-appwrite-functions.md)
 - [ADR 029: Automated Lockfile Synchronization](docs/adr/029-automated-lockfile-synchronization.md)
+- [ADR 030: Internationalization (i18n) of the Client UI](docs/adr/030-internationalization.md)
 
 ## Community & Contribution
 

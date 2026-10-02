@@ -1,6 +1,7 @@
 import React from "react";
 import { View } from "react-native";
 import { Text, Surface, useTheme, Icon } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { createSharedErrorStyles } from "./error-screen.styles";
 
 /**
@@ -11,6 +12,7 @@ import { createSharedErrorStyles } from "./error-screen.styles";
  */
 export function GeneralErrorScreen() {
   const theme = useTheme();
+  const { t } = useTranslation();
   const styles = createSharedErrorStyles(theme);
 
   return (
@@ -20,10 +22,10 @@ export function GeneralErrorScreen() {
           <Icon source="alert-outline" size={40} color={theme.colors.error} />
         </View>
         <Text variant="headlineSmall" style={styles.title}>
-          Something went wrong
+          {t("errorScreens.generalTitle")}
         </Text>
         <Text variant="bodyMedium" style={styles.message}>
-          An unexpected error occurred. Please try restarting the application.
+          {t("errorScreens.generalMessage")}
         </Text>
       </Surface>
     </Surface>

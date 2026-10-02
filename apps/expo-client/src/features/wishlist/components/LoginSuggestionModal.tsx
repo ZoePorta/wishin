@@ -10,6 +10,7 @@ import {
 } from "react-native-paper";
 import { type AppTheme } from "../../../theme/theme";
 import { commonStyles } from "../../../theme/common-styles";
+import { useTranslation } from "react-i18next";
 
 interface LoginSuggestionModalProps {
   visible: boolean;
@@ -31,6 +32,7 @@ export const LoginSuggestionModal: React.FC<LoginSuggestionModalProps> = ({
   loading,
 }) => {
   const theme = useTheme<AppTheme>();
+  const { t } = useTranslation();
   const styles = React.useMemo(() => makeStyles(theme), [theme]);
   return (
     <Portal>
@@ -44,19 +46,17 @@ export const LoginSuggestionModal: React.FC<LoginSuggestionModalProps> = ({
       >
         <Card style={styles.card} mode="elevated">
           <Card.Title
-            title="Almost there!"
+            title={t("loginSuggestion.title")}
             titleVariant="titleLarge"
-            subtitle="Ready to gift?"
+            subtitle={t("loginSuggestion.subtitle")}
             subtitleVariant="bodyMedium"
           />
           <Card.Content>
             <Text variant="titleMedium" style={styles.text}>
-              Don't lose your progress!
+              {t("loginSuggestion.heading")}
             </Text>
             <Text variant="bodyMedium" style={styles.text}>
-              Your gift will be counted for the stats! However, guest info stays
-              only on this device. Sign in to make sure you don't lose your
-              history or the chance to change your mind later.
+              {t("loginSuggestion.body")}
             </Text>
           </Card.Content>
           <Card.Actions style={styles.actions}>
@@ -66,7 +66,7 @@ export const LoginSuggestionModal: React.FC<LoginSuggestionModalProps> = ({
               disabled={loading}
               contentStyle={commonStyles.minimumTouchTarget}
             >
-              Maybe later
+              {t("loginSuggestion.later")}
             </Button>
             <View style={styles.rightActions}>
               <Button
@@ -76,7 +76,7 @@ export const LoginSuggestionModal: React.FC<LoginSuggestionModalProps> = ({
                 disabled={loading}
                 contentStyle={commonStyles.minimumTouchTarget}
               >
-                Guest
+                {t("loginSuggestion.guest")}
               </Button>
               <Button
                 mode="contained"
@@ -84,7 +84,7 @@ export const LoginSuggestionModal: React.FC<LoginSuggestionModalProps> = ({
                 disabled={loading}
                 contentStyle={commonStyles.minimumTouchTarget}
               >
-                Sign In
+                {t("loginSuggestion.signIn")}
               </Button>
             </View>
           </Card.Actions>

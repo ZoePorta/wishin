@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { Layout } from "../../constants/Layout";
 import Logo from "../../../assets/wishinlogo.svg";
+import { useTranslation } from "react-i18next";
 
 interface HeaderProps extends Partial<NativeStackHeaderProps> {
   onLogin?: () => void;
@@ -38,6 +39,7 @@ export const Header = ({
   back,
 }: HeaderProps) => {
   const theme = useTheme<AppTheme>();
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const styles = React.useMemo(
     () => makeStyles(theme, insets),
@@ -96,7 +98,7 @@ export const Header = ({
                   icon="arrow-left"
                   size={28}
                   onPress={handleLogoPress}
-                  accessibilityLabel="Go back"
+                  accessibilityLabel={t("navigation.goBack")}
                 />
               </MotiView>
             ) : (
@@ -109,7 +111,7 @@ export const Header = ({
               >
                 <Pressable
                   onPress={handleLogoPress}
-                  accessibilityLabel="Go to home"
+                  accessibilityLabel={t("navigation.goHome")}
                   style={({ pressed }) => [
                     styles.logoPressable,
                     { opacity: pressed ? 0.7 : 1 },

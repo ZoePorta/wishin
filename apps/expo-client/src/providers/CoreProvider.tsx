@@ -24,6 +24,8 @@ import {
   type ObservabilityService,
 } from "@wishin/domain";
 import { UniversalAlert } from "../utils/Alert";
+import { i18n } from "../i18n";
+import { getOAuthErrorMessage } from "../utils/auth-errors";
 
 /**
  * Checks whether a `?error=` query value is the JSON payload Appwrite appends on an
@@ -240,8 +242,8 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
             );
             if (isMounted) {
               UniversalAlert.alert(
-                "Sign In Failed",
-                "Google sign-in was cancelled or failed. Please try again.",
+                i18n.t("auth.google.signInFailedTitle"),
+                i18n.t("auth.google.cancelled"),
               );
             }
           } else if (
@@ -288,11 +290,14 @@ export const CoreProvider: React.FC<CoreProviderProps> = ({
               }
 
               if (isMounted) {
-                const errorMessage =
-                  authError instanceof Error
-                    ? authError.message
-                    : "An unknown error occurred during sign in.";
-                UniversalAlert.alert("Sign In Failed", errorMessage);
+                UniversalAlert.alert(
+                  i18n.t("auth.google.signInFailedTitle"),
+                  getOAuthErrorMessage(
+                    authError,
+                    i18n.t,
+                    i18n.t("auth.google.failed"),
+                  ),
+                );
               }
             }
           }

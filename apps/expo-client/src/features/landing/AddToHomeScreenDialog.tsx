@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Portal, Dialog, Button, Text } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import type { ApplePlatform } from "../../utils/platform";
 
 /**
@@ -15,20 +16,20 @@ interface AddToHomeScreenDialogProps {
   platform: ApplePlatform;
 }
 
-const STEPS: Record<ApplePlatform, string[]> = {
-  // Since iOS 16.4 any browser (Safari, Chrome, Edge…) can add to the home
-  // screen from its share sheet, so Safari is not required here.
+// Since iOS 16.4 any browser (Safari, Chrome, Edge…) can add to the home
+// screen from its share sheet, so Safari is not required on iOS.
+const STEP_KEYS = {
   ios: [
-    "Tap your browser’s Share button (in Safari it may be inside the ••• menu).",
-    "Scroll down and tap “Add to Home Screen”.",
-    "Tap “Add”. Wishin will appear on your home screen like any other app.",
+    "landing.addToHome.ios.step1",
+    "landing.addToHome.ios.step2",
+    "landing.addToHome.ios.step3",
   ],
   macos: [
-    "Open this page in Safari.",
-    "In the menu bar, choose File → Add to Dock.",
-    "Click “Add”. Wishin will open in its own window from the Dock.",
+    "landing.addToHome.macos.step1",
+    "landing.addToHome.macos.step2",
+    "landing.addToHome.macos.step3",
   ],
-};
+} as const satisfies Record<ApplePlatform, readonly string[]>;
 
 /**
  * Dialog shown on Apple devices, where the Android APK can't be installed.
@@ -43,19 +44,21 @@ export const AddToHomeScreenDialog: React.FC<AddToHomeScreenDialogProps> = ({
   onDismiss,
   platform,
 }) => {
-  const steps = STEPS[platform];
+  const { t } = useTranslation();
+  const steps = STEP_KEYS[platform];
 
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
         <Dialog.Icon icon="cellphone-arrow-down" />
         <Dialog.Title style={styles.title}>
-          {platform === "ios" ? "Add to Home Screen" : "Add to Dock"}
+          {platform === "ios"
+            ? t("landing.addToHome.titleIos")
+            : t("landing.addToHome.titleMacos")}
         </Dialog.Title>
         <Dialog.Content>
           <Text variant="bodyMedium" style={styles.paragraph}>
-            Wishin isn&apos;t on the App Store yet, but you can use it as an app
-            right now:
+            {t("landing.addToHome.intro")}
           </Text>
           {steps.map((step, index) => (
             <View key={step} style={styles.step}>
@@ -63,14 +66,14 @@ export const AddToHomeScreenDialog: React.FC<AddToHomeScreenDialogProps> = ({
                 {index + 1}.
               </Text>
               <Text variant="bodyMedium" style={styles.stepText}>
-                {step}
+                {t(step)}
               </Text>
             </View>
           ))}
         </Dialog.Content>
         <Dialog.Actions>
           <Button mode="contained" onPress={onDismiss}>
-            Got it
+            {t("common.gotIt")}
           </Button>
         </Dialog.Actions>
       </Dialog>

@@ -24,7 +24,7 @@ wishin/
 │   ├── provision.ts        — Creates/migrates Appwrite collections
 │   └── seed.ts             — Seeds dev data
 └── docs/
-    └── adr/                — 29 ADRs (next: 030)
+    └── adr/                — 30 ADRs (next: 031)
 ```
 
 Package manager: `pnpm@10.28.1`. Workspace defined in `pnpm-workspace.yaml`.
@@ -74,7 +74,8 @@ src/
 ├── hooks/            — useWishlist, useGoogleSignIn, useImagePickerAndUpload, useAsyncAction
 ├── constants/        — Config.ts (reads EXPO_PUBLIC_* env vars)
 ├── theme/            — MD3 theme tokens
-├── utils/            — Alert, etc.
+├── utils/            — Alert, auth-errors, etc.
+├── i18n/             — i18next setup, locales (en, es), language detection
 └── types/
 ```
 
@@ -149,6 +150,16 @@ Domain tests live alongside source: `*.spec.ts` next to `*.ts`. Infrastructure h
 - All colors via `useTheme()` and MD3 tokens (`theme.colors.surface`, etc.) — no hardcoded hex values
 - **`moti`** for animations
 
+### Internationalization (ADR 030)
+
+- **No hardcoded user-facing strings.** Use `const { t } = useTranslation()` (react-i18next); outside React render, import `i18n` from `src/i18n`.
+- Add every key to `src/i18n/locales/en.ts` (source of truth, typed) **and** `es.ts`; `resources.spec.ts` checks key/placeholder parity.
+- Language is auto-detected (`expo-localization`) — `en` and `es` supported, fallback `en`. No in-app picker yet.
+- Never derive UI state from translated text: classify errors with `classifyError()` (`ErrorKind`) and translate at render time.
+- Don't name interpolation variables after `Intl.NumberFormat` options (e.g. `currency`) — i18next forwards them to the formatter and silently drops formatting.
+- The landing iframe (`public/landing-content.html`) has its own inline dictionary keyed by `data-i18n`; update it when changing landing copy.
+- `<html lang>` is set before first paint by inline scripts in `public/index.html` and `public/landing-content.html` (otherwise Safari offers to translate). Each has its own supported-languages list — update both when adding a language.
+
 **Active patch:** `patches/react-native-paper@5.15.0.patch` — fixes `FABGroup` crashing on web by setting `accessibilityRole="none"` on web (upstream bug). Applied automatically by pnpm.
 
 ---
@@ -185,7 +196,7 @@ Domain tests live alongside source: `*.spec.ts` next to `*.ts`. Infrastructure h
 
 ## ADR Process
 
-ADRs live in `docs/adr/` — 29 exist (last: `029-automated-lockfile-synchronization.md`). Next number: **030**.
+ADRs live in `docs/adr/` — 30 exist (last: `030-internationalization.md`). Next number: **031**.
 
 Rules:
 1. Check last ADR number in `docs/adr/` before assigning a new one

@@ -1,80 +1,84 @@
 import { describe, it, expect } from "vitest";
-import { WishlistItemNotFoundError } from "@wishin/domain";
 import {
-  mapErrorToMessage,
-  matchesError,
-  normalizeError,
-} from "./error-mapper";
+  InsufficientStockError,
+  WishlistItemNotFoundError,
+  WishlistNotFoundError,
+} from "@wishin/domain";
+import { createI18n } from "../../../i18n/create-i18n";
+import { classifyError, isNameError, mapErrorToMessage } from "./error-mapper";
 
 describe("error-mapper", () => {
-  describe("normalizeError", () => {
-    it("should lowercase and stringify error messages", () => {
-      expect(normalizeError(new Error("Test Error"))).toBe("test error");
-      expect(normalizeError("String Error")).toBe("string error");
+  describe("classifyError", () => {
+    it("should classify name length errors", () => {
+      expect(classifyError("Invalid name: too short")).toBe("nameTooShort");
+      expect(classifyError("Invalid name: too long")).toBe("nameTooLong");
+    });
+
+    it("should classify wishlist not found errors", () => {
+      expect(classifyError("Wishlist not found")).toBe("wishlistNotFound");
+      expect(classifyError(new WishlistNotFoundError("123"))).toBe(
+        "wishlistNotFound",
+      );
+      expect(classifyError("Wishlist with ID 123 not found")).toBe(
+        "wishlistNotFound",
+      );
+    });
+
+    it("should classify wishlist item not found errors", () => {
+      expect(classifyError(new WishlistItemNotFoundError("123"))).toBe(
+        "itemNotFound",
+      );
+      expect(classifyError("Wishlist item with ID 123")).toBe("itemNotFound");
+    });
+
+    it("should classify stock errors", () => {
+      expect(classifyError(new InsufficientStockError("No stock"))).toBe(
+        "itemUnavailable",
+      );
+    });
+
+    it("should classify network errors", () => {
+      expect(classifyError("Network request failed")).toBe("network");
+      expect(classifyError("Failed to fetch")).toBe("network");
+    });
+
+    it("should classify upload errors", () => {
+      expect(classifyError("Upload Failed")).toBe("imageUpload");
+      expect(classifyError("Error uploading the image")).toBe("imageUpload");
+    });
+
+    it("should classify anything else as unknown", () => {
+      expect(classifyError("Some unknown error")).toBe("unknown");
+      expect(classifyError(undefined)).toBe("unknown");
     });
   });
 
-  describe("matchesError", () => {
-    it("should return true if term is present (case-insensitive)", () => {
-      expect(matchesError("Name is too short", "name")).toBe(true);
-      expect(matchesError("NAME IS TOO SHORT", "name")).toBe(true);
-      expect(matchesError("some error", "SOME")).toBe(true);
-    });
-
-    it("should return false if term is not present", () => {
-      expect(matchesError("Some error", "name")).toBe(false);
-      expect(matchesError(null, "name")).toBe(false);
-      expect(matchesError(undefined, "name")).toBe(false);
+  describe("isNameError", () => {
+    it("should flag only name validation errors", () => {
+      expect(isNameError("nameTooShort")).toBe(true);
+      expect(isNameError("nameTooLong")).toBe(true);
+      expect(isNameError("network")).toBe(false);
+      expect(isNameError(null)).toBe(false);
     });
   });
 
   describe("mapErrorToMessage", () => {
-    it("should map name-related errors correctly", () => {
-      expect(mapErrorToMessage("Invalid name: too short")).toContain(
-        "too short",
-      );
-      expect(mapErrorToMessage("Invalid name: too long")).toContain(
+    it("should return the translated message for the error", () => {
+      const en = createI18n("en").t;
+      const es = createI18n("es").t;
+
+      expect(mapErrorToMessage("Invalid name: too long", en)).toContain(
         "100 characters",
       );
-    });
-
-    it("should map wishlist not found errors", () => {
-      expect(mapErrorToMessage("Wishlist not found")).toContain(
-        "couldn't find your wishlist",
+      expect(mapErrorToMessage("Invalid name: too long", es)).toContain(
+        "100 caracteres",
       );
     });
 
-    it("should map WishlistItemNotFoundError correctly", () => {
-      expect(mapErrorToMessage(new WishlistItemNotFoundError("123"))).toContain(
-        "item. It might have been removed",
-      );
-      expect(mapErrorToMessage("Wishlist item with ID 123")).toContain(
-        "item. It might have been removed",
-      );
-    });
-
-    it("should map network errors", () => {
-      expect(mapErrorToMessage("Network request failed")).toContain(
-        "connection issue",
-      );
-      expect(mapErrorToMessage("Failed to fetch")).toContain(
-        "connection issue",
-      );
-    });
-
-    it("should map upload errors", () => {
-      expect(mapErrorToMessage("Upload Failed")).toContain(
-        "trouble with the image",
-      );
-      expect(mapErrorToMessage("Error uploading the image")).toContain(
-        "trouble with the image",
-      );
-    });
-
-    it("should return a default message for unknown errors", () => {
-      expect(mapErrorToMessage("Some unknown error")).toContain(
-        "Something went wrong",
-      );
+    it("should fall back to a friendly generic message", () => {
+      expect(
+        mapErrorToMessage("Some unknown error", createI18n("en").t),
+      ).toContain("Something went wrong");
     });
   });
 });

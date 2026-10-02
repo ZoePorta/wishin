@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { Linking, StyleSheet } from "react-native";
 import { Portal, Dialog, Button, Text } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { Config } from "../../constants/Config";
 
 /**
@@ -25,6 +26,7 @@ export const TryAppDialog: React.FC<TryAppDialogProps> = ({
   visible,
   onDismiss,
 }) => {
+  const { t } = useTranslation();
   const handleDownload = useCallback(async () => {
     try {
       await Linking.openURL(Config.ANDROID_APK_URL);
@@ -38,20 +40,17 @@ export const TryAppDialog: React.FC<TryAppDialogProps> = ({
     <Portal>
       <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
         <Dialog.Icon icon="android" />
-        <Dialog.Title style={styles.title}>Try the App</Dialog.Title>
+        <Dialog.Title style={styles.title}>
+          {t("landing.tryApp.title")}
+        </Dialog.Title>
         <Dialog.Content>
           <Text variant="bodyMedium" style={styles.paragraph}>
-            Wishin isn&apos;t available on Google Play or the App Store yet.
-            While we get there, you can install the Android app directly from
-            our latest release.
+            {t("landing.tryApp.body")}
           </Text>
-          <Text variant="bodySmall">
-            Your device may ask you to allow installing apps from unknown
-            sources. iOS is not supported yet.
-          </Text>
+          <Text variant="bodySmall">{t("landing.tryApp.note")}</Text>
         </Dialog.Content>
         <Dialog.Actions>
-          <Button onPress={onDismiss}>Cancel</Button>
+          <Button onPress={onDismiss}>{t("common.cancel")}</Button>
           <Button
             mode="contained"
             icon="download"
@@ -59,7 +58,7 @@ export const TryAppDialog: React.FC<TryAppDialogProps> = ({
               void handleDownload();
             }}
           >
-            Download APK
+            {t("landing.tryApp.download")}
           </Button>
         </Dialog.Actions>
       </Dialog>

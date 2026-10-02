@@ -13,6 +13,7 @@ import {
   Icon,
 } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
+import { useTranslation } from "react-i18next";
 
 export interface SelectedImage {
   uri: string;
@@ -59,6 +60,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
   accessibilityLabel,
 }) => {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [menuVisible, setMenuVisible] = React.useState(false);
 
   const openMenu = () => {
@@ -91,8 +93,8 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
         await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== ImagePicker.PermissionStatus.GRANTED) {
         Alert.alert(
-          "Permission Required",
-          "Permission to access the photo gallery is required to add images to your items.",
+          t("imagePicker.permissionTitle"),
+          t("imagePicker.galleryPermission"),
         );
         return;
       }
@@ -107,7 +109,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
       handleImageResult(result);
     } catch (error) {
       console.error("Error picking image:", error);
-      Alert.alert("Error", "Failed to pick an image. Please try again.");
+      Alert.alert(t("common.error"), t("imagePicker.pickFailed"));
     }
   };
 
@@ -121,8 +123,8 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== ImagePicker.PermissionStatus.GRANTED) {
         Alert.alert(
-          "Permission Required",
-          "Permission to access the camera is required to take photos of your items.",
+          t("imagePicker.permissionTitle"),
+          t("imagePicker.cameraPermission"),
         );
         return;
       }
@@ -137,7 +139,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
       handleImageResult(result);
     } catch (error) {
       console.error("Error taking photo:", error);
-      Alert.alert("Error", "Failed to take a photo. Please try again.");
+      Alert.alert(t("common.error"), t("imagePicker.photoFailed"));
     }
   };
 
@@ -181,7 +183,9 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
               onPress={openMenu}
               disabled={disabled}
               rippleColor={theme.colors.onSurfaceVariant}
-              accessibilityLabel={accessibilityLabel ?? "Add photo"}
+              accessibilityLabel={
+                accessibilityLabel ?? t("imagePicker.addPhotoA11y")
+              }
               accessibilityRole="button"
               style={[
                 styles.placeholder,
@@ -197,7 +201,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
                   color={theme.colors.onSurfaceVariant}
                   size={24}
                 />
-                <Text variant="bodyMedium">Add Photo</Text>
+                <Text variant="bodyMedium">{t("imagePicker.addPhoto")}</Text>
               </View>
             </TouchableRipple>
 
@@ -209,17 +213,17 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
               >
                 <Surface style={styles.modalSurface} elevation={5}>
                   <Text variant="titleMedium" style={styles.modalTitle}>
-                    Select Photo Source
+                    {t("imagePicker.sourceTitle")}
                   </Text>
                   <List.Item
-                    title="Take Photo"
+                    title={t("imagePicker.takePhoto")}
                     left={(props) => <List.Icon {...props} icon="camera" />}
                     onPress={() => {
                       void takePhoto();
                     }}
                   />
                   <List.Item
-                    title="Choose from Gallery"
+                    title={t("imagePicker.chooseFromGallery")}
                     left={(props) => <List.Icon {...props} icon="image" />}
                     onPress={() => {
                       void pickImage();
@@ -230,7 +234,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
                     style={styles.cancelButton}
                     mode="text"
                   >
-                    Cancel
+                    {t("common.cancel")}
                   </Button>
                 </Surface>
               </Modal>
