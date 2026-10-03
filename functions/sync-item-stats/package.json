@@ -8,7 +8,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
     "node-appwrite": "^22.1.0"
