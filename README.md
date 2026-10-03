@@ -1,6 +1,7 @@
 # Wishin
 
 ![License](https://img.shields.io/badge/license-PolyForm_Noncommercial_1.0.0-blue.svg)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-green.svg)
 ![PNPM](https://img.shields.io/badge/pnpm-%3E%3D10-orange.svg)
 
@@ -273,9 +274,7 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 
 ## Community & Contribution
 
-Wishin is not accepting external code contributions at this time. Bug reports, feedback and feature ideas are very welcome via [GitHub Issues](https://github.com/ZoePorta/wishin/issues).
-
-The [**Contributing Guidelines**](CONTRIBUTING.md) document the development workflow and standards used in this repository.
+Contributions are welcome! Please read the [**Contributing Guidelines**](CONTRIBUTING.md) before opening a pull request. Pull requests target `develop`, and contributors must sign the [Contributor License Agreement](CLA.md) once before their first PR can be merged.
 
 ## [Project Roadmap](docs/roadmap.md)
 

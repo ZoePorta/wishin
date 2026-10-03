@@ -16,6 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Fork PRs: head_ref only exists in the fork, so check out from there
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.head_ref || github.ref_name }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -61,6 +63,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Fork PRs: head_ref only exists in the fork, so check out from there
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.head_ref || github.ref_name }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
