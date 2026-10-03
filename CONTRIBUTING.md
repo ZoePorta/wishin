@@ -1,5 +1,7 @@
 # Contributing to Wishin
 
+> **Note:** Wishin is not accepting external code contributions (pull requests) at this time. Bug reports and feedback are welcome via [GitHub Issues](https://github.com/ZoePorta/wishin/issues). The guidelines below describe the workflow and standards used in this repository.
+
 Welcome to the Wishin project! We're excited to have you on board. As a senior developer or architect, we expect high standards for code quality and architectural integrity.
 
 ## Development Workflow

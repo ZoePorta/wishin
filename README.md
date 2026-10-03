@@ -1,9 +1,8 @@
 # Wishin
 
-![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)
+![License](https://img.shields.io/badge/license-PolyForm_Noncommercial_1.0.0-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D20-green.svg)
 ![PNPM](https://img.shields.io/badge/pnpm-%3E%3D10-orange.svg)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
 
 ## Vision
 
@@ -274,10 +273,16 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 
 ## Community & Contribution
 
-We welcome contributions from the community! Please read our [**Contributing Guidelines**](CONTRIBUTING.md) before submitting a Pull Request.
+Wishin is not accepting external code contributions at this time. Bug reports, feedback and feature ideas are very welcome via [GitHub Issues](https://github.com/ZoePorta/wishin/issues).
+
+The [**Contributing Guidelines**](CONTRIBUTING.md) document the development workflow and standards used in this repository.
 
 ## [Project Roadmap](docs/roadmap.md)
 
 ## License
 
-Licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+Wishin is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE). You are free to use, study, modify and share the code for any noncommercial purpose (personal use, learning, research, education, charities, etc.).
+
+**Commercial use requires a separate license.** If you want to use Wishin or any part of its code in a commercial product or service, please get in touch via [GitHub](https://github.com/ZoePorta) to arrange a commercial license.
+
+Versions published before this change remain available under the Apache License 2.0.

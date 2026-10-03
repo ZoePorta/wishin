@@ -17,5 +17,6 @@
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json"
   },
-  "private": true
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0"
 }
