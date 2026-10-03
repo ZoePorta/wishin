@@ -2,6 +2,7 @@
   "name": "@wishin/infrastructure",
   "version": "0.1.0",
   "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
   "scripts": {
     "test": "vitest run",
     "build": "tsc -p tsconfig.build.json"
