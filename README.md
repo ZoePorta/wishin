@@ -37,7 +37,7 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 | **Backend (BaaS)** | Appwrite Cloud                                          |
 | **UI Framework**   | React Native Paper (Material Design 3)                  |
 | **Testing Suite**  | Vitest & React Native Testing Library                   |
-| **E2E Testing**    | Playwright (Web) & Maestro (Mobile - Planned)           |
+| **E2E Testing**    | Planned: Playwright (Web) & Maestro (Mobile)            |
 | **AI Governance**  | CodeRabbit (Automated Architectural Review)             |
 
 ## Quality Gates & Engineering Standards
