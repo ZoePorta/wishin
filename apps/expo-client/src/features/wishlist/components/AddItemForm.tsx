@@ -280,6 +280,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           }
         }}
         disabled={loading || isUploading}
+        loading={isUploading}
       />
 
       <TextInput

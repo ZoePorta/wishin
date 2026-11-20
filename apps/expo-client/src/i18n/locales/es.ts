@@ -251,6 +251,7 @@ export const es: TranslationResource = {
   imagePicker: {
     addPhoto: "Añadir foto",
     addPhotoA11y: "Añadir foto",
+    processing: "Procesando…",
     sourceTitle: "¿De dónde sacamos la foto?",
     takePhoto: "Hacer foto",
     chooseFromGallery: "Elegir de la galería",

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted — Amended by [ADR 031](031-client-side-image-normalization.md) (image resizing/optimization moved to the client)
 
 ## Context
 
