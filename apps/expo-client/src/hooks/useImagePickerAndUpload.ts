@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
+import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
   UploadImageUseCase,
@@ -14,6 +15,9 @@ import {
   prepareImageForUpload,
   type PickedImage,
 } from "../utils/image-processing";
+
+/** `extent` (used to flatten transparency onto a background) is only implemented on web. */
+const PREPARE_OPTIONS = { canFlatten: Platform.OS === "web" };
 
 /**
  * Resolves file metadata for an image asset, including file size.
@@ -139,14 +143,17 @@ export function useImagePickerAndUpload() {
       didIncrement = true;
 
       const asset = pickerResult.assets[0];
-      const prepared = await prepareImageForUpload({
-        uri: asset.uri,
-        fileName: asset.fileName,
-        mimeType: asset.mimeType,
-        fileSize: asset.fileSize,
-        width: asset.width,
-        height: asset.height,
-      });
+      const prepared = await prepareImageForUpload(
+        {
+          uri: asset.uri,
+          fileName: asset.fileName,
+          mimeType: asset.mimeType,
+          fileSize: asset.fileSize,
+          width: asset.width,
+          height: asset.height,
+        },
+        PREPARE_OPTIONS,
+      );
 
       if (requestId !== latestRequestRef.current) return null;
 
@@ -194,7 +201,7 @@ export function useImagePickerAndUpload() {
 
       setInflightCount((prev) => prev + 1);
       try {
-        const prepared = await prepareImageForUpload(file);
+        const prepared = await prepareImageForUpload(file, PREPARE_OPTIONS);
         if (requestId !== latestRequestRef.current) return null;
 
         const fileData = await resolveFileData(prepared);

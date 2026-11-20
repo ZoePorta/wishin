@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { manipulate, resize, renderAsync, saveAsync } = vi.hoisted(() => ({
-  manipulate: vi.fn(),
-  resize: vi.fn(),
-  renderAsync: vi.fn(),
-  saveAsync: vi.fn(),
-}));
+const { manipulate, resize, extent, renderAsync, saveAsync } = vi.hoisted(
+  () => ({
+    manipulate: vi.fn(),
+    resize: vi.fn(),
+    extent: vi.fn(),
+    renderAsync: vi.fn(),
+    saveAsync: vi.fn(),
+  }),
+);
 
 vi.mock("expo-image-manipulator", () => ({
   ImageManipulator: { manipulate },
@@ -14,6 +17,8 @@ vi.mock("expo-image-manipulator", () => ({
 
 import {
   MAX_IMAGE_SIDE,
+  MAX_PNG_BYTES,
+  FLATTEN_BACKGROUND,
   computeResize,
   withExtension,
   prepareImageForUpload,
@@ -59,9 +64,16 @@ describe("image-processing", () => {
   describe("prepareImageForUpload", () => {
     beforeEach(() => {
       vi.clearAllMocks();
-      const context = { resize, renderAsync };
+      const context = { resize, extent, renderAsync };
       manipulate.mockReturnValue(context);
       resize.mockReturnValue(context);
+      extent.mockReturnValue(context);
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          blob: () => Promise.resolve({ size: 500_000 }),
+        }),
+      );
       renderAsync.mockResolvedValue({ saveAsync });
       saveAsync.mockResolvedValue({
         uri: "blob:resized",
@@ -95,7 +107,7 @@ describe("image-processing", () => {
       });
     });
 
-    it("should convert PNG images to JPEG", async () => {
+    it("should keep PNG images as PNG to preserve transparency", async () => {
       const result = await prepareImageForUpload({
         uri: "blob:png",
         fileName: "logo.png",
@@ -104,11 +116,61 @@ describe("image-processing", () => {
         height: 600,
       });
 
-      expect(saveAsync).toHaveBeenCalledWith({
+      expect(saveAsync).toHaveBeenCalledWith({ format: "png" });
+      expect(extent).not.toHaveBeenCalled();
+      expect(result.fileName).toBe("logo.png");
+      expect(result.mimeType).toBe("image/png");
+    });
+
+    it("should flatten oversized PNGs onto white and save them as JPEG on web", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          blob: () => Promise.resolve({ size: MAX_PNG_BYTES + 1 }),
+        }),
+      );
+
+      const result = await prepareImageForUpload(
+        {
+          uri: "blob:huge-png",
+          fileName: "huge.png",
+          mimeType: "image/png",
+          width: 4000,
+          height: 3000,
+        },
+        { canFlatten: true },
+      );
+
+      expect(extent).toHaveBeenCalledWith({
+        backgroundColor: FLATTEN_BACKGROUND,
+        width: 1600,
+        height: 1200,
+      });
+      expect(saveAsync).toHaveBeenLastCalledWith({
         compress: 0.8,
         format: "jpeg",
       });
-      expect(result.fileName).toBe("logo.jpg");
+      expect(result.fileName).toBe("huge.jpg");
+      expect(result.mimeType).toBe("image/jpeg");
+    });
+
+    it("should save oversized PNGs as JPEG without flattening when unsupported", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          blob: () => Promise.resolve({ size: MAX_PNG_BYTES + 1 }),
+        }),
+      );
+
+      const result = await prepareImageForUpload({
+        uri: "file:///huge.png",
+        fileName: "huge.png",
+        mimeType: "image/png",
+        width: 4000,
+        height: 3000,
+      });
+
+      expect(extent).not.toHaveBeenCalled();
       expect(result.mimeType).toBe("image/jpeg");
     });
 

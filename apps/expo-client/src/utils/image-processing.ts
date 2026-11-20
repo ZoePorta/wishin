@@ -1,4 +1,12 @@
-import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import {
+  ImageManipulator,
+  SaveFormat,
+  type ImageManipulatorContext,
+} from "expo-image-manipulator";
+
+/**
+ * Client-side image normalization before upload — see ADR 031.
+ */
 
 /**
  * Longest side (in px) an uploaded image is scaled down to.
@@ -9,10 +17,21 @@ export const MAX_IMAGE_SIDE = 1600;
 
 /**
  * JPEG compression applied when re-encoding (0–1).
- * Every upload is re-encoded as JPEG: item images are photos and avatars are framed,
- * so transparency is intentionally not preserved.
  */
 export const JPEG_QUALITY = 0.8;
+
+/**
+ * Largest PNG (in bytes) uploaded as-is. Above this, the image is converted to JPEG so it stays
+ * below the Appwrite SDK's 5 MB chunked-upload threshold, which does not work on web (ADR 031).
+ */
+export const MAX_PNG_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Colour transparent pixels are flattened onto when an oversized PNG is converted to JPEG.
+ * This is image data baked into the file (not a UI colour), so it is deliberately not a theme token:
+ * the stored file is shared by every viewer regardless of their theme (ADR 031).
+ */
+export const FLATTEN_BACKGROUND = "#FFFFFF";
 
 /**
  * An image picked by the user, as handed to the upload pipeline.
@@ -62,7 +81,55 @@ export function withExtension(
 }
 
 /**
- * Prepares a picked image for upload: scales it down to {@link MAX_IMAGE_SIDE} and re-encodes it as JPEG.
+ * Measures the size in bytes of a local/blob/data URI.
+ *
+ * @param uri - The URI to measure.
+ * @returns The size in bytes, or `undefined` if it cannot be fetched.
+ */
+async function getUriSize(uri: string): Promise<number | undefined> {
+  try {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    return blob.size;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Platform-dependent options for {@link prepareImageForUpload}.
+ */
+export interface PrepareImageOptions {
+  /**
+   * Whether the manipulator supports `extent` with a background colour (web only).
+   * When false, oversized PNGs are converted to JPEG without flattening.
+   */
+  canFlatten?: boolean;
+}
+
+/**
+ * Starts a manipulation of `uri`, scaled down to fit {@link MAX_IMAGE_SIDE}.
+ *
+ * @param image - The source image.
+ * @returns The manipulator context with the resize applied (if needed).
+ */
+function startResized(image: PickedImage): ImageManipulatorContext {
+  const context = ImageManipulator.manipulate(image.uri);
+  const resize = computeResize(image.width, image.height);
+  if (resize) {
+    context.resize(resize);
+  }
+  return context;
+}
+
+/**
+ * Prepares a picked image for upload (ADR 031): scales it down to {@link MAX_IMAGE_SIDE} and re-encodes it.
+ *
+ * - PNGs stay PNG so transparency is preserved and the UI's theme colour shows through.
+ *   If the result exceeds {@link MAX_PNG_BYTES}, it is converted to JPEG instead — flattened onto
+ *   {@link FLATTEN_BACKGROUND} when `options.canFlatten` is set (`extent` is web-only, so native
+ *   keeps the encoder's default).
+ * - Everything else becomes JPEG at {@link JPEG_QUALITY}.
  *
  * This keeps uploads below the Appwrite SDK's 5 MB chunking threshold — chunked uploads rely on
  * `expo-file-system`, which is unavailable on web, so large camera photos used to fail there.
@@ -71,33 +138,70 @@ export function withExtension(
  * Shared by every upload (item images and avatar); future steps such as cropping belong here.
  *
  * @param image - The image picked by the user.
+ * @param options - Platform-dependent options (see {@link PrepareImageOptions}).
  * @returns The processed image (without `fileSize`, which is resolved later), or the original
  *   image unchanged if processing fails (e.g. a format the platform cannot decode).
  */
 export async function prepareImageForUpload(
   image: PickedImage,
+  options: PrepareImageOptions = {},
 ): Promise<PickedImage> {
   try {
-    const context = ImageManipulator.manipulate(image.uri);
-    const resize = computeResize(image.width, image.height);
-    if (resize) {
-      context.resize(resize);
-    }
-    const rendered = await context.renderAsync();
-    const result = await rendered.saveAsync({
-      compress: JPEG_QUALITY,
-      format: SaveFormat.JPEG,
-    });
+    const rendered = await startResized(image).renderAsync();
 
-    return {
-      uri: result.uri,
-      fileName: withExtension(image.fileName, "jpg"),
-      mimeType: "image/jpeg",
-      width: result.width,
-      height: result.height,
-    };
+    if (image.mimeType === "image/png") {
+      const png = await rendered.saveAsync({ format: SaveFormat.PNG });
+      const size = await getUriSize(png.uri);
+      if (size !== undefined && size <= MAX_PNG_BYTES) {
+        return {
+          uri: png.uri,
+          fileName: withExtension(image.fileName, "png"),
+          mimeType: "image/png",
+          fileSize: size,
+          width: png.width,
+          height: png.height,
+        };
+      }
+
+      if (options.canFlatten) {
+        const flattened = await startResized(image)
+          .extent({
+            backgroundColor: FLATTEN_BACKGROUND,
+            width: png.width,
+            height: png.height,
+          })
+          .renderAsync();
+        return await saveAsJpeg(flattened, image);
+      }
+    }
+
+    return await saveAsJpeg(rendered, image);
   } catch (err) {
     console.warn("Image processing failed, uploading original:", err);
     return image;
   }
+}
+
+/**
+ * Encodes a rendered image as JPEG at {@link JPEG_QUALITY}.
+ *
+ * @param rendered - The rendered image reference.
+ * @param source - The original image, used for the file name.
+ * @returns The JPEG image.
+ */
+async function saveAsJpeg(
+  rendered: Awaited<ReturnType<ImageManipulatorContext["renderAsync"]>>,
+  source: PickedImage,
+): Promise<PickedImage> {
+  const result = await rendered.saveAsync({
+    compress: JPEG_QUALITY,
+    format: SaveFormat.JPEG,
+  });
+  return {
+    uri: result.uri,
+    fileName: withExtension(source.fileName, "jpg"),
+    mimeType: "image/jpeg",
+    width: result.width,
+    height: result.height,
+  };
 }
