@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
-import { Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
   UploadImageUseCase,
@@ -10,6 +9,11 @@ import {
   type StorageRepository,
 } from "@wishin/domain";
 import { useStorageRepository } from "../contexts/WishlistRepositoryContext";
+import { UniversalAlert as Alert } from "../utils/Alert";
+import {
+  prepareImageForUpload,
+  type PickedImage,
+} from "../utils/image-processing";
 
 /**
  * Resolves file metadata for an image asset, including file size.
@@ -135,12 +139,18 @@ export function useImagePickerAndUpload() {
       didIncrement = true;
 
       const asset = pickerResult.assets[0];
-      const fileData = await resolveFileData({
+      const prepared = await prepareImageForUpload({
         uri: asset.uri,
         fileName: asset.fileName,
         mimeType: asset.mimeType,
         fileSize: asset.fileSize,
+        width: asset.width,
+        height: asset.height,
       });
+
+      if (requestId !== latestRequestRef.current) return null;
+
+      const fileData = await resolveFileData(prepared);
 
       if (requestId !== latestRequestRef.current) return null;
 
@@ -168,24 +178,14 @@ export function useImagePickerAndUpload() {
   }, [storageRepository, t]);
 
   /**
-   * Uploads a file from a local URI and returns its preview URL.
+   * Prepares (resizes/re-encodes) a picked image, uploads it and returns its preview URL.
    * Resolves file size if not provided.
    *
-   * @param {Object} file - The file data to upload.
-   * @param {string} file.uri - Local URI of the file.
-   * @param {string} [file.fileName] - Optional display name for the file.
-   * @param {string} [file.mimeType] - Optional MIME type (defaults to image/jpeg).
-   * @param {number} [file.fileSize] - Optional size in bytes.
+   * @param {PickedImage} file - The picked image (URI plus optional name, MIME type, size and dimensions).
    * @returns {Promise<string | null>} The preview URL of the uploaded image, or null if failed.
-   * @throws {Error} If file size cannot be determined.
    */
   const uploadFile = useCallback(
-    async (file: {
-      uri: string;
-      fileName?: string;
-      mimeType?: string;
-      fileSize?: number;
-    }): Promise<string | null> => {
+    async (file: PickedImage): Promise<string | null> => {
       const requestId = ++latestRequestRef.current;
 
       if (requestId === latestRequestRef.current) {
@@ -194,12 +194,10 @@ export function useImagePickerAndUpload() {
 
       setInflightCount((prev) => prev + 1);
       try {
-        const fileData = await resolveFileData({
-          uri: file.uri,
-          fileName: file.fileName,
-          mimeType: file.mimeType,
-          fileSize: file.fileSize,
-        });
+        const prepared = await prepareImageForUpload(file);
+        if (requestId !== latestRequestRef.current) return null;
+
+        const fileData = await resolveFileData(prepared);
 
         if (requestId !== latestRequestRef.current) return null;
 

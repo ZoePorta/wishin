@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Image, StyleSheet, Alert } from "react-native";
+import { View, Image, StyleSheet } from "react-native";
 import {
+  ActivityIndicator,
   Text,
   IconButton,
   useTheme,
@@ -14,13 +15,14 @@ import {
 } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
 import { useTranslation } from "react-i18next";
+import { UniversalAlert as Alert } from "../../utils/Alert";
+import type { PickedImage } from "../../utils/image-processing";
 
-export interface SelectedImage {
-  uri: string;
-  name: string;
-  type: string;
-  size: number;
-}
+/**
+ * Image chosen in the field. Same shape the upload pipeline consumes
+ * (`useImagePickerAndUpload().uploadFile`), so no field mapping is needed.
+ */
+export type SelectedImage = PickedImage;
 
 interface ImagePickerFieldProps {
   /**
@@ -40,6 +42,10 @@ interface ImagePickerFieldProps {
    */
   disabled?: boolean;
   /**
+   * Whether the selected image is being processed/uploaded. Shows a progress overlay.
+   */
+  loading?: boolean;
+  /**
    * Accessibility label for the field.
    */
   accessibilityLabel?: string;
@@ -57,6 +63,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
   imageUri,
   onImageSelected,
   disabled = false,
+  loading = false,
   accessibilityLabel,
 }) => {
   const theme = useTheme();
@@ -75,9 +82,11 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
       const asset = result.assets[0];
       onImageSelected({
         uri: asset.uri,
-        name: asset.fileName ?? asset.uri.split("/").pop() ?? "image.jpg",
-        type: asset.mimeType ?? "image/jpeg",
-        size: asset.fileSize ?? 0,
+        fileName: asset.fileName,
+        mimeType: asset.mimeType,
+        fileSize: asset.fileSize,
+        width: asset.width,
+        height: asset.height,
       });
     }
   };
@@ -174,14 +183,14 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
               size={20}
               onPress={removeImage}
               style={styles.removeButton}
-              disabled={disabled}
+              disabled={disabled || loading}
             />
           </Surface>
         ) : (
           <View>
             <TouchableRipple
               onPress={openMenu}
-              disabled={disabled}
+              disabled={disabled || loading}
               rippleColor={theme.colors.onSurfaceVariant}
               accessibilityLabel={
                 accessibilityLabel ?? t("imagePicker.addPhotoA11y")
@@ -196,12 +205,25 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
               ]}
             >
               <View style={styles.rippleInner}>
-                <Icon
-                  source="camera-plus"
-                  color={theme.colors.onSurfaceVariant}
-                  size={24}
-                />
-                <Text variant="bodyMedium">{t("imagePicker.addPhoto")}</Text>
+                {loading ? (
+                  <>
+                    <ActivityIndicator color={theme.colors.primary} />
+                    <Text variant="bodyMedium" style={styles.loadingText}>
+                      {t("imagePicker.processing")}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Icon
+                      source="camera-plus"
+                      color={theme.colors.onSurfaceVariant}
+                      size={24}
+                    />
+                    <Text variant="bodyMedium">
+                      {t("imagePicker.addPhoto")}
+                    </Text>
+                  </>
+                )}
               </View>
             </TouchableRipple>
 
@@ -286,6 +308,9 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 8,
   },
   modalContent: {
     padding: 20,
