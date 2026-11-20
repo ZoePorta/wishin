@@ -1,5 +1,5 @@
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { View, FlatList, StyleSheet, useWindowDimensions } from "react-native";
 import {
   Text,
@@ -14,6 +14,11 @@ import type { UseWishlistReturn } from "../../src/hooks/useWishlist";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { PublicItemCard } from "../../src/features/wishlist/components/PublicItemCard";
 import { useUser } from "../../src/contexts/UserContext";
+import { useToast } from "../../src/contexts/ToastContext";
+import {
+  PullToRefresh,
+  useNativeRefreshControl,
+} from "../../src/components/common/PullToRefresh";
 import { SpoilerOverlay } from "../../src/features/wishlist/components/SpoilerOverlay";
 import { Layout } from "../../src/constants/Layout";
 import { Avatar } from "../../src/components/common/Avatar";
@@ -34,8 +39,15 @@ import {
  */
 export default function WishlistDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { wishlist, loading, error, refetch }: UseWishlistReturn =
-    useWishlist(id);
+  const {
+    wishlist,
+    loading,
+    error,
+    refreshing,
+    refetch,
+    refresh,
+    applyOptimisticItem,
+  }: UseWishlistReturn = useWishlist(id);
   const theme = useTheme();
   const { t } = useTranslation();
   const { userId, isSessionReliable } = useUser();
@@ -43,6 +55,17 @@ export default function WishlistDetail() {
   const [isSpoilerRevealed, setIsSpoilerRevealed] = useState(false);
   const [sortBy, setSortBy] = useState<ItemSortOption>(DEFAULT_ITEM_SORT);
   const { width } = useWindowDimensions();
+  const { showToast } = useToast();
+  const listRef = useRef<FlatList<WishlistItemOutput>>(null);
+
+  /** Pull-to-refresh: reload that keeps the list on screen. */
+  const handleRefresh = useCallback(() => {
+    void refresh().then((ok) => {
+      if (!ok) showToast(t("common.refreshFailed"));
+    });
+  }, [refresh, showToast, t]);
+
+  const refreshControl = useNativeRefreshControl(refreshing, handleRefresh);
 
   const numColumns = useMemo(() => {
     if (width >= 1200) return 4;
@@ -149,6 +172,7 @@ export default function WishlistDetail() {
               onSuggestionShown={handleSuggestionShown}
               isOwner={isOwner}
               isSpoilerRevealed={isSpoilerRevealed}
+              onItemChanged={applyOptimisticItem}
             />
           </View>
         </View>
@@ -161,6 +185,7 @@ export default function WishlistDetail() {
       isOwner,
       isSpoilerRevealed,
       numColumns,
+      applyOptimisticItem,
     ],
   );
 
@@ -215,30 +240,38 @@ export default function WishlistDetail() {
           headerTintColor: theme.colors.onSurface,
         }}
       />
-      <FlatList
-        key={numColumns}
-        numColumns={numColumns}
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        data={visibleItems}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={ListHeader}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text
-              variant="bodyLarge"
-              style={[
-                styles.emptyText,
-                { color: theme.colors.onSurfaceVariant },
-              ]}
-            >
-              {t("publicWishlist.empty")}
-            </Text>
-          </View>
-        }
-        showsVerticalScrollIndicator={false}
-      />
+      <PullToRefresh
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        scrollRef={listRef}
+      >
+        <FlatList
+          ref={listRef}
+          key={numColumns}
+          numColumns={numColumns}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          data={visibleItems}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text
+                variant="bodyLarge"
+                style={[
+                  styles.emptyText,
+                  { color: theme.colors.onSurfaceVariant },
+                ]}
+              >
+                {t("publicWishlist.empty")}
+              </Text>
+            </View>
+          }
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        />
+      </PullToRefresh>
       <SpoilerOverlay
         isVisible={isOwner && !isSpoilerRevealed}
         onReveal={() => {

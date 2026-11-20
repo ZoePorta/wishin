@@ -24,6 +24,7 @@ import { Config } from "../../src/constants/Config";
 import { commonStyles } from "../../src/theme/common-styles";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
 import { useUser } from "../../src/contexts/UserContext";
+import { useToast } from "../../src/contexts/ToastContext";
 import { useRepositories } from "../../src/contexts/WishlistRepositoryContext";
 import { useProfile } from "../../src/features/profile/hooks/useProfile";
 import { WishlistForm } from "../../src/features/wishlist/components/WishlistForm";
@@ -60,7 +61,17 @@ export default function OwnerDashboard() {
     handleUpdateItem,
     handleRemoveItem,
     refetch,
+    refreshing,
+    refresh,
   } = useOwnerDashboard();
+  const { showToast } = useToast();
+
+  /** Pull-to-refresh: background reload that keeps the list on screen. */
+  const handleRefresh = React.useCallback(() => {
+    void refresh().then((ok) => {
+      if (!ok) showToast(t("common.refreshFailed"));
+    });
+  }, [refresh, showToast, t]);
 
   const {
     profile,
@@ -252,6 +263,8 @@ export default function OwnerDashboard() {
             <DashboardContent
               wishlist={wishlist}
               onRemoveItem={handleRemoveItem}
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
               onEditItem={(item) => {
                 setEditingItem(item);
                 setIsItemModalVisible(true);

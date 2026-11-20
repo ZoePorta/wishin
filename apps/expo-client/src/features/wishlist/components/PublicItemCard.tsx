@@ -34,6 +34,16 @@ interface PublicItemCardProps {
   isOwner: boolean;
   /** Whether the owner has revealed spoilers. */
   isSpoilerRevealed: boolean;
+  /**
+   * Called after a purchase or undo succeeded with the item state to show now
+   * (`next`) and the state the server still has (`previous`), so the screen can
+   * update optimistically while the server syncs. May fire after the card
+   * unmounted (undo from the toast once the item is gone).
+   */
+  onItemChanged?: (
+    next: WishlistItemOutput,
+    previous: WishlistItemOutput,
+  ) => void;
 }
 
 /**
@@ -47,6 +57,7 @@ interface PublicItemCardProps {
  * @param {() => void} props.onSuggestionShown - Callback when the guest suggestion is shown.
  * @param {boolean} props.isOwner - Whether the current user is the owner.
  * @param {boolean} props.isSpoilerRevealed - Whether spoilers are revealed.
+ * @param {Function} [props.onItemChanged] - Called with `(next, previous)` item states after a successful purchase or undo.
  * @returns {JSX.Element | null} The rendered public item card, or null if hidden.
  */
 export const PublicItemCard: React.FC<PublicItemCardProps> = ({
@@ -56,6 +67,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   onSuggestionShown,
   isOwner,
   isSpoilerRevealed,
+  onItemChanged,
 }) => {
   const theme = useTheme<AppTheme>();
   const { t } = useTranslation();
@@ -127,7 +139,11 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   );
 
   const handleUndoPurchase = useCallback(
-    async (transactionId: string) => {
+    async (
+      transactionId: string,
+      purchased: WishlistItemOutput | undefined,
+      beforePurchase: WishlistItemOutput,
+    ) => {
       if (!userId) return;
 
       try {
@@ -137,6 +153,8 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
           userId,
         });
         showToast(t("item.purchase.undone"));
+        // Restore the pre-purchase state; the server still has the purchased one.
+        if (purchased) onItemChanged?.(beforePurchase, purchased);
       } catch (err: unknown) {
         console.error("Failed to undo purchase:", err);
         Alert.alert(
@@ -145,7 +163,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         );
       }
     },
-    [undoPurchase, wishlistId, userId, showToast, t],
+    [undoPurchase, wishlistId, userId, showToast, t, onItemChanged],
   );
 
   const executePurchase = useCallback(
@@ -158,11 +176,20 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
           quantity: 1, // Defaulting to 1 for this UI button
         });
 
+        // The use case returns the domain-validated post-purchase state (ADR 025).
+        const purchased = result.wishlist.items.find((i) => i.id === item.id);
+        const beforePurchase = item;
+
         showToast(t("item.purchase.success", { name: item.name }), {
           onUndo: () => {
-            void handleUndoPurchase(result.transactionId);
+            void handleUndoPurchase(
+              result.transactionId,
+              purchased,
+              beforePurchase,
+            );
           },
         });
+        if (purchased) onItemChanged?.(purchased, beforePurchase);
       } catch (err: unknown) {
         // usePurchaseItem (via useAsyncActionEx) re-throws errors, so we catch them here
         console.error("Failed to purchase item:", err);
@@ -172,11 +199,11 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     [
       purchaseItem,
       wishlistId,
-      item.id,
-      item.name,
+      item,
       showToast,
       handleUndoPurchase,
       t,
+      onItemChanged,
     ],
   );
 

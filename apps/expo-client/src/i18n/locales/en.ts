@@ -16,6 +16,7 @@ export const en = {
     tapToRetry: "Tap to Retry",
     or: "or",
     undo: "Undo",
+    refreshFailed: "Couldn't refresh. Check your connection and try again.",
   },
   navigation: {
     goBack: "Go back",

@@ -17,6 +17,8 @@ export const es: TranslationResource = {
     tapToRetry: "Toca para volver a intentarlo",
     or: "o",
     undo: "Deshacer",
+    refreshFailed:
+      "No se pudo actualizar. Revisa tu conexión e inténtalo de nuevo.",
   },
   navigation: {
     goBack: "Volver atrás",
