@@ -206,12 +206,11 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
             >
               <View style={styles.rippleInner}>
                 {loading ? (
-                  <>
-                    <ActivityIndicator color={theme.colors.primary} />
-                    <Text variant="bodyMedium" style={styles.loadingText}>
-                      {t("imagePicker.processing")}
-                    </Text>
-                  </>
+                  <ActivityIndicator
+                    size="large"
+                    color={theme.colors.primary}
+                    accessibilityLabel={t("imagePicker.processing")}
+                  />
                 ) : (
                   <>
                     <Icon
@@ -308,9 +307,6 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 8,
   },
   modalContent: {
     padding: 20,
