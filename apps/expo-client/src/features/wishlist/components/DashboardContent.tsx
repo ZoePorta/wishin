@@ -3,6 +3,12 @@ import { FlatList, View, StyleSheet } from "react-native";
 import { Text, Surface } from "react-native-paper";
 import { type WishlistOutput, type WishlistItemOutput } from "@wishin/domain";
 import { DashboardItemCard } from "./DashboardItemCard";
+import { ItemSortSelector } from "./ItemSortSelector";
+import {
+  DEFAULT_ITEM_SORT,
+  sortItems,
+  type ItemSortOption,
+} from "../utils/item-sort";
 import { Layout } from "../../../constants/Layout";
 import { useTranslation } from "react-i18next";
 
@@ -34,11 +40,19 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   ListHeaderComponent,
 }) => {
   const { t } = useTranslation();
-  // Sort by creation date reversed (most recent first)
-  // Since Appwrite returns them in chronological order, we just reverse the array.
+  const [sortBy, setSortBy] = React.useState<ItemSortOption>(DEFAULT_ITEM_SORT);
   const sortedItems = React.useMemo(
-    () => [...wishlist.items].reverse(),
-    [wishlist.items],
+    () => sortItems(wishlist.items, sortBy),
+    [wishlist.items, sortBy],
+  );
+
+  const header = (
+    <>
+      {ListHeaderComponent}
+      {wishlist.items.length > 1 && (
+        <ItemSortSelector value={sortBy} onChange={setSortBy} />
+      )}
+    </>
   );
 
   return (
@@ -64,7 +78,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             </Text>
           </View>
         )}
-        ListHeaderComponent={ListHeaderComponent}
+        ListHeaderComponent={header}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />

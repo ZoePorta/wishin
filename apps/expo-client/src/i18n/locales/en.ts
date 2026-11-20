@@ -178,6 +178,13 @@ export const en = {
     urgent: "URGENT",
     a11y: "Priority: {{label}}",
   },
+  itemSort: {
+    label: "Sort by",
+    priority: "Priority",
+    date: "Newest",
+    price: "Price",
+    optionA11y: "Sort by {{label}}",
+  },
   item: {
     price:
       "{{symbol}} {{amount, number(minimumFractionDigits: 2; maximumFractionDigits: 2)}}",
