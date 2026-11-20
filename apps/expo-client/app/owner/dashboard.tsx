@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Platform, Pressable } from "react-native";
+import { View, StyleSheet, Platform, Pressable, Share } from "react-native";
 import { UniversalAlert as Alert } from "../../src/utils/Alert";
 import { Stack, router } from "expo-router";
 import {
@@ -21,6 +21,7 @@ import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
 import { type WishlistItemOutput } from "@wishin/domain";
 import { Config } from "../../src/constants/Config";
+import { shareOrCopyLink } from "../../src/utils/share";
 import { commonStyles } from "../../src/theme/common-styles";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
 import { useUser } from "../../src/contexts/UserContext";
@@ -82,7 +83,8 @@ export default function OwnerDashboard() {
   const { updateProfile, updating: profileUpdating } = useUpdateProfile();
   const { pickAndUpload, uploading: imageUploading } =
     useImagePickerAndUpload();
-  const { storageRepository, profileRepository } = useRepositories();
+  const { storageRepository, profileRepository, observability } =
+    useRepositories();
   const [localAvatarUpdating, setLocalAvatarUpdating] = useState(false);
 
   const handleEditAvatar = async () => {
@@ -181,8 +183,31 @@ export default function OwnerDashboard() {
         ? `${Config.baseUrl}/wishlist/${wishlist.id}`
         : Linking.createURL(`wishlist/${wishlist.id}`);
 
-      await Clipboard.setStringAsync(url);
-      setIsShareSnackbarVisible(true);
+      const outcome = await shareOrCopyLink(
+        {
+          url,
+          title: wishlist.title,
+          message: t("dashboard.shareMessage", { title: wishlist.title }),
+        },
+        {
+          platform: Platform.OS,
+          nativeShare: (content) => Share.share(content),
+          webShare:
+            typeof navigator !== "undefined" &&
+            typeof navigator.share === "function"
+              ? (data) => navigator.share(data)
+              : undefined,
+          copy: (text) => Clipboard.setStringAsync(text),
+        },
+      );
+
+      observability.trackEvent("wishlist_shared", {
+        wishlistId: wishlist.id,
+        outcome,
+      });
+      if (outcome === "copied") {
+        setIsShareSnackbarVisible(true);
+      }
     } catch (err) {
       console.error("Failed to share wishlist:", err);
       Alert.alert(

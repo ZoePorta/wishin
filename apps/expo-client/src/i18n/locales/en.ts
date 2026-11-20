@@ -115,10 +115,10 @@ export const en = {
     actionsA11y: "Wishlist actions",
     closeItemModalA11y: "Close item modal",
     closeEditWishlistA11y: "Close edit wishlist modal",
+    shareMessage: "Check out my wishlist “{{title}}” on Wishin",
     linkCopied: "Link copied to clipboard",
     shareFailedTitle: "Share Failed",
-    shareFailedMessage:
-      "Could not copy the wishlist link to your clipboard. Please try again.",
+    shareFailedMessage: "Could not share the wishlist link. Please try again.",
     emptyTitle: "Your wishlist is empty.",
     emptySubtitle: "Add your first item using the button below!",
     ownerFallback: "Owner",
