@@ -15,7 +15,6 @@ vi.mock("expo-image-manipulator", () => ({
 import {
   MAX_IMAGE_SIDE,
   computeResize,
-  outputFormatFor,
   withExtension,
   prepareImageForUpload,
 } from "./image-processing";
@@ -38,31 +37,6 @@ describe("image-processing", () => {
     it("should not resize when dimensions are unknown", () => {
       expect(computeResize(0, 0)).toBeNull();
       expect(computeResize(undefined, 4000)).toBeNull();
-    });
-  });
-
-  describe("outputFormatFor", () => {
-    it("should keep PNG to preserve transparency", () => {
-      expect(outputFormatFor("image/png")).toEqual({
-        format: "png",
-        mimeType: "image/png",
-        extension: "png",
-      });
-    });
-
-    it("should use JPEG for everything else", () => {
-      for (const mime of [
-        "image/jpeg",
-        "image/webp",
-        "image/heic",
-        undefined,
-      ]) {
-        expect(outputFormatFor(mime)).toEqual({
-          format: "jpeg",
-          mimeType: "image/jpeg",
-          extension: "jpg",
-        });
-      }
     });
   });
 
@@ -119,6 +93,23 @@ describe("image-processing", () => {
         width: 1600,
         height: 1200,
       });
+    });
+
+    it("should convert PNG images to JPEG", async () => {
+      const result = await prepareImageForUpload({
+        uri: "blob:png",
+        fileName: "logo.png",
+        mimeType: "image/png",
+        width: 800,
+        height: 600,
+      });
+
+      expect(saveAsync).toHaveBeenCalledWith({
+        compress: 0.8,
+        format: "jpeg",
+      });
+      expect(result.fileName).toBe("logo.jpg");
+      expect(result.mimeType).toBe("image/jpeg");
     });
 
     it("should re-encode without resizing when the image already fits", async () => {

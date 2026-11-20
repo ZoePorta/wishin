@@ -9,6 +9,8 @@ export const MAX_IMAGE_SIDE = 1600;
 
 /**
  * JPEG compression applied when re-encoding (0–1).
+ * Every upload is re-encoded as JPEG: item images are photos and avatars are framed,
+ * so transparency is intentionally not preserved.
  */
 export const JPEG_QUALITY = 0.8;
 
@@ -45,24 +47,6 @@ export function computeResize(
 }
 
 /**
- * Picks the output encoding for a re-encoded image.
- * PNG is kept to preserve transparency (common in product shots); everything else becomes JPEG.
- *
- * @param mimeType - MIME type of the original image.
- * @returns The manipulator format plus the resulting MIME type and file extension.
- */
-export function outputFormatFor(mimeType: string | undefined): {
-  format: SaveFormat;
-  mimeType: string;
-  extension: string;
-} {
-  if (mimeType === "image/png") {
-    return { format: SaveFormat.PNG, mimeType: "image/png", extension: "png" };
-  }
-  return { format: SaveFormat.JPEG, mimeType: "image/jpeg", extension: "jpg" };
-}
-
-/**
  * Replaces (or appends) a file name's extension.
  *
  * @param fileName - Original file name; falls back to `image` when missing.
@@ -78,7 +62,7 @@ export function withExtension(
 }
 
 /**
- * Prepares a picked image for upload: scales it down to {@link MAX_IMAGE_SIDE} and re-encodes it.
+ * Prepares a picked image for upload: scales it down to {@link MAX_IMAGE_SIDE} and re-encodes it as JPEG.
  *
  * This keeps uploads below the Appwrite SDK's 5 MB chunking threshold — chunked uploads rely on
  * `expo-file-system`, which is unavailable on web, so large camera photos used to fail there.
@@ -94,7 +78,6 @@ export async function prepareImageForUpload(
   image: PickedImage,
 ): Promise<PickedImage> {
   try {
-    const output = outputFormatFor(image.mimeType);
     const context = ImageManipulator.manipulate(image.uri);
     const resize = computeResize(image.width, image.height);
     if (resize) {
@@ -103,13 +86,13 @@ export async function prepareImageForUpload(
     const rendered = await context.renderAsync();
     const result = await rendered.saveAsync({
       compress: JPEG_QUALITY,
-      format: output.format,
+      format: SaveFormat.JPEG,
     });
 
     return {
       uri: result.uri,
-      fileName: withExtension(image.fileName, output.extension),
-      mimeType: output.mimeType,
+      fileName: withExtension(image.fileName, "jpg"),
+      mimeType: "image/jpeg",
       width: result.width,
       height: result.height,
     };
