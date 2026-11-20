@@ -186,6 +186,13 @@ export const es: TranslationResource = {
     urgent: "URGENTE",
     a11y: "Prioridad: {{label}}",
   },
+  itemSort: {
+    label: "Ordenar por",
+    priority: "Prioridad",
+    date: "Recientes",
+    price: "Precio",
+    optionA11y: "Ordenar por {{label}}",
+  },
   item: {
     price:
       "{{amount, number(minimumFractionDigits: 2; maximumFractionDigits: 2)}} {{symbol}}",

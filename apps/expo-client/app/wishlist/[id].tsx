@@ -19,6 +19,12 @@ import { Layout } from "../../src/constants/Layout";
 import { Avatar } from "../../src/components/common/Avatar";
 import { useTranslation } from "react-i18next";
 import { mapErrorToMessage } from "../../src/features/wishlist/utils/error-mapper";
+import { ItemSortSelector } from "../../src/features/wishlist/components/ItemSortSelector";
+import {
+  DEFAULT_ITEM_SORT,
+  sortItems,
+  type ItemSortOption,
+} from "../../src/features/wishlist/utils/item-sort";
 
 /**
  * Display the details of a specific wishlist.
@@ -35,6 +41,7 @@ export default function WishlistDetail() {
   const { userId, isSessionReliable } = useUser();
   const [hasShownSuggestion, setHasShownSuggestion] = useState(false);
   const [isSpoilerRevealed, setIsSpoilerRevealed] = useState(false);
+  const [sortBy, setSortBy] = useState<ItemSortOption>(DEFAULT_ITEM_SORT);
   const { width } = useWindowDimensions();
 
   const numColumns = useMemo(() => {
@@ -69,10 +76,9 @@ export default function WishlistDetail() {
       return !isCompleted;
     });
 
-    // 2. Sort by creation date reversed (most recent first)
-    // Since Appwrite returns them in chronological order, we just reverse the array.
-    return [...filtered].reverse();
-  }, [wishlist]);
+    // 2. Apply the user-selected order (default: most urgent first)
+    return sortItems(filtered, sortBy);
+  }, [wishlist, sortBy]);
 
   const ListHeader = useMemo(() => {
     if (!wishlist) return null;
@@ -109,9 +115,14 @@ export default function WishlistDetail() {
           </Text>
         )}
         <Divider style={styles.divider} />
+        {visibleItems.length > 1 && (
+          <View style={styles.sortSelector}>
+            <ItemSortSelector value={sortBy} onChange={setSortBy} />
+          </View>
+        )}
       </View>
     );
-  }, [wishlist, theme, t]);
+  }, [wishlist, theme, t, visibleItems.length, sortBy]);
 
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => {
@@ -279,6 +290,10 @@ const styles = StyleSheet.create({
   },
   divider: {
     marginTop: 24,
+  },
+  sortSelector: {
+    marginTop: 24,
+    marginBottom: -16,
   },
   errorText: {
     marginBottom: 24,
