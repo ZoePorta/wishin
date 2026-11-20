@@ -68,6 +68,18 @@ describe("error-mapper", () => {
       expect(classifyError("Error uploading the image")).toBe("imageUpload");
     });
 
+    it("should classify invalid url errors", () => {
+      expect(classifyError("Invalid url: Must be a valid URL")).toBe(
+        "invalidUrl",
+      );
+    });
+
+    it("should not classify invalid imageUrl errors as invalid url", () => {
+      expect(classifyError("Invalid imageUrl: Must be a valid URL")).toBe(
+        "unknown",
+      );
+    });
+
     it("should classify anything else as unknown", () => {
       expect(classifyError("Some unknown error")).toBe("unknown");
       expect(classifyError(undefined)).toBe("unknown");

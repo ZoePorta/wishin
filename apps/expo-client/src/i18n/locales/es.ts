@@ -272,6 +272,8 @@ export const es: TranslationResource = {
       "¡Uy! Ese nombre se queda cortito. Ponle al menos 3 caracteres para que luzca en tu lista. ✨",
     nameTooLong:
       "¡Uf, qué nombre tan largo! Déjalo en menos de 100 caracteres para que quepa perfecto. 📏",
+    invalidUrl:
+      "Ese enlace no parece válido. Pega la dirección completa, por ejemplo https://tienda.com/articulo 🔗",
     wishlistNotFound:
       "No encontramos tu lista de deseos. ¡Prueba a recargar la página! 🔄",
     itemNotFound:

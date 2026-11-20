@@ -9,6 +9,7 @@ import { Priority } from "../value-objects/priority";
 import { ValidationMode } from "../common/validation-mode";
 
 import { isValidUUID } from "../common/validation-utils";
+import { isValidWebUrl } from "../common/web-url";
 
 /**
  * Extended ValidationMode for WishlistItem including EVOLUTIVE and TRANSACTION.
@@ -590,8 +591,10 @@ export class WishlistItem {
       }
 
       // URL Validation
-      if (this.url && !this.isValidUrl(this.url)) {
-        throw new InvalidAttributeError("Invalid url: Must be a valid URL");
+      if (this.url && !isValidWebUrl(this.url)) {
+        throw new InvalidAttributeError(
+          "Invalid url: Must be a valid http(s) URL",
+        );
       }
       if (this.imageUrl && !this.isValidUrl(this.imageUrl)) {
         throw new InvalidAttributeError(
