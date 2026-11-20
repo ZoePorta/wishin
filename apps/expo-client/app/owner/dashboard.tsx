@@ -437,7 +437,12 @@ export default function OwnerDashboard() {
                         ...rest,
                       });
                     } else {
-                      await handleAddItem(data);
+                      await handleAddItem({
+                        ...data,
+                        price: data.price ?? undefined,
+                        description: data.description ?? undefined,
+                        url: data.url ?? undefined,
+                      });
                     }
                     setIsItemModalVisible(false);
                     setEditingItem(undefined);

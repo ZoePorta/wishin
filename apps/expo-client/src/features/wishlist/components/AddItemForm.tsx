@@ -36,8 +36,17 @@ const MAX_NAME_LENGTH = 100;
 /**
  * Input format for the onSubmit callback.
  * Combines AddWishlistItemInput with an optional id for edit scenarios.
+ * Empty optional fields (and an unknown price) are sent as `null`, so edits clear them.
  */
-export type AddItemFormSubmission = AddWishlistItemInput & { id?: string };
+export type AddItemFormSubmission = Omit<
+  AddWishlistItemInput,
+  "price" | "description" | "url"
+> & {
+  price: number | null;
+  description: string | null;
+  url: string | null;
+  id?: string;
+};
 
 interface AddItemFormProps {
   wishlistId: string;
@@ -165,9 +174,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       const payload: AddItemFormSubmission = {
         wishlistId,
         name: name.trim(),
-        description: description.trim() || undefined,
-        url: url.trim() || undefined,
-        price: priceUnknown ? undefined : parseFloat(price) || 0,
+        description: description.trim() || null,
+        url: url.trim() || null,
+        price: priceUnknown ? null : parseFloat(price) || 0,
         currency: priceUnknown ? undefined : currency,
         priority: parseInt(priority, 10) as Priority,
         totalQuantity: isUnlimited
