@@ -46,6 +46,30 @@ jobs:
           fi
       - run: pnpm test # This should only run *.spec.ts [cite: 2026-01-30]
 
+  # Job 1b: Static checks (Fast, no network required). Runs in parallel with
+  # unit tests. Warnings don't fail the job; only ESLint errors and type errors do.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Fork PRs: head_ref only exists in the fork, so check out from there
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.head_ref || github.ref_name }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      # A stale lockfile is fixed and pushed by the unit_tests job (ADR 029);
+      # here we only need the dependencies installed.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile || pnpm install --no-frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Type-check
+        run: pnpm type-check
+
   # Job 2: Integration Tests (Slow, requires Appwrite)
   integration_tests:
     runs-on: ubuntu-latest
