@@ -36,7 +36,7 @@ export class RemoveWishlistItemUseCase {
     if (removedItem) {
       await this.wishlistRepository.save(updatedWishlist);
 
-      // ADR 025: Delete image from storage if the removed item had one.
+      // ADR 022: Delete image from storage if the removed item had one (orphan file lifecycle).
       // This is done after a successful save.
       if (removedItem.imageUrl) {
         const fileId = this.storageRepository.extractFileId(

@@ -241,6 +241,7 @@ export const en = {
   imagePicker: {
     addPhoto: "Add Photo",
     addPhotoA11y: "Add photo",
+    processing: "Processing…",
     sourceTitle: "Select Photo Source",
     takePhoto: "Take Photo",
     chooseFromGallery: "Choose from Gallery",
