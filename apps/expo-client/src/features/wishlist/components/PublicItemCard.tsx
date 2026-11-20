@@ -21,6 +21,7 @@ import { getItemImageSource } from "../utils/images";
 import { commonStyles } from "../../../theme/common-styles";
 import { addAlpha } from "../../../utils/colors";
 import { PriorityBadge } from "./PriorityBadge";
+import { ItemDetailModal } from "./ItemDetailModal";
 import { useTranslation } from "react-i18next";
 import { mapErrorToMessage } from "../utils/error-mapper";
 
@@ -68,6 +69,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   const [authModalVisible, setAuthModalVisible] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [pendingPurchase, setPendingPurchase] = useState(false);
+  const [detailVisible, setDetailVisible] = useState(false);
 
   const isCompleted =
     !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
@@ -76,6 +78,10 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     !item.isUnlimited &&
     !isCompleted &&
     item.reservedQuantity + item.purchasedQuantity >= item.totalQuantity;
+
+  // Guests see what is still available, not the total requested.
+  // Only show the multiplier when it adds information (unlimited or more than one left).
+  const showQuantity = item.isUnlimited || item.availableQuantity > 1;
 
   // Completed items are hidden globally from the list (ADR 028)
   // They are only visible to the owner if they have explicitly revealed spoilers.
@@ -229,11 +235,18 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     }
   }, [loginAsGuest, userId, t]);
 
+  const isPurchaseDisabled =
+    isCompleted || isReserved || isOwner || purchaseLoading;
+
   return (
     <>
       <Card
         style={[styles.card, isCompleted && styles.completedCard]}
         mode="outlined"
+        onPress={() => {
+          setDetailVisible(true);
+        }}
+        accessibilityLabel={t("item.detailsA11y", { name: item.name })}
       >
         <View style={styles.imageWrapper}>
           <Card.Cover
@@ -266,9 +279,23 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         <Card.Content style={styles.cardContent}>
           <View style={styles.cardHeader}>
             <View style={styles.titleContainer}>
-              <Text variant="titleLarge" style={styles.titleText}>
+              {/* Name truncates to one line; the quantity never shrinks. */}
+              <Text
+                variant="titleLarge"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={styles.titleText}
+              >
                 {item.name}
               </Text>
+              {showQuantity && (
+                <Text variant="titleSmall" style={styles.quantityText}>
+                  {t("item.quantityMultiplier", {
+                    quantity: item.isUnlimited ? "∞" : item.availableQuantity,
+                  })}
+                </Text>
+              )}
+              <View style={styles.titleSpacer} />
               {item.url && (
                 <IconButton
                   icon="open-in-new"
@@ -315,7 +342,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
               onPress={() => {
                 void handlePurchasePress();
               }}
-              disabled={isCompleted || isReserved || isOwner || purchaseLoading}
+              disabled={isPurchaseDisabled}
               loading={purchaseLoading}
               contentStyle={commonStyles.minimumTouchTarget}
               icon="gift-outline"
@@ -326,6 +353,31 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         </Card.Content>
       </Card>
 
+      <ItemDetailModal
+        visible={detailVisible}
+        item={item}
+        onDismiss={() => {
+          setDetailVisible(false);
+        }}
+        quantityMode="available"
+        onOpenUrl={(url) => {
+          void handleOpenUrl(url);
+        }}
+        footerAction={
+          <Button
+            mode="contained"
+            onPress={() => {
+              setDetailVisible(false);
+              void handlePurchasePress();
+            }}
+            disabled={isPurchaseDisabled}
+            loading={purchaseLoading}
+            icon="gift-outline"
+          >
+            {t("item.gotIt")}
+          </Button>
+        }
+      />
       <LoginSuggestionModal
         visible={modalVisible}
         onDismiss={() => {
@@ -371,7 +423,7 @@ const makeStyles = (theme: AppTheme) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      minHeight: 60, // Space for 1-2 lines of title
+      minHeight: 44, // Fixed single-line title keeps grid cards aligned
     },
     headerLinkIcon: {
       margin: 0,
@@ -414,8 +466,16 @@ const makeStyles = (theme: AppTheme) =>
       fontWeight: "bold",
     },
     titleText: {
-      flex: 1,
+      flexShrink: 1,
       fontFamily: theme.fonts.titleLargeVarela.fontFamily,
+    },
+    quantityText: {
+      flexShrink: 0,
+      marginLeft: 6,
+      color: theme.colors.onSurfaceVariant,
+    },
+    titleSpacer: {
+      flex: 1,
     },
     imageWrapper: {
       position: "relative",
