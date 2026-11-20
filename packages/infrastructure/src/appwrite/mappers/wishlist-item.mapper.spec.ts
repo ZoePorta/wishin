@@ -57,6 +57,30 @@ describe("WishlistItemMapper", () => {
     });
   });
 
+  it("should persist a missing price as null so upserts clear the stored value", () => {
+    const { price: _price, ...propsWithoutPrice } = itemProps;
+    const item = WishlistItem.reconstitute(propsWithoutPrice);
+    const persistence = WishlistItemMapper.toPersistence(item);
+
+    expect(persistence.price).toBeNull();
+    // Must survive JSON serialization (undefined keys are dropped)
+    expect(JSON.parse(JSON.stringify(persistence))).toHaveProperty(
+      "price",
+      null,
+    );
+  });
+
+  it("should persist missing description and url as null", () => {
+    const { description: _description, url: _url, ...propsWithout } = itemProps;
+    const item = WishlistItem.reconstitute(propsWithout);
+    const persistence = JSON.parse(
+      JSON.stringify(WishlistItemMapper.toPersistence(item)),
+    ) as Record<string, unknown>;
+
+    expect(persistence).toHaveProperty("description", null);
+    expect(persistence).toHaveProperty("url", null);
+  });
+
   it("should map persistence document to domain entity", () => {
     const { id, ...propsWithoutId } = itemProps;
 

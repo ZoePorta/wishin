@@ -121,6 +121,70 @@ describe("UpdateWishlistItemUseCase", () => {
     ).toBe("Updated Name");
   });
 
+  it("should clear the price when price is explicitly null", async () => {
+    // Arrange
+    const existingWishlist = createExistingWishlistWithItem();
+    repoFindById.mockResolvedValue(existingWishlist);
+    repoSave.mockResolvedValue(undefined);
+
+    const input: UpdateWishlistItemInput = {
+      wishlistId: WISHLIST_ID,
+      itemId: ITEM_ID,
+      price: null,
+    };
+
+    // Act
+    const result = await useCase.execute(input);
+
+    // Assert
+    const savedWishlist = repoSave.mock.calls[0][0] as Wishlist;
+    const updatedItem = savedWishlist.items.find((i) => i.id === ITEM_ID);
+    expect(updatedItem?.price).toBeUndefined();
+    expect(
+      result.items.find((i: WishlistItemOutput) => i.id === ITEM_ID)?.price,
+    ).toBeUndefined();
+  });
+
+  it("should clear description and url when explicitly null", async () => {
+    // Arrange
+    const existingWishlist = createExistingWishlistWithItem();
+    repoFindById.mockResolvedValue(existingWishlist);
+    repoSave.mockResolvedValue(undefined);
+
+    // Act
+    await useCase.execute({
+      wishlistId: WISHLIST_ID,
+      itemId: ITEM_ID,
+      description: null,
+      url: null,
+    });
+
+    // Assert
+    const savedWishlist = repoSave.mock.calls[0][0] as Wishlist;
+    const updatedItem = savedWishlist.items.find((i) => i.id === ITEM_ID);
+    expect(updatedItem?.description).toBeUndefined();
+    expect(updatedItem?.url).toBeUndefined();
+  });
+
+  it("should keep the price when price is undefined", async () => {
+    // Arrange
+    const existingWishlist = createExistingWishlistWithItem();
+    repoFindById.mockResolvedValue(existingWishlist);
+    repoSave.mockResolvedValue(undefined);
+
+    // Act
+    await useCase.execute({
+      wishlistId: WISHLIST_ID,
+      itemId: ITEM_ID,
+      name: "Renamed",
+    });
+
+    // Assert
+    const savedWishlist = repoSave.mock.calls[0][0] as Wishlist;
+    const updatedItem = savedWishlist.items.find((i) => i.id === ITEM_ID);
+    expect(updatedItem?.price).toBe(50);
+  });
+
   it("should cancel ALL reservations when totalQuantity reduction causes over-commitment (ADR 019)", async () => {
     // Arrange
     const existingWishlist = createExistingWishlistWithItem(); // total: 10, reserved: 2, purchased: 3

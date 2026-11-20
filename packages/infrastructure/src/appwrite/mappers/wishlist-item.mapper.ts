@@ -25,11 +25,11 @@ interface WishlistItemDocument extends Models.Document {
 export interface WishlistItemPersistence {
   wishlistId: string;
   name: string;
-  description?: string;
+  description: string | null;
   priority: Priority;
-  price?: number;
+  price: number | null;
   currency?: string;
-  url?: string;
+  url: string | null;
   imageUrl?: string | null;
   isUnlimited: boolean;
   totalQuantity: number;
@@ -51,11 +51,12 @@ export const WishlistItemMapper = {
     return {
       wishlistId: props.wishlistId,
       name: props.name,
-      description: props.description,
+      // null (not undefined) so upserts actually clear previously stored values
+      description: props.description ?? null,
       priority: props.priority,
-      price: props.price,
+      price: props.price ?? null,
       currency: props.currency,
-      url: props.url,
+      url: props.url ?? null,
       imageUrl: props.imageUrl,
       isUnlimited: props.isUnlimited,
       totalQuantity: props.totalQuantity,
