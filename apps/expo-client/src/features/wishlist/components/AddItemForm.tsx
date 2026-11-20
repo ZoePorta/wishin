@@ -12,7 +12,12 @@ import {
   Surface,
   HelperText,
 } from "react-native-paper";
-import { Priority, type WishlistItemOutput } from "@wishin/domain";
+import {
+  Priority,
+  isValidWebUrl,
+  normalizeWebUrl,
+  type WishlistItemOutput,
+} from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABEL_KEYS, SORTED_PRIORITIES } from "../utils/priority";
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from "../utils/currencies";
@@ -167,6 +172,11 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       setError("nameTooLong");
       return;
     }
+    const normalizedUrl = normalizeWebUrl(url);
+    if (normalizedUrl && !isValidWebUrl(normalizedUrl)) {
+      setError("invalidUrl");
+      return;
+    }
 
     try {
       isSubmitting.current = true;
@@ -175,7 +185,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         wishlistId,
         name: name.trim(),
         description: description.trim() || null,
-        url: url.trim() || null,
+        url: normalizedUrl || null,
         price: priceUnknown ? null : parseFloat(price) || 0,
         currency: priceUnknown ? undefined : currency,
         priority: parseInt(priority, 10) as Priority,
@@ -363,13 +373,19 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       <TextInput
         label={t("itemForm.urlLabel")}
         value={url}
-        onChangeText={setUrl}
+        onChangeText={(text) => {
+          setUrl(text);
+          if (error === "invalidUrl") {
+            setError(null);
+          }
+        }}
         mode="outlined"
         placeholder="https://..."
         keyboardType="url"
         autoCapitalize="none"
         disabled={loading}
         style={styles.input}
+        error={error === "invalidUrl"}
       />
 
       <Text variant="labelLarge" style={styles.label}>

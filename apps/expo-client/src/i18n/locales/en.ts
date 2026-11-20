@@ -261,6 +261,8 @@ export const en = {
       "Oops! The name is a bit too short. It needs at least 3 characters to look great on your list! ✨",
     nameTooLong:
       "Whoa! That's a long name. Try keeping it under 100 characters so it fits perfectly! 📏",
+    invalidUrl:
+      "That link doesn't look right. Paste the full web address, like https://shop.com/item 🔗",
     wishlistNotFound:
       "We couldn't find your wishlist. Please try refreshing the page! 🔄",
     itemNotFound:

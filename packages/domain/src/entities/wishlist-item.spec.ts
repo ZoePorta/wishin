@@ -129,6 +129,12 @@ describe("WishlistItem Entity", () => {
       ).toThrow(InvalidAttributeError);
     });
 
+    it("should throw InvalidAttributeError if url uses a non-web scheme", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, url: "javascript:alert(1)" }),
+      ).toThrow(InvalidAttributeError);
+    });
+
     it("should throw InvalidAttributeError if imageUrl is invalid", () => {
       expect(() =>
         WishlistItem.create({ ...validProps, imageUrl: "invalid-url" }),
