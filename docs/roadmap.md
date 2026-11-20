@@ -131,6 +131,9 @@
   - [ ] **Android Share Intent:** Receive `ACTION_SEND` (`text/plain`) from other apps (e.g. via `expo-share-intent` config plugin) and open the create-item flow with the URL prefilled. Check whether the committed `android/` folder needs `expo prebuild` or manual `AndroidManifest.xml` changes.
   - [ ] **iOS Share Extension:** Native share extension target (App Groups, signing via EAS). Highest effort — only once there are iOS users.
   - [ ] **Web Share Target (optional):** `share_target` in the PWA manifest (Chrome Android, installed PWA only).
+- [ ] **Square Image Cropping (all uploads):** Let the user crop every uploaded photo (item images **and** the avatar) to a forced 1:1 square while choosing the crop's size and position (classic avatar mechanic: drag + pinch/zoom). Must live in the shared upload pipeline (`useImagePickerAndUpload` → `prepareImageForUpload()`: pick → **crop** → resize → upload), not in individual forms.
+  - [ ] **Cross-platform cropper:** `allowsEditing` + `aspect: [1, 1]` only gives this on Android native; iOS uses a fixed square and web ignores it entirely. Build a custom cropper (`react-native-gesture-handler` + `reanimated`, already installed) or evaluate a library; apply the crop with `expo-image-manipulator` (already used for resizing). Requires an ADR (UX + library choice).
+  - [ ] **Replace native editors:** Drop `allowsEditing` from the picker calls once the shared cropper exists, so every platform behaves the same.
 - [ ] **History:** `GetGiftingHistory` Use Case (Purchases only for MVP).
 - [ ] **UI:** User Profile & "My Gifting" Dashboard.
 - [ ] **UI:** Micro-animations for enhanced user experience.
