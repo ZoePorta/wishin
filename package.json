@@ -23,6 +23,7 @@
     "ios:device": "pnpm --filter @wishin/expo-client exec expo run:ios --device",
     "build:android:preview": "tsx scripts/build-android-preview.ts",
     "web:preview": "tsx scripts/web-preview.ts",
+    "docs:design": "tsx scripts/generate-design-docs.ts",
     "postinstall": "node scripts/link-env.cjs"
   },
   "devDependencies": {
