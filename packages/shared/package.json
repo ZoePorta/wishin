@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "scripts": {
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "type-check": "tsc --noEmit"
   },
   "private": true,
   "license": "PolyForm-Noncommercial-1.0.0"

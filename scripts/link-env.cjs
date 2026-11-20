@@ -24,7 +24,7 @@ try {
 try {
   fs.symlinkSync(relativeTarget, targetEnv);
   console.log(`✓ Linked apps/expo-client/.env -> ${relativeTarget}`);
-} catch (err) {
+} catch {
   // Windows without symlink permissions (missing developer mode): fall back to a copy
   fs.copyFileSync(rootEnv, targetEnv);
   console.log('⚠ Could not create symlink (likely Windows without developer mode). Copied the .env instead — remember to keep it in sync manually if you edit it.');
