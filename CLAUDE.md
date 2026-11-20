@@ -24,7 +24,7 @@ wishin/
 │   ├── provision.ts        — Creates/migrates Appwrite collections
 │   └── seed.ts             — Seeds dev data
 └── docs/
-    └── adr/                — 30 ADRs (next: 031)
+    └── adr/                — 31 ADRs (next: 032)
 ```
 
 Package manager: `pnpm@10.28.1`. Workspace defined in `pnpm-workspace.yaml`.
@@ -160,6 +160,12 @@ Domain tests live alongside source: `*.spec.ts` next to `*.ts`. Infrastructure h
 - The landing iframe (`public/landing-content.html`) has its own inline dictionary keyed by `data-i18n`; update it when changing landing copy.
 - `<html lang>` is set before first paint by inline scripts in `public/index.html` and `public/landing-content.html` (otherwise Safari offers to translate). Each has its own supported-languages list — update both when adding a language.
 
+### Image Uploads (ADR 031)
+
+- Every upload (item images, avatar) goes through `useImagePickerAndUpload`, which calls `prepareImageForUpload()` (`src/utils/image-processing.ts`): resize to 1600 px, JPEG 0.8, PNG kept for transparency (JPEG if > 4 MB). Add new processing steps (e.g. cropping) there, not in forms.
+- Don't upload originals: files > 5 MB hit the Appwrite SDK's chunked upload, which needs `expo-file-system` and fails on web.
+- Use `UniversalAlert` (`src/utils/Alert.ts`), not React Native's `Alert`, which is a no-op on web.
+
 **Active patch:** `patches/react-native-paper@5.15.0.patch` — fixes `FABGroup` crashing on web by setting `accessibilityRole="none"` on web (upstream bug). Applied automatically by pnpm.
 
 ---
@@ -196,7 +202,7 @@ Domain tests live alongside source: `*.spec.ts` next to `*.ts`. Infrastructure h
 
 ## ADR Process
 
-ADRs live in `docs/adr/` — 30 exist (last: `030-internationalization.md`). Next number: **031**.
+ADRs live in `docs/adr/` — 31 exist (last: `031-client-side-image-normalization.md`). Next number: **032**.
 
 Rules:
 1. Check last ADR number in `docs/adr/` before assigning a new one

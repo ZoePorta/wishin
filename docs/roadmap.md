@@ -132,7 +132,7 @@
   - [ ] **iOS Share Extension:** Native share extension target (App Groups, signing via EAS). Highest effort — only once there are iOS users.
   - [ ] **Web Share Target (optional):** `share_target` in the PWA manifest (Chrome Android, installed PWA only).
 - [ ] **Square Image Cropping (all uploads):** Let the user crop every uploaded photo (item images **and** the avatar) to a forced 1:1 square while choosing the crop's size and position (classic avatar mechanic: drag + pinch/zoom). Must live in the shared upload pipeline (`useImagePickerAndUpload` → `prepareImageForUpload()`: pick → **crop** → resize → upload), not in individual forms.
-  - [ ] **Cross-platform cropper:** `allowsEditing` + `aspect: [1, 1]` only gives this on Android native; iOS uses a fixed square and web ignores it entirely. Build a custom cropper (`react-native-gesture-handler` + `reanimated`, already installed) or evaluate a library; apply the crop with `expo-image-manipulator` (already used for resizing). Requires an ADR (UX + library choice).
+  - [ ] **Cross-platform cropper:** `allowsEditing` + `aspect: [1, 1]` only gives this on Android native; iOS uses a fixed square and web ignores it entirely. Build a custom cropper (`react-native-gesture-handler` + `reanimated`, already installed) or evaluate a library; apply the crop with `expo-image-manipulator` (already used for resizing). Requires an ADR (UX + library choice) extending ADR 031.
   - [ ] **Replace native editors:** Drop `allowsEditing` from the picker calls once the shared cropper exists, so every platform behaves the same.
 - [ ] **History:** `GetGiftingHistory` Use Case (Purchases only for MVP).
 - [ ] **UI:** User Profile & "My Gifting" Dashboard.
