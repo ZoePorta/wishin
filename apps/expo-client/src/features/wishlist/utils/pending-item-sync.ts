@@ -4,7 +4,7 @@ import type { WishlistItemOutput, WishlistOutput } from "@wishin/domain";
  * An item shown optimistically while the server catches up.
  *
  * Purchase stats are updated asynchronously by the `sync-item-stats` Appwrite
- * Function (ADR 025), so a fetch right after a purchase/undo can still return the
+ * Function (ADR 028; see ADR 032), so a fetch right after a purchase/undo can still return the
  * old `purchasedQuantity`. Until the server value moves away from `staleQuantity`,
  * the optimistic item is shown instead of the server one.
  */

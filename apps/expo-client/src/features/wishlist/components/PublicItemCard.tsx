@@ -176,7 +176,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
           quantity: 1, // Defaulting to 1 for this UI button
         });
 
-        // The use case returns the domain-validated post-purchase state (ADR 025).
+        // The use case returns the domain-validated post-purchase state (ADR 032).
         const purchased = result.wishlist.items.find((i) => i.id === item.id);
         const beforePurchase = item;
 

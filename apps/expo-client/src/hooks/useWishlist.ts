@@ -10,7 +10,7 @@ import {
 
 /**
  * Waits between server checks while an optimistic item is pending. Purchase stats
- * are written asynchronously by an Appwrite Function (ADR 025), which can take a
+ * are written asynchronously by an Appwrite Function (ADR 028; see ADR 032), which can take a
  * few seconds on a cold start. Total ≈ 12 s before giving up and trusting the server.
  */
 const SYNC_DELAYS_MS = [400, 800, 1200, 2000, 3000, 5000];

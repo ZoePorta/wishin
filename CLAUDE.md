@@ -24,7 +24,7 @@ wishin/
 │   ├── provision.ts        — Creates/migrates Appwrite collections
 │   └── seed.ts             — Seeds dev data
 └── docs/
-    └── adr/                — 31 ADRs (next: 032)
+    └── adr/                — 32 ADRs (next: 033)
 ```
 
 Package manager: `pnpm@10.28.1`. Workspace defined in `pnpm-workspace.yaml`.
@@ -204,7 +204,7 @@ Domain tests live alongside source: `*.spec.ts` next to `*.ts`. Infrastructure h
 
 ## ADR Process
 
-ADRs live in `docs/adr/` — 31 exist (last: `031-client-side-image-normalization.md`). Next number: **032**.
+ADRs live in `docs/adr/` — 32 exist (last: `032-optimistic-item-sync-after-purchase.md`). Next number: **033**.
 
 Rules:
 1. Check last ADR number in `docs/adr/` before assigning a new one

@@ -139,7 +139,7 @@
 - [ ] **UI:** Micro-animations for enhanced user experience.
 - [ ] **Pruning Alerts**: Implement Appwrite Function (DB Trigger) to notify users when a transaction status changes to `CANCELLED_BY_OWNER`.
 - [ ] **Advanced Transactional Atomicity**: Implement Appwrite Functions to handle complex multi-entity updates (e.g., Stock + Transaction + Wishlist Version) atomically on the server.
-- [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI).
+- [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI). Replaces the post-purchase polling of [ADR 032](adr/032-optimistic-item-sync-after-purchase.md) and also shows other guests' purchases live.
 
 - [ ] **Reservations System**: Full implementation of the "soft lock" flow.
   - [ ] `ReserveItem` use case integration.
