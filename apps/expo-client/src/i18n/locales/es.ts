@@ -122,10 +122,11 @@ export const es: TranslationResource = {
     actionsA11y: "Acciones de la lista",
     closeItemModalA11y: "Cerrar ventana del artículo",
     closeEditWishlistA11y: "Cerrar ventana de edición de la lista",
+    shareMessage: "Echa un vistazo a mi lista «{{title}}» en Wishin",
     linkCopied: "¡Enlace copiado! Ya puedes compartirlo 🎉",
     shareFailedTitle: "Vaya, no hemos podido compartirla",
     shareFailedMessage:
-      "No hemos podido copiar el enlace de tu lista. ¿Lo intentamos otra vez?",
+      "No hemos podido compartir el enlace de tu lista. ¿Lo intentamos otra vez?",
     emptyTitle: "Tu lista todavía está vacía... ¡por ahora!",
     emptySubtitle: "Pulsa el botón de abajo y añade tu primer deseo ✨",
     ownerFallback: "Tú",
