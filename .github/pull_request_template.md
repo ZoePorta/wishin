@@ -10,4 +10,4 @@
 - [ ] New user-facing strings are translated in `en.ts` and `es.ts`
 - [ ] Public methods have JSDoc; an ADR was added for architectural changes
 - [ ] Commits follow Conventional Commits and are signed
-- [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and signed the [CLA](../CLA.md)
+- [ ] (External contributors only) I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and signed the [CLA](../CLA.md)
