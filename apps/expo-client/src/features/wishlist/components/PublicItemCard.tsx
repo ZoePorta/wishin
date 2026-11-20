@@ -1,5 +1,6 @@
 import React, { useCallback, useState, useEffect } from "react";
-import { View, Linking, Alert, StyleSheet } from "react-native";
+import { View, Linking, StyleSheet } from "react-native";
+import { UniversalAlert as Alert } from "../../../utils/Alert";
 import {
   Card,
   Text,
@@ -20,6 +21,7 @@ import { getItemImageSource } from "../utils/images";
 import { commonStyles } from "../../../theme/common-styles";
 import { addAlpha } from "../../../utils/colors";
 import { PriorityBadge } from "./PriorityBadge";
+import { ItemDetailModal } from "./ItemDetailModal";
 import { useTranslation } from "react-i18next";
 import { mapErrorToMessage } from "../utils/error-mapper";
 
@@ -32,6 +34,16 @@ interface PublicItemCardProps {
   isOwner: boolean;
   /** Whether the owner has revealed spoilers. */
   isSpoilerRevealed: boolean;
+  /**
+   * Called after a purchase or undo succeeded with the item state to show now
+   * (`next`) and the state the server still has (`previous`), so the screen can
+   * update optimistically while the server syncs. May fire after the card
+   * unmounted (undo from the toast once the item is gone).
+   */
+  onItemChanged?: (
+    next: WishlistItemOutput,
+    previous: WishlistItemOutput,
+  ) => void;
 }
 
 /**
@@ -45,6 +57,7 @@ interface PublicItemCardProps {
  * @param {() => void} props.onSuggestionShown - Callback when the guest suggestion is shown.
  * @param {boolean} props.isOwner - Whether the current user is the owner.
  * @param {boolean} props.isSpoilerRevealed - Whether spoilers are revealed.
+ * @param {Function} [props.onItemChanged] - Called with `(next, previous)` item states after a successful purchase or undo.
  * @returns {JSX.Element | null} The rendered public item card, or null if hidden.
  */
 export const PublicItemCard: React.FC<PublicItemCardProps> = ({
@@ -54,6 +67,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   onSuggestionShown,
   isOwner,
   isSpoilerRevealed,
+  onItemChanged,
 }) => {
   const theme = useTheme<AppTheme>();
   const { t } = useTranslation();
@@ -67,6 +81,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   const [authModalVisible, setAuthModalVisible] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [pendingPurchase, setPendingPurchase] = useState(false);
+  const [detailVisible, setDetailVisible] = useState(false);
 
   const isCompleted =
     !item.isUnlimited && item.purchasedQuantity >= item.totalQuantity;
@@ -75,6 +90,10 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     !item.isUnlimited &&
     !isCompleted &&
     item.reservedQuantity + item.purchasedQuantity >= item.totalQuantity;
+
+  // Guests see what is still available, not the total requested.
+  // Only show the multiplier when it adds information (unlimited or more than one left).
+  const showQuantity = item.isUnlimited || item.availableQuantity > 1;
 
   // Completed items are hidden globally from the list (ADR 028)
   // They are only visible to the owner if they have explicitly revealed spoilers.
@@ -120,7 +139,11 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
   );
 
   const handleUndoPurchase = useCallback(
-    async (transactionId: string) => {
+    async (
+      transactionId: string,
+      purchased: WishlistItemOutput | undefined,
+      beforePurchase: WishlistItemOutput,
+    ) => {
       if (!userId) return;
 
       try {
@@ -130,6 +153,8 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
           userId,
         });
         showToast(t("item.purchase.undone"));
+        // Restore the pre-purchase state; the server still has the purchased one.
+        if (purchased) onItemChanged?.(beforePurchase, purchased);
       } catch (err: unknown) {
         console.error("Failed to undo purchase:", err);
         Alert.alert(
@@ -138,7 +163,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         );
       }
     },
-    [undoPurchase, wishlistId, userId, showToast, t],
+    [undoPurchase, wishlistId, userId, showToast, t, onItemChanged],
   );
 
   const executePurchase = useCallback(
@@ -151,11 +176,20 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
           quantity: 1, // Defaulting to 1 for this UI button
         });
 
+        // The use case returns the domain-validated post-purchase state (ADR 032).
+        const purchased = result.wishlist.items.find((i) => i.id === item.id);
+        const beforePurchase = item;
+
         showToast(t("item.purchase.success", { name: item.name }), {
           onUndo: () => {
-            void handleUndoPurchase(result.transactionId);
+            void handleUndoPurchase(
+              result.transactionId,
+              purchased,
+              beforePurchase,
+            );
           },
         });
+        if (purchased) onItemChanged?.(purchased, beforePurchase);
       } catch (err: unknown) {
         // usePurchaseItem (via useAsyncActionEx) re-throws errors, so we catch them here
         console.error("Failed to purchase item:", err);
@@ -165,11 +199,11 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     [
       purchaseItem,
       wishlistId,
-      item.id,
-      item.name,
+      item,
       showToast,
       handleUndoPurchase,
       t,
+      onItemChanged,
     ],
   );
 
@@ -228,11 +262,18 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
     }
   }, [loginAsGuest, userId, t]);
 
+  const isPurchaseDisabled =
+    isCompleted || isReserved || isOwner || purchaseLoading;
+
   return (
     <>
       <Card
         style={[styles.card, isCompleted && styles.completedCard]}
         mode="outlined"
+        onPress={() => {
+          setDetailVisible(true);
+        }}
+        accessibilityLabel={t("item.detailsA11y", { name: item.name })}
       >
         <View style={styles.imageWrapper}>
           <Card.Cover
@@ -265,9 +306,23 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         <Card.Content style={styles.cardContent}>
           <View style={styles.cardHeader}>
             <View style={styles.titleContainer}>
-              <Text variant="titleLarge" style={styles.titleText}>
+              {/* Name truncates to one line; the quantity never shrinks. */}
+              <Text
+                variant="titleLarge"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                style={styles.titleText}
+              >
                 {item.name}
               </Text>
+              {showQuantity && (
+                <Text variant="titleSmall" style={styles.quantityText}>
+                  {t("item.quantityMultiplier", {
+                    quantity: item.isUnlimited ? "∞" : item.availableQuantity,
+                  })}
+                </Text>
+              )}
+              <View style={styles.titleSpacer} />
               {item.url && (
                 <IconButton
                   icon="open-in-new"
@@ -314,7 +369,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
               onPress={() => {
                 void handlePurchasePress();
               }}
-              disabled={isCompleted || isReserved || isOwner || purchaseLoading}
+              disabled={isPurchaseDisabled}
               loading={purchaseLoading}
               contentStyle={commonStyles.minimumTouchTarget}
               icon="gift-outline"
@@ -325,6 +380,31 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
         </Card.Content>
       </Card>
 
+      <ItemDetailModal
+        visible={detailVisible}
+        item={item}
+        onDismiss={() => {
+          setDetailVisible(false);
+        }}
+        quantityMode="available"
+        onOpenUrl={(url) => {
+          void handleOpenUrl(url);
+        }}
+        footerAction={
+          <Button
+            mode="contained"
+            onPress={() => {
+              setDetailVisible(false);
+              void handlePurchasePress();
+            }}
+            disabled={isPurchaseDisabled}
+            loading={purchaseLoading}
+            icon="gift-outline"
+          >
+            {t("item.gotIt")}
+          </Button>
+        }
+      />
       <LoginSuggestionModal
         visible={modalVisible}
         onDismiss={() => {
@@ -370,7 +450,7 @@ const makeStyles = (theme: AppTheme) =>
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      minHeight: 60, // Space for 1-2 lines of title
+      minHeight: 44, // Fixed single-line title keeps grid cards aligned
     },
     headerLinkIcon: {
       margin: 0,
@@ -413,8 +493,16 @@ const makeStyles = (theme: AppTheme) =>
       fontWeight: "bold",
     },
     titleText: {
-      flex: 1,
+      flexShrink: 1,
       fontFamily: theme.fonts.titleLargeVarela.fontFamily,
+    },
+    quantityText: {
+      flexShrink: 0,
+      marginLeft: 6,
+      color: theme.colors.onSurfaceVariant,
+    },
+    titleSpacer: {
+      flex: 1,
     },
     imageWrapper: {
       position: "relative",

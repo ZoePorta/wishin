@@ -74,8 +74,24 @@ export default tseslint.config(
     ],
     ...tseslint.configs.disableTypeChecked,
   },
+  // CommonJS config/scripts: not part of any tsconfig, so skip type-aware
+  // linting and allow require()/module.exports.
   {
-    files: ["scripts/**/*.ts"],
+    files: ["**/*.cjs", "apps/expo-client/babel.config.js"],
+    ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    files: ["**/*.cjs", "apps/expo-client/babel.config.js"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: { ...globals.commonjs },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  {
+    files: ["scripts/**/*.ts", "scripts/**/*.cjs"],
     rules: {
       "no-console": "off",
     },

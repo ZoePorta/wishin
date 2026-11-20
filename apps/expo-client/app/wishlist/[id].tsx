@@ -1,5 +1,5 @@
 import { useLocalSearchParams, Stack } from "expo-router";
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { View, FlatList, StyleSheet, useWindowDimensions } from "react-native";
 import {
   Text,
@@ -14,11 +14,22 @@ import type { UseWishlistReturn } from "../../src/hooks/useWishlist";
 import type { WishlistItemOutput } from "@wishin/domain";
 import { PublicItemCard } from "../../src/features/wishlist/components/PublicItemCard";
 import { useUser } from "../../src/contexts/UserContext";
+import { useToast } from "../../src/contexts/ToastContext";
+import {
+  PullToRefresh,
+  useNativeRefreshControl,
+} from "../../src/components/common/PullToRefresh";
 import { SpoilerOverlay } from "../../src/features/wishlist/components/SpoilerOverlay";
 import { Layout } from "../../src/constants/Layout";
 import { Avatar } from "../../src/components/common/Avatar";
 import { useTranslation } from "react-i18next";
 import { mapErrorToMessage } from "../../src/features/wishlist/utils/error-mapper";
+import { ItemSortSelector } from "../../src/features/wishlist/components/ItemSortSelector";
+import {
+  DEFAULT_ITEM_SORT,
+  sortItems,
+  type ItemSortOption,
+} from "../../src/features/wishlist/utils/item-sort";
 
 /**
  * Display the details of a specific wishlist.
@@ -28,14 +39,33 @@ import { mapErrorToMessage } from "../../src/features/wishlist/utils/error-mappe
  */
 export default function WishlistDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { wishlist, loading, error, refetch }: UseWishlistReturn =
-    useWishlist(id);
+  const {
+    wishlist,
+    loading,
+    error,
+    refreshing,
+    refetch,
+    refresh,
+    applyOptimisticItem,
+  }: UseWishlistReturn = useWishlist(id);
   const theme = useTheme();
   const { t } = useTranslation();
   const { userId, isSessionReliable } = useUser();
   const [hasShownSuggestion, setHasShownSuggestion] = useState(false);
   const [isSpoilerRevealed, setIsSpoilerRevealed] = useState(false);
+  const [sortBy, setSortBy] = useState<ItemSortOption>(DEFAULT_ITEM_SORT);
   const { width } = useWindowDimensions();
+  const { showToast } = useToast();
+  const listRef = useRef<FlatList<WishlistItemOutput>>(null);
+
+  /** Pull-to-refresh: reload that keeps the list on screen. */
+  const handleRefresh = useCallback(() => {
+    void refresh().then((ok) => {
+      if (!ok) showToast(t("common.refreshFailed"));
+    });
+  }, [refresh, showToast, t]);
+
+  const refreshControl = useNativeRefreshControl(refreshing, handleRefresh);
 
   const numColumns = useMemo(() => {
     if (width >= 1200) return 4;
@@ -69,10 +99,9 @@ export default function WishlistDetail() {
       return !isCompleted;
     });
 
-    // 2. Sort by creation date reversed (most recent first)
-    // Since Appwrite returns them in chronological order, we just reverse the array.
-    return [...filtered].reverse();
-  }, [wishlist]);
+    // 2. Apply the user-selected order (default: most urgent first)
+    return sortItems(filtered, sortBy);
+  }, [wishlist, sortBy]);
 
   const ListHeader = useMemo(() => {
     if (!wishlist) return null;
@@ -109,9 +138,14 @@ export default function WishlistDetail() {
           </Text>
         )}
         <Divider style={styles.divider} />
+        {visibleItems.length > 1 && (
+          <View style={styles.sortSelector}>
+            <ItemSortSelector value={sortBy} onChange={setSortBy} />
+          </View>
+        )}
       </View>
     );
-  }, [wishlist, theme, t]);
+  }, [wishlist, theme, t, visibleItems.length, sortBy]);
 
   const renderItem = useCallback(
     ({ item }: { item: WishlistItemOutput }) => {
@@ -138,6 +172,7 @@ export default function WishlistDetail() {
               onSuggestionShown={handleSuggestionShown}
               isOwner={isOwner}
               isSpoilerRevealed={isSpoilerRevealed}
+              onItemChanged={applyOptimisticItem}
             />
           </View>
         </View>
@@ -150,6 +185,7 @@ export default function WishlistDetail() {
       isOwner,
       isSpoilerRevealed,
       numColumns,
+      applyOptimisticItem,
     ],
   );
 
@@ -204,30 +240,38 @@ export default function WishlistDetail() {
           headerTintColor: theme.colors.onSurface,
         }}
       />
-      <FlatList
-        key={numColumns}
-        numColumns={numColumns}
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        data={visibleItems}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={ListHeader}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text
-              variant="bodyLarge"
-              style={[
-                styles.emptyText,
-                { color: theme.colors.onSurfaceVariant },
-              ]}
-            >
-              {t("publicWishlist.empty")}
-            </Text>
-          </View>
-        }
-        showsVerticalScrollIndicator={false}
-      />
+      <PullToRefresh
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        scrollRef={listRef}
+      >
+        <FlatList
+          ref={listRef}
+          key={numColumns}
+          numColumns={numColumns}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          data={visibleItems}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text
+                variant="bodyLarge"
+                style={[
+                  styles.emptyText,
+                  { color: theme.colors.onSurfaceVariant },
+                ]}
+              >
+                {t("publicWishlist.empty")}
+              </Text>
+            </View>
+          }
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        />
+      </PullToRefresh>
       <SpoilerOverlay
         isVisible={isOwner && !isSpoilerRevealed}
         onReveal={() => {
@@ -279,6 +323,10 @@ const styles = StyleSheet.create({
   },
   divider: {
     marginTop: 24,
+  },
+  sortSelector: {
+    marginTop: 24,
+    marginBottom: -16,
   },
   errorText: {
     marginBottom: 24,

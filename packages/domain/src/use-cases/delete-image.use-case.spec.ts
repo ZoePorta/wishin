@@ -12,6 +12,7 @@ describe("DeleteImageUseCase", () => {
       upload: vi.fn(),
       delete: deleteImage,
       getPreview: vi.fn(),
+      extractFileId: vi.fn(),
     };
   });
 

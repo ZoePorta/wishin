@@ -17,6 +17,8 @@ export const es: TranslationResource = {
     tapToRetry: "Toca para volver a intentarlo",
     or: "o",
     undo: "Deshacer",
+    refreshFailed:
+      "No se pudo actualizar. Revisa tu conexión e inténtalo de nuevo.",
   },
   navigation: {
     goBack: "Volver atrás",
@@ -120,10 +122,11 @@ export const es: TranslationResource = {
     actionsA11y: "Acciones de la lista",
     closeItemModalA11y: "Cerrar ventana del artículo",
     closeEditWishlistA11y: "Cerrar ventana de edición de la lista",
+    shareMessage: "Echa un vistazo a mi lista «{{title}}» en Wishin",
     linkCopied: "¡Enlace copiado! Ya puedes compartirlo 🎉",
     shareFailedTitle: "Vaya, no hemos podido compartirla",
     shareFailedMessage:
-      "No hemos podido copiar el enlace de tu lista. ¿Lo intentamos otra vez?",
+      "No hemos podido compartir el enlace de tu lista. ¿Lo intentamos otra vez?",
     emptyTitle: "Tu lista todavía está vacía... ¡por ahora!",
     emptySubtitle: "Pulsa el botón de abajo y añade tu primer deseo ✨",
     ownerFallback: "Tú",
@@ -186,6 +189,13 @@ export const es: TranslationResource = {
     urgent: "URGENTE",
     a11y: "Prioridad: {{label}}",
   },
+  itemSort: {
+    label: "Ordenar por",
+    priority: "Prioridad",
+    date: "Recientes",
+    price: "Precio",
+    optionA11y: "Ordenar por {{label}}",
+  },
   item: {
     price:
       "{{amount, number(minimumFractionDigits: 2; maximumFractionDigits: 2)}} {{symbol}}",
@@ -197,12 +207,16 @@ export const es: TranslationResource = {
     deleteA11y: "Eliminar artículo",
     closeDetailsA11y: "Cerrar detalles del artículo",
     quantityShort: "Cant.: {{quantity}}",
-    visitStore: "Ver en la tienda 🛍️",
+    quantityMultiplier: "× {{quantity}}",
+    viewOnline: "Ver online",
     priceLabel: "Precio",
     quantityLabel: "Cantidad",
+    availableLabel: "Disponibles",
+    detailsA11y: "Ver detalles, {{name}}",
     priorityLabel: "Prioridad",
     descriptionLabel: "Descripción",
-    priceNotSet: "Sin precio",
+    priceUnknown: "—",
+    unlimitedQuantity: "¡Nunca es suficiente!",
     edit: "Editar artículo",
     links: {
       couldNotOpen: "Vaya, no hemos podido abrir el enlace.",
@@ -244,6 +258,7 @@ export const es: TranslationResource = {
   imagePicker: {
     addPhoto: "Añadir foto",
     addPhotoA11y: "Añadir foto",
+    processing: "Procesando…",
     sourceTitle: "¿De dónde sacamos la foto?",
     takePhoto: "Hacer foto",
     chooseFromGallery: "Elegir de la galería",
@@ -259,12 +274,16 @@ export const es: TranslationResource = {
     uploadFailedTitle: "Ups, no se ha subido",
     uploadFailedMessage:
       "No hemos podido subir la imagen. ¿Lo intentamos otra vez?",
+    notAnImageTitle: "Eso no es una imagen",
+    notAnImageMessage: "Elige una foto (JPG, PNG, WebP…).",
   },
   errors: {
     nameTooShort:
       "¡Uy! Ese nombre se queda cortito. Ponle al menos 3 caracteres para que luzca en tu lista. ✨",
     nameTooLong:
       "¡Uf, qué nombre tan largo! Déjalo en menos de 100 caracteres para que quepa perfecto. 📏",
+    invalidUrl:
+      "Ese enlace no parece válido. Pega la dirección completa, por ejemplo https://tienda.com/articulo 🔗",
     wishlistNotFound:
       "No encontramos tu lista de deseos. ¡Prueba a recargar la página! 🔄",
     itemNotFound:

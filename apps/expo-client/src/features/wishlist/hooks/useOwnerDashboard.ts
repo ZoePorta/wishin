@@ -27,7 +27,9 @@ export function useOwnerDashboard() {
     wishlist,
     loading: wishlistLoading,
     error: wishlistError,
+    refreshing,
     refetch,
+    refresh,
   } = useWishlistByOwner(userId);
 
   const { createWishlist, loading: creating } = useCreateWishlist();
@@ -132,5 +134,7 @@ export function useOwnerDashboard() {
     handleUpdateItem,
     handleRemoveItem,
     refetch,
+    refreshing,
+    refresh,
   };
 }

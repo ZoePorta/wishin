@@ -129,6 +129,12 @@ describe("WishlistItem Entity", () => {
       ).toThrow(InvalidAttributeError);
     });
 
+    it("should throw InvalidAttributeError if url uses a non-web scheme", () => {
+      expect(() =>
+        WishlistItem.create({ ...validProps, url: "javascript:alert(1)" }),
+      ).toThrow(InvalidAttributeError);
+    });
+
     it("should throw InvalidAttributeError if imageUrl is invalid", () => {
       expect(() =>
         WishlistItem.create({ ...validProps, imageUrl: "invalid-url" }),
@@ -505,6 +511,30 @@ describe("WishlistItem Entity", () => {
       const item = WishlistItem.create(validProps);
       item.update({ name: "New Name" });
       expect(item.name).toBe(validProps.name);
+    });
+
+    it("should clear the price when updated with price: null", () => {
+      const item = WishlistItem.create(validProps);
+      const updatedItem = item.update({ price: null });
+
+      expect(updatedItem.price).toBeUndefined();
+      expect(updatedItem.toProps()).not.toHaveProperty("price");
+    });
+
+    it("should clear description and url when updated with null", () => {
+      const item = WishlistItem.create(validProps);
+      const updatedItem = item.update({ description: null, url: null });
+
+      expect(updatedItem.description).toBeUndefined();
+      expect(updatedItem.url).toBeUndefined();
+      expect(updatedItem.name).toBe(validProps.name);
+    });
+
+    it("should still clear imageUrl when updated with imageUrl: null", () => {
+      const item = WishlistItem.create(validProps);
+      const updatedItem = item.update({ imageUrl: null });
+
+      expect(updatedItem.imageUrl).toBeUndefined();
     });
 
     it("should ignore undefined values in update props", () => {
