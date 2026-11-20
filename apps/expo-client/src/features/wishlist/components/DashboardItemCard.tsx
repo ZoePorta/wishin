@@ -98,6 +98,16 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
                   quantity: item.isUnlimited ? "∞" : item.totalQuantity,
                 })}
               </Text>
+              {item.description ? (
+                <Text
+                  variant="bodySmall"
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  style={styles.descriptionText}
+                >
+                  {item.description}
+                </Text>
+              ) : null}
             </View>
             <PriorityBadge priority={item.priority} size={18} />
           </View>
@@ -179,6 +189,10 @@ const makeStyles = (theme: AppTheme) =>
     qtyText: {
       marginTop: 0,
       opacity: 0.7,
+    },
+    descriptionText: {
+      marginTop: 2,
+      color: theme.colors.onSurfaceVariant,
     },
     actionIcons: {
       position: "absolute",
