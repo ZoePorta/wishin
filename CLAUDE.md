@@ -166,7 +166,9 @@ Domain tests live alongside source: `*.spec.ts` next to `*.ts`. Infrastructure h
 - Don't upload originals: files > 5 MB hit the Appwrite SDK's chunked upload, which needs `expo-file-system` and fails on web.
 - Use `UniversalAlert` (`src/utils/Alert.ts`), not React Native's `Alert`, which is a no-op on web.
 
-**Active patch:** `patches/react-native-paper@5.15.0.patch` — fixes `FABGroup` crashing on web by setting `accessibilityRole="none"` on web (upstream bug). Applied automatically by pnpm.
+**Active patches** (applied automatically by pnpm, registered in `pnpm-workspace.yaml`; tied to the exact version, so regenerate or drop them when upgrading):
+- `patches/react-native-paper@5.15.0.patch` — fixes `FABGroup` crashing on web by setting `accessibilityRole="none"` on web (upstream bug).
+- `patches/expo-image-picker@17.0.10.patch` — on web, picking an unsupported file type threw inside the picker's `change` listener, so its promise never settled. The patch makes it reject (and always removes the hidden input).
 
 ---
 
