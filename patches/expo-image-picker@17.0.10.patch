@@ -1,0 +1,84 @@
+diff --git a/build/ExponentImagePicker.web.js b/build/ExponentImagePicker.web.js
+index 0aa82e1f445cb8c518cf20bdd6ebb1da41a6f5a5..ff883dfc435b9d588a7ff2d6011f682355af5024 100644
+--- a/build/ExponentImagePicker.web.js
++++ b/build/ExponentImagePicker.web.js
+@@ -87,17 +87,29 @@ function openFileBrowserAsync({ mediaTypes, capture = false, allowsMultipleSelec
+         }
+     }
+     document.body.appendChild(input);
+-    return new Promise((resolve) => {
++    return new Promise((resolve, reject) => {
+         input.addEventListener('change', async () => {
+-            if (input.files?.length) {
+-                const files = allowsMultipleSelection ? input.files : [input.files[0]];
+-                const assets = await Promise.all(Array.from(files).map((file) => readFile(file, { base64 })));
+-                resolve({ canceled: false, assets });
++            // Patched (wishin): readFile throws for unsupported types (e.g. a .md picked via
++            // "All files"). Without this try/catch the error escaped the event listener as an
++            // unhandled rejection and the returned promise never settled.
++            try {
++                if (input.files?.length) {
++                    const files = allowsMultipleSelection ? input.files : [input.files[0]];
++                    const assets = await Promise.all(Array.from(files).map((file) => readFile(file, { base64 })));
++                    resolve({ canceled: false, assets });
++                }
++                else {
++                    resolve({ canceled: true, assets: null });
++                }
++            }
++            catch (error) {
++                reject(error);
+             }
+-            else {
+-                resolve({ canceled: true, assets: null });
++            finally {
++                if (input.parentNode) {
++                    input.parentNode.removeChild(input);
++                }
+             }
+-            document.body.removeChild(input);
+         });
+         input.addEventListener('cancel', () => {
+             input.dispatchEvent(new Event('change'));
+diff --git a/src/ExponentImagePicker.web.ts b/src/ExponentImagePicker.web.ts
+index f86276ff05df9114002085faa68ba815c7c24666..f90eaf557ecb7f4c138c3fcfbfd841edac1d5573 100644
+--- a/src/ExponentImagePicker.web.ts
++++ b/src/ExponentImagePicker.web.ts
+@@ -118,19 +118,27 @@ function openFileBrowserAsync({
+   }
+   document.body.appendChild(input);
+ 
+-  return new Promise((resolve) => {
++  return new Promise((resolve, reject) => {
+     input.addEventListener('change', async () => {
+-      if (input.files?.length) {
+-        const files = allowsMultipleSelection ? input.files : [input.files[0]];
+-        const assets: ImagePickerAsset[] = await Promise.all(
+-          Array.from(files).map((file) => readFile(file, { base64 }))
+-        );
++      // Patched (wishin): readFile throws for unsupported types (e.g. a .md picked via
++      // "All files"). Without this try/catch the error escaped the event listener as an
++      // unhandled rejection and the returned promise never settled.
++      try {
++        if (input.files?.length) {
++          const files = allowsMultipleSelection ? input.files : [input.files[0]];
++          const assets: ImagePickerAsset[] = await Promise.all(
++            Array.from(files).map((file) => readFile(file, { base64 }))
++          );
+ 
+-        resolve({ canceled: false, assets });
+-      } else {
+-        resolve({ canceled: true, assets: null });
++          resolve({ canceled: false, assets });
++        } else {
++          resolve({ canceled: true, assets: null });
++        }
++      } catch (error) {
++        reject(error);
++      } finally {
++        input.parentNode?.removeChild(input);
+       }
+-      document.body.removeChild(input);
+     });
+     input.addEventListener('cancel', () => {
+       input.dispatchEvent(new Event('change'));

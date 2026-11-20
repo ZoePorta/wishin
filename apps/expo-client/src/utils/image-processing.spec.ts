@@ -21,6 +21,9 @@ import {
   FLATTEN_BACKGROUND,
   computeResize,
   withExtension,
+  assertIsImage,
+  isNotAnImageError,
+  NotAnImageError,
   prepareImageForUpload,
 } from "./image-processing";
 
@@ -42,6 +45,72 @@ describe("image-processing", () => {
     it("should not resize when dimensions are unknown", () => {
       expect(computeResize(0, 0)).toBeNull();
       expect(computeResize(undefined, 4000)).toBeNull();
+    });
+  });
+
+  describe("assertIsImage", () => {
+    it("should accept images", () => {
+      expect(() => {
+        assertIsImage({
+          uri: "blob:x",
+          mimeType: "image/jpeg",
+          width: 10,
+          height: 10,
+        });
+      }).not.toThrow();
+    });
+
+    it("should accept images with unknown metadata", () => {
+      expect(() => {
+        assertIsImage({ uri: "file:///x.jpg" });
+      }).not.toThrow();
+    });
+
+    it("should reject non-image MIME types", () => {
+      for (const mimeType of [
+        "video/mp4",
+        "application/pdf",
+        "text/markdown",
+      ]) {
+        expect(() => {
+          assertIsImage({ uri: "blob:x", mimeType });
+        }).toThrow(NotAnImageError);
+      }
+    });
+
+    it("should reject images that could not be decoded (0x0)", () => {
+      expect(() => {
+        assertIsImage({
+          uri: "blob:x",
+          mimeType: "image/jpeg",
+          width: 0,
+          height: 0,
+        });
+      }).toThrow(NotAnImageError);
+    });
+  });
+
+  describe("isNotAnImageError", () => {
+    it("should recognise NotAnImageError", () => {
+      expect(isNotAnImageError(new NotAnImageError("text/plain"))).toBe(true);
+    });
+
+    it("should recognise the picker's unsupported type error", () => {
+      expect(
+        isNotAnImageError(
+          new Error(
+            "Unsupported file type: text/markdown. Only images and videos are supported.",
+          ),
+        ),
+      ).toBe(true);
+    });
+
+    it("should not flag other errors", () => {
+      expect(isNotAnImageError(new Error("Network request failed"))).toBe(
+        false,
+      );
+      expect(isNotAnImageError("Unsupported file type")).toBe(false);
+      expect(isNotAnImageError(undefined)).toBe(false);
     });
   });
 

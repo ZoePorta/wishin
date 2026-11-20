@@ -256,6 +256,8 @@ export const en = {
     photoFailed: "Failed to take a photo. Please try again.",
     uploadFailedTitle: "Upload Failed",
     uploadFailedMessage: "Could not upload the image. Please try again.",
+    notAnImageTitle: "That's not an image",
+    notAnImageMessage: "Please choose a photo (JPG, PNG, WebP…).",
   },
   errors: {
     nameTooShort:

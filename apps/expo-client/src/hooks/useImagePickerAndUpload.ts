@@ -12,6 +12,8 @@ import {
 import { useStorageRepository } from "../contexts/WishlistRepositoryContext";
 import { UniversalAlert as Alert } from "../utils/Alert";
 import {
+  assertIsImage,
+  isNotAnImageError,
   prepareImageForUpload,
   type PickedImage,
 } from "../utils/image-processing";
@@ -100,6 +102,29 @@ export function useImagePickerAndUpload() {
   const latestRequestRef = useRef(0);
 
   /**
+   * Tells the user why an image could not be used: a specific message when the
+   * file is not an image, the generic upload failure otherwise.
+   *
+   * @param {unknown} err - The error thrown while picking, preparing or uploading.
+   */
+  const showUploadError = useCallback(
+    (err: unknown) => {
+      if (isNotAnImageError(err)) {
+        Alert.alert(
+          t("imagePicker.notAnImageTitle"),
+          t("imagePicker.notAnImageMessage"),
+        );
+        return;
+      }
+      Alert.alert(
+        t("imagePicker.uploadFailedTitle"),
+        t("imagePicker.uploadFailedMessage"),
+      );
+    },
+    [t],
+  );
+
+  /**
    * Triggers the native image picker and uploads the selected image.
    * Handles permissions, cancellation, and file size resolution.
    *
@@ -143,17 +168,16 @@ export function useImagePickerAndUpload() {
       didIncrement = true;
 
       const asset = pickerResult.assets[0];
-      const prepared = await prepareImageForUpload(
-        {
-          uri: asset.uri,
-          fileName: asset.fileName,
-          mimeType: asset.mimeType,
-          fileSize: asset.fileSize,
-          width: asset.width,
-          height: asset.height,
-        },
-        PREPARE_OPTIONS,
-      );
+      const picked: PickedImage = {
+        uri: asset.uri,
+        fileName: asset.fileName,
+        mimeType: asset.mimeType,
+        fileSize: asset.fileSize,
+        width: asset.width,
+        height: asset.height,
+      };
+      assertIsImage(picked);
+      const prepared = await prepareImageForUpload(picked, PREPARE_OPTIONS);
 
       if (requestId !== latestRequestRef.current) return null;
 
@@ -171,10 +195,7 @@ export function useImagePickerAndUpload() {
         const message =
           err instanceof Error ? err.message : "An error occurred";
         setError(message);
-        Alert.alert(
-          t("imagePicker.uploadFailedTitle"),
-          t("imagePicker.uploadFailedMessage"),
-        );
+        showUploadError(err);
       }
       return null;
     } finally {
@@ -182,7 +203,7 @@ export function useImagePickerAndUpload() {
         setInflightCount((prev) => Math.max(0, prev - 1));
       }
     }
-  }, [storageRepository, t]);
+  }, [storageRepository, t, showUploadError]);
 
   /**
    * Prepares (resizes/re-encodes) a picked image, uploads it and returns its preview URL.
@@ -201,6 +222,7 @@ export function useImagePickerAndUpload() {
 
       setInflightCount((prev) => prev + 1);
       try {
+        assertIsImage(file);
         const prepared = await prepareImageForUpload(file, PREPARE_OPTIONS);
         if (requestId !== latestRequestRef.current) return null;
 
@@ -221,17 +243,14 @@ export function useImagePickerAndUpload() {
           const message =
             err instanceof Error ? err.message : "An error occurred";
           setError(message);
-          Alert.alert(
-            t("imagePicker.uploadFailedTitle"),
-            t("imagePicker.uploadFailedMessage"),
-          );
+          showUploadError(err);
         }
         return null;
       } finally {
         setInflightCount((prev) => Math.max(0, prev - 1));
       }
     },
-    [storageRepository, t],
+    [storageRepository, t, showUploadError],
   );
 
   /**
