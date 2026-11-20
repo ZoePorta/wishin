@@ -247,6 +247,8 @@ Spacing follows a **4 px grid** (`Spacing`, `spacing.ts`):
 
   <img src="../apps/expo-client/assets/wishinlogo.svg" width="120" alt="Wishin logo">
 
+  It uses the **core** `primary` (`#E040A0`) and `secondary` (`#7C52AA`) colours, baked into the SVG. It doesn't follow the theme, so it looks the same in light and dark mode (where the `primary` token is lighter).
+
 - **Icons:** Material Community Icons, the `react-native-paper` default, referenced by name (`icon="camera-plus"`).
 - **Uploaded images:** normalized before upload (max 1600 px, JPEG, PNG kept for transparency). See [ADR 031](adr/031-client-side-image-normalization.md).
 
@@ -259,6 +261,6 @@ Spacing follows a **4 px grid** (`Spacing`, `spacing.ts`):
 
 ## Changing the design
 
-1. **Palette:** open Material Theme Builder with the core colours above, adjust, export as JSON and replace `material-theme.json`. If the change affects them, update `themeConfig.ts` (landing) and the placeholder PNGs too.
+1. **Palette:** open Material Theme Builder with the core colours above, adjust, export as JSON and replace `material-theme.json`. If the change affects them, update `themeConfig.ts` (landing), the placeholder PNGs and the logo SVG too. They have the colours baked in.
 2. **Type or spacing:** edit `type-scale.ts`, `typography.ts` or `spacing.ts`.
 3. Run `pnpm docs:design` and commit the regenerated `docs/design/` files and this document.
