@@ -1,12 +1,6 @@
 import React from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Image,
-  Linking,
-  Alert,
-} from "react-native";
+import { View, StyleSheet, ScrollView, Image, Linking } from "react-native";
+import { UniversalAlert as Alert } from "../../../utils/Alert";
 import {
   Modal,
   Portal,

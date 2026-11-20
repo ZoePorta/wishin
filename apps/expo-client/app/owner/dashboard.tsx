@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Alert, Platform, Pressable } from "react-native";
+import { View, StyleSheet, Platform, Pressable } from "react-native";
+import { UniversalAlert as Alert } from "../../src/utils/Alert";
 import { Stack, router } from "expo-router";
 import {
   Portal,

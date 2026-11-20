@@ -1,5 +1,6 @@
 import React, { useCallback, useState, useEffect } from "react";
-import { View, Linking, Alert, StyleSheet } from "react-native";
+import { View, Linking, StyleSheet } from "react-native";
+import { UniversalAlert as Alert } from "../../../utils/Alert";
 import {
   Card,
   Text,
