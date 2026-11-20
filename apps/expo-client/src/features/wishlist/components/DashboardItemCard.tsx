@@ -1,5 +1,6 @@
 import React, { useCallback } from "react";
-import { View, Linking, Alert, StyleSheet, Image } from "react-native";
+import { View, Linking, StyleSheet, Image } from "react-native";
+import { UniversalAlert as Alert } from "../../../utils/Alert";
 import { Card, Text, useTheme, IconButton } from "react-native-paper";
 import { type AppTheme } from "../../../theme/theme";
 import { type WishlistItemOutput } from "@wishin/domain";

@@ -47,6 +47,51 @@ export interface PickedImage {
 }
 
 /**
+ * Thrown when the picked file is not an image the app can use.
+ */
+export class NotAnImageError extends Error {
+  /**
+   * @param detail - What was wrong (e.g. the MIME type), for logs.
+   */
+  constructor(detail: string) {
+    super(`Not an image: ${detail}`);
+    this.name = "NotAnImageError";
+  }
+}
+
+/**
+ * Ensures a picked file is a usable image before it is processed and uploaded.
+ *
+ * Rejects non-`image/*` MIME types (e.g. a video, PDF or text file picked via "All files") and
+ * images the platform could not decode (`expo-image-picker` on web reports 0×0 for those).
+ * Missing metadata is accepted, since native pickers always return images.
+ *
+ * @param image - The picked file.
+ * @throws {NotAnImageError} If the file is not a usable image.
+ */
+export function assertIsImage(image: PickedImage): void {
+  if (image.mimeType && !image.mimeType.startsWith("image/")) {
+    throw new NotAnImageError(image.mimeType);
+  }
+  if (image.width === 0 && image.height === 0) {
+    throw new NotAnImageError("could not decode image");
+  }
+}
+
+/**
+ * Whether an error means "the user picked something that is not an image".
+ * Covers {@link NotAnImageError} and the web picker's own unsupported-type error
+ * (surfaced thanks to `patches/expo-image-picker@17.0.10.patch`).
+ *
+ * @param err - Any thrown value.
+ * @returns True for not-an-image errors.
+ */
+export function isNotAnImageError(err: unknown): boolean {
+  if (err instanceof NotAnImageError) return true;
+  return err instanceof Error && /unsupported file type/i.test(err.message);
+}
+
+/**
  * Computes the resize action needed to fit an image within {@link MAX_IMAGE_SIDE}.
  * Only the longest side is constrained, so the aspect ratio is preserved.
  *

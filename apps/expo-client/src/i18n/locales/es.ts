@@ -267,6 +267,8 @@ export const es: TranslationResource = {
     uploadFailedTitle: "Ups, no se ha subido",
     uploadFailedMessage:
       "No hemos podido subir la imagen. ¿Lo intentamos otra vez?",
+    notAnImageTitle: "Eso no es una imagen",
+    notAnImageMessage: "Elige una foto (JPG, PNG, WebP…).",
   },
   errors: {
     nameTooShort:

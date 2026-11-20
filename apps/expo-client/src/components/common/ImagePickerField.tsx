@@ -16,7 +16,10 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useTranslation } from "react-i18next";
 import { UniversalAlert as Alert } from "../../utils/Alert";
-import type { PickedImage } from "../../utils/image-processing";
+import {
+  isNotAnImageError,
+  type PickedImage,
+} from "../../utils/image-processing";
 
 /**
  * Image chosen in the field. Same shape the upload pipeline consumes
@@ -77,6 +80,26 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
     setMenuVisible(false);
   };
 
+  /**
+   * Shows why picking failed: a specific message for non-image files, otherwise the fallback.
+   *
+   * @param error - The error thrown by the picker.
+   * @param fallbackKey - Message to show for any other error.
+   */
+  const showPickError = (
+    error: unknown,
+    fallbackKey: "imagePicker.pickFailed" | "imagePicker.photoFailed",
+  ) => {
+    if (isNotAnImageError(error)) {
+      Alert.alert(
+        t("imagePicker.notAnImageTitle"),
+        t("imagePicker.notAnImageMessage"),
+      );
+      return;
+    }
+    Alert.alert(t("common.error"), t(fallbackKey));
+  };
+
   const handleImageResult = (result: ImagePicker.ImagePickerResult) => {
     if (!result.canceled && result.assets.length > 0) {
       const asset = result.assets[0];
@@ -118,7 +141,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
       handleImageResult(result);
     } catch (error) {
       console.error("Error picking image:", error);
-      Alert.alert(t("common.error"), t("imagePicker.pickFailed"));
+      showPickError(error, "imagePicker.pickFailed");
     }
   };
 
@@ -148,7 +171,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
       handleImageResult(result);
     } catch (error) {
       console.error("Error taking photo:", error);
-      Alert.alert(t("common.error"), t("imagePicker.photoFailed"));
+      showPickError(error, "imagePicker.photoFailed");
     }
   };
 
