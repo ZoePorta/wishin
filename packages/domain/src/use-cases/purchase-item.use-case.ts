@@ -153,6 +153,7 @@ export class PurchaseItemUseCase {
 
     return {
       wishlist: WishlistOutputMapper.toDTO(updatedWishlist),
+      previousPurchasedQuantity: item.purchasedQuantity,
       transactionId: transaction.id,
     };
   }

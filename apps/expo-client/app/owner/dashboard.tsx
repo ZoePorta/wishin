@@ -69,8 +69,8 @@ export default function OwnerDashboard() {
 
   /** Pull-to-refresh: background reload that keeps the list on screen. */
   const handleRefresh = React.useCallback(() => {
-    void refresh().then((ok) => {
-      if (!ok) showToast(t("common.refreshFailed"));
+    void refresh().then((outcome) => {
+      if (outcome === "failed") showToast(t("common.refreshFailed"));
     });
   }, [refresh, showToast, t]);
 

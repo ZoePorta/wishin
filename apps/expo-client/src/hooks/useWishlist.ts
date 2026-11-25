@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRepositories } from "../contexts/WishlistRepositoryContext";
 import { GetWishlistByUUIDUseCase } from "@wishin/domain";
-import type { WishlistItemOutput, WishlistOutput } from "@wishin/domain";
+import type { WishlistOutput } from "@wishin/domain";
 import {
-  mergeServerWishlist,
-  replaceItem,
-  type PendingItemSync,
+  WishlistSync,
+  type ItemChange,
 } from "../features/wishlist/utils/pending-item-sync";
+import type { RefreshOutcome } from "../features/wishlist/utils/refresh-outcome";
 
 /**
- * Waits between server checks while an optimistic item is pending. Purchase stats
+ * Waits between server checks while an optimistic change is pending. Purchase stats
  * are written asynchronously by an Appwrite Function (ADR 028; see ADR 032), which can take a
  * few seconds on a cold start. Total ≈ 12 s before giving up and trusting the server.
  */
@@ -35,23 +35,18 @@ export interface UseWishlistReturn {
    * Reload that keeps the current data on screen (pull-to-refresh). Sets
    * `refreshing` while it runs. On failure the current data is kept.
    *
-   * @returns `true` if fresh data was loaded, `false` on failure or if superseded.
+   * @returns The {@link RefreshOutcome}; only `failed` is worth reporting to the user.
    */
-  refresh: () => Promise<boolean>;
+  refresh: () => Promise<RefreshOutcome>;
   /**
-   * Shows `next` immediately in place of the item with the same id, then polls the
-   * server in the background (no `refreshing` indicator) until it reflects the change,
-   * i.e. its `purchasedQuantity` moves away from `previous.purchasedQuantity`.
-   * Server responses that are still stale never overwrite the optimistic item; if the
-   * server never catches up, its data wins after the last attempt.
+   * Shows a persisted purchase/undo immediately, then polls the server in the
+   * background (no `refreshing` indicator) until it reflects the change. Stale server
+   * responses never overwrite it; if the server never catches up, its data wins after
+   * the last attempt (ADR 032).
    *
-   * @param next - The item state to show now (e.g. the use case's post-purchase item).
-   * @param previous - The item state the server still has (before the change).
+   * @param change - The change that was just persisted.
    */
-  applyOptimisticItem: (
-    next: WishlistItemOutput,
-    previous: WishlistItemOutput,
-  ) => void;
+  applyOptimisticChange: (change: ItemChange) => void;
 }
 
 /**
@@ -69,7 +64,7 @@ export function useWishlist(id: string): UseWishlistReturn {
   const [refreshing, setRefreshing] = useState(false);
   const fetchIdRef = useRef(0);
   const syncRunRef = useRef(0);
-  const pendingRef = useRef<PendingItemSync[]>([]);
+  const syncRef = useRef(new WishlistSync());
 
   const fetchFromServer = useCallback(
     () =>
@@ -80,24 +75,19 @@ export function useWishlist(id: string): UseWishlistReturn {
     [id, wishlistRepository, profileRepository],
   );
 
-  /** Shows server data, except for items whose optimistic state it hasn't caught up with. */
-  const applyServerData = useCallback((data: WishlistOutput) => {
-    const merged = mergeServerWishlist(data, pendingRef.current);
-    pendingRef.current = merged.pending;
-    setWishlist(merged.wishlist);
-  }, []);
-
   const loadWishlist = useCallback(
-    async (silent: boolean): Promise<boolean> => {
+    async (silent: boolean): Promise<RefreshOutcome> => {
       if (!id) {
         setLoading(false);
         setRefreshing(false);
         setError(null);
         setWishlist(null);
-        return false;
+        return "superseded";
       }
 
+      const sync = syncRef.current;
       const fetchId = ++fetchIdRef.current;
+      const requestId = sync.beginRequest();
       const isCurrent = () => fetchId === fetchIdRef.current;
       try {
         if (silent) {
@@ -109,21 +99,22 @@ export function useWishlist(id: string): UseWishlistReturn {
 
         const data = await fetchFromServer();
 
-        if (!isCurrent()) return false;
-        applyServerData(data);
-        setError(null);
-        return true;
-      } catch (err) {
-        if (isCurrent()) {
-          console.error("Error fetching wishlist:", err);
-          // A failed background refresh keeps the data already on screen.
-          if (!silent) {
-            // Handle 404 specially if needed, but GetWishlistByUUIDUseCase throws NotFoundError
-            setError(err instanceof Error ? err.message : "An error occurred");
-            setWishlist(null);
-          }
+        if (!isCurrent() || !sync.acceptResponse(requestId, data)) {
+          return "superseded";
         }
-        return false;
+        setWishlist(sync.displayed);
+        setError(null);
+        return "success";
+      } catch (err) {
+        if (!isCurrent() || sync.isSuperseded(requestId)) return "superseded";
+        console.error("Error fetching wishlist:", err);
+        // A failed background refresh keeps the data already on screen.
+        if (!silent) {
+          // Handle 404 specially if needed, but GetWishlistByUUIDUseCase throws NotFoundError
+          setError(err instanceof Error ? err.message : "An error occurred");
+          setWishlist(null);
+        }
+        return "failed";
       } finally {
         if (isCurrent()) {
           setLoading(false);
@@ -131,23 +122,27 @@ export function useWishlist(id: string): UseWishlistReturn {
         }
       }
     },
-    [id, fetchFromServer, applyServerData],
+    [id, fetchFromServer],
   );
 
-  /** Polls until every pending optimistic item is reflected by the server. */
+  /** Polls until every pending change is reflected by the server. */
   const syncPending = useCallback(async () => {
+    const sync = syncRef.current;
     const runId = ++syncRunRef.current;
     const isCurrent = () => runId === syncRunRef.current;
-    let lastData: WishlistOutput | null = null;
+    let received = false;
 
     for (const delay of SYNC_DELAYS_MS) {
       await wait(delay);
-      if (!isCurrent()) return;
+      // A refresh may have synced everything meanwhile.
+      if (!isCurrent() || !sync.hasPending()) return;
       try {
-        lastData = await fetchFromServer();
+        const requestId = sync.beginRequest();
+        const data = await fetchFromServer();
         if (!isCurrent()) return;
-        applyServerData(lastData);
-        if (pendingRef.current.length === 0) return;
+        received = true;
+        if (sync.acceptResponse(requestId, data)) setWishlist(sync.displayed);
+        if (!sync.hasPending()) return;
       } catch (err) {
         console.warn("Background wishlist sync failed, retrying:", err);
       }
@@ -156,23 +151,16 @@ export function useWishlist(id: string): UseWishlistReturn {
     // The server never caught up: it remains the source of truth.
     if (!isCurrent()) return;
     console.warn("Wishlist sync timed out; showing server data.");
-    pendingRef.current = [];
-    if (lastData) setWishlist(lastData);
-  }, [fetchFromServer, applyServerData]);
+    sync.dropPending();
+    if (received) setWishlist(sync.displayed);
+  }, [fetchFromServer]);
 
-  const applyOptimisticItem = useCallback(
-    (next: WishlistItemOutput, previous: WishlistItemOutput) => {
-      pendingRef.current = [
-        ...pendingRef.current.filter((p) => p.itemId !== next.id),
-        {
-          itemId: next.id,
-          staleQuantity: previous.purchasedQuantity,
-          optimistic: next,
-        },
-      ];
-      setWishlist((current) =>
-        current ? replaceItem(current, next) : current,
-      );
+  const applyOptimisticChange = useCallback(
+    (change: ItemChange) => {
+      const sync = syncRef.current;
+      sync.record(change);
+      if (!sync.hasPending()) return;
+      setWishlist(sync.displayed);
       void syncPending();
     },
     [syncPending],
@@ -185,12 +173,13 @@ export function useWishlist(id: string): UseWishlistReturn {
   const refresh = useCallback(() => loadWishlist(true), [loadWishlist]);
 
   useEffect(() => {
+    const sync = syncRef.current;
     void loadWishlist(false);
     return () => {
       fetchIdRef.current++;
       // Stop syncing items of a wishlist that is no longer shown.
       syncRunRef.current++;
-      pendingRef.current = [];
+      sync.reset();
     };
   }, [loadWishlist]);
 
@@ -201,6 +190,6 @@ export function useWishlist(id: string): UseWishlistReturn {
     refreshing,
     refetch,
     refresh,
-    applyOptimisticItem,
+    applyOptimisticChange,
   };
 }
