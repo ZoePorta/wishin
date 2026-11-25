@@ -39,11 +39,12 @@ This amends ADR 022, decision 4: image resizing and optimization happen on the c
   - Camera photos and other large images upload on web; the 5 MB chunked-upload path is avoided in practice on every platform.
   - Stored images are typically a few hundred KB, so they load faster and use less storage and bandwidth.
   - Transparent PNGs keep their transparency and follow the app's theme.
-  - Location and other EXIF metadata are no longer published with item images or avatars.
+  - Location and other EXIF metadata are removed from item images and avatars whenever re-encoding succeeds.
   - Cropping can be added in one place and applies to every upload.
 - **Negative**:
   - New native dependency (`expo-image-manipulator`): Android/iOS builds must be regenerated to include it.
   - Processing runs on the user's device and adds a short delay before upload (mitigated by a "Processing…" loader in `ImagePickerField`).
+  - Metadata removal is not guaranteed: the fail-open path (decision 6) uploads the original unchanged, which can retain GPS and other EXIF metadata.
   - Originals are not kept: images are capped at 1600 px, and JPEG compression is lossy.
   - An oversized transparent PNG loses its transparency (white on web, encoder default on native).
   - Images uploaded before this change remain at their original size; they are not migrated.
