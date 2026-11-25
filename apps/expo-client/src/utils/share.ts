@@ -32,8 +32,11 @@ export interface ShareLinkDeps {
   }) => Promise<{ action: string }>;
   /** Bound `navigator.share`, or `undefined` when the browser lacks it. */
   webShare: ((data: ShareData) => Promise<void>) | undefined;
-  /** Copies text to the clipboard (e.g. `Clipboard.setStringAsync`). */
-  copy: (text: string) => Promise<unknown>;
+  /**
+   * Copies text to the clipboard (e.g. `Clipboard.setStringAsync`). Resolves
+   * `false` when nothing was copied, as browsers without clipboard access do.
+   */
+  copy: (text: string) => Promise<boolean>;
 }
 
 /** `Share.dismissedAction` value (iOS only; Android always reports shared). */
@@ -82,6 +85,8 @@ export async function shareOrCopyLink(
     }
   }
 
-  await deps.copy(content.url);
+  if (!(await deps.copy(content.url))) {
+    throw new Error("Could not copy the link to the clipboard");
+  }
   return "copied";
 }
