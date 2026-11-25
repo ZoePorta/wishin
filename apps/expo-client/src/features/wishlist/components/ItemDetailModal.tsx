@@ -199,6 +199,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               }}
               style={styles.footerButton}
               icon="pencil"
+              contentStyle={commonStyles.minimumTouchTarget}
             >
               {t("item.edit")}
             </Button>
@@ -210,6 +211,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             mode="outlined"
             onPress={onDismiss}
             style={styles.footerButton}
+            contentStyle={commonStyles.minimumTouchTarget}
           >
             {t("common.close")}
           </Button>

@@ -391,6 +391,7 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({
             }}
             disabled={isPurchaseDisabled}
             loading={purchaseLoading}
+            contentStyle={commonStyles.minimumTouchTarget}
             icon="gift-outline"
           >
             {t("item.gotIt")}
