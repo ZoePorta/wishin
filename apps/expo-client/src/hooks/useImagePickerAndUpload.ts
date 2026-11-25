@@ -15,6 +15,7 @@ import {
   assertIsImage,
   isNotAnImageError,
   prepareImageForUpload,
+  releasePreparedImage,
   type PickedImage,
 } from "../utils/image-processing";
 
@@ -79,6 +80,36 @@ async function uploadAndGetPreview(
   const previewUrl = await previewUseCase.execute(fileId);
 
   return previewUrl;
+}
+
+/**
+ * Prepares (resizes/re-encodes), uploads and previews a picked image, releasing the
+ * temporary prepared image afterwards.
+ *
+ * @param {PickedImage} image - The picked image.
+ * @param {StorageRepository} storageRepository - The storage repository instance.
+ * @param {() => boolean} isCurrent - Whether the request is still the latest one.
+ * @returns {Promise<string | null>} The preview URL, or null if the request became stale.
+ * @throws {Error} If the file is not an image, its size is unknown or the upload fails.
+ */
+async function prepareAndUpload(
+  image: PickedImage,
+  storageRepository: StorageRepository,
+  isCurrent: () => boolean,
+): Promise<string | null> {
+  assertIsImage(image);
+  const prepared = await prepareImageForUpload(image, PREPARE_OPTIONS);
+  try {
+    if (!isCurrent()) return null;
+
+    const fileData = await resolveFileData(prepared);
+    if (!isCurrent()) return null;
+
+    const previewUrl = await uploadAndGetPreview(fileData, storageRepository);
+    return isCurrent() ? previewUrl : null;
+  } finally {
+    releasePreparedImage(prepared, image);
+  }
 }
 
 /**
@@ -176,19 +207,11 @@ export function useImagePickerAndUpload() {
         width: asset.width,
         height: asset.height,
       };
-      assertIsImage(picked);
-      const prepared = await prepareImageForUpload(picked, PREPARE_OPTIONS);
-
-      if (requestId !== latestRequestRef.current) return null;
-
-      const fileData = await resolveFileData(prepared);
-
-      if (requestId !== latestRequestRef.current) return null;
-
-      const previewUrl = await uploadAndGetPreview(fileData, storageRepository);
-      if (requestId !== latestRequestRef.current) return null;
-
-      return previewUrl;
+      return await prepareAndUpload(
+        picked,
+        storageRepository,
+        () => requestId === latestRequestRef.current,
+      );
     } catch (err) {
       console.error("Error in pickAndUpload:", err);
       if (requestId === latestRequestRef.current) {
@@ -222,21 +245,11 @@ export function useImagePickerAndUpload() {
 
       setInflightCount((prev) => prev + 1);
       try {
-        assertIsImage(file);
-        const prepared = await prepareImageForUpload(file, PREPARE_OPTIONS);
-        if (requestId !== latestRequestRef.current) return null;
-
-        const fileData = await resolveFileData(prepared);
-
-        if (requestId !== latestRequestRef.current) return null;
-
-        const previewUrl = await uploadAndGetPreview(
-          fileData,
+        return await prepareAndUpload(
+          file,
           storageRepository,
+          () => requestId === latestRequestRef.current,
         );
-        if (requestId !== latestRequestRef.current) return null;
-
-        return previewUrl;
       } catch (err) {
         console.error("Error in uploadFile:", err);
         if (requestId === latestRequestRef.current) {
