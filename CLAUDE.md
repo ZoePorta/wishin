@@ -196,7 +196,10 @@ Domain tests live alongside source: `*.spec.ts` next to `*.ts`. Infrastructure h
 - **`main` only receives merges from `develop`** (releases via `develop → main` PR).
 - **Hotfix exception:** if production is broken and can't wait for the normal cycle, branch from `main` (`hotfix/x`), PR into `main` — but **immediately** merge/cherry-pick that same fix back into `develop` before doing anything else. Don't defer the back-merge.
 - Never branch a fix off `main` for something that isn't a production emergency — it silently diverges `main` ahead of `develop` and causes "Can't automatically merge" on the next `develop → main` PR.
-- `main` has branch protection requiring PRs; direct pushes are possible only via bypass (admin) and should be avoided except to land an already-reviewed merge commit resolving a `develop`/`main` divergence.
+- **Merge method:** always "Create a merge commit", never squash or rebase. Commits are already curated (Conventional Commits, signed), so squash is only an occasional per-PR choice into `develop` for a messy branch. Into `main` it is never allowed: squash/rebase create commits on `main` that `develop` lacks, which diverges the branches just like the incident below.
+- `main` protection has two layers:
+  - **Classic branch protection:** PR with 1 approval, `unit_tests`/`integration_tests`/`lint` checks, signed commits, resolved conversations.
+  - **Ruleset "main: merge commits only":** only merge commits allowed, and no bypass actors, so it also blocks admin direct pushes. To land an already-reviewed merge commit that resolves a `develop`/`main` divergence, temporarily disable the ruleset (Settings → Rules → Rulesets) and re-enable it right after.
 
 **Incident (2026-07-08):** `fix/reanimated-worklets-conflict` (PR #94) was branched from `main` and merged straight into `main`, skipping `develop`. This diverged the two branches (both later touched `package.json`/`pnpm-lock.yaml` independently), which blocked the next `develop → main` PR with a merge conflict. Fixed by merging `main` back into `develop` (commit `453fb52`) and regenerating `pnpm-lock.yaml` via `pnpm install`.
 
