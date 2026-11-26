@@ -65,6 +65,9 @@ export function useWishlist(id: string): UseWishlistReturn {
   const fetchIdRef = useRef(0);
   const syncRunRef = useRef(0);
   const syncRef = useRef(new WishlistSync());
+  const pollingRef = useRef(false);
+  // Set below; lets a successful load resume polling for leftover pending changes.
+  const syncPendingRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   const fetchFromServer = useCallback(
     () =>
@@ -104,6 +107,10 @@ export function useWishlist(id: string): UseWishlistReturn {
         }
         setWishlist(sync.displayed);
         setError(null);
+        // Changes left pending by a poll that never reached the server.
+        if (sync.hasPending() && !pollingRef.current) {
+          void syncPendingRef.current();
+        }
         return "success";
       } catch (err) {
         if (!isCurrent() || sync.isSuperseded(requestId)) return "superseded";
@@ -131,29 +138,43 @@ export function useWishlist(id: string): UseWishlistReturn {
     const runId = ++syncRunRef.current;
     const isCurrent = () => runId === syncRunRef.current;
     let received = false;
+    pollingRef.current = true;
 
-    for (const delay of SYNC_DELAYS_MS) {
-      await wait(delay);
-      // A refresh may have synced everything meanwhile.
-      if (!isCurrent() || !sync.hasPending()) return;
-      try {
-        const requestId = sync.beginRequest();
-        const data = await fetchFromServer();
-        if (!isCurrent()) return;
-        received = true;
-        if (sync.acceptResponse(requestId, data)) setWishlist(sync.displayed);
-        if (!sync.hasPending()) return;
-      } catch (err) {
-        console.warn("Background wishlist sync failed, retrying:", err);
+    try {
+      for (const delay of SYNC_DELAYS_MS) {
+        await wait(delay);
+        // A refresh may have synced everything meanwhile.
+        if (!isCurrent() || !sync.hasPending()) return;
+        try {
+          const requestId = sync.beginRequest();
+          const data = await fetchFromServer();
+          if (!isCurrent()) return;
+          received = true;
+          if (sync.acceptResponse(requestId, data)) {
+            setWishlist(sync.displayed);
+          }
+          if (!sync.hasPending()) return;
+        } catch (err) {
+          console.warn("Background wishlist sync failed, retrying:", err);
+        }
       }
-    }
 
-    // The server never caught up: it remains the source of truth.
-    if (!isCurrent()) return;
-    console.warn("Wishlist sync timed out; showing server data.");
-    sync.dropPending();
-    if (received) setWishlist(sync.displayed);
+      if (!isCurrent()) return;
+      if (!received) {
+        // Every attempt failed, so the last server data predates the change. Keep it
+        // pending; the next successful load shows the server data and resumes polling.
+        console.warn("Wishlist sync could not reach the server; will retry.");
+        return;
+      }
+      // The server never caught up: it remains the source of truth.
+      console.warn("Wishlist sync timed out; showing server data.");
+      sync.dropPending();
+      setWishlist(sync.displayed);
+    } finally {
+      if (isCurrent()) pollingRef.current = false;
+    }
   }, [fetchFromServer]);
+  syncPendingRef.current = syncPending;
 
   const applyOptimisticChange = useCallback(
     (change: ItemChange) => {
@@ -179,6 +200,7 @@ export function useWishlist(id: string): UseWishlistReturn {
       fetchIdRef.current++;
       // Stop syncing items of a wishlist that is no longer shown.
       syncRunRef.current++;
+      pollingRef.current = false;
       sync.reset();
     };
   }, [loadWishlist]);
