@@ -111,6 +111,7 @@
 - [x] **UI:** Immediate "Undo" snackbar after purchase.
 - [ ] **Final Polish:** Theme system refinement.
 - [ ] **Web Responsiveness:** Ensure a premium and fully responsive experience for the web client across all viewports.
+- [ ] **E2E Testing (Web — Playwright):** Set up `@playwright/test` against the Expo web build (`playwright.config.ts`, `webServer` running the exported/dev web client, `test` DB prefix). Cover the critical flows: register/login, create wishlist, add/edit/remove item, guest purchase + undo. Run in CI (`ci.yml`). Mobile E2E with Maestro remains a later step.
 - [ ] **Observability:** Wire up Sentry (error tracking) and PostHog (analytics) — `CoreProvider.tsx`'s `addBreadcrumb`/`trackEvent` already emit to Sentry/PostHog when those SDKs are available, and fall back to console warnings when they aren't installed/initialized.
 
 ---
@@ -122,12 +123,23 @@
   -  [ ] Native Android version
 - [x] **Google OAuth2:** Login/Register integration (UI implementation).
 - [ ] **Native Google Sign-In:** Replace the web/browser OAuth2 flow with the native Android Credential Manager / One Tap SDK. Requires registering the `es.wishin.app` `applicationId` together with the release signing SHA-1 fingerprint in Google Cloud Console.
+- [ ] **Quick Item Capture (Link Autofill & Share Intent):** Reduce the friction of creating a wish from scratch by prefilling item data (at least image, name and link; price/currency when available) from a product URL, Pinterest-style. Requires a new ADR (server-side metadata extraction).
+  - [ ] **Metadata Extraction (Appwrite Function):** `extract-product-metadata` function parsing Open Graph (`og:title`, `og:image`, `og:url`, `product:price:*`) and JSON-LD `schema.org/Product`. Must run server-side (CORS blocks client fetches on web). Follow redirects (short links like `amzn.eu`), guard against SSRF (block private/loopback IPs, enforce timeout and response size limits). Known hard case: Amazon (bot protection/captcha).
+  - [ ] **Domain & Application (TDD):** `ProductMetadataExtractor` port in domain + use case returning a draft `AddWishlistItemInput`; infrastructure adapter calling the function. Unit tests with fixture HTML.
+  - [ ] **Image Persistence:** Download the product image and re-upload it to the Storage bucket instead of hotlinking (external URLs may expire or block hotlinking).
+  - [ ] **UI — "Paste Link" field:** In the create-item form, paste a URL to autofill fields; the user always reviews/edits before saving. Optionally detect a URL in the clipboard (`expo-clipboard`) and offer to use it. Works on web, Android and iOS without native code.
+  - [ ] **Android Share Intent:** Receive `ACTION_SEND` (`text/plain`) from other apps (e.g. via `expo-share-intent` config plugin) and open the create-item flow with the URL prefilled. Check whether the committed `android/` folder needs `expo prebuild` or manual `AndroidManifest.xml` changes.
+  - [ ] **iOS Share Extension:** Native share extension target (App Groups, signing via EAS). Highest effort — only once there are iOS users.
+  - [ ] **Web Share Target (optional):** `share_target` in the PWA manifest (Chrome Android, installed PWA only).
+- [ ] **Square Image Cropping (all uploads):** Let the user crop every uploaded photo (item images **and** the avatar) to a forced 1:1 square while choosing the crop's size and position (classic avatar mechanic: drag + pinch/zoom). Must live in the shared upload pipeline (`useImagePickerAndUpload` → `prepareImageForUpload()`: pick → **crop** → resize → upload), not in individual forms.
+  - [ ] **Cross-platform cropper:** `allowsEditing` + `aspect: [1, 1]` only gives this on Android native; iOS uses a fixed square and web ignores it entirely. Build a custom cropper (`react-native-gesture-handler` + `reanimated`, already installed) or evaluate a library; apply the crop with `expo-image-manipulator` (already used for resizing). Requires an ADR (UX + library choice) extending ADR 031.
+  - [ ] **Replace native editors:** Drop `allowsEditing` from the picker calls once the shared cropper exists, so every platform behaves the same.
 - [ ] **History:** `GetGiftingHistory` Use Case (Purchases only for MVP).
 - [ ] **UI:** User Profile & "My Gifting" Dashboard.
 - [ ] **UI:** Micro-animations for enhanced user experience.
 - [ ] **Pruning Alerts**: Implement Appwrite Function (DB Trigger) to notify users when a transaction status changes to `CANCELLED_BY_OWNER`.
 - [ ] **Advanced Transactional Atomicity**: Implement Appwrite Functions to handle complex multi-entity updates (e.g., Stock + Transaction + Wishlist Version) atomically on the server.
-- [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI).
+- [ ] **Appwrite Realtime:** Setup listener for stock level changes (Sync UI). Replaces the post-purchase polling of [ADR 032](adr/032-optimistic-item-sync-after-purchase.md) and also shows other guests' purchases live.
 
 - [ ] **Reservations System**: Full implementation of the "soft lock" flow.
   - [ ] `ReserveItem` use case integration.

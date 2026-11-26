@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Alert, Platform, Pressable } from "react-native";
+import { View, StyleSheet, Platform, Pressable, Share } from "react-native";
+import { UniversalAlert as Alert } from "../../src/utils/Alert";
 import { Stack, router } from "expo-router";
 import {
   Portal,
@@ -20,9 +21,11 @@ import * as Clipboard from "expo-clipboard";
 import * as Linking from "expo-linking";
 import { type WishlistItemOutput } from "@wishin/domain";
 import { Config } from "../../src/constants/Config";
+import { shareOrCopyLink } from "../../src/utils/share";
 import { commonStyles } from "../../src/theme/common-styles";
 import { useOwnerDashboard } from "../../src/features/wishlist/hooks/useOwnerDashboard";
 import { useUser } from "../../src/contexts/UserContext";
+import { useToast } from "../../src/contexts/ToastContext";
 import { useRepositories } from "../../src/contexts/WishlistRepositoryContext";
 import { useProfile } from "../../src/features/profile/hooks/useProfile";
 import { WishlistForm } from "../../src/features/wishlist/components/WishlistForm";
@@ -59,7 +62,17 @@ export default function OwnerDashboard() {
     handleUpdateItem,
     handleRemoveItem,
     refetch,
+    refreshing,
+    refresh,
   } = useOwnerDashboard();
+  const { showToast } = useToast();
+
+  /** Pull-to-refresh: background reload that keeps the list on screen. */
+  const handleRefresh = React.useCallback(() => {
+    void refresh().then((outcome) => {
+      if (outcome === "failed") showToast(t("common.refreshFailed"));
+    });
+  }, [refresh, showToast, t]);
 
   const {
     profile,
@@ -70,7 +83,8 @@ export default function OwnerDashboard() {
   const { updateProfile, updating: profileUpdating } = useUpdateProfile();
   const { pickAndUpload, uploading: imageUploading } =
     useImagePickerAndUpload();
-  const { storageRepository, profileRepository } = useRepositories();
+  const { storageRepository, profileRepository, observability } =
+    useRepositories();
   const [localAvatarUpdating, setLocalAvatarUpdating] = useState(false);
 
   const handleEditAvatar = async () => {
@@ -169,8 +183,31 @@ export default function OwnerDashboard() {
         ? `${Config.baseUrl}/wishlist/${wishlist.id}`
         : Linking.createURL(`wishlist/${wishlist.id}`);
 
-      await Clipboard.setStringAsync(url);
-      setIsShareSnackbarVisible(true);
+      const outcome = await shareOrCopyLink(
+        {
+          url,
+          title: wishlist.title,
+          message: t("dashboard.shareMessage", { title: wishlist.title }),
+        },
+        {
+          platform: Platform.OS,
+          nativeShare: (content) => Share.share(content),
+          webShare:
+            typeof navigator !== "undefined" &&
+            typeof navigator.share === "function"
+              ? (data) => navigator.share(data)
+              : undefined,
+          copy: (text) => Clipboard.setStringAsync(text),
+        },
+      );
+
+      observability.trackEvent("wishlist_shared", {
+        wishlistId: wishlist.id,
+        outcome,
+      });
+      if (outcome === "copied") {
+        setIsShareSnackbarVisible(true);
+      }
     } catch (err) {
       console.error("Failed to share wishlist:", err);
       Alert.alert(
@@ -251,6 +288,8 @@ export default function OwnerDashboard() {
             <DashboardContent
               wishlist={wishlist}
               onRemoveItem={handleRemoveItem}
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
               onEditItem={(item) => {
                 setEditingItem(item);
                 setIsItemModalVisible(true);
@@ -437,7 +476,12 @@ export default function OwnerDashboard() {
                         ...rest,
                       });
                     } else {
-                      await handleAddItem(data);
+                      await handleAddItem({
+                        ...data,
+                        price: data.price ?? undefined,
+                        description: data.description ?? undefined,
+                        url: data.url ?? undefined,
+                      });
                     }
                     setIsItemModalVisible(false);
                     setEditingItem(undefined);

@@ -1,3 +1,4 @@
+import { computeAvailableQuantity } from "../common/availability";
 import {
   InsufficientStockError,
   InvalidAttributeError,
@@ -9,6 +10,7 @@ import { Priority } from "../value-objects/priority";
 import { ValidationMode } from "../common/validation-mode";
 
 import { isValidUUID } from "../common/validation-utils";
+import { isValidWebUrl } from "../common/web-url";
 
 /**
  * Extended ValidationMode for WishlistItem including EVOLUTIVE and TRANSACTION.
@@ -54,6 +56,25 @@ export type WishlistItemCreateProps = Omit<
 > & {
   priority?: Priority;
   isUnlimited?: boolean;
+};
+
+/**
+ * Optional item fields that an update can explicitly clear by passing `null`.
+ */
+const CLEARABLE_FIELDS = ["price", "description", "url"] as const;
+
+/**
+ * Properties accepted by {@link WishlistItem.update}.
+ * `undefined` means "leave unchanged"; `null` on a clearable field
+ * (`price`, `description`, `url`) removes its value (e.g. price marked as unknown).
+ */
+export type WishlistItemUpdateProps = Omit<
+  Partial<WishlistItemProps>,
+  (typeof CLEARABLE_FIELDS)[number]
+> & {
+  price?: number | null;
+  description?: string | null;
+  url?: string | null;
 };
 
 /**
@@ -226,11 +247,14 @@ export class WishlistItem {
    * - **Reservation Pruning**: If `totalQuantity` is reduced, all existing reservations are cancelled
    *   (`reservedQuantity` set to 0) to avoid complex prioritization or over-commitment in the MVP.
    *
+   * - **Field Clearing**: Passing `null` for `price`, `description` or `url` removes that value;
+   *   `undefined` leaves it unchanged.
+   *
    * @param props - The properties to update.
    * @returns A new WishlistItem instance with updated properties.
    * @throws {InvalidAttributeError} If validation fails or if attempting to update restricted fields (id, reserved, purchased).
    */
-  public update(props: Partial<WishlistItemProps>): WishlistItem {
+  public update(props: WishlistItemUpdateProps): WishlistItem {
     if (props.id !== undefined && props.id !== this.id) {
       throw new InvalidAttributeError("Cannot update entity ID");
     }
@@ -254,12 +278,18 @@ export class WishlistItem {
       );
     }
 
-    const currentProps = this.toProps();
+    // Explicit clearing: a null clearable field drops the current value entirely.
+    const clearedFields = new Set<string>(
+      CLEARABLE_FIELDS.filter((field) => props[field] === null),
+    );
+    const currentProps = Object.fromEntries(
+      Object.entries(this.toProps()).filter(([key]) => !clearedFields.has(key)),
+    ) as WishlistItemProps;
 
-    // Sanitize props to remove undefined values so they don't overwrite currentProps
+    // Sanitize props: drop undefined (unchanged) values and the already-cleared fields
     const sanitizedUpdateProps = Object.fromEntries(
       (Object.entries(props) as [string, unknown][]).filter(
-        ([, value]) => typeof value !== "undefined",
+        ([key, value]) => value !== undefined && !clearedFields.has(key),
       ),
     ) as Partial<WishlistItemProps>;
 
@@ -292,9 +322,10 @@ export class WishlistItem {
    * @returns The number of items still available.
    */
   public get availableQuantity(): number {
-    return Math.max(
-      0,
-      this.totalQuantity - (this.reservedQuantity + this.purchasedQuantity),
+    return computeAvailableQuantity(
+      this.totalQuantity,
+      this.reservedQuantity,
+      this.purchasedQuantity,
     );
   }
 
@@ -562,8 +593,10 @@ export class WishlistItem {
       }
 
       // URL Validation
-      if (this.url && !this.isValidUrl(this.url)) {
-        throw new InvalidAttributeError("Invalid url: Must be a valid URL");
+      if (this.url && !isValidWebUrl(this.url)) {
+        throw new InvalidAttributeError(
+          "Invalid url: Must be a valid http(s) URL",
+        );
       }
       if (this.imageUrl && !this.isValidUrl(this.imageUrl)) {
         throw new InvalidAttributeError(

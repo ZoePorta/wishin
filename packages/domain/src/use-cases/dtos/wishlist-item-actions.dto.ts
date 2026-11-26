@@ -66,24 +66,27 @@ export interface UpdateWishlistItemInput {
   name?: string;
   /**
    * Optional description update.
+   * `undefined` leaves it unchanged; `null` clears it.
    */
-  description?: string;
+  description?: string | null;
   /**
    * Optional priority update.
    */
   priority?: Priority;
   /**
    * Optional price update.
+   * `undefined` leaves the price unchanged; `null` clears it (price unknown).
    */
-  price?: number;
+  price?: number | null;
   /**
    * Optional currency update.
    */
   currency?: string;
   /**
    * Optional URL update.
+   * `undefined` leaves it unchanged; `null` clears it.
    */
-  url?: string;
+  url?: string | null;
   /**
    * Optional image URL update.
    */

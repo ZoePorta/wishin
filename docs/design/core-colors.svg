@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="672" height="188" viewBox="0 0 672 188" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<rect x="0" y="0" width="216" height="88" rx="12" fill="#E040A0" stroke="#00000022"/><text x="14" y="34" fill="#000000" font-size="14" font-weight="600">primary</text><text x="14" y="62" fill="#000000" font-size="14" font-family="monospace">#E040A0</text>
+<rect x="228" y="0" width="216" height="88" rx="12" fill="#7C52AA" stroke="#00000022"/><text x="242" y="34" fill="#FFFFFF" font-size="14" font-weight="600">secondary</text><text x="242" y="62" fill="#FFFFFF" font-size="14" font-family="monospace">#7C52AA</text>
+<rect x="456" y="0" width="216" height="88" rx="12" fill="#0096CC" stroke="#00000022"/><text x="470" y="34" fill="#000000" font-size="14" font-weight="600">tertiary</text><text x="470" y="62" fill="#000000" font-size="14" font-family="monospace">#0096CC</text>
+<rect x="0" y="100" width="216" height="88" rx="12" fill="#E53E3E" stroke="#00000022"/><text x="14" y="134" fill="#000000" font-size="14" font-weight="600">error</text><text x="14" y="162" fill="#000000" font-size="14" font-family="monospace">#E53E3E</text>
+<rect x="228" y="100" width="216" height="88" rx="12" fill="#2E1A28" stroke="#00000022"/><text x="242" y="134" fill="#FFFFFF" font-size="14" font-weight="600">neutral</text><text x="242" y="162" fill="#FFFFFF" font-size="14" font-family="monospace">#2E1A28</text>
+<rect x="456" y="100" width="216" height="88" rx="12" fill="#604868" stroke="#00000022"/><text x="470" y="134" fill="#FFFFFF" font-size="14" font-weight="600">neutralVariant</text><text x="470" y="162" fill="#FFFFFF" font-size="14" font-family="monospace">#604868</text>
+</svg>

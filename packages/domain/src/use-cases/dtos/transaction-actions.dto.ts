@@ -53,6 +53,11 @@ export interface PurchaseItemOutput {
    */
   wishlist: WishlistOutput;
   /**
+   * The item's `purchasedQuantity` read from the repository just before this purchase.
+   * Baseline for telling whether the asynchronous stats update has happened (ADR 032).
+   */
+  previousPurchasedQuantity: number;
+  /**
    * The ID of the transaction that was created.
    */
   transactionId: string;

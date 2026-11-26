@@ -76,7 +76,7 @@ export class UpdateWishlistItemUseCase {
 
     await this.wishlistRepository.save(updatedWishlist);
 
-    // ADR 025: Delete old image from storage if it was replaced or removed.
+    // ADR 022: Delete old image from storage if it was replaced or removed (orphan file lifecycle).
     // This is done after a successful save to avoid deleting images that might still be needed if the save fails.
     if (
       Object.prototype.hasOwnProperty.call(input, "imageUrl") &&

@@ -16,6 +16,7 @@ export const en = {
     tapToRetry: "Tap to Retry",
     or: "or",
     undo: "Undo",
+    refreshFailed: "Couldn't refresh. Check your connection and try again.",
   },
   navigation: {
     goBack: "Go back",
@@ -114,10 +115,10 @@ export const en = {
     actionsA11y: "Wishlist actions",
     closeItemModalA11y: "Close item modal",
     closeEditWishlistA11y: "Close edit wishlist modal",
+    shareMessage: "Check out my wishlist “{{title}}” on Wishin",
     linkCopied: "Link copied to clipboard",
     shareFailedTitle: "Share Failed",
-    shareFailedMessage:
-      "Could not copy the wishlist link to your clipboard. Please try again.",
+    shareFailedMessage: "Could not share the wishlist link. Please try again.",
     emptyTitle: "Your wishlist is empty.",
     emptySubtitle: "Add your first item using the button below!",
     ownerFallback: "Owner",
@@ -178,6 +179,13 @@ export const en = {
     urgent: "URGENT",
     a11y: "Priority: {{label}}",
   },
+  itemSort: {
+    label: "Sort by",
+    priority: "Priority",
+    date: "Newest",
+    price: "Price",
+    optionA11y: "Sort by {{label}}",
+  },
   item: {
     price:
       "{{symbol}} {{amount, number(minimumFractionDigits: 2; maximumFractionDigits: 2)}}",
@@ -189,12 +197,16 @@ export const en = {
     deleteA11y: "Delete item",
     closeDetailsA11y: "Close item details",
     quantityShort: "Qty: {{quantity}}",
-    visitStore: "Visit Store",
+    quantityMultiplier: "× {{quantity}}",
+    viewOnline: "View online",
     priceLabel: "Price",
     quantityLabel: "Quantity",
+    availableLabel: "Available",
+    detailsA11y: "View details, {{name}}",
     priorityLabel: "Priority",
     descriptionLabel: "Description",
-    priceNotSet: "Not set",
+    priceUnknown: "—",
+    unlimitedQuantity: "Never enough!",
     edit: "Edit Item",
     links: {
       couldNotOpen: "Could not open link.",
@@ -234,6 +246,7 @@ export const en = {
   imagePicker: {
     addPhoto: "Add Photo",
     addPhotoA11y: "Add photo",
+    processing: "Processing…",
     sourceTitle: "Select Photo Source",
     takePhoto: "Take Photo",
     chooseFromGallery: "Choose from Gallery",
@@ -248,12 +261,16 @@ export const en = {
     photoFailed: "Failed to take a photo. Please try again.",
     uploadFailedTitle: "Upload Failed",
     uploadFailedMessage: "Could not upload the image. Please try again.",
+    notAnImageTitle: "That's not an image",
+    notAnImageMessage: "Please choose a photo (JPG, PNG, WebP…).",
   },
   errors: {
     nameTooShort:
       "Oops! The name is a bit too short. It needs at least 3 characters to look great on your list! ✨",
     nameTooLong:
       "Whoa! That's a long name. Try keeping it under 100 characters so it fits perfectly! 📏",
+    invalidUrl:
+      "That link doesn't look right. Paste the full web address, like https://shop.com/item 🔗",
     wishlistNotFound:
       "We couldn't find your wishlist. Please try refreshing the page! 🔄",
     itemNotFound:

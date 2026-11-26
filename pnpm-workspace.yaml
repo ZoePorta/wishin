@@ -7,4 +7,5 @@ onlyBuiltDependencies:
   - esbuild
 
 patchedDependencies:
+  expo-image-picker@17.0.10: patches/expo-image-picker@17.0.10.patch
   react-native-paper@5.15.0: patches/react-native-paper@5.15.0.patch

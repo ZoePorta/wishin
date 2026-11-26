@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Image, StyleSheet, Alert } from "react-native";
+import { View, Image, StyleSheet } from "react-native";
 import {
+  ActivityIndicator,
   Text,
   IconButton,
   useTheme,
@@ -14,13 +15,17 @@ import {
 } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
 import { useTranslation } from "react-i18next";
+import { UniversalAlert as Alert } from "../../utils/Alert";
+import {
+  isNotAnImageError,
+  type PickedImage,
+} from "../../utils/image-processing";
 
-export interface SelectedImage {
-  uri: string;
-  name: string;
-  type: string;
-  size: number;
-}
+/**
+ * Image chosen in the field. Same shape the upload pipeline consumes
+ * (`useImagePickerAndUpload().uploadFile`), so no field mapping is needed.
+ */
+export type SelectedImage = PickedImage;
 
 interface ImagePickerFieldProps {
   /**
@@ -40,6 +45,10 @@ interface ImagePickerFieldProps {
    */
   disabled?: boolean;
   /**
+   * Whether the selected image is being processed/uploaded. Shows a progress overlay.
+   */
+  loading?: boolean;
+  /**
    * Accessibility label for the field.
    */
   accessibilityLabel?: string;
@@ -57,6 +66,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
   imageUri,
   onImageSelected,
   disabled = false,
+  loading = false,
   accessibilityLabel,
 }) => {
   const theme = useTheme();
@@ -70,14 +80,36 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
     setMenuVisible(false);
   };
 
+  /**
+   * Shows why picking failed: a specific message for non-image files, otherwise the fallback.
+   *
+   * @param error - The error thrown by the picker.
+   * @param fallbackKey - Message to show for any other error.
+   */
+  const showPickError = (
+    error: unknown,
+    fallbackKey: "imagePicker.pickFailed" | "imagePicker.photoFailed",
+  ) => {
+    if (isNotAnImageError(error)) {
+      Alert.alert(
+        t("imagePicker.notAnImageTitle"),
+        t("imagePicker.notAnImageMessage"),
+      );
+      return;
+    }
+    Alert.alert(t("common.error"), t(fallbackKey));
+  };
+
   const handleImageResult = (result: ImagePicker.ImagePickerResult) => {
     if (!result.canceled && result.assets.length > 0) {
       const asset = result.assets[0];
       onImageSelected({
         uri: asset.uri,
-        name: asset.fileName ?? asset.uri.split("/").pop() ?? "image.jpg",
-        type: asset.mimeType ?? "image/jpeg",
-        size: asset.fileSize ?? 0,
+        fileName: asset.fileName,
+        mimeType: asset.mimeType,
+        fileSize: asset.fileSize,
+        width: asset.width,
+        height: asset.height,
       });
     }
   };
@@ -109,7 +141,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
       handleImageResult(result);
     } catch (error) {
       console.error("Error picking image:", error);
-      Alert.alert(t("common.error"), t("imagePicker.pickFailed"));
+      showPickError(error, "imagePicker.pickFailed");
     }
   };
 
@@ -139,7 +171,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
       handleImageResult(result);
     } catch (error) {
       console.error("Error taking photo:", error);
-      Alert.alert(t("common.error"), t("imagePicker.photoFailed"));
+      showPickError(error, "imagePicker.photoFailed");
     }
   };
 
@@ -174,14 +206,14 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
               size={20}
               onPress={removeImage}
               style={styles.removeButton}
-              disabled={disabled}
+              disabled={disabled || loading}
             />
           </Surface>
         ) : (
           <View>
             <TouchableRipple
               onPress={openMenu}
-              disabled={disabled}
+              disabled={disabled || loading}
               rippleColor={theme.colors.onSurfaceVariant}
               accessibilityLabel={
                 accessibilityLabel ?? t("imagePicker.addPhotoA11y")
@@ -196,12 +228,24 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
               ]}
             >
               <View style={styles.rippleInner}>
-                <Icon
-                  source="camera-plus"
-                  color={theme.colors.onSurfaceVariant}
-                  size={24}
-                />
-                <Text variant="bodyMedium">{t("imagePicker.addPhoto")}</Text>
+                {loading ? (
+                  <ActivityIndicator
+                    size="large"
+                    color={theme.colors.primary}
+                    accessibilityLabel={t("imagePicker.processing")}
+                  />
+                ) : (
+                  <>
+                    <Icon
+                      source="camera-plus"
+                      color={theme.colors.onSurfaceVariant}
+                      size={24}
+                    />
+                    <Text variant="bodyMedium">
+                      {t("imagePicker.addPhoto")}
+                    </Text>
+                  </>
+                )}
               </View>
             </TouchableRipple>
 

@@ -12,7 +12,12 @@ import {
   Surface,
   HelperText,
 } from "react-native-paper";
-import { Priority, type WishlistItemOutput } from "@wishin/domain";
+import {
+  Priority,
+  isValidWebUrl,
+  normalizeWebUrl,
+  type WishlistItemOutput,
+} from "@wishin/domain";
 import type { AddWishlistItemInput } from "@wishin/domain";
 import { PRIORITY_LABEL_KEYS, SORTED_PRIORITIES } from "../utils/priority";
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from "../utils/currencies";
@@ -36,8 +41,17 @@ const MAX_NAME_LENGTH = 100;
 /**
  * Input format for the onSubmit callback.
  * Combines AddWishlistItemInput with an optional id for edit scenarios.
+ * Empty optional fields (and an unknown price) are sent as `null`, so edits clear them.
  */
-export type AddItemFormSubmission = AddWishlistItemInput & { id?: string };
+export type AddItemFormSubmission = Omit<
+  AddWishlistItemInput,
+  "price" | "description" | "url"
+> & {
+  price: number | null;
+  description: string | null;
+  url: string | null;
+  id?: string;
+};
 
 interface AddItemFormProps {
   wishlistId: string;
@@ -158,6 +172,11 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       setError("nameTooLong");
       return;
     }
+    const normalizedUrl = normalizeWebUrl(url);
+    if (normalizedUrl && !isValidWebUrl(normalizedUrl)) {
+      setError("invalidUrl");
+      return;
+    }
 
     try {
       isSubmitting.current = true;
@@ -165,9 +184,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       const payload: AddItemFormSubmission = {
         wishlistId,
         name: name.trim(),
-        description: description.trim() || undefined,
-        url: url.trim() || undefined,
-        price: priceUnknown ? undefined : parseFloat(price) || 0,
+        description: description.trim() || null,
+        url: normalizedUrl || null,
+        price: priceUnknown ? null : parseFloat(price) || 0,
         currency: priceUnknown ? undefined : currency,
         priority: parseInt(priority, 10) as Priority,
         totalQuantity: isUnlimited
@@ -261,6 +280,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
           }
         }}
         disabled={loading || isUploading}
+        loading={isUploading}
       />
 
       <TextInput
@@ -354,13 +374,19 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
       <TextInput
         label={t("itemForm.urlLabel")}
         value={url}
-        onChangeText={setUrl}
+        onChangeText={(text) => {
+          setUrl(text);
+          if (error === "invalidUrl") {
+            setError(null);
+          }
+        }}
         mode="outlined"
         placeholder="https://..."
         keyboardType="url"
         autoCapitalize="none"
         disabled={loading}
         style={styles.input}
+        error={error === "invalidUrl"}
       />
 
       <Text variant="labelLarge" style={styles.label}>

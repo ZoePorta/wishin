@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import * as ImagePicker from "expo-image-picker";
-import { Alert } from "react-native";
+import { Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
   UploadImageUseCase,
@@ -10,6 +10,17 @@ import {
   type StorageRepository,
 } from "@wishin/domain";
 import { useStorageRepository } from "../contexts/WishlistRepositoryContext";
+import { UniversalAlert as Alert } from "../utils/Alert";
+import {
+  assertIsImage,
+  isNotAnImageError,
+  prepareImageForUpload,
+  releasePreparedImage,
+  type PickedImage,
+} from "../utils/image-processing";
+
+/** `extent` (used to flatten transparency onto a background) is only implemented on web. */
+const PREPARE_OPTIONS = { canFlatten: Platform.OS === "web" };
 
 /**
  * Resolves file metadata for an image asset, including file size.
@@ -72,6 +83,36 @@ async function uploadAndGetPreview(
 }
 
 /**
+ * Prepares (resizes/re-encodes), uploads and previews a picked image, releasing the
+ * temporary prepared image afterwards.
+ *
+ * @param {PickedImage} image - The picked image.
+ * @param {StorageRepository} storageRepository - The storage repository instance.
+ * @param {() => boolean} isCurrent - Whether the request is still the latest one.
+ * @returns {Promise<string | null>} The preview URL, or null if the request became stale.
+ * @throws {Error} If the file is not an image, its size is unknown or the upload fails.
+ */
+async function prepareAndUpload(
+  image: PickedImage,
+  storageRepository: StorageRepository,
+  isCurrent: () => boolean,
+): Promise<string | null> {
+  assertIsImage(image);
+  const prepared = await prepareImageForUpload(image, PREPARE_OPTIONS);
+  try {
+    if (!isCurrent()) return null;
+
+    const fileData = await resolveFileData(prepared);
+    if (!isCurrent()) return null;
+
+    const previewUrl = await uploadAndGetPreview(fileData, storageRepository);
+    return isCurrent() ? previewUrl : null;
+  } finally {
+    releasePreparedImage(prepared, image);
+  }
+}
+
+/**
  * Custom hook to handle picking an image from the device and uploading it to storage.
  * Manages multiple concurrent uploads and provides cleaning functions.
  *
@@ -90,6 +131,29 @@ export function useImagePickerAndUpload() {
   const uploading = inflightCount > 0;
   const [error, setError] = useState<string | null>(null);
   const latestRequestRef = useRef(0);
+
+  /**
+   * Tells the user why an image could not be used: a specific message when the
+   * file is not an image, the generic upload failure otherwise.
+   *
+   * @param {unknown} err - The error thrown while picking, preparing or uploading.
+   */
+  const showUploadError = useCallback(
+    (err: unknown) => {
+      if (isNotAnImageError(err)) {
+        Alert.alert(
+          t("imagePicker.notAnImageTitle"),
+          t("imagePicker.notAnImageMessage"),
+        );
+        return;
+      }
+      Alert.alert(
+        t("imagePicker.uploadFailedTitle"),
+        t("imagePicker.uploadFailedMessage"),
+      );
+    },
+    [t],
+  );
 
   /**
    * Triggers the native image picker and uploads the selected image.
@@ -135,29 +199,26 @@ export function useImagePickerAndUpload() {
       didIncrement = true;
 
       const asset = pickerResult.assets[0];
-      const fileData = await resolveFileData({
+      const picked: PickedImage = {
         uri: asset.uri,
         fileName: asset.fileName,
         mimeType: asset.mimeType,
         fileSize: asset.fileSize,
-      });
-
-      if (requestId !== latestRequestRef.current) return null;
-
-      const previewUrl = await uploadAndGetPreview(fileData, storageRepository);
-      if (requestId !== latestRequestRef.current) return null;
-
-      return previewUrl;
+        width: asset.width,
+        height: asset.height,
+      };
+      return await prepareAndUpload(
+        picked,
+        storageRepository,
+        () => requestId === latestRequestRef.current,
+      );
     } catch (err) {
       console.error("Error in pickAndUpload:", err);
       if (requestId === latestRequestRef.current) {
         const message =
           err instanceof Error ? err.message : "An error occurred";
         setError(message);
-        Alert.alert(
-          t("imagePicker.uploadFailedTitle"),
-          t("imagePicker.uploadFailedMessage"),
-        );
+        showUploadError(err);
       }
       return null;
     } finally {
@@ -165,27 +226,17 @@ export function useImagePickerAndUpload() {
         setInflightCount((prev) => Math.max(0, prev - 1));
       }
     }
-  }, [storageRepository, t]);
+  }, [storageRepository, t, showUploadError]);
 
   /**
-   * Uploads a file from a local URI and returns its preview URL.
+   * Prepares (resizes/re-encodes) a picked image, uploads it and returns its preview URL.
    * Resolves file size if not provided.
    *
-   * @param {Object} file - The file data to upload.
-   * @param {string} file.uri - Local URI of the file.
-   * @param {string} [file.fileName] - Optional display name for the file.
-   * @param {string} [file.mimeType] - Optional MIME type (defaults to image/jpeg).
-   * @param {number} [file.fileSize] - Optional size in bytes.
+   * @param {PickedImage} file - The picked image (URI plus optional name, MIME type, size and dimensions).
    * @returns {Promise<string | null>} The preview URL of the uploaded image, or null if failed.
-   * @throws {Error} If file size cannot be determined.
    */
   const uploadFile = useCallback(
-    async (file: {
-      uri: string;
-      fileName?: string;
-      mimeType?: string;
-      fileSize?: number;
-    }): Promise<string | null> => {
+    async (file: PickedImage): Promise<string | null> => {
       const requestId = ++latestRequestRef.current;
 
       if (requestId === latestRequestRef.current) {
@@ -194,39 +245,25 @@ export function useImagePickerAndUpload() {
 
       setInflightCount((prev) => prev + 1);
       try {
-        const fileData = await resolveFileData({
-          uri: file.uri,
-          fileName: file.fileName,
-          mimeType: file.mimeType,
-          fileSize: file.fileSize,
-        });
-
-        if (requestId !== latestRequestRef.current) return null;
-
-        const previewUrl = await uploadAndGetPreview(
-          fileData,
+        return await prepareAndUpload(
+          file,
           storageRepository,
+          () => requestId === latestRequestRef.current,
         );
-        if (requestId !== latestRequestRef.current) return null;
-
-        return previewUrl;
       } catch (err) {
         console.error("Error in uploadFile:", err);
         if (requestId === latestRequestRef.current) {
           const message =
             err instanceof Error ? err.message : "An error occurred";
           setError(message);
-          Alert.alert(
-            t("imagePicker.uploadFailedTitle"),
-            t("imagePicker.uploadFailedMessage"),
-          );
+          showUploadError(err);
         }
         return null;
       } finally {
         setInflightCount((prev) => Math.max(0, prev - 1));
       }
     },
-    [storageRepository, t],
+    [storageRepository, t, showUploadError],
   );
 
   /**

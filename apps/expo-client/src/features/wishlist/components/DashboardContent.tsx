@@ -3,7 +3,17 @@ import { FlatList, View, StyleSheet } from "react-native";
 import { Text, Surface } from "react-native-paper";
 import { type WishlistOutput, type WishlistItemOutput } from "@wishin/domain";
 import { DashboardItemCard } from "./DashboardItemCard";
+import { ItemSortSelector } from "./ItemSortSelector";
+import {
+  DEFAULT_ITEM_SORT,
+  sortItems,
+  type ItemSortOption,
+} from "../utils/item-sort";
 import { Layout } from "../../../constants/Layout";
+import {
+  PullToRefresh,
+  useNativeRefreshControl,
+} from "../../../components/common/PullToRefresh";
 import { useTranslation } from "react-i18next";
 
 interface DashboardContentProps {
@@ -12,6 +22,10 @@ interface DashboardContentProps {
   onEditItem: (item: WishlistItemOutput) => void;
   onItemPress: (item: WishlistItemOutput) => void;
   ListHeaderComponent?: React.ReactElement | null;
+  /** Whether a pull-to-refresh is in progress. */
+  refreshing: boolean;
+  /** Called when the user pulls the list down to refresh it. */
+  onRefresh: () => void;
 }
 
 /**
@@ -24,6 +38,8 @@ interface DashboardContentProps {
  * @param {function} props.onEditItem - Callback to handle item editing.
  * @param {function} props.onItemPress - Callback invoked when an item is pressed.
  * @param {React.ReactElement | null} [props.ListHeaderComponent] - Optional header element rendered at the top of the list.
+ * @param {boolean} props.refreshing - Whether a pull-to-refresh is in progress.
+ * @param {function} props.onRefresh - Callback invoked when the user pulls to refresh.
  * @returns {JSX.Element} The rendered dashboard content.
  */
 export const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -32,42 +48,62 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onEditItem,
   onItemPress,
   ListHeaderComponent,
+  refreshing,
+  onRefresh,
 }) => {
   const { t } = useTranslation();
-  // Sort by creation date reversed (most recent first)
-  // Since Appwrite returns them in chronological order, we just reverse the array.
+  const listRef = React.useRef<FlatList<WishlistItemOutput>>(null);
+  const refreshControl = useNativeRefreshControl(refreshing, onRefresh);
+  const [sortBy, setSortBy] = React.useState<ItemSortOption>(DEFAULT_ITEM_SORT);
   const sortedItems = React.useMemo(
-    () => [...wishlist.items].reverse(),
-    [wishlist.items],
+    () => sortItems(wishlist.items, sortBy),
+    [wishlist.items, sortBy],
+  );
+
+  const header = (
+    <>
+      {ListHeaderComponent}
+      {wishlist.items.length > 1 && (
+        <ItemSortSelector value={sortBy} onChange={setSortBy} />
+      )}
+    </>
   );
 
   return (
     <Surface style={styles.container}>
-      <FlatList
-        data={sortedItems}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <DashboardItemCard
-            item={item}
-            onEdit={onEditItem}
-            onRemove={onRemoveItem}
-            onPress={onItemPress}
-          />
-        )}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyContainer}>
-            <Text variant="bodyLarge" style={styles.emptyText}>
-              {t("dashboard.emptyTitle")}
-            </Text>
-            <Text variant="bodyMedium" style={styles.emptySubText}>
-              {t("dashboard.emptySubtitle")}
-            </Text>
-          </View>
-        )}
-        ListHeaderComponent={ListHeaderComponent}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      />
+      <PullToRefresh
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        scrollRef={listRef}
+      >
+        <FlatList
+          ref={listRef}
+          data={sortedItems}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <DashboardItemCard
+              item={item}
+              onEdit={onEditItem}
+              onRemove={onRemoveItem}
+              onPress={onItemPress}
+            />
+          )}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyContainer}>
+              <Text variant="bodyLarge" style={styles.emptyText}>
+                {t("dashboard.emptyTitle")}
+              </Text>
+              <Text variant="bodyMedium" style={styles.emptySubText}>
+                {t("dashboard.emptySubtitle")}
+              </Text>
+            </View>
+          )}
+          ListHeaderComponent={header}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        />
+      </PullToRefresh>
     </Surface>
   );
 };

@@ -13,6 +13,7 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 
 - **Live Demo:** [https://wishin.es/](https://wishin.es/)
 - **Product Presentation:** [docs/product/slides.pdf](docs/product/slides.pdf)
+- **Design System:** [docs/design-system.md](docs/design-system.md)
 
 ## Core Functionality
 
@@ -29,6 +30,14 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 | **Dashboard** | ![Dashboard Mobile](docs/assets/screenshots/dashboard.png)    | ![Dashboard Desktop](docs/assets/screenshots/dashboard_desktop.png) |
 | **Wishlist**  | ![Wishlist Mobile](docs/assets/screenshots/wishlist_view.png) | ![Wishlist Desktop](docs/assets/screenshots/wishlist_desktop.png)   |
 
+## Design
+
+Material Design 3 (React Native Paper) with a custom palette generated from the seed `#E040A0`, and two typefaces: **Aclonica** for headlines and **Varela Round** for body text.
+
+![Core colours](docs/design/core-colors.svg)
+
+The full palette (light and dark), type scale, spacing, brand gradient and imagery are in the **[Design System](docs/design-system.md)**. It's generated from the theme sources with `pnpm docs:design`.
+
 ## Technical Stack
 
 | Layer              | Technology                                              |
@@ -37,7 +46,7 @@ Wishin is a high-performance, real-time collaborative platform designed for fric
 | **Backend (BaaS)** | Appwrite Cloud                                          |
 | **UI Framework**   | React Native Paper (Material Design 3)                  |
 | **Testing Suite**  | Vitest & React Native Testing Library                   |
-| **E2E Testing**    | Playwright (Web) & Maestro (Mobile - Planned)           |
+| **E2E Testing**    | Planned: Playwright (Web) & Maestro (Mobile)            |
 | **AI Governance**  | CodeRabbit (Automated Architectural Review)             |
 
 ## Quality Gates & Engineering Standards
@@ -210,6 +219,7 @@ The root `package.json` provides unified commands to manage the entire workspace
 | `pnpm db:provision`     | Initializes Appwrite collections and attributes.  |
 | `pnpm db:seed`          | Populates the database with realistic test data.  |
 | `pnpm web:preview`      | Builds and serves the web app for device testing. |
+| `pnpm docs:design`      | Regenerates the design system docs and samples.   |
 
 ---
 
@@ -271,6 +281,8 @@ Ensure your `.env` file (copied from `.env.example`) contains:
 - [ADR 028: Accelerate Appwrite Functions for Atomicity and Permission Resolution](docs/adr/028-accelerate-appwrite-functions.md)
 - [ADR 029: Automated Lockfile Synchronization](docs/adr/029-automated-lockfile-synchronization.md)
 - [ADR 030: Internationalization (i18n) of the Client UI](docs/adr/030-internationalization.md)
+- [ADR 031: Client-Side Image Normalization Before Upload](docs/adr/031-client-side-image-normalization.md)
+- [ADR 032: Optimistic Item Sync After Purchase](docs/adr/032-optimistic-item-sync-after-purchase.md)
 
 ## Community & Contribution
 

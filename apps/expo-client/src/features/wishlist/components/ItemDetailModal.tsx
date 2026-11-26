@@ -1,12 +1,6 @@
 import React from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Image,
-  Linking,
-  Alert,
-} from "react-native";
+import { View, StyleSheet, ScrollView, Image, Linking } from "react-native";
+import { UniversalAlert as Alert } from "../../../utils/Alert";
 import {
   Modal,
   Portal,
@@ -21,6 +15,7 @@ import { type AppTheme } from "../../../theme/theme";
 import { getItemImageSource } from "../utils/images";
 import { commonStyles } from "../../../theme/common-styles";
 import { PriorityBadge } from "./PriorityBadge";
+import { PRIORITY_LABEL_KEYS } from "../utils/priority";
 import { useTranslation } from "react-i18next";
 
 /**
@@ -30,17 +25,25 @@ import { useTranslation } from "react-i18next";
  * @property {boolean} visible - Whether the modal is currently shown.
  * @property {WishlistItemOutput | null} item - The wishlist item being displayed, or null if none.
  * @property {() => void} onDismiss - Callback invoked when the modal should be closed.
- * @property {(item: WishlistItemOutput) => void} onEdit - Callback invoked when the user requests to edit the item.
+ * @property {(item: WishlistItemOutput) => void} [onEdit] - Callback invoked when the user requests to edit the item. When omitted, the edit button is hidden (guest view).
+ * @property {"total" | "available"} [quantityMode] - Which quantity to show: the total requested (owner) or what is still available (guest). Defaults to "total".
+ * @property {(url: string) => void} [onOpenUrl] - Custom link handler (e.g. with scheme validation). Defaults to `Linking.openURL`.
+ * @property {React.ReactNode} [footerAction] - Extra primary action rendered in the footer before the close button (e.g. the guest "got it!" button).
  */
 interface ItemDetailModalProps {
   visible: boolean;
   item: WishlistItemOutput | null;
   onDismiss: () => void;
-  onEdit: (item: WishlistItemOutput) => void;
+  onEdit?: (item: WishlistItemOutput) => void;
+  quantityMode?: "total" | "available";
+  onOpenUrl?: (url: string) => void;
+  footerAction?: React.ReactNode;
 }
 
 /**
  * Modal to display full details of a wishlist item.
+ * Used by the owner dashboard (with edit action, total quantity) and by the
+ * public wishlist view (with purchase action, available quantity).
  *
  * @param {ItemDetailModalProps} props - The component props.
  * @returns {JSX.Element} The rendered detail modal.
@@ -50,6 +53,9 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   item,
   onDismiss,
   onEdit,
+  quantityMode = "total",
+  onOpenUrl,
+  footerAction,
 }) => {
   const theme = useTheme<AppTheme>();
   const { t } = useTranslation();
@@ -57,12 +63,16 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
   const handleOpenUrl = React.useCallback(async () => {
     if (!item?.url) return;
+    if (onOpenUrl) {
+      onOpenUrl(item.url);
+      return;
+    }
     try {
       await Linking.openURL(item.url);
     } catch {
       Alert.alert(t("common.error"), t("item.links.couldNotOpen"));
     }
-  }, [item?.url, t]);
+  }, [item?.url, onOpenUrl, t]);
 
   if (!item) return null;
 
@@ -80,7 +90,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         <View style={styles.header}>
           <Text
             variant="headlineSmall"
-            numberOfLines={1}
             style={[styles.headerTitle, { color: theme.colors.onSurface }]}
           >
             {item.name}
@@ -96,6 +105,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           <Surface style={styles.imageContainer} elevation={1}>
             <Image
               source={getItemImageSource(item.imageUrl)}
+              accessibilityLabel={item.name}
               style={styles.image}
               resizeMode="cover"
             />
@@ -112,7 +122,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                   }}
                   style={styles.linkButton}
                 >
-                  {t("item.visitStore")}
+                  {t("item.viewOnline")}
                 </Button>
               )}
             </View>
@@ -131,16 +141,26 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                         symbol: item.currency ?? "",
                         amount: item.price,
                       })
-                    : t("item.priceNotSet")}
+                    : t("item.priceUnknown")}
                 </Text>
               </View>
               <View style={styles.statItem}>
                 <Text variant="labelLarge" style={styles.statLabel}>
-                  {t("item.quantityLabel")}
+                  {quantityMode === "available"
+                    ? t("item.availableLabel")
+                    : t("item.quantityLabel")}
                 </Text>
-                <Text variant="titleLarge">
-                  {item.isUnlimited ? "∞" : item.totalQuantity}
-                </Text>
+                {item.isUnlimited ? (
+                  <Text variant="titleMedium">
+                    {t("item.unlimitedQuantity")}
+                  </Text>
+                ) : (
+                  <Text variant="titleLarge">
+                    {quantityMode === "available"
+                      ? item.availableQuantity
+                      : item.totalQuantity}
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -148,7 +168,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               <Text variant="labelLarge" style={styles.statLabel}>
                 {t("item.priorityLabel")}
               </Text>
-              <PriorityBadge priority={item.priority} size={24} />
+              <View style={styles.priorityValue}>
+                <PriorityBadge priority={item.priority} size={24} />
+                <Text variant="titleSmall">
+                  {t(PRIORITY_LABEL_KEYS[item.priority])}
+                </Text>
+              </View>
             </View>
 
             {item.description && (
@@ -165,21 +190,28 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         </ScrollView>
 
         <View style={styles.footer}>
-          <Button
-            mode="contained"
-            onPress={() => {
-              onEdit(item);
-              onDismiss();
-            }}
-            style={styles.footerButton}
-            icon="pencil"
-          >
-            {t("item.edit")}
-          </Button>
+          {onEdit && (
+            <Button
+              mode="contained"
+              onPress={() => {
+                onEdit(item);
+                onDismiss();
+              }}
+              style={styles.footerButton}
+              icon="pencil"
+              contentStyle={commonStyles.minimumTouchTarget}
+            >
+              {t("item.edit")}
+            </Button>
+          )}
+          {footerAction && (
+            <View style={styles.footerButton}>{footerAction}</View>
+          )}
           <Button
             mode="outlined"
             onPress={onDismiss}
             style={styles.footerButton}
+            contentStyle={commonStyles.minimumTouchTarget}
           >
             {t("common.close")}
           </Button>
@@ -250,6 +282,11 @@ const makeStyles = (theme: AppTheme) =>
     },
     priorityRow: {
       marginBottom: 20,
+    },
+    priorityValue: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
     },
     descriptionSection: {
       marginTop: 8,

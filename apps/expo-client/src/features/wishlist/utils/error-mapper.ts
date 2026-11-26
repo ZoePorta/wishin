@@ -12,6 +12,7 @@ import {
 export type ErrorKind =
   | "nameTooShort"
   | "nameTooLong"
+  | "invalidUrl"
   | "wishlistNotFound"
   | "itemNotFound"
   | "itemUnavailable"
@@ -25,6 +26,7 @@ export type ErrorKind =
 export const ERROR_MESSAGE_KEYS = {
   nameTooShort: "errors.nameTooShort",
   nameTooLong: "errors.nameTooLong",
+  invalidUrl: "errors.invalidUrl",
   wishlistNotFound: "errors.wishlistNotFound",
   itemNotFound: "errors.itemNotFound",
   itemUnavailable: "errors.itemUnavailable",
@@ -66,6 +68,7 @@ export const classifyError = (err: unknown): ErrorKind => {
 
   if (message.includes("too short")) return "nameTooShort";
   if (message.includes("too long")) return "nameTooLong";
+  if (message.includes("invalid url")) return "invalidUrl";
   if (
     message.includes("wishlist not found") ||
     (message.includes("wishlist with id") && message.includes("not found"))

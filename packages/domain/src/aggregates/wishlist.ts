@@ -1,5 +1,8 @@
 import { WishlistItem } from "../entities/wishlist-item";
-import type { WishlistItemProps } from "../entities/wishlist-item";
+import type {
+  WishlistItemProps,
+  WishlistItemUpdateProps,
+} from "../entities/wishlist-item";
 import {
   InvalidAttributeError,
   LimitExceededError,
@@ -334,10 +337,7 @@ export class Wishlist {
    * @throws {InvalidOperationError} If item not found.
    * @throws {InvalidAttributeError} If the update fails validation.
    */
-  public updateItem(
-    itemId: string,
-    props: Partial<WishlistItemProps>,
-  ): Wishlist {
+  public updateItem(itemId: string, props: WishlistItemUpdateProps): Wishlist {
     const index = this.items.findIndex((item) => item.id === itemId);
     if (index === -1) {
       throw new InvalidOperationError("Item not found");
