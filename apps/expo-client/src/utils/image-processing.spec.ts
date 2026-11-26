@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const { manipulate, resize, extent, renderAsync, saveAsync } = vi.hoisted(
   () => ({
@@ -25,6 +25,7 @@ import {
   isNotAnImageError,
   NotAnImageError,
   prepareImageForUpload,
+  releasePreparedImage,
 } from "./image-processing";
 
 describe("image-processing", () => {
@@ -252,6 +253,89 @@ describe("image-processing", () => {
 
       expect(resize).not.toHaveBeenCalled();
       expect(saveAsync).toHaveBeenCalled();
+    });
+
+    describe("temporary blob URLs", () => {
+      const revokeObjectURL = vi.fn();
+      const hugePng = {
+        uri: "blob:original",
+        fileName: "huge.png",
+        mimeType: "image/png",
+        width: 4000,
+        height: 3000,
+      };
+      const revoked = () =>
+        revokeObjectURL.mock.calls.map(([uri]) => uri as string).sort();
+
+      beforeEach(() => {
+        vi.spyOn(URL, "revokeObjectURL").mockImplementation(revokeObjectURL);
+        renderAsync
+          .mockResolvedValueOnce({ saveAsync, uri: "blob:rendered-1" })
+          .mockResolvedValueOnce({ saveAsync, uri: "blob:rendered-2" });
+        saveAsync
+          .mockResolvedValueOnce({ uri: "blob:saved-1", width: 1, height: 1 })
+          .mockResolvedValueOnce({ uri: "blob:saved-2", width: 1, height: 1 });
+      });
+
+      afterEach(() => {
+        renderAsync.mockReset();
+        saveAsync.mockReset();
+        vi.restoreAllMocks();
+      });
+
+      it("should release the rendered image but not the output", async () => {
+        const result = await prepareImageForUpload({ uri: "blob:original" });
+
+        expect(result.uri).toBe("blob:saved-1");
+        expect(revoked()).toEqual(["blob:rendered-1"]);
+      });
+
+      it("should release every intermediate of an oversized PNG", async () => {
+        vi.stubGlobal(
+          "fetch",
+          vi.fn().mockResolvedValue({
+            blob: () => Promise.resolve({ size: MAX_PNG_BYTES + 1 }),
+          }),
+        );
+
+        const result = await prepareImageForUpload(hugePng, {
+          canFlatten: true,
+        });
+
+        expect(result.uri).toBe("blob:saved-2");
+        expect(revoked()).toEqual([
+          "blob:rendered-1",
+          "blob:rendered-2",
+          "blob:saved-1",
+        ]);
+      });
+
+      it("should keep the original but release intermediates when processing fails", async () => {
+        vi.spyOn(console, "warn").mockImplementation(() => undefined);
+        saveAsync.mockReset().mockRejectedValue(new Error("encode failed"));
+
+        const result = await prepareImageForUpload({ uri: "blob:original" });
+
+        expect(result.uri).toBe("blob:original");
+        expect(revoked()).toEqual(["blob:rendered-1"]);
+      });
+
+      it("should release a prepared image after use", () => {
+        releasePreparedImage({ uri: "blob:saved" }, { uri: "blob:original" });
+        expect(revoked()).toEqual(["blob:saved"]);
+      });
+
+      it("should never release the caller's original or non-blob URIs", () => {
+        releasePreparedImage(
+          { uri: "blob:original" },
+          { uri: "blob:original" },
+        );
+        releasePreparedImage(
+          { uri: "file:///saved.jpg" },
+          { uri: "file:///original.jpg" },
+        );
+        expect(revoked()).toEqual([]);
+      });
     });
 
     it("should fall back to the original image if processing fails", async () => {

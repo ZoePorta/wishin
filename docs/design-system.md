@@ -173,7 +173,7 @@ Two Google Fonts, loaded with `@expo-google-fonts/*` in `app/_layout.tsx`:
 
 `titleLargeVarela` is a custom variant: `titleLarge` sizing in Varela Round, for large titles that need to stay highly legible (e.g. item names).
 
-If the fonts fail to load, `fallbackTheme` keeps the same scale and switches to the system fonts.
+If the fonts fail to load, `fallbackTheme` uses React Native Paper's default typography (its own scale and the system fonts) instead of the scale below.
 
 ### Type scale
 

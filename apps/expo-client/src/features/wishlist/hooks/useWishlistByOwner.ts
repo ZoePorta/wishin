@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRepositories } from "../../../contexts/WishlistRepositoryContext";
 import { GetWishlistByOwnerUseCase } from "@wishin/domain";
 import type { WishlistOutput } from "@wishin/domain";
+import type { RefreshOutcome } from "../utils/refresh-outcome";
 
 /**
  * Hook to retrieve a wishlist by owner ID.
@@ -9,7 +10,7 @@ import type { WishlistOutput } from "@wishin/domain";
  * @param ownerId - The owner's unique identifier.
  * @returns An object containing the wishlist, loading/refreshing state, error, `refetch`
  *          (full reload, shows the loading state) and `refresh` (background reload that
- *          keeps the current data on screen; resolves `true` on success, keeps data on failure).
+ *          keeps the current data on screen; resolves a {@link RefreshOutcome}).
  */
 export function useWishlistByOwner(ownerId: string | null) {
   const { wishlistRepository, profileRepository } = useRepositories();
@@ -22,7 +23,7 @@ export function useWishlistByOwner(ownerId: string | null) {
   const isMounted = useRef(true);
 
   const loadWishlist = useCallback(
-    async (silent: boolean): Promise<boolean> => {
+    async (silent: boolean): Promise<RefreshOutcome> => {
       const requestId = ++lastRequestId.current;
       const isCurrent = () =>
         isMounted.current && requestId === lastRequestId.current;
@@ -34,7 +35,7 @@ export function useWishlistByOwner(ownerId: string | null) {
           setRefreshing(false);
           setError(null);
         }
-        return false;
+        return "superseded";
       }
 
       if (isCurrent()) {
@@ -52,21 +53,20 @@ export function useWishlistByOwner(ownerId: string | null) {
           profileRepository,
         );
         const result = await useCase.execute({ ownerId });
-        if (!isCurrent()) return false;
+        if (!isCurrent()) return "superseded";
         setWishlist(result);
         setError(null);
-        return true;
+        return "success";
       } catch (err) {
-        if (isCurrent()) {
-          console.error("Error fetching wishlist by owner:", err);
-          // A failed background refresh keeps the data already on screen.
-          if (!silent) {
-            const message =
-              err instanceof Error ? err.message : "An error occurred";
-            setError(message);
-          }
+        if (!isCurrent()) return "superseded";
+        console.error("Error fetching wishlist by owner:", err);
+        // A failed background refresh keeps the data already on screen.
+        if (!silent) {
+          const message =
+            err instanceof Error ? err.message : "An error occurred";
+          setError(message);
         }
-        return false;
+        return "failed";
       } finally {
         if (isCurrent()) {
           setLoading(false);

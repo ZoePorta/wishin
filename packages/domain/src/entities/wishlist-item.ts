@@ -1,3 +1,4 @@
+import { computeAvailableQuantity } from "../common/availability";
 import {
   InsufficientStockError,
   InvalidAttributeError,
@@ -321,9 +322,10 @@ export class WishlistItem {
    * @returns The number of items still available.
    */
   public get availableQuantity(): number {
-    return Math.max(
-      0,
-      this.totalQuantity - (this.reservedQuantity + this.purchasedQuantity),
+    return computeAvailableQuantity(
+      this.totalQuantity,
+      this.reservedQuantity,
+      this.purchasedQuantity,
     );
   }
 

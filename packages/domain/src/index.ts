@@ -25,6 +25,7 @@ export * from "./use-cases/update-profile.use-case";
 export * from "./use-cases/dtos";
 export * from "./use-cases/dtos/auth.dto";
 export * from "./use-cases/mappers/wishlist-output.mapper";
+export * from "./use-cases/mappers/project-purchased-quantity";
 export * from "./use-cases/mappers/profile-output.mapper";
 export * from "./errors/domain-errors";
 export * from "./aggregates/wishlist";

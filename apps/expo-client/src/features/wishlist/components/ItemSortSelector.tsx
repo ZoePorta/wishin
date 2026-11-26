@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { ITEM_SORT_OPTIONS, type ItemSortOption } from "../utils/item-sort";
 import { segmentedButtonsFit } from "../utils/segmented-fit";
+import { commonStyles } from "../../../theme/common-styles";
 
 interface ItemSortSelectorProps {
   /** Currently selected sort criterion. */
@@ -131,7 +132,10 @@ export const ItemSortSelector: React.FC<ItemSortSelectorProps> = ({
                 onPress={() => {
                   setMenuVisible(true);
                 }}
-                contentStyle={styles.dropdownContent}
+                contentStyle={[
+                  commonStyles.minimumTouchTarget,
+                  styles.dropdownContent,
+                ]}
                 accessibilityLabel={t("itemSort.optionA11y", {
                   label: labelFor(value),
                 })}
@@ -156,7 +160,6 @@ export const ItemSortSelector: React.FC<ItemSortSelectorProps> = ({
         ) : (
           <SegmentedButtons
             style={styles.segmented}
-            density="small"
             value={value}
             onValueChange={(next) => {
               if (isSortOption(next)) select(next);
@@ -165,6 +168,7 @@ export const ItemSortSelector: React.FC<ItemSortSelectorProps> = ({
               value: option,
               label: labelFor(option),
               icon: SORT_ICONS[option],
+              labelStyle: styles.segmentLabel,
               accessibilityLabel: t("itemSort.optionA11y", {
                 label: labelFor(option),
               }),
@@ -200,6 +204,11 @@ const styles = StyleSheet.create({
   },
   segmented: {
     width: "100%",
+  },
+  // Paper segments are 38px high (20px label + 9px paddings) and size their touch
+  // target to the content, so the label margin brings it up to 44px.
+  segmentLabel: {
+    marginVertical: 3,
   },
   // Zero-size clipping box so the wide measuring layer never causes scroll.
   measureClip: {

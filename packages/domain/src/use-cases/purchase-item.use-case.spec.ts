@@ -105,7 +105,7 @@ describe("PurchaseItemUseCase", () => {
       isUnlimited: false,
       totalQuantity: 5,
       reservedQuantity: 0,
-      purchasedQuantity: 0,
+      purchasedQuantity: 1,
     });
     const wishlist = Wishlist.reconstitute({
       id: wishlistId,
@@ -140,7 +140,8 @@ describe("PurchaseItemUseCase", () => {
     const savedTransaction = transactionRepo.save.mock.calls[0][0];
     expect(savedTransaction.toProps().status).toBe(TransactionStatus.PURCHASED);
     expect(savedTransaction.toProps().quantity).toBe(2);
-    expect(result.wishlist.items[0].purchasedQuantity).toBe(2);
+    expect(result.wishlist.items[0].purchasedQuantity).toBe(3);
+    expect(result.previousPurchasedQuantity).toBe(1);
     expect(result.transactionId).toBe(transactionId);
 
     // Verify Observability

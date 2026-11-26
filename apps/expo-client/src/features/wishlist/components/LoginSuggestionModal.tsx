@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import {
   Portal,
   Modal,
@@ -44,51 +44,55 @@ export const LoginSuggestionModal: React.FC<LoginSuggestionModalProps> = ({
           commonStyles.modalContent,
         ]}
       >
-        <Card style={styles.card} mode="elevated">
-          <Card.Title
-            title={t("loginSuggestion.title")}
-            titleVariant="titleLarge"
-            subtitle={t("loginSuggestion.subtitle")}
-            subtitleVariant="bodyMedium"
-          />
-          <Card.Content>
-            <Text variant="titleMedium" style={styles.text}>
-              {t("loginSuggestion.heading")}
-            </Text>
-            <Text variant="bodyMedium" style={styles.text}>
-              {t("loginSuggestion.body")}
-            </Text>
-          </Card.Content>
-          <Card.Actions style={styles.actions}>
-            <Button
-              mode="outlined"
-              onPress={onDismiss}
-              disabled={loading}
-              contentStyle={commonStyles.minimumTouchTarget}
-            >
-              {t("loginSuggestion.later")}
-            </Button>
-            <View style={styles.rightActions}>
-              <Button
-                mode="text"
-                onPress={onGuest}
-                loading={loading}
-                disabled={loading}
-                contentStyle={commonStyles.minimumTouchTarget}
-              >
-                {t("loginSuggestion.guest")}
-              </Button>
-              <Button
-                mode="contained"
-                onPress={onLogin}
-                disabled={loading}
-                contentStyle={commonStyles.minimumTouchTarget}
-              >
-                {t("loginSuggestion.signIn")}
-              </Button>
-            </View>
-          </Card.Actions>
-        </Card>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Card style={styles.card} mode="elevated">
+            <Card.Title
+              title={t("loginSuggestion.title")}
+              titleVariant="titleLarge"
+              subtitle={t("loginSuggestion.subtitle")}
+              subtitleVariant="bodyMedium"
+            />
+            <Card.Content>
+              <Text variant="titleMedium" style={styles.text}>
+                {t("loginSuggestion.heading")}
+              </Text>
+              <Text variant="bodyMedium" style={styles.text}>
+                {t("loginSuggestion.body")}
+              </Text>
+              {/* Stacked so long translations never overflow narrow screens. */}
+              <View style={styles.actions}>
+                <Button
+                  mode="contained"
+                  onPress={onLogin}
+                  disabled={loading}
+                  contentStyle={commonStyles.minimumTouchTarget}
+                >
+                  {t("loginSuggestion.signIn")}
+                </Button>
+                <Button
+                  mode="outlined"
+                  onPress={onGuest}
+                  loading={loading}
+                  disabled={loading}
+                  contentStyle={commonStyles.minimumTouchTarget}
+                >
+                  {t("loginSuggestion.guest")}
+                </Button>
+                <Button
+                  mode="text"
+                  onPress={onDismiss}
+                  disabled={loading}
+                  contentStyle={commonStyles.minimumTouchTarget}
+                >
+                  {t("loginSuggestion.later")}
+                </Button>
+              </View>
+            </Card.Content>
+          </Card>
+        </ScrollView>
       </Modal>
     </Portal>
   );
@@ -98,6 +102,7 @@ const makeStyles = (theme: AppTheme) =>
   StyleSheet.create({
     modalContainer: {
       padding: 20,
+      maxHeight: "85%",
     },
     card: {
       borderRadius: 28,
@@ -111,12 +116,8 @@ const makeStyles = (theme: AppTheme) =>
       lineHeight: 20,
     },
     actions: {
-      justifyContent: "space-between",
-      paddingHorizontal: 8,
-      paddingBottom: 8,
-    },
-    rightActions: {
-      flexDirection: "row",
       gap: 8,
+      marginTop: 8,
+      paddingBottom: 8,
     },
   });

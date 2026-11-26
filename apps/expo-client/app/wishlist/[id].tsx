@@ -46,7 +46,7 @@ export default function WishlistDetail() {
     refreshing,
     refetch,
     refresh,
-    applyOptimisticItem,
+    applyOptimisticChange,
   }: UseWishlistReturn = useWishlist(id);
   const theme = useTheme();
   const { t } = useTranslation();
@@ -60,8 +60,8 @@ export default function WishlistDetail() {
 
   /** Pull-to-refresh: reload that keeps the list on screen. */
   const handleRefresh = useCallback(() => {
-    void refresh().then((ok) => {
-      if (!ok) showToast(t("common.refreshFailed"));
+    void refresh().then((outcome) => {
+      if (outcome === "failed") showToast(t("common.refreshFailed"));
     });
   }, [refresh, showToast, t]);
 
@@ -172,7 +172,7 @@ export default function WishlistDetail() {
               onSuggestionShown={handleSuggestionShown}
               isOwner={isOwner}
               isSpoilerRevealed={isSpoilerRevealed}
-              onItemChanged={applyOptimisticItem}
+              onItemChanged={applyOptimisticChange}
             />
           </View>
         </View>
@@ -185,7 +185,7 @@ export default function WishlistDetail() {
       isOwner,
       isSpoilerRevealed,
       numColumns,
-      applyOptimisticItem,
+      applyOptimisticChange,
     ],
   );
 

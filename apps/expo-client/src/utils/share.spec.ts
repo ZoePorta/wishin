@@ -100,6 +100,17 @@ describe("shareOrCopyLink", () => {
       expect(deps.nativeShare).not.toHaveBeenCalled();
     });
 
+    it("fails when the clipboard reports that nothing was copied", async () => {
+      const deps = makeDeps({
+        platform: "web",
+        copy: vi.fn().mockResolvedValue(false),
+      });
+
+      await expect(shareOrCopyLink(CONTENT, deps)).rejects.toThrow(
+        "Could not copy",
+      );
+    });
+
     it("propagates clipboard failures", async () => {
       const deps = makeDeps({
         platform: "web",

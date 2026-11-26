@@ -142,6 +142,29 @@ async function getUriSize(uri: string): Promise<number | undefined> {
 }
 
 /**
+ * Frees the memory behind a web Blob URL. Other URIs (native files) are ignored.
+ *
+ * @param uri - The URI to release.
+ */
+function revokeBlobUri(uri: string): void {
+  if (uri.startsWith("blob:")) URL.revokeObjectURL(uri);
+}
+
+/**
+ * Releases the output of {@link prepareImageForUpload} once it is no longer needed.
+ * The caller-owned original is never released, so this is safe after a fallback.
+ *
+ * @param prepared - The image returned by {@link prepareImageForUpload}.
+ * @param original - The image that was passed to it.
+ */
+export function releasePreparedImage(
+  prepared: PickedImage,
+  original: PickedImage,
+): void {
+  if (prepared.uri !== original.uri) revokeBlobUri(prepared.uri);
+}
+
+/**
  * Platform-dependent options for {@link prepareImageForUpload}.
  */
 export interface PrepareImageOptions {
@@ -178,21 +201,32 @@ function startResized(image: PickedImage): ImageManipulatorContext {
  *
  * This keeps uploads below the Appwrite SDK's 5 MB chunking threshold — chunked uploads rely on
  * `expo-file-system`, which is unavailable on web, so large camera photos used to fail there.
- * Re-encoding also strips EXIF metadata (e.g. GPS location).
+ * Successful re-encoding also strips EXIF metadata (e.g. GPS location).
  *
  * Shared by every upload (item images and avatar); future steps such as cropping belong here.
  *
  * @param image - The image picked by the user.
  * @param options - Platform-dependent options (see {@link PrepareImageOptions}).
  * @returns The processed image (without `fileSize`, which is resolved later), or the original
- *   image unchanged if processing fails (e.g. a format the platform cannot decode).
+ *   image unchanged if processing fails (e.g. a format the platform cannot decode). Pass it to
+ *   {@link releasePreparedImage} when done; intermediate results are released internally.
  */
 export async function prepareImageForUpload(
   image: PickedImage,
   options: PrepareImageOptions = {},
 ): Promise<PickedImage> {
+  // Intermediate Blob URLs (web only) that would otherwise live until the page unloads.
+  const temporaryUris: string[] = [];
+  const render = async (context: ImageManipulatorContext) => {
+    const rendered = await context.renderAsync();
+    // Web image refs expose a Blob URL that the shared types don't declare.
+    const { uri } = rendered as { uri?: string };
+    if (uri) temporaryUris.push(uri);
+    return rendered;
+  };
+
   try {
-    const rendered = await startResized(image).renderAsync();
+    const rendered = await render(startResized(image));
 
     if (image.mimeType === "image/png") {
       const png = await rendered.saveAsync({ format: SaveFormat.PNG });
@@ -208,14 +242,16 @@ export async function prepareImageForUpload(
         };
       }
 
+      temporaryUris.push(png.uri);
+
       if (options.canFlatten) {
-        const flattened = await startResized(image)
-          .extent({
+        const flattened = await render(
+          startResized(image).extent({
             backgroundColor: FLATTEN_BACKGROUND,
             width: png.width,
             height: png.height,
-          })
-          .renderAsync();
+          }),
+        );
         return await saveAsJpeg(flattened, image);
       }
     }
@@ -224,6 +260,8 @@ export async function prepareImageForUpload(
   } catch (err) {
     console.warn("Image processing failed, uploading original:", err);
     return image;
+  } finally {
+    temporaryUris.forEach(revokeBlobUri);
   }
 }
 
